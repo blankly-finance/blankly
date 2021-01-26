@@ -20,6 +20,11 @@ class ProfitManager:
         print("Tick")
         price = float(tick["price"])
         for i in range(len(self.__exchanges)):
+            if (self.__exchanges[i].getIfSold() is True):
+                # If this one is sold, just forget about it
+                # TODO move this remove to the sell areas. This isn't done yet because it isn't nailed down
+                self.__exchanges.remove(i)
+                continue
             profitable = self.__exchanges[i].isProfitable()
             # This makes sure there is some degree of profitability
             profitableSellPrice = self.__exchanges[i].getProfitableSellPrice()
@@ -39,12 +44,12 @@ class ProfitManager:
             if self.__exchanges[i].getIfPastSellMin() and (profitableSellPrice < price < ((profitableSellPrice + (profitableSellPrice * Constants.SELL_MIN)) - ((profitableSellPrice + (profitableSellPrice * Constants.SELL_MIN)) - profitableSellPrice) / 2)):
                 self.__exchanges[i].sellSelf()
                 print("Emergency selling self: " + str(self.__exchanges[i].getCoinBaseId()))
-                print("Now have: " + str(LocalAccount.account["BTC-USD"]) + " USD")
+                print("Now have: " + str(LocalAccount.account["USD"]) + " USD")
                 print("and: " + str(LocalAccount.account["BTC-USD"]) + " BTC")
             elif (profitableSellPrice < price < ((profitableSellPrice + (profitableSellPrice * Constants.SELL_MIN)) - ((profitableSellPrice + (profitableSellPrice * Constants.SELL_MIN)) - profitableSellPrice) / 2)) and (not self.__exchanges[i].getIfPastSellMin()):
                 # Sell even if it hasn't gone very high and the price is looking down
                 if self.__utils.getPriceDerivative(self.__ticker, Constants.EMERGENCY_SELL_SAMPLE) < 0:
-                    print("Emergency selling self: " + str(self.__exchanges[i].getCoinBaseId()))
+                    print("Emergency selling self because market is trending downwards: " + str(self.__exchanges[i].getCoinBaseId()))
                     self.__exchanges[i].sellSelf()
 
             elif not profitable:

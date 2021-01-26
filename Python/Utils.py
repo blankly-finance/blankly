@@ -15,14 +15,18 @@ order = {
 
 class Utils:
     @staticmethod
-    def tradeLocal(buyOrSell, currency, exchangeAmount, ticker):
+    def tradeLocal(buyOrSell, currency, cryptoAmountBeforeFees, cryptoAmountAfterFees, ticker):
         if buyOrSell == "sell":
-            LocalAccount.account["USD"] = float(ticker.getMostRecentTick()["price"]) * exchangeAmount + LocalAccount.account["USD"]
-            LocalAccount.account[currency] = LocalAccount.account[currency] - exchangeAmount
+            # You only get in USD the amount after fees though
+            LocalAccount.account["USD"] = float(ticker.getMostRecentTick()["price"]) * cryptoAmountAfterFees + LocalAccount.account["USD"]
+            # When you sell you get all crypto deducted
+            LocalAccount.account[currency] = LocalAccount.account[currency] - cryptoAmountBeforeFees
 
         else:
-            LocalAccount.account["USD"] = LocalAccount.account["USD"] - float(ticker.getMostRecentTick()["price"]) * exchangeAmount
-            LocalAccount.account[currency] = LocalAccount.account[currency] + exchangeAmount
+            # When you buy you get the full cyrpto amount deducted from usd
+            LocalAccount.account["USD"] = LocalAccount.account["USD"] - float(ticker.getMostRecentTick()["price"]) * cryptoAmountBeforeFees
+            # And the after fees amount added to crypto
+            LocalAccount.account[currency] = LocalAccount.account[currency] + cryptoAmountAfterFees
 
     def __init__(self):
         pass
@@ -82,15 +86,11 @@ class Utils:
         regressor = LinearRegression()
         regressor.fit(times, prices)
         regressor.predict(times)
-        for i in range(pointNumber):
-            print(times[i][0])
-        for i in range(10):
-            print("0")
-        for i in range(pointNumber):
-            print(prices[i][0])
         return regressor.coef_[0][0]
 
-    """ Fit simple parabola """
+    """ 
+    Fit simple parabola 
+    """
     def fitParabola(self, ticker, pointNumber):
         feed = ticker.getTickerFeed()
         times = ticker.getTimeFeed()
@@ -101,7 +101,6 @@ class Utils:
         times = times[-pointNumber:]
         prices = []
         for i in range(pointNumber):
-            print("accessing point: " + str(i))
             prices.append(float(feed[i]["price"]))
             times[i] = float(times[i])
 
@@ -109,10 +108,6 @@ class Utils:
         latestTime = times[-1]
         for i in range(len(prices)):
             times[i] = times[i] - latestTime
-        for i in range(len(times)):
-            print((times[i]))
-        for i in range(len(prices)):
-            print((prices[i]))
 
 
         return numpy.polyfit(times, prices, 2, full=True)

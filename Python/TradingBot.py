@@ -1,4 +1,5 @@
 from ApiCalls import ApiCalls
+from Predictor import Predictor
 from Tickers import Tickers
 import Utils, time, sched, schedule, sys, Constants as Constants, Exchange, Keys, LocalAccount
 from ProfitManager import ProfitManager
@@ -36,11 +37,17 @@ def nextId():
 
 manager = ProfitManager("BTC", bitcoinTicker)
 
-fit = utils.fitParabola(bitcoinTicker, 10000)
+# fit = utils.fitParabola(bitcoinTicker, 10000)
 manager.addExchange(Exchange.Exchange("buy", .001, bitcoinTicker, nextId()))
-utils.tradeLocal("buy", "BTC-USD", .001, bitcoinTicker)
+
+# Main thread becomes I/O thread
 while True:
-    time.sleep(1)
+    input = "v" # raw_input("View LocalAccount (v):")
+    if input == "v":
+        print("USD: " + str(LocalAccount.account["USD"]))
+        print("BTC: " + str(LocalAccount.account["BTC-USD"]))
+    else:
+        print("Command not found")
 
 sys.exit()
 print("Fee:")

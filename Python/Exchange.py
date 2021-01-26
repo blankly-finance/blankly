@@ -14,6 +14,7 @@ class Exchange:
         else:
             self.__limit = limit
         self.__valueAtTime = float((coinTicker.getMostRecentTick())["price"])
+        # This is the amount before fees
         self.__amountCurrency = amount_currency
         self.__ticker = coinTicker
         self.__active = True
@@ -24,6 +25,11 @@ class Exchange:
         """
         self.__profitable = False
         self.__reachedPastMinToSell = False
+        self.__sold = False
+        if self.__calls is None:
+            print("Buying locally")
+            # These have to include fees on buy/sell because someone has to calculate them
+            self.__utils.tradeLocal(buyOrSell, self.__ticker.getCoinID(), amount_currency, self.getAmountCurrencyExchanged(), self.__ticker)
 
     def getPurchaseTime(self):
         return self.__purchaseTime
@@ -31,8 +37,14 @@ class Exchange:
     def getSetLimit(self):
         return self.__limit
 
+    """
+    When these orders are used the amount of currency changes throughout the lifetime by the fee rate each time
+    """
     def getAmountCurrencyExchanged(self):
         return self.__amountCurrency - (self.__amountCurrency * Constants.PRETEND_FEE_RATE)
+
+    def getAmountCurrencyOnSell(self):
+        return self.getAmountCurrencyExchanged() - (self.getAmountCurrencyExchanged() * Constants.PRETEND_FEE_RATE)
 
     def getBoughtOrSold(self):
         return self.__buyOrSell
@@ -139,10 +151,13 @@ class Exchange:
     """ Allows this exchange to be sold back in its entirety """
     def sellSelf(self):
         if self.__calls is not None:
-            self.__calls.placeOrder(self.__utils.generateMarketOrder(self.__amountCurrency - (self.__amountCurrency * Constants.PRETEND_FEE_RATE), "sell", self.__ticker.getCoinID()))
+            # This doesn't need the fee calculation because that happens anyway
+            self.__calls.placeOrder(self.__utils.generateMarketOrder(self.getAmountCurrencyExchanged(), "sell", self.__ticker.getCoinID()))
         else:
             print("Selling locally only")
-            self.__utils.tradeLocal("sell", self.__ticker.getCoinID(), self.__amountCurrency - (self.__amountCurrency * Constants.PRETEND_FEE_RATE), self.__ticker)
+            # This one needs to include fees before and after
+            self.__utils.tradeLocal("sell", self.__ticker.getCoinID(), self.getAmountCurrencyExchanged(), self.getAmountCurrencyOnSell(), self.__ticker)
+        self.__sold = True
 
 
     def setIfPastSellMin(self, val):
@@ -152,3 +167,6 @@ class Exchange:
         if show:
             print self.__reachedPastMinToSell
         return self.__reachedPastMinToSell
+
+    def getIfSold(self):
+        return self.__sold

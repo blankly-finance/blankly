@@ -1,5 +1,6 @@
 import thread, json, time, Utils
 from websocket import create_connection
+from websocket import error as socket_error
 
 class Tickers:
     def __init__(self, coinID, log="", show=False, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
@@ -75,7 +76,7 @@ class Tickers:
 
                 self.__timeFeed.append(self.__utils.getEpochFromISO8601(received["time"]))
                 counter += 1
-        except Exception("websocket._exceptions.WebSocketConnectionClosedException") as e:
+        except socket_error as e:
             print("Error reading websocket")
         ws.close()
         print("websocket closed")
