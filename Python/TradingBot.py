@@ -9,6 +9,7 @@ API_KEY = Keys.API_KEY
 API_SECRET = Keys.API_SECRET
 API_PASS = Keys.API_PASS
 
+
 """ Define used currencies """
 currencies = ["BTC", "XLM"]
 market = "USD"
