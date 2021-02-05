@@ -1,8 +1,10 @@
-from ApiCalls import ApiCalls
-from Predictor import Predictor
-from Tickers import Tickers
-import Utils, time, sched, schedule, sys, Constants as Constants, Exchange, Keys, LocalAccount
+import Exchange
+import Keys
+import LocalAccount
+import Utils
+import time
 from ProfitManager import ProfitManager
+from Tickers import Tickers
 
 """ Define secret keys """
 API_KEY = Keys.API_KEY
@@ -38,12 +40,13 @@ def nextId():
 
 manager = ProfitManager("BTC", bitcoinTicker)
 
+
 # fit = utils.fitParabola(bitcoinTicker, 10000)
 manager.addExchange(Exchange.Exchange("buy", .001, bitcoinTicker, nextId()))
 
 # Main thread becomes I/O thread
 while True:
-    input = "v" # raw_input("View LocalAccount (v):")
+    input = raw_input("View LocalAccount (v):")
     if input == "v":
         print("USD: " + str(LocalAccount.account["USD"]))
         print("BTC: " + str(LocalAccount.account["BTC-USD"]))

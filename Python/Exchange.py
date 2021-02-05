@@ -1,21 +1,24 @@
 import Constants, time, LocalAccount
 from Utils import Utils
-""" Optional class to help with keeping track of buys and sells """
+""" Class to manage exchange lifecycle - API calls are routed through here """
 class Exchange:
     """ (Buying or selling (string), amount in currency (BTC/XLM), ticker object (so we can get time and value), limit if there is one) """
-    def __init__(self, buyOrSell, amount_currency, coinTicker, response, ApiCalls=None, limit=""):
-        self.__buyOrSell = buyOrSell
+    def __init__(self, order, coinTicker, ApiCalls=None):
+        self.__buyOrSell = order["side"]
         self.__purchaseTime = (coinTicker.getMostRecentTick())["time"]
-        self.__coinBaseId = response["id"]
+        # Assigned below if there is an ApiCall attached
+        self.__coinBaseId = None
         self.__calls = ApiCalls
 
-        if limit == "":
+        try:
+            self.__limit = order["price"]
+        except Exception as e:
             self.__limit = None
-        else:
-            self.__limit = limit
+
+
         self.__valueAtTime = float((coinTicker.getMostRecentTick())["price"])
         # This is the amount before fees
-        self.__amountCurrency = amount_currency
+        self.__amountCurrency = order["size"]
         self.__ticker = coinTicker
         self.__active = True
         self.__utils = Utils()
@@ -29,7 +32,10 @@ class Exchange:
         if self.__calls is None:
             print("Buying locally")
             # These have to include fees on buy/sell because someone has to calculate them
-            self.__utils.tradeLocal(buyOrSell, self.__ticker.getCoinID(), amount_currency, self.getAmountCurrencyExchanged(), self.__ticker)
+            self.__utils.tradeLocal(order["side"], self.__ticker.getCoinID(), order["size"], self.getAmountCurrencyExchanged(), self.__ticker)
+        else:
+            response = self.__calls.placeOrder()
+            self.__coinBaseId = response["id"]
 
     def getPurchaseTime(self):
         return self.__purchaseTime

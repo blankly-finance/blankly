@@ -2,15 +2,6 @@ import json, numpy, time, LocalAccount
 from sklearn.linear_model import LinearRegression
 import iso8601
 
-"""
-Order Place Example:
-order = {
-    'size': 1.0,
-    'price': 1.0,
-    'side': 'buy',
-    'product_id': 'BTC-USD',
-}
-"""
 
 
 class Utils:
@@ -43,6 +34,16 @@ class Utils:
     Price: Price per bitcoin
     Ex: Buy .001BTC at $15,000 is generateLimitOrder(.001, 15000, "buy", "BTC-USD")
     """
+    """
+    Order Place Example:
+    order = {
+        'size': 1.0,
+        'price': 1.0,
+        'side': 'buy',
+        'product_id': 'BTC-USD',
+    }
+    (size in currency (like .01 BTC), buy/sell (string), product id (BTC-USD))
+    """
     def generateLimitOrder(self, size, price, side, product_id):
         order = {
             'size': size,
@@ -54,6 +55,7 @@ class Utils:
 
     """
     Size: Amount of base currency to buy or sell
+    (size in currency (like .01 BTC), buy/sell (string), product id (BTC-USD))
     """
     def generateMarketOrder(self, size, side, product_id):
         order = {

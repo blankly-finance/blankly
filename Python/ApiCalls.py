@@ -76,6 +76,9 @@ class ApiCalls:
     }
     """
 
+    """
+    This should be spawned entirely through the Exchange class
+    """
     def placeOrder(self, order, ticker, show=False):
         output = requests.post(self.__api_url + 'orders', json=order, auth=self.__auth)
 
@@ -87,11 +90,11 @@ class ApiCalls:
         if show:
             self.__Utils.printJSON(output)
         output = output.json()
-        try:
-            exchangeLog = Exchange.Exchange(order["side"], order["size"], ticker, output, self, limit=order["price"])
-        except Exception as e:
-            exchangeLog = Exchange.Exchange(order["side"], order["size"], ticker, self, output)
-        return output, exchangeLog
+        return output
+        # try:
+        #     exchangeLog = Exchange.Exchange(order["side"], order["size"], ticker, output, self, limit=order["price"])
+        # except Exception as e:
+        #     exchangeLog = Exchange.Exchange(order["side"], order["size"], ticker, self, output)
 
     def getCoinInfo(self, coinID, show=False):
         output = requests.get(self.__api_url + 'currencies/' + coinID, auth=self.__auth)
