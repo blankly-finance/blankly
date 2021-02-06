@@ -3,7 +3,7 @@ import Constants
 import LocalAccount
 
 class ProfitManager:
-    def __init__(self, currencyType, ticker, exchanges=None):
+    def __init__(self, currencyType, ticker, exchanges=None, show=False):
         if exchanges is None:
             exchanges = []
         self.__currencyType = currencyType
@@ -11,9 +11,13 @@ class ProfitManager:
         self.__ticker = ticker
         ticker.addSelfToTicker(self)
         self.__utils = Utils()
+        self.__show = show
 
     def addExchange(self, exchange):
         self.__exchanges.append(exchange)
+
+    def getExchange(self, index):
+        return self.__exchanges[index]
 
     """ This will fire when the attached ticker receives a new price update """
     def priceEvent(self, tick):
@@ -23,14 +27,16 @@ class ProfitManager:
             if (self.__exchanges[i].getIfSold() is True):
                 # If this one is sold, just forget about it
                 # TODO move this remove to the sell areas. This isn't done yet because it isn't nailed down
-                self.__exchanges.remove(i)
+                del self.__exchanges[i]
                 continue
             profitable = self.__exchanges[i].isProfitable()
             # This makes sure there is some degree of profitability
             profitableSellPrice = self.__exchanges[i].getProfitableSellPrice()
             # If the current price is higher than the exchange's minimum to be considered sellable
-            print(str(price) + " needs to get past: " + str(profitableSellPrice + (profitableSellPrice * Constants.SELL_MIN)))
-            print("Minimum to surpass fees: " + str(profitableSellPrice))
+            if self.__show:
+                print(str(price) + " needs to get past: " + str(profitableSellPrice + (profitableSellPrice * Constants.SELL_MIN)))
+                print("Minimum to surpass fees: " + str(profitableSellPrice))
+
             if price > profitableSellPrice + (profitableSellPrice * Constants.SELL_MIN):
                 # Set allow it to be up for selling
                 self.__exchanges[i].setIfPastSellMin(True)
@@ -53,4 +59,5 @@ class ProfitManager:
                     self.__exchanges[i].sellSelf()
 
             elif not profitable:
-                print("Exchange " + str(self.__exchanges[i].getCoinBaseId()) + " is not profitable")
+                if self.__show:
+                    print("Exchange " + str(self.__exchanges[i].getCoinBaseId()) + " is not profitable")

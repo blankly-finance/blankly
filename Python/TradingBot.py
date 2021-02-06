@@ -42,12 +42,17 @@ manager = ProfitManager("BTC", bitcoinTicker)
 
 
 # fit = utils.fitParabola(bitcoinTicker, 10000)
-manager.addExchange(Exchange.Exchange("buy", .001, bitcoinTicker, nextId()))
+manager.addExchange(Exchange.Exchange(utils.generateMarketOrder(.001, "buy", "BTC-USD"), bitcoinTicker))
 
 # Main thread becomes I/O thread
 while True:
     input = raw_input("View LocalAccount (v):")
     if input == "v":
+        print("USD: " + str(LocalAccount.account["USD"]))
+        print("BTC: " + str(LocalAccount.account["BTC-USD"]))
+    elif input == "s":
+        manager.getExchange(0).sellSelf()
+        print("Selling all: ")
         print("USD: " + str(LocalAccount.account["USD"]))
         print("BTC: " + str(LocalAccount.account["BTC-USD"]))
     else:

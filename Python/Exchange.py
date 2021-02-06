@@ -31,10 +31,10 @@ class Exchange:
         self.__sold = False
         if self.__calls is None:
             print("Buying locally")
-            # These have to include fees on buy/sell because someone has to calculate them
-            self.__utils.tradeLocal(order["side"], self.__ticker.getCoinID(), order["size"], self.getAmountCurrencyExchanged(), self.__ticker)
+            # Fees are calculated in the tradelocal function
+            self.__utils.tradeLocal(order["side"], self.__ticker.getCoinID(), order["size"], self.__ticker)
         else:
-            response = self.__calls.placeOrder()
+            response = self.__calls.placeOrder(order, self.__ticker, show=False)
             self.__coinBaseId = response["id"]
 
     def getPurchaseTime(self):
@@ -47,10 +47,14 @@ class Exchange:
     When these orders are used the amount of currency changes throughout the lifetime by the fee rate each time
     """
     def getAmountCurrencyExchanged(self):
-        return self.__amountCurrency - (self.__amountCurrency * Constants.PRETEND_FEE_RATE)
+        return self.__amountCurrency
 
-    def getAmountCurrencyOnSell(self):
-        return self.getAmountCurrencyExchanged() - (self.getAmountCurrencyExchanged() * Constants.PRETEND_FEE_RATE)
+    """
+    On sell, we want to know how many dollars we got back.
+    """
+    def getDollarReturnOnSell(self):
+        # TODO
+        return None
 
     def getBoughtOrSold(self):
         return self.__buyOrSell
@@ -142,27 +146,33 @@ class Exchange:
     """
     def getProfitableSellPrice(self, show=False):
         # price = self.__valueAtTime/(1 - Constants.PRETEND_FEE_RATE)
-        price = self.__valueAtTime/(1 - (2 * Constants.PRETEND_FEE_RATE) + (Constants.PRETEND_FEE_RATE * Constants.PRETEND_FEE_RATE))
+        # This one didn't work for the USD amount modified
+        # price = self.__valueAtTime/(1 - (2 * Constants.PRETEND_FEE_RATE) + (Constants.PRETEND_FEE_RATE * Constants.PRETEND_FEE_RATE))
+        price = ((Constants.PRETEND_FEE_RATE + 1)*(self.__valueAtTime)/(1-Constants.PRETEND_FEE_RATE))
         if show:
             print price
         return price
 
-    """ This allows this to be checked if this buy became profitable """
+    """ 
+    This allows this to be checked if this buy became profitable 
+    """
     def inProfitableSellZone(self, show=False):
         self.__profitable = float((self.__ticker.getMostRecentTick()["price"])) > self.getProfitableSellPrice()
         if show:
             print self.__profitable
         return self.__profitable
 
-    """ Allows this exchange to be sold back in its entirety """
+    """ 
+    Allows this exchange to be sold back in its entirety 
+    """
     def sellSelf(self):
         if self.__calls is not None:
             # This doesn't need the fee calculation because that happens anyway
-            self.__calls.placeOrder(self.__utils.generateMarketOrder(self.getAmountCurrencyExchanged(), "sell", self.__ticker.getCoinID()))
+            self.__calls.placeOrder(self.__utils.generateMarketOrder(self.__amountCurrency, "sell", self.__ticker.getCoinID()))
         else:
             print("Selling locally only")
             # This one needs to include fees before and after
-            self.__utils.tradeLocal("sell", self.__ticker.getCoinID(), self.getAmountCurrencyExchanged(), self.getAmountCurrencyOnSell(), self.__ticker)
+            self.__utils.tradeLocal("sell", self.__ticker.getCoinID(), self.__amountCurrency, self.__ticker)
         self.__sold = True
 
 

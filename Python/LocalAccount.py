@@ -1,4 +1,4 @@
 account = {
-    "USD": 40,
+    "USD": 50,
     "BTC-USD": 0,
 }
