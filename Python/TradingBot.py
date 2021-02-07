@@ -4,7 +4,9 @@ import LocalAccount
 import Utils
 import time
 from ProfitManager import ProfitManager
+import sys
 from Tickers import Tickers
+from PrivateApiCalls import PrivateApiCalls
 
 """ Define secret keys """
 API_KEY = Keys.API_KEY
@@ -22,13 +24,19 @@ sells = ["21:00"]
 
 """ Define libraries & Connections """
 utils = Utils.Utils()
-# call = ApiCalls(API_KEY, API_SECRET, API_PASS)
+call = PrivateApiCalls(API_KEY, API_SECRET, API_PASS)
 
 bitcoinTicker = Tickers("BTC-USD", show=False)
 time.sleep(2)
 
-# you always quit as soon as the going gets tough
+"""you always quit as soon as the going gets tough"""
 
+
+# call.getAccounts(show=True)
+call.getPriceData(0, 0, 0, "BTC-USD",True)
+
+
+sys.exit()
 ids = 0
 def nextId():
     global ids
@@ -46,11 +54,11 @@ manager.addExchange(Exchange.Exchange(utils.generateMarketOrder(.001, "buy", "BT
 
 # Main thread becomes I/O thread
 while True:
-    input = raw_input("View LocalAccount (v):")
-    if input == "v":
+    command = input("View LocalAccount (v) or sell exchange 0 (s):")
+    if command == "v":
         print("USD: " + str(LocalAccount.account["USD"]))
         print("BTC: " + str(LocalAccount.account["BTC-USD"]))
-    elif input == "s":
+    elif command == "s":
         manager.getExchange(0).sellSelf()
         print("Selling all: ")
         print("USD: " + str(LocalAccount.account["USD"]))

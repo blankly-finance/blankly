@@ -73,20 +73,20 @@ class Exchange:
         if self.__buyOrSell == "buy":
             if self.getProfitableSellPrice() < float(self.__ticker.getMostRecentTick()["price"]):
                 if show:
-                    print True
+                    print (True)
                 return True
             else:
                 if show:
-                    print False
+                    print (False)
                 return False
         else:
             if self.getProfitableSellPrice() > float(self.__ticker.getMostRecentTick()["price"]):
                 if show:
-                    print True
+                    print (True)
                 return True
             else:
                 if show:
-                    print False
+                    print (False)
                 return False
 
         # Old algorithm that didn't take into account the change in amount actually bought because of the fee
@@ -112,7 +112,7 @@ class Exchange:
     def getFee(self, show=False):
         fee = (self.__valueAtTime * self.__amountCurrency) * Constants.PRETEND_FEE_RATE
         if (show):
-            print fee
+            print (fee)
         return fee
 
     def cancelOrder(self):
@@ -127,7 +127,7 @@ class Exchange:
                 print("FAILED to cancel order " + self.__coinBaseId)
             self.__active = False
         else:
-            print "Cannot cancel order"
+            print("Cannot cancel order")
 
     def confirmCanceled(self):
         if self.__calls is not None:
@@ -150,7 +150,7 @@ class Exchange:
         # price = self.__valueAtTime/(1 - (2 * Constants.PRETEND_FEE_RATE) + (Constants.PRETEND_FEE_RATE * Constants.PRETEND_FEE_RATE))
         price = ((Constants.PRETEND_FEE_RATE + 1)*(self.__valueAtTime)/(1-Constants.PRETEND_FEE_RATE))
         if show:
-            print price
+            print(price)
         return price
 
     """ 
@@ -159,7 +159,7 @@ class Exchange:
     def inProfitableSellZone(self, show=False):
         self.__profitable = float((self.__ticker.getMostRecentTick()["price"])) > self.getProfitableSellPrice()
         if show:
-            print self.__profitable
+            print(self.__profitable)
         return self.__profitable
 
     """ 
@@ -169,6 +169,7 @@ class Exchange:
         if self.__calls is not None:
             # This doesn't need the fee calculation because that happens anyway
             self.__calls.placeOrder(self.__utils.generateMarketOrder(self.__amountCurrency, "sell", self.__ticker.getCoinID()))
+            self.__utils.tradeLocal("sell", self.__ticker.getCoinID(), self.__amountCurrency, self.__ticker)
         else:
             print("Selling locally only")
             # This one needs to include fees before and after
@@ -181,7 +182,7 @@ class Exchange:
 
     def getIfPastSellMin(self, show=False):
         if show:
-            print self.__reachedPastMinToSell
+            print(self.__reachedPastMinToSell)
         return self.__reachedPastMinToSell
 
     def getIfSold(self):

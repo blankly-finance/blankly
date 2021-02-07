@@ -3,7 +3,6 @@ from sklearn.linear_model import LinearRegression
 import iso8601
 
 
-
 class Utils:
     @staticmethod
     def tradeLocal(buyOrSell, currency, cryptoAmountExchanged, ticker):
@@ -14,8 +13,14 @@ class Utils:
             LocalAccount.account[currency] = LocalAccount.account[currency] - cryptoAmountExchanged
 
         else:
+            # Used for resetting USD value if we drop negative
+            previousAccountValue = LocalAccount.account["USD"]
             # When you buy you get the full crypto amount, but more deducted in usd
             LocalAccount.account["USD"] = LocalAccount.account["USD"] - (Constants.PRETEND_FEE_RATE * cryptoAmountExchanged + cryptoAmountExchanged) * float(ticker.getMostRecentTick()["price"])
+            if LocalAccount.account["USD"] < 0:
+                LocalAccount.account["USD"] = previousAccountValue
+                raise Exception("Insufficient funds")
+
             # And the after fees amount added to crypto
             LocalAccount.account[currency] = LocalAccount.account[currency] + cryptoAmountExchanged
 
@@ -27,7 +32,7 @@ class Utils:
     """
     def printJSON(self, jsonObject):
         out = json.dumps(jsonObject.json(), indent=2)
-        print out
+        print(out)
 
     """
     Size: Amount of base currency to buy or sell

@@ -1,9 +1,12 @@
-from multiprocessing import process
-import time
+from multiprocessing import Process
+import time, fbprophet
+
+
 class Predictor:
     def __init__(self):
-        p = process.Process(target = self.__runPredictor)
+        p = Process(target=self.__runPredictor)
         p.start()
+        p.join()
 
     def __runPredictor(self):
         while True:

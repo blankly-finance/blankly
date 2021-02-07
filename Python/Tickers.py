@@ -1,6 +1,5 @@
-import thread, json, time, Utils
+import _thread, json, time, Utils, ssl
 from websocket import create_connection
-from websocket import error as socket_error
 
 class Tickers:
     def __init__(self, coinID, log="", show=False, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
@@ -21,7 +20,7 @@ class Tickers:
         ws = self.createTickerConnection(coinID, WEBSOCKET_URL)
         self.__response = ws.recv()
         self.__show = show
-        thread.start_new_thread(self.readWebsocket, (ws,))
+        _thread.start_new_thread(self.readWebsocket, (ws,))
         self.__tickerFeed = []
         self.__timeFeed = []
         self.__websocket = ws
@@ -30,7 +29,8 @@ class Tickers:
         self.__managers = []
 
     def createTickerConnection(self, id, url):
-        ws = create_connection(url)
+        # ws = create_connection(url)
+        ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
         request = """{
         "type": "subscribe",
         "product_ids": [
@@ -50,7 +50,7 @@ class Tickers:
 
     def closeWebSocket(self):
         self.__webSocketClosed = True
-        print "Closed websocket for " + self.__id
+        print("Closed websocket for " + self.__id)
 
     def readWebsocket(self, ws):
         counter = 0
@@ -59,7 +59,7 @@ class Tickers:
                 receivedString = ws.recv()
                 received = json.loads(receivedString)
                 if self.__show:
-                    print received
+                    print(received)
                 if self.__log:
                     if (counter % 100 == 0):
                         self.__file.close()
@@ -76,7 +76,7 @@ class Tickers:
 
                 self.__timeFeed.append(self.__utils.getEpochFromISO8601(received["time"]))
                 counter += 1
-        except socket_error as e:
+        except Exception as e:
             print("Error reading websocket")
         ws.close()
         print("websocket closed")
