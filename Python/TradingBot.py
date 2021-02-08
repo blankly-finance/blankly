@@ -7,6 +7,7 @@ from ProfitManager import ProfitManager
 import sys
 from Tickers import Tickers
 from PrivateApiCalls import PrivateApiCalls
+import zerorpc
 
 """ Define secret keys """
 API_KEY = Keys.API_KEY
@@ -33,10 +34,20 @@ time.sleep(2)
 
 
 # call.getAccounts(show=True)
-call.getPriceData(0, 0, 0, "BTC-USD",True)
+
+class HelloRPC(object):
+    def hello(self, name):
+        return "Hello, %s" % name
+
+s = zerorpc.Server(HelloRPC())
+s.bind("tcp://0.0.0.0:4242")
+s.run()
 
 
 sys.exit()
+call.getPriceData(0, 0, 0, "BTC-USD", True)
+
+
 ids = 0
 def nextId():
     global ids
