@@ -3,7 +3,7 @@ from calc import calc as real_calc
 import sys
 import zerorpc
 
-class CalcApi(object):
+class TradeInterface(object):
     def calc(self, text):
         """based on the input text, return the int result"""
         try:
@@ -24,7 +24,7 @@ def parse_port():
 
 def main():
     addr = 'tcp://127.0.0.1:' + parse_port()
-    s = zerorpc.Server(CalcApi())
+    s = zerorpc.Server(TradeInterface())
     s.bind(addr)
     print('start running on {}'.format(addr))
     s.run()
