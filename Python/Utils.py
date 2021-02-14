@@ -31,8 +31,14 @@ class Utils:
     Json pretty printer for show arguments
     """
     def printJSON(self, jsonObject):
+        print(self.returnPrettyJSON(jsonObject))
+
+    """ 
+    Json pretty printer for general string usage
+    """
+    def returnPrettyJSON(self, jsonObject):
         out = json.dumps(jsonObject.json(), indent=2)
-        print(out)
+        return out
 
     """
     Size: Amount of base currency to buy or sell

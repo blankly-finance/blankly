@@ -6,8 +6,7 @@ import time
 from ProfitManager import ProfitManager
 import sys
 from Tickers import Tickers
-from PrivateApiCalls import PrivateApiCalls
-import zerorpc
+from CoinbaseProApiCalls import PrivateApiCalls
 
 """ Define secret keys """
 API_KEY = Keys.API_KEY
@@ -32,20 +31,9 @@ time.sleep(2)
 
 """you always quit as soon as the going gets tough"""
 
-
-# call.getAccounts(show=True)
-
-class HelloRPC(object):
-    def hello(self, name):
-        return "Hello, %s" % name
-
-s = zerorpc.Server(HelloRPC())
-s.bind("tcp://0.0.0.0:4242")
-s.run()
-
-
+print(call.getAccounts())
+print(call.getAccountInfo('GRT-USD'))
 sys.exit()
-call.getPriceData(0, 0, 0, "BTC-USD", True)
 
 
 ids = 0
