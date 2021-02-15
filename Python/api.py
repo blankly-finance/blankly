@@ -25,6 +25,9 @@ class TradeInterface(object):
         self.__calls = PrivateApiCalls(API_KEY, API_SECRET, API_PASS)
         return str(self.__calls.getAccounts())
 
+    def get_all_accounts(self):
+        return str(self.__calls.getAccounts())
+    
     def get_account_info(self, id):
         return str(self.__calls.getAccountInfo(id))
 
