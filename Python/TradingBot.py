@@ -6,7 +6,7 @@ import time
 from ProfitManager import ProfitManager
 import sys
 from Tickers import Tickers
-from CoinbaseProApiCalls import PrivateApiCalls
+from Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_API
 
 """ Define secret keys """
 API_KEY = Keys.API_KEY

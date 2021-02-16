@@ -35,7 +35,7 @@ def get_auth_headers(timestamp, message, api_key, secret_key, passphrase):
     }
 
 
-class PrivateApiCalls:
+class API:
     def __init__(self, API_KEY, API_SECRET, API_PASS, API_URL='https://api.pro.coinbase.com/'):
         self.__auth = CoinbaseExchangeAuth(API_KEY, API_SECRET, API_PASS)
         self.__api_url = API_URL
@@ -46,6 +46,7 @@ class PrivateApiCalls:
         if show:
             self.__Utils.printJSON(output)
         return output.json()
+
 
     def getAccountInfo(self, currency, property=None, show=False):
         accounts = self.getAccounts()
