@@ -7,6 +7,7 @@ from ProfitManager import ProfitManager
 import sys
 from Tickers import Tickers
 from Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_API
+from Server import TradeInterface as TI
 
 """ Define secret keys """
 API_KEY = Keys.API_KEY
@@ -24,7 +25,12 @@ sells = ["21:00"]
 
 """ Define libraries & Connections """
 utils = Utils.Utils()
-call = PrivateApiCalls(API_KEY, API_SECRET, API_PASS)
+Server = TI()
+
+Server.init_coinbase_pro()
+Server.add_exchange("bill",API_KEY,API_SECRET,API_PASS)
+print(Server.API_Call("bill","get_accounts"))
+sys.exit()
 
 bitcoinTicker = Tickers("BTC-USD", show=False)
 time.sleep(2)

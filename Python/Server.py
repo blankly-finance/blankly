@@ -28,13 +28,12 @@ class TradeInterface(object):
     def add_exchange(self, exchange_name, API_KEY, API_SECRET, API_PASS):
         self.__exchanges.append(Coinbase_Pro(exchange_name, API_KEY, API_SECRET, API_PASS))
 
-    def API_Call(self, name, command, **kwargs):
+    def API_Call(self, name, command, *args):
+        argument_array = args
         for i in range(len(self.__exchanges)):
-            if (self.__exchanges[i].getName() == name):
-                self.__exchanges[i].runCommand(command, **kwargs)
+            if (self.__exchanges[i].get_name() == name):
+                return self.__exchanges[i].run_command(command, argument_array)
 
-    def get_all_accounts(self):
-        return str(self.__calls.getAccounts())
 
 
 def parse_port():
