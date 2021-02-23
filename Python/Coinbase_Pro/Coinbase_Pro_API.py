@@ -1,5 +1,5 @@
 from requests.auth import AuthBase
-import time, base64, hmac, hashlib, requests, Utils, Exchange, json, LocalAccount, datetime as DT
+import time, base64, hmac, hashlib, requests, Utils, datetime as DT
 
 
 # Create custom authentication for Exchange
@@ -41,13 +41,22 @@ class API:
         self.__api_url = API_URL
         self.__Utils = Utils.Utils()
 
-    def getAccounts(self, show=False):
-        output = requests.get(self.__api_url + 'accounts', auth=self.__auth)
+    def getAccounts(self, currency=None, show=False):
+        output = requests.get(self.__api_url + 'accounts', auth=self.__auth).json()
         if show:
             self.__Utils.printJSON(output)
-        return output.json()
 
+        if currency != None:
+            for i in range(len(output)):
+                if output[i]["currency"] == currency:
+                    out = output[i]
+                    if show:
+                        print(out)
+                    return out
+            raise Exception("Currency not found")
+        return output
 
+    @DeprecationWarning
     def getAccountInfo(self, currency, property=None, show=False):
         accounts = self.getAccounts()
         if property == None:
@@ -89,7 +98,7 @@ class API:
     """
     This should be spawned entirely through the Exchange class
     """
-    def placeOrder(self, order, ticker, show=False):
+    def placeOrder(self, order, show=False):
         output = requests.post(self.__api_url + 'orders', json=order, auth=self.__auth)
 
         if (str(output) == "<Response [400]>"):

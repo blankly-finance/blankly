@@ -1,29 +1,9 @@
-import json, numpy, time, LocalAccount, Constants
+import json, numpy, time
 from sklearn.linear_model import LinearRegression
 import iso8601
 
 
 class Utils:
-    @staticmethod
-    def tradeLocal(buyOrSell, currency, cryptoAmountExchanged, ticker):
-        if buyOrSell == "sell":
-            # You only get in USD the amount after fees though
-            LocalAccount.account["USD"] = LocalAccount.account["USD"] + (float(ticker.getMostRecentTick()["price"]) * cryptoAmountExchanged * (1 - Constants.PRETEND_FEE_RATE))
-            # When you sell you get all crypto deducted
-            LocalAccount.account[currency] = LocalAccount.account[currency] - cryptoAmountExchanged
-
-        else:
-            # Used for resetting USD value if we drop negative
-            previousAccountValue = LocalAccount.account["USD"]
-            # When you buy you get the full crypto amount, but more deducted in usd
-            LocalAccount.account["USD"] = LocalAccount.account["USD"] - (Constants.PRETEND_FEE_RATE * cryptoAmountExchanged + cryptoAmountExchanged) * float(ticker.getMostRecentTick()["price"])
-            if LocalAccount.account["USD"] < 0:
-                LocalAccount.account["USD"] = previousAccountValue
-                raise Exception("Insufficient funds")
-
-            # And the after fees amount added to crypto
-            LocalAccount.account[currency] = LocalAccount.account[currency] + cryptoAmountExchanged
-
     def __init__(self):
         pass
 
@@ -39,42 +19,6 @@ class Utils:
     def returnPrettyJSON(self, jsonObject):
         out = json.dumps(jsonObject.json(), indent=2)
         return out
-
-    """
-    Size: Amount of base currency to buy or sell
-    Price: Price per bitcoin
-    Ex: Buy .001BTC at $15,000 is generateLimitOrder(.001, 15000, "buy", "BTC-USD")
-    """
-    """
-    Order Place Example:
-    order = {
-        'size': 1.0,
-        'price': 1.0,
-        'side': 'buy',
-        'product_id': 'BTC-USD',
-    }
-    (size in currency (like .01 BTC), buy/sell (string), product id (BTC-USD))
-    """
-    def generateLimitOrder(self, size, price, side, product_id):
-        order = {
-            'size': size,
-            'price': price,
-            'side': side,
-            'product_id': product_id,
-        }
-        return order
-
-    """
-    Size: Amount of base currency to buy or sell
-    (size in currency (like .01 BTC), buy/sell (string), product id (BTC-USD))
-    """
-    def generateMarketOrder(self, size, side, product_id):
-        order = {
-            'size': size,
-            'side': side,
-            'product_id': product_id,
-        }
-        return order
 
     def getEpochFromISO8601(self, ISO8601):
         return time.mktime(iso8601.parse_date(ISO8601).timetuple())

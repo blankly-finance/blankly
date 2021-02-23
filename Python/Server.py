@@ -4,6 +4,8 @@ import sys
 import zerorpc
 from Coinbase_Pro.Coinbase_Pro import Coinbase_Pro
 import Utils
+import json
+
 
 # A new process will be created for each total exchange. Bots can be appended to the predictor
 class TradeInterface(object):
@@ -18,6 +20,11 @@ class TradeInterface(object):
         """echo any text"""
         return text
 
+    def init_general(self):
+        with open('../Settings.json','r') as f:
+            preferences = json.load(f)
+        self.__user_preferences = preferences
+
     # TODO - Generalize this for any API - maybe a wrapper for each API scripts?
     def init_coinbase_pro(self):
         self.__exchange = "coinbase_pro"
@@ -26,13 +33,25 @@ class TradeInterface(object):
         return True
 
     def add_exchange(self, exchange_name, API_KEY, API_SECRET, API_PASS):
-        self.__exchanges.append(Coinbase_Pro(exchange_name, API_KEY, API_SECRET, API_PASS))
+        self.__exchanges.append(Coinbase_Pro(exchange_name, self.__user_preferences, API_KEY, API_SECRET, API_PASS))
 
-    def API_Call(self, name, command, *args):
-        argument_array = args
+    def get_exchange_state(self,name):
         for i in range(len(self.__exchanges)):
             if (self.__exchanges[i].get_name() == name):
-                return self.__exchanges[i].run_command(command, argument_array)
+                return self.__exchanges[i].get_state()
+
+    # def exchange_command(self, name, command, *args):
+    #     argument_array = args
+    #     for i in range(len(self.__exchanges)):
+    #         if (self.__exchanges[i].get_name() == name):
+    #             return self.__exchanges[i].exchange_command(command, argument_array)
+    #
+    # # Used only for direct API calls
+    # def API_Call(self, name, command, *args):
+    #     argument_array = args
+    #     for i in range(len(self.__exchanges)):
+    #         if (self.__exchanges[i].get_name() == name):
+    #             return self.__exchanges[i].API_command(command, argument_array)
 
 
 

@@ -1,6 +1,6 @@
-import Constants, time, LocalAccount
+import Constants, time, Local_Account.LocalAccount, Local_Account.Trade_Local as Trade_Local
 from Utils import Utils
-""" Class to manage exchange lifecycle - API calls are routed through here """
+""" Class to manage exchange lifecycle - basically a way to determine individual information about each buy and sell that has happened """
 class Exchange:
     """ (Buying or selling (string), amount in currency (BTC/XLM), ticker object (so we can get time and value), limit if there is one) """
     def __init__(self, order, coinTicker, ApiCalls=None):
@@ -32,7 +32,7 @@ class Exchange:
         if self.__calls is None:
             print("Buying locally")
             # Fees are calculated in the tradelocal function
-            self.__utils.tradeLocal(order["side"], self.__ticker.getCoinID(), order["size"], self.__ticker)
+            Trade_Local.tradeLocal(order["side"], self.__ticker.getCoinID(), order["size"], self.__ticker)
         else:
             response = self.__calls.placeOrder(order, self.__ticker, show=False)
             self.__coinBaseId = response["id"]
@@ -165,11 +165,12 @@ class Exchange:
     """ 
     Allows this exchange to be sold back in its entirety 
     """
+    # TODO - This has turned into spaghetti code, fix it
     def sellSelf(self):
         if self.__calls is not None:
             # This doesn't need the fee calculation because that happens anyway
             self.__calls.placeOrder(self.__utils.generateMarketOrder(self.__amountCurrency, "sell", self.__ticker.getCoinID()))
-            self.__utils.tradeLocal("sell", self.__ticker.getCoinID(), self.__amountCurrency, self.__ticker)
+            Trade_Local.tradeLocal("sell", self.__ticker.getCoinID(), self.__amountCurrency, self.__ticker)
         else:
             print("Selling locally only")
             # This one needs to include fees before and after

@@ -1,6 +1,5 @@
 from Utils import Utils
 import Constants
-import LocalAccount
 
 class ProfitManager:
     def __init__(self, currencyType, ticker, exchanges=None, show=False):
