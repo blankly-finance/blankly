@@ -21,7 +21,7 @@ class TradeInterface(object):
         return text
 
     def init_general(self):
-        with open('../Settings.json','r') as f:
+        with open('../Settings.json', 'r') as f:
             preferences = json.load(f)
         self.__user_preferences = preferences
 
@@ -30,12 +30,17 @@ class TradeInterface(object):
         self.__exchange = "coinbase_pro"
         self.__utils = Utils.Utils()
         self.__exchanges = []
+        # self.init_general()
         return True
 
     def add_exchange(self, exchange_name, API_KEY, API_SECRET, API_PASS):
+        # Needs to be generalized
+        # TODO make this load the actual preferences
+        self.__user_preferences = None
         self.__exchanges.append(Coinbase_Pro(exchange_name, self.__user_preferences, API_KEY, API_SECRET, API_PASS))
+        return True
 
-    def get_exchange_state(self,name):
+    def get_exchange_state(self, name):
         for i in range(len(self.__exchanges)):
             if (self.__exchanges[i].get_name() == name):
                 return self.__exchanges[i].get_state()

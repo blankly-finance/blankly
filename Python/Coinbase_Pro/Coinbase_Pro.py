@@ -1,15 +1,13 @@
-from Coinbase_Pro.Coinbase_Pro_API import API as API
+import cryptofeed
+from Predictor_Main import Predictor
 
 class Coinbase_Pro:
     def __init__(self, name, user_preferences, API_KEY, API_SECRET, API_PASS):
         self.__user_preferences = user_preferences
         self.__exchange = "coinbase_pro"
-        self.API_KEY = API_KEY
-        self.API_SECRET = API_SECRET
-        self.API_PASS = API_PASS
         self.__name = name
         # Create the authenticated object that the prediction script can use
-        self.__calls = API(self.API_KEY, self.API_SECRET, self.API_PASS)
+        # self.__calls = API(API_KEY, API_SECRET, API_PASS)
 
         self.__state = {
             "Value": 0,
@@ -18,7 +16,7 @@ class Coinbase_Pro:
         }
 
         # Initialize the attached script
-        self.init_model("Predictor_Demo")
+        self.init_model()
 
     def get_exchange(self):
         return self.__exchange
@@ -26,26 +24,31 @@ class Coinbase_Pro:
     def get_name(self):
         return self.__name
 
-    def getCalls(self):
-        return self.__calls
-
     def exchange_command(self, command, args):
         return getattr(self, command, args)
 
     def get_state(self):
-        currencies = self.__calls.getAccounts()
+        # currencies = self.__calls.getAccounts()
         base_currency = self.__user_preferences["settings"]["base_currency"]
         base_currency_value = 0
-        for i in range(len(currencies)):
-            if (currencies[i]["currency"] == base_currency):
-                base_currency_value = currencies[i]["currency"]
-
+        # for i in range(len(currencies)):
+        #     if (currencies[i]["currency"] == base_currency):
+        #         base_currency_value = currencies[i]["currency"]
+        #
+        # state = {
+        #     "Currencies": currencies,
+        #     "Base_Currency": base_currency_value,
+        #
+        # }
+        # return state
         state = {
-            "Currencies": currencies,
-            "Base_Currency": base_currency_value,
+            "Currencies": 1,
+            "Base_Currency": 23,
 
         }
         return state
 
-    def init_model(self, model_name):
-        return False
+    def init_model(self, args=None):
+        if args is None:
+            args = []
+        self.model = Predictor(args)
