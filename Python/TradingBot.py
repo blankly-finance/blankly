@@ -25,9 +25,13 @@ Server = TI()
 
 
 Server.init_coinbase_pro()
-Server.add_exchange("bill",API_KEY,API_SECRET,API_PASS)
+Server.add_exchange("bill", API_KEY, API_SECRET, API_PASS)
 print(Server.get_exchange_state("bill"))
 sys.exit()
+
+
+
+
 
 bitcoinTicker = Tickers("BTC-USD", show=False)
 time.sleep(2)

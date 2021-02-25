@@ -40,10 +40,11 @@ class TradeInterface(object):
         self.__exchanges.append(Coinbase_Pro(exchange_name, self.__user_preferences, API_KEY, API_SECRET, API_PASS))
         return True
 
+
     def get_exchange_state(self, name):
         for i in range(len(self.__exchanges)):
             if (self.__exchanges[i].get_name() == name):
-                return self.__exchanges[i].get_state()
+                return str(self.__exchanges[i].get_state())
 
     # def exchange_command(self, name, command, *args):
     #     argument_array = args

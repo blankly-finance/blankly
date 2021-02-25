@@ -54,11 +54,11 @@ class Predictor:
 
     def __runPredictor(self):
         # Main loop, running on different thread
-        # config = {'log': {'filename': 'demo.log', 'level': 'INFO'}}
-        # f = FeedHandler(config=config)
-        #
-        # f.add_feed(f.add_feed(Coinbase(symbols=['BTC-USD'], channels=[TRADES], callbacks={TRADES: TradeCallback(self.trade)})))
-        # f.run()
+        config = {'log': {'filename': 'demo.log', 'level': 'INFO'}}
+        f = FeedHandler()
+
+        f.add_feed(f.add_feed(Coinbase(symbols=['BTC-USD'], channels=[TRADES], callbacks={TRADES: TradeCallback(self.trade)})))
+        f.run()
 
         while True:
             time.sleep(1)

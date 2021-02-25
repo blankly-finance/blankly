@@ -16,7 +16,7 @@ class Coinbase_Pro:
         }
 
         # Initialize the attached script
-        self.init_model()
+        # self.init_model()
 
     def get_exchange(self):
         return self.__exchange
@@ -29,7 +29,7 @@ class Coinbase_Pro:
 
     def get_state(self):
         # currencies = self.__calls.getAccounts()
-        base_currency = self.__user_preferences["settings"]["base_currency"]
+        # base_currency = self.__user_preferences["settings"]["base_currency"]
         base_currency_value = 0
         # for i in range(len(currencies)):
         #     if (currencies[i]["currency"] == base_currency):
@@ -44,7 +44,6 @@ class Coinbase_Pro:
         state = {
             "Currencies": 1,
             "Base_Currency": 23,
-
         }
         return state
 
