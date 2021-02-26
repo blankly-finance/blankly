@@ -40,10 +40,10 @@ class TradeInterface(object):
         return True
 
 
-    def get_exchange_state(self, name):
+    def get_exchange_state(self, name, written_name):
         for i in range(len(self.__exchanges)):
             if (self.__exchanges[i].get_name() == name):
-                return str(self.__exchanges[i].get_state())
+                return self.__exchanges[i].get_state()
 
 
 def parse_port():

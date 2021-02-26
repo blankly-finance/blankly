@@ -26,7 +26,7 @@ Server = TI()
 
 Server.init_coinbase_pro()
 Server.add_exchange("bill", API_KEY, API_SECRET, API_PASS)
-print(Server.get_exchange_state("bill"))
+print(Server.get_exchange_state("bill", "bill"))
 sys.exit()
 
 

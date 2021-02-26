@@ -1,4 +1,4 @@
-import cryptofeed
+import cryptofeed, json
 from Predictor_Main import Predictor
 
 class Coinbase_Pro:
