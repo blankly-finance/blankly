@@ -22,8 +22,7 @@ class TradeInterface(object):
 
     def init_general(self):
         with open('../Settings.json', 'r') as f:
-            preferences = json.load(f)
-        self.__user_preferences = preferences
+            self.__user_preferences = json.load(f)
 
     # TODO - Generalize this for any API - maybe a wrapper for each API scripts?
     def init_coinbase_pro(self):
@@ -45,20 +44,6 @@ class TradeInterface(object):
         for i in range(len(self.__exchanges)):
             if (self.__exchanges[i].get_name() == name):
                 return str(self.__exchanges[i].get_state())
-
-    # def exchange_command(self, name, command, *args):
-    #     argument_array = args
-    #     for i in range(len(self.__exchanges)):
-    #         if (self.__exchanges[i].get_name() == name):
-    #             return self.__exchanges[i].exchange_command(command, argument_array)
-    #
-    # # Used only for direct API calls
-    # def API_Call(self, name, command, *args):
-    #     argument_array = args
-    #     for i in range(len(self.__exchanges)):
-    #         if (self.__exchanges[i].get_name() == name):
-    #             return self.__exchanges[i].API_command(command, argument_array)
-
 
 
 def parse_port():
