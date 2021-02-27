@@ -37,13 +37,13 @@ class TradeInterface(object):
         # TODO make this load the actual preferences
         self.__user_preferences = None
         self.__exchanges.append(Coinbase_Pro(exchange_name, self.__user_preferences, API_KEY, API_SECRET, API_PASS))
-        return True
+        return exchange_name
 
 
-    def get_exchange_state(self, name, written_name):
+    def get_exchange_state(self, name, given_name):
         for i in range(len(self.__exchanges)):
             if (self.__exchanges[i].get_name() == name):
-                return self.__exchanges[i].get_state()
+                return [self.__exchanges[i].get_state(),name]
 
 
 def parse_port():
