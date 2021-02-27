@@ -2,6 +2,7 @@ from __future__ import print_function
 from calc import calc as real_calc
 import sys
 import zerorpc
+from Exchange import Exchange
 from Coinbase_Pro.Coinbase_Pro import Coinbase_Pro
 import Utils
 import json
@@ -20,30 +21,29 @@ class TradeInterface(object):
         """echo any text"""
         return text
 
-    def init_general(self):
+    def init(self):
+        self.__exchanges = []
+        self.__utils = Utils.Utils()
+        # TODO make this load the actual preferences
         with open('../Settings.json', 'r') as f:
             self.__user_preferences = json.load(f)
 
-    # TODO - Generalize this for any API - maybe a wrapper for each API scripts?
-    def init_coinbase_pro(self):
-        self.__exchange = "coinbase_pro"
-        self.__utils = Utils.Utils()
-        self.__exchanges = []
-        # self.init_general()
-        return True
+    def add_exchange(self, exchange_name, exchange_type, auth):
+        if exchange_type == "coinbase_pro":
+            self.__exchanges.append(Coinbase_Pro(exchange_name, self.__user_preferences, auth))
+            return exchange_name
+        else:
+            Exception("Exchange type not found")
 
-    def add_exchange(self, exchange_name, API_KEY, API_SECRET, API_PASS):
-        # Needs to be generalized
-        # TODO make this load the actual preferences
-        self.__user_preferences = None
-        self.__exchanges.append(Coinbase_Pro(exchange_name, self.__user_preferences, API_KEY, API_SECRET, API_PASS))
-        return exchange_name
-
-
-    def get_exchange_state(self, name, given_name):
+    def get_exchange_state(self, name):
         for i in range(len(self.__exchanges)):
             if (self.__exchanges[i].get_name() == name):
-                return [self.__exchanges[i].get_state(),name]
+                return [self.__exchanges[i].get_state(), name]
+
+    def run_model(self, name):
+        for i in range(len(self.__exchanges)):
+            if (self.__exchanges[i].get_name() == name):
+                return [self.__exchanges[i].run_model(), name]
 
 
 def parse_port():

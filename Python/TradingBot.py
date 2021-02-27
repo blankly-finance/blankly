@@ -24,9 +24,14 @@ utils = Utils.Utils()
 Server = TI()
 
 
-Server.init_coinbase_pro()
-Server.add_exchange("bill", API_KEY, API_SECRET, API_PASS)
-print(Server.get_exchange_state("bill", "bill"))
+Server.init()
+Server.add_exchange("bill", "coinbase_pro", [API_KEY, API_SECRET, API_PASS])
+print(Server.get_exchange_state("bill"))
+Server.run_model("bill")
+while True:
+    print(Server.get_exchange_state("bill")[0])
+    time.sleep(.2)
+
 sys.exit()
 
 

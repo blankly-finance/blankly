@@ -1,7 +1,6 @@
 from multiprocessing import Process
 import time, fbprophet
 from decimal import Decimal
-
 from cryptofeed.symbols import binance_symbols
 from cryptofeed import FeedHandler
 from cryptofeed.callback import BookCallback, FundingCallback, TickerCallback, TradeCallback, FuturesIndexCallback, OpenInterestCallback
@@ -12,12 +11,17 @@ from cryptofeed.exchanges import (FTX, Binance, BinanceFutures, Bitfinex, Bitfly
 
 
 class Predictor:
-    def __init__(self, exchangeType):
-        self.__exchangeType = exchangeType
+    def __init__(self, exchange_type, initial_state):
+        self.__state = initial_state
+        self.__exchange = exchange_type
+
+    def run(self, args):
         # Start the process
-        p = Process(target=self.__runPredictor)
+        if (args == None):
+            p = Process(target=self.main)
+        else:
+            p = Process(target=self.main, args=args)
         p.start()
-        p.join()
 
     async def ticker(feed, symbol, bid, ask, timestamp, receipt_timestamp):
         print(f'Timestamp: {timestamp} Feed: {feed} Pair: {symbol} Bid: {bid} Ask: {ask}')
@@ -52,14 +56,24 @@ class Predictor:
         print(f"FuturesIndex: {kwargs}")
 
 
-    def __runPredictor(self):
+    def get_state(self):
+        return self.__state
+
+    def update_state(self, key, value):
+        self.__state[key] = value
+
+
+    def main(self,args=None):
         # Main loop, running on different thread
-        config = {'log': {'filename': 'demo.log', 'level': 'INFO'}}
-        f = FeedHandler()
+        # config = {'log': {'filename': 'demo.log', 'level': 'INFO'}}
+        # f = FeedHandler()
+        #
+        # f.add_feed(f.add_feed(Coinbase(symbols=['BTC-USD'], channels=[TRADES], callbacks={TRADES: TradeCallback(self.trade)})))
+        # f.run()
 
-        f.add_feed(f.add_feed(Coinbase(symbols=['BTC-USD'], channels=[TRADES], callbacks={TRADES: TradeCallback(self.trade)})))
-        f.run()
-
+        self.update_state("farms", 0)
         while True:
+            print("updated:")
+            self.update_state("farms", self.get_state()["farms"]+1)
             time.sleep(1)
-            print("predicting stuff...")
+            # print("predicting stuff...")
