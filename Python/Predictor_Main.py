@@ -1,4 +1,4 @@
-from multiprocessing import Process
+from multiprocessing import Process, Manager
 import time, fbprophet
 from decimal import Decimal
 from cryptofeed.symbols import binance_symbols
@@ -12,14 +12,17 @@ from cryptofeed.exchanges import (FTX, Binance, BinanceFutures, Bitfinex, Bitfly
 
 class Predictor:
     def __init__(self, exchange_type, initial_state):
-        self.__state = initial_state
+        # Shared variables with the processing a manager
+        self.__state = Manager().dict(initial_state)
         self.__exchange = exchange_type
 
     def run(self, args):
         # Start the process
         if (args == None):
+            # p = Thread(target=self.main)
             p = Process(target=self.main)
         else:
+            # p = Thread(target=self.main, args=args)
             p = Process(target=self.main, args=args)
         p.start()
 
@@ -63,17 +66,16 @@ class Predictor:
         self.__state[key] = value
 
 
-    def main(self,args=None):
-        # Main loop, running on different thread
+    def main(self, args=None):
+        # Main loop, running on different thread, data can be exchanged by modifying the "state" variable
+
         # config = {'log': {'filename': 'demo.log', 'level': 'INFO'}}
         # f = FeedHandler()
         #
         # f.add_feed(f.add_feed(Coinbase(symbols=['BTC-USD'], channels=[TRADES], callbacks={TRADES: TradeCallback(self.trade)})))
         # f.run()
 
-        self.update_state("farms", 0)
+        self.update_state("thomps", 0)
         while True:
-            print("updated:")
-            self.update_state("farms", self.get_state()["farms"]+1)
+            self.update_state("thomps", self.get_state()["thomps"]+1)
             time.sleep(1)
-            # print("predicting stuff...")

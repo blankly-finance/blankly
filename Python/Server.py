@@ -24,9 +24,14 @@ class TradeInterface(object):
     def init(self):
         self.__exchanges = []
         self.__utils = Utils.Utils()
-        # TODO make this load the actual preferences
-        with open('../Settings.json', 'r') as f:
-            self.__user_preferences = json.load(f)
+        # Called from the dashboard
+        try:
+            with open('./Settings.json', 'r') as f:
+                self.__user_preferences = json.load(f)
+        # Must've been run in this folder
+        except FileNotFoundError as e:
+            with open('../Settings.json', 'r') as f:
+                self.__user_preferences = json.load(f)
 
     def add_exchange(self, exchange_name, exchange_type, auth):
         if exchange_type == "coinbase_pro":
