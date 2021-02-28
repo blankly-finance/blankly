@@ -65,8 +65,14 @@ class Predictor:
     def update_state(self, key, value):
         self.__state[key] = value
 
+    def remove_key(self, key):
+        self.__state.pop(key)
+
 
     def main(self, args=None):
+        self.remove_key("Value")
+        self.remove_key("Volume")
+
         # Main loop, running on different thread, data can be exchanged by modifying the "state" variable
 
         # config = {'log': {'filename': 'demo.log', 'level': 'INFO'}}
