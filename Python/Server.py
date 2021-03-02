@@ -18,7 +18,7 @@ class TradeInterface(object):
             return 0.0
 
     def echo(self, text):
-        """echo any text"""
+        """echo any text """
         return text
 
     def init(self):

@@ -25,12 +25,12 @@ Server = TI()
 
 
 Server.init()
-Server.add_exchange("bill", "coinbase_pro", [API_KEY, API_SECRET, API_PASS])
-print(Server.get_exchange_state("bill"))
-Server.run_model("bill")
+Server.add_exchange("API Portfolio", "coinbase_pro", [API_KEY, API_SECRET, API_PASS])
+# print(Server.get_exchange_state("API Portfolio"))
+# Server.run_model("API Portfolio")
 while True:
-    print(Server.get_exchange_state("bill")[0])
-    time.sleep(.2)
+    print(Server.get_exchange_state("API Portfolio")[0])
+    time.sleep(1)
 
 sys.exit()
 

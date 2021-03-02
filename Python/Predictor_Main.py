@@ -74,7 +74,6 @@ class Predictor:
         self.remove_key("Volume")
 
         # Main loop, running on different thread, data can be exchanged by modifying the "state" variable
-
         # config = {'log': {'filename': 'demo.log', 'level': 'INFO'}}
         # f = FeedHandler()
         #
@@ -84,4 +83,4 @@ class Predictor:
         self.update_state("thomps", 0)
         while True:
             self.update_state("thomps", self.get_state()["thomps"]+1)
-            time.sleep(1)
+            time.sleep(.01)

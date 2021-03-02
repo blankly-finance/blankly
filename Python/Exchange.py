@@ -19,8 +19,8 @@ class Exchange:
     def getPreferences(self):
         return self.__preferences
 
-    def get_state(self):
-        return (self.__model.get_state()._getvalue())
+    def get_model_state(self):
+        return self.__model.get_state()._getvalue()
 
     def run_model(self, args=None):
         self.__model.run(args)
