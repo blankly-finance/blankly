@@ -19,11 +19,15 @@ class Coinbase_Pro(Exchange):
 
     def get_state(self):
         self.__state = self.__calls.getAccounts()
+        return self.__state
+
+    def get_readable_state(self):
+        self.get_state()
         self.__readable_state = {
 
         }
         for i in range(len(self.__state)):
-            value = float(self.__state[i]["balance"].rstrip("0"))
+            value = float((self.__state[i]["balance"]))
             if (value > 0):
-                self.__readable_state[self.__state[i]["currency"]] = self.__state[i]["balance"]
+                self.__readable_state[self.__state[i]["currency"]] = value
         return self.__readable_state

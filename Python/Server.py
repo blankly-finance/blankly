@@ -43,7 +43,7 @@ class TradeInterface(object):
     def get_exchange_state(self, name):
         for i in range(len(self.__exchanges)):
             if (self.__exchanges[i].get_name() == name):
-                return [self.__exchanges[i].get_state(), name]
+                return [self.__exchanges[i].get_readable_state(), name]
 
     def run_model(self, name):
         for i in range(len(self.__exchanges)):

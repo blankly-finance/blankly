@@ -153,3 +153,42 @@ class API:
         if show:
             self.__Utils.printJSON(response)
         return response
+
+    def getPortfolios(self, show=False):
+        output = requests.get(self.__api_url + "profiles", auth=self.__auth)
+        if show:
+            self.__Utils.printJSON(output)
+        return output.json()
+
+    def getProductData(self, product_id, show=False):
+        output = requests.get(self.__api_url + "products/" + product_id)
+        if show:
+            self.__Utils.printJSON(output)
+        return output.json()
+
+    def getProductOrderBook(self, product_id, show=False):
+        output = requests.get(self.__api_url + "products/" + product_id + "/book")
+        if show:
+            self.__Utils.printJSON(output)
+        return output.json()
+
+    def getTrades(self, product_id, show=False):
+        output = requests.get(self.__api_url + "products/" + product_id + "/trades")
+        if show:
+            self.__Utils.printJSON(output)
+        return output.json()
+
+    def getCurrencies(self, id=None, show=False):
+        if id == None:
+            output = requests.get(self.__api_url + "currencies")
+        else:
+            output = requests.get(self.__api_url + "currencies/" + id)
+        if show:
+            self.__Utils.printJSON(output)
+        return output.json()
+
+    def getTime(self, show=False):
+        output = requests.get(self.__api_url + "/time")
+        if show:
+            self.__Utils.printJSON(output)
+        return output.json()
