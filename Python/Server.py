@@ -40,10 +40,20 @@ class TradeInterface(object):
         else:
             Exception("Exchange type not found")
 
+    """ External State """
     def get_exchange_state(self, name):
         for i in range(len(self.__exchanges)):
             if (self.__exchanges[i].get_name() == name):
-                return [self.__exchanges[i].get_readable_state(), name]
+                return [self.__exchanges[i].get_exchange_state(), name]
+
+    """ 
+    Internal State, this has all the currencies. This is mainly used for an initial definition of which currencies
+    are being used, get model state is what will matter for the reporting into these blocks
+    """
+    def get_portfolio_state(self, name):
+        for i in range(len(self.__exchanges)):
+            if (self.__exchanges[i].get_name() == name):
+                return [self.__exchanges[i].get_portfolio_state(), name]
 
     def run_model(self, name):
         for i in range(len(self.__exchanges)):

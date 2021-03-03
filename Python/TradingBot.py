@@ -3,6 +3,7 @@ import Utils
 import time
 import sys
 from Server import TradeInterface as TI
+from Coinbase_Pro.Coinbase_Pro_API import API
 
 
 """ Define secret keys """
@@ -26,10 +27,14 @@ Server = TI()
 
 Server.init()
 Server.add_exchange("API Portfolio", "coinbase_pro", [API_KEY, API_SECRET, API_PASS])
+
+calls = API(API_KEY, API_SECRET, API_PASS)
+
+print(calls.getPortfolio())
 # print(Server.get_exchange_state("API Portfolio"))
 # Server.run_model("API Portfolio")
 while True:
-    print(Server.get_exchange_state("API Portfolio")[0])
+    # print(Server.get_exchange_state("API Portfolio")[0])
     time.sleep(1)
 
 sys.exit()
@@ -43,7 +48,7 @@ time.sleep(2)
 
 """you always quit as soon as the going gets tough"""
 
-print(call.getAccounts())
+print(call.getPortfolio())
 print(call.getAccountInfo('GRT-USD'))
 sys.exit()
 

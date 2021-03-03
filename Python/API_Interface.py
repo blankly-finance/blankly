@@ -17,9 +17,9 @@ class APIInterface:
         if self.__type == "coinbase_pro":
             assert isinstance(self.__calls, Coinbase_Pro_API)
             if id == None:
-                return self.__calls.getAccounts()
+                return self.__calls.getPortfolio()
             else:
-                return self.__calls.getAccounts("id")
+                return self.__calls.getPortfolio("id")
 
     """
     Used for buying or selling market orders

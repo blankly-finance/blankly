@@ -41,7 +41,7 @@ class API:
         self.__api_url = API_URL
         self.__Utils = Utils.Utils()
 
-    def getAccounts(self, currency=None, show=False):
+    def getPortfolio(self, currency=None, show=False):
         output = requests.get(self.__api_url + 'accounts', auth=self.__auth).json()
         if show:
             self.__Utils.printJSON(output)
@@ -58,7 +58,7 @@ class API:
 
     @DeprecationWarning
     def getAccountInfo(self, currency, property=None, show=False):
-        accounts = self.getAccounts()
+        accounts = self.getPortfolio()
         if property == None:
             for i in range(len(accounts)):
                 if accounts[i]["currency"] == currency:
@@ -188,7 +188,7 @@ class API:
         return output.json()
 
     def getTime(self, show=False):
-        output = requests.get(self.__api_url + "/time")
+        output = requests.get(self.__api_url + "time")
         if show:
             self.__Utils.printJSON(output)
         return output.json()
