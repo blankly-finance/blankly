@@ -58,7 +58,7 @@ class TradeInterface(object):
     def run_model(self, name):
         for i in range(len(self.__exchanges)):
             if (self.__exchanges[i].get_name() == name):
-                return [self.__exchanges[i].run_model(), name]
+                return [self.__exchanges[i].start_models(), name]
 
 
 def parse_port():

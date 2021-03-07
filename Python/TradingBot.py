@@ -1,9 +1,9 @@
 import Keys
 import Utils
 import time
-import sys
 from Server import TradeInterface as TI
 from Coinbase_Pro.Coinbase_Pro_API import API
+from Coinbase_Pro import Coinbase_Pro
 
 
 """ Define secret keys """

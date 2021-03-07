@@ -16,6 +16,9 @@ class Predictor:
         self.__state = Manager().dict(initial_state)
         self.__exchange = exchange_type
 
+        print("Can access:")
+        print(dir())
+
     def run(self, args):
         # Start the process
         if (args == None):
