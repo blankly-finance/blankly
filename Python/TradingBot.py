@@ -24,20 +24,26 @@ sells = ["21:00"]
 utils = Utils.Utils()
 Server = TI()
 
-exchange = Coinbase_Pro("bill", {}, [API_KEY, API_SECRET, API_PASS])
+# exchange = Coinbase_Pro("bill", {}, [API_KEY, API_SECRET, API_PASS])
 
-print(exchange.get_portfolio_state())
-print(exchange.get_portfolio_state(False))
-# Server.init()
-# Server.add_exchange("API Portfolio", "coinbase_pro", [API_KEY, API_SECRET, API_PASS])
-#
+
+# print("State:")
+# exchange.append_model("COMP")
+# print(exchange.get_portfolio_state())
+# print("State with everything:")
+# print("Started Model")
+# exchange.start_models()
+Server.init()
+Server.add_exchange("API Portfolio", "coinbase_pro", [API_KEY, API_SECRET, API_PASS])
 # calls = API(API_KEY, API_SECRET, API_PASS)
-# print(Server.get_portfolio_state("API Portfolio"))
+print(Server.get_portfolio_state("API Portfolio"))
+Server.assign_model("API Portfolio", "Bill's Model", "COMP")
 # print(calls.getPortfolio())
 # print(Server.get_exchange_state("API Portfolio"))
-# Server.run_model("API Portfolio")
+Server.run_model("API Portfolio")
 while True:
-    # print(Server.get_exchange_state("API Portfolio")[0])
+    print(Server.get_portfolio_state("API Portfolio"))
+    print(Server.run_model("API Portfolio"))
     time.sleep(1)
 
 sys.exit()

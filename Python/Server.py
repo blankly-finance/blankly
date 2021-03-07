@@ -55,10 +55,15 @@ class TradeInterface(object):
             if (self.__exchanges[i].get_name() == name):
                 return [self.__exchanges[i].get_portfolio_state(), name]
 
-    def run_model(self, name):
+    def run_model(self, name, currency=None):
         for i in range(len(self.__exchanges)):
             if (self.__exchanges[i].get_name() == name):
-                return [self.__exchanges[i].start_models(), name]
+                return [self.__exchanges[i].start_models(currency), name]
+
+    def assign_model(self, exchange_name, model_name, currency, args=None):
+        for i in range(len(self.__exchanges)):
+            if (self.__exchanges[i].get_name() == exchange_name):
+                return [self.__exchanges[i].append_model(currency, args, model_name), exchange_name]
 
 
 def parse_port():

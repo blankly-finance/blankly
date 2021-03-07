@@ -1,6 +1,7 @@
 from multiprocessing import Process, Manager
 import time, fbprophet
 from decimal import Decimal
+from API_Interface import APIInterface
 from cryptofeed.symbols import binance_symbols
 from cryptofeed import FeedHandler
 from cryptofeed.callback import BookCallback, FundingCallback, TickerCallback, TradeCallback, FuturesIndexCallback, OpenInterestCallback
@@ -11,13 +12,15 @@ from cryptofeed.exchanges import (FTX, Binance, BinanceFutures, Bitfinex, Bitfly
 
 
 class Predictor:
-    def __init__(self, exchange_type, initial_state):
+    def __init__(self, exchange_type, initial_state, interface):
         # Shared variables with the processing a manager
         self.__state = Manager().dict(initial_state)
-        self.__exchange = exchange_type
+        self.__exchange_type = exchange_type
+        self.__interface = interface
 
-        print("Can access:")
-        print(dir())
+        # If the start is called again, this will make sure multiple processes don't start
+        self.__is_running = False
+        # print(dir())
 
     def run(self, args):
         # Start the process
@@ -27,7 +30,12 @@ class Predictor:
         else:
             # p = Thread(target=self.main, args=args)
             p = Process(target=self.main, args=args)
+        self.__is_running = True
         p.start()
+
+    # Make sure the process knows that this model is on, turning this off could result in many threads
+    def is_running(self):
+        return self.__is_running
 
     async def ticker(feed, symbol, bid, ask, timestamp, receipt_timestamp):
         print(f'Timestamp: {timestamp} Feed: {feed} Pair: {symbol} Bid: {bid} Ask: {ask}')
@@ -73,8 +81,10 @@ class Predictor:
 
 
     def main(self, args=None):
-        self.remove_key("Value")
-        self.remove_key("Volume")
+        # Define instance for IDE
+        assert isinstance(self.__interface, APIInterface)
+        # self.remove_key("Value")
+        # self.remove_key("Volume")
 
         # Main loop, running on different thread, data can be exchanged by modifying the "state" variable
         # config = {'log': {'filename': 'demo.log', 'level': 'INFO'}}
@@ -85,5 +95,7 @@ class Predictor:
 
         self.update_state("thomps", 0)
         while True:
+            """ Demo interface call """
+            #print(self.__interface.get_currencies())
             self.update_state("thomps", self.get_state()["thomps"]+1)
-            time.sleep(.01)
+            time.sleep(1)
