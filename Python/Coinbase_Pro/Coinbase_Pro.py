@@ -31,7 +31,10 @@ class Coinbase_Pro(Exchange):
         for i in range(len(self.__state)):
             value = float((self.__state[i]["balance"]))
             if (value > 0):
-                self.__readable_state[self.__state[i]["currency"]] = value
+                # Fill the internal state values here for coins with value > 0
+                self.__readable_state[self.__state[i]["currency"]] = {
+                    "Qty:": value,
+                }
         return self.__readable_state
 
     """

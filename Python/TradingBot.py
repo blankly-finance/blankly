@@ -29,7 +29,7 @@ Server.init()
 Server.add_exchange("API Portfolio", "coinbase_pro", [API_KEY, API_SECRET, API_PASS])
 
 calls = API(API_KEY, API_SECRET, API_PASS)
-
+print(Server.get_portfolio_state("API Portfolio"))
 print(calls.getPortfolio())
 # print(Server.get_exchange_state("API Portfolio"))
 # Server.run_model("API Portfolio")
