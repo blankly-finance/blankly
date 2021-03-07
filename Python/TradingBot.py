@@ -3,7 +3,7 @@ import Utils
 import time
 from Server import TradeInterface as TI
 from Coinbase_Pro.Coinbase_Pro_API import API
-from Coinbase_Pro import Coinbase_Pro
+from Coinbase_Pro.Coinbase_Pro import Coinbase_Pro
 
 
 """ Define secret keys """
@@ -24,13 +24,16 @@ sells = ["21:00"]
 utils = Utils.Utils()
 Server = TI()
 
+exchange = Coinbase_Pro("bill", {}, [API_KEY, API_SECRET, API_PASS])
 
-Server.init()
-Server.add_exchange("API Portfolio", "coinbase_pro", [API_KEY, API_SECRET, API_PASS])
-
-calls = API(API_KEY, API_SECRET, API_PASS)
-print(Server.get_portfolio_state("API Portfolio"))
-print(calls.getPortfolio())
+print(exchange.get_portfolio_state())
+print(exchange.get_portfolio_state(False))
+# Server.init()
+# Server.add_exchange("API Portfolio", "coinbase_pro", [API_KEY, API_SECRET, API_PASS])
+#
+# calls = API(API_KEY, API_SECRET, API_PASS)
+# print(Server.get_portfolio_state("API Portfolio"))
+# print(calls.getPortfolio())
 # print(Server.get_exchange_state("API Portfolio"))
 # Server.run_model("API Portfolio")
 while True:

@@ -29,20 +29,23 @@ class Coinbase_Pro(Exchange):
     """
     def get_portfolio_state(self, only_active=True):
         self.get_state()
-        self.__readable_state = {
-        }
+        self.__readable_state = {}
+        unused = {}
         for i in range(len(self.__state)):
             value = float((self.__state[i]["balance"]))
-            self.__readable_state[self.__state[i]["currency"]] = {
-                "Qty:": value,
-            }
+            if value > 0:
+                self.__readable_state[self.__state[i]["currency"]] = {
+                    "Qty:": value,
+                }
+            else:
+                unused[self.__state[i]["currency"]] = {
+                    "Qty:": value,
+                }
 
         if only_active:
-            for key in self.__readable_state:
-                if self.__readable_state[key]["Qty"] == 0:
-                    del self.__readable_state[key]
-        else:
             return self.__readable_state
+        else:
+            return {**self.__readable_state, **unused}
 
     """
     State for just this new currency
