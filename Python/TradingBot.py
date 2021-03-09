@@ -43,7 +43,6 @@ Server.assign_model("API Portfolio", "Bill's Model", "COMP")
 Server.run_model("API Portfolio")
 while True:
     print(Server.get_portfolio_state("API Portfolio"))
-    print(Server.run_model("API Portfolio"))
     time.sleep(1)
 
 sys.exit()

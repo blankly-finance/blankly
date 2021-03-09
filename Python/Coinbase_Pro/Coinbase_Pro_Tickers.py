@@ -72,7 +72,7 @@ class Tickers:
 
                 # Manage price events and fire for each manager attached
                 for i in range(len(self.__managers)):
-                    self.__managers[i].priceEvent(self.__mostRecentTick)
+                    self.__managers[i].price_event(self.__mostRecentTick)
 
                 self.__timeFeed.append(self.__utils.getEpochFromISO8601(received["time"]))
                 counter += 1
@@ -104,7 +104,7 @@ class Tickers:
     def updateShow(self, value):
         self.__show = value
 
-    def addSelfToTicker(self, obj):
+    def append_callback(self, obj):
         self.__managers.append(obj)
 
     def getCoinID(self):

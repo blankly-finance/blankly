@@ -8,7 +8,7 @@ class ProfitManager:
         self.__currencyType = currencyType
         self.__exchanges = exchanges
         self.__ticker = ticker
-        ticker.addSelfToTicker(self)
+        ticker.append_callback(self)
         self.__utils = Utils()
         self.__show = show
 

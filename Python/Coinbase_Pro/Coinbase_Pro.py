@@ -8,7 +8,7 @@ from API_Interface import APIInterface
 class Coinbase_Pro(Exchange):
     def __init__(self, name, user_preferences, auth):
         self.__calls = API(auth[0], auth[1], auth[2])
-
+        self.__preferences = user_preferences
         Exchange.__init__(self, "coinbase_pro", name, user_preferences)
         # Create the authenticated object
         self.__APIInterface = APIInterface("coinbase_pro", self.__calls)
@@ -66,7 +66,7 @@ class Coinbase_Pro(Exchange):
     Append the models to the exchange, these can be run
     """
     def append_model(self, coin, args=None, id=None):
-        added_model = Predictor("coinbase_pro", self.get_currency_state(coin), self.__APIInterface)
+        added_model = Predictor("coinbase_pro", coin, self.__preferences, self.get_currency_state(coin), self.__APIInterface)
         self.models[coin] = {
             "model": added_model,
             "args": args
