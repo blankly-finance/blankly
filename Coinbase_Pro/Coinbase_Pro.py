@@ -1,4 +1,4 @@
-import cryptofeed, json
+import json
 from Exchange import Exchange
 from Predictor_Main import Predictor
 from Coinbase_Pro.Coinbase_Pro_API import API

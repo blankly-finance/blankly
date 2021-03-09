@@ -1,8 +1,10 @@
 import Constants, time, Local_Account.LocalAccount, Local_Account.Trade_Local as Trade_Local
 from Utils import Utils
-""" Class to manage exchange lifecycle - basically a way to determine individual information about each buy and sell that has happened """
+"""Class to manage exchange lifecycle - basically a way to determine individual information about each buy and sell 
+that has happened """
 class Exchange:
-    """ (Buying or selling (string), amount in currency (BTC/XLM), ticker object (so we can get time and value), limit if there is one) """
+    """ (Buying or selling (string), amount in currency (BTC/XLM), ticker object (so we can get time and value),
+    limit if there is one) """
     def __init__(self, order, coinTicker, ApiCalls=None):
         self.__buyOrSell = order["side"]
         self.__purchaseTime = (coinTicker.getMostRecentTick())["time"]

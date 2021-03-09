@@ -30,7 +30,7 @@ class TradeInterface(object):
                 self.__user_preferences = json.load(f)
         # Must've been run in this folder
         except FileNotFoundError as e:
-            with open('../Settings.json', 'r') as f:
+            with open('../Tradingbot/Settings.json', 'r') as f:
                 self.__user_preferences = json.load(f)
 
     def add_exchange(self, exchange_name, exchange_type, auth):
