@@ -65,6 +65,15 @@ class TradeInterface(object):
             if (self.__exchanges[i].get_name() == exchange_name):
                 return [self.__exchanges[i].append_model(currency, args, model_name), exchange_name]
 
+    """
+    Three indicators at the top of the GUI - JSON with only 3 keys
+    """
+    def update_indicators(self, name):
+        for i in range(len(self.__exchanges)):
+            if (self.__exchanges[i].get_name() == name):
+                return self.__exchanges[i].get_indicators()
+
+
 
 def parse_port():
     port = 4242

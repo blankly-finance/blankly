@@ -60,6 +60,7 @@ class Coinbase_Pro(Exchange):
     Exchange state is the external properties for the exchange block
     """
     def get_exchange_state(self):
+        # TODO Populate this with useful information
         return self.__calls.getFees()
 
     """
@@ -95,3 +96,6 @@ class Coinbase_Pro(Exchange):
 
     def get_model_state(self, coin):
         return (self.get_model(coin)).get_state()
+
+    def get_indicators(self):
+        return self.__calls.getFees()

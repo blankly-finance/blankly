@@ -3,7 +3,6 @@ import time
 from API_Interface import APIInterface
 
 
-
 class Predictor:
     def __init__(self, exchange_type, coin, user_preferences, initial_state, interface):
         # Shared variables with the processing a manager
@@ -16,30 +15,27 @@ class Predictor:
         # If the start is called again, this will make sure multiple processes don't start
         self.__is_running = False
 
-        # Coin id is the currency and the market its on
+        # Coin id is the currency and which market its on
         self.__coin_id = coin + "-" + user_preferences["settings"]["base_currency"]
         # Create the ticker for this kind of currency. Callbacks will occur in the "price_event" function
         self.__ticker = self.Interface.create_ticker(self, self.__coin_id)
 
-    # Make sure the process knows that this model is on, turning this off could result in many threads
+    # Make sure the process knows that this model is on, removing this off could result in many threads
     def is_running(self):
         return self.__is_running
 
-    """
-    Begins the relevant process
-    """
+    """ Called by GUI when the user starts the model """
     def run(self, args):
         # Start the process
-        if (args == None):
+        if args is None:
             p = Process(target=self.main)
         else:
             p = Process(target=self.main, args=args)
         self.__is_running = True
         p.start()
 
-    """
-    State functions for writing to the GUI
-    """
+    """ State getters and setters for writing to the GUI """
+
     def get_state(self):
         return self.__state
 
@@ -49,23 +45,24 @@ class Predictor:
     def remove_key(self, key):
         self.__state.pop(key)
 
-    """
-    Is called on price event updates by the ticker
-    """
+    """ Is called on price event updates by the ticker """
+
     def price_event(self, tick):
         # Example of updating the price state for the GUI
         self.update_state("Price", tick["price"])
         print(tick)
 
+    """ Main function to write the trading loop """
 
     def main(self, args=None):
         assert isinstance(self.Interface, APIInterface)
 
         # Add a heartbeat example to report to GUI
         self.update_state("Heartbeat", 0)
+
         # Example on how to interact with API
         print(self.Interface.get_currencies())
         while True:
             """ Demo interface call """
-            self.update_state("Heartbeat", self.get_state()["Heartbeat"]+1)
+            self.update_state("Heartbeat", self.get_state()["Heartbeat"] + 1)
             time.sleep(1)
