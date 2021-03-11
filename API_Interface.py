@@ -32,6 +32,15 @@ class APIInterface:
             self.__calls.placeOrder(order)
 
     """
+    Used for buying or selling limit orders
+    """
+    def limit_order(self, size, price, side, id):
+        if self.__type == "coinbase_pro":
+            order = Coinbase_Pro_Utils.CoinbaseProUtils().generate_limit_order(size, price, side, id)
+            # TODO exchange object needs to be generated here and then returned at some point, this invovles creating a ticker. Tickers are something that need to be managed carefully
+            self.__calls.placeOrder(order)
+
+    """
     Creates ticker connection.
     """
     def create_ticker(self, callback, currency_id, log=""):
