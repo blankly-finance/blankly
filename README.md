@@ -34,6 +34,9 @@ self.Interface.create_ticker(self, Coin_ID)
 
 When created in a class, this will callback the `price_event(tick)` function.
 
+## Multiprocessing Feature
+Blankly is designed to allow running models independently, each on their own process. This allows the ability to run intensive tasks, such as training a neural network independently of all the other models, causing no lag to the main process.
+
 ## Bugs
 
 Please report any bugs or issues in Github's Issues page
