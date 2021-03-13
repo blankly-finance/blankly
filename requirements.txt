@@ -1,0 +1,7 @@
+numpy~=1.20.1
+iso8601~=0.1.14
+sklearn~=0.0
+scikit-learn~=0.24.1
+zerorpc~=0.6.3
+requests~=2.25.1
+websocket-client~=0.58.0
