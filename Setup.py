@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name='Blankly',  # How you named your package folder (MyLib)
     packages=['Blankly'],  # Chose the same as "name"
-    version='v0.1.0-alpha',
+    version='v0.1.1-alpha',
     license='agpl-3.0',  # Chose a license from here: https://help.github.com/articles/licensing-a-repository
     description='Cryptocurrency bot development platform',  # Give a short description about your library
     author='Emerson Dove',  # Type in your name
