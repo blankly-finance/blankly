@@ -1,9 +1,7 @@
 import json
-from Exchange import Exchange
-from Predictor_Main import Predictor
-from Coinbase_Pro.Coinbase_Pro_API import API
-from API_Interface import APIInterface
-
+from Blankly.Exchange import Exchange
+from Blankly.Coinbase_Pro.Coinbase_Pro_API import API
+from Blankly.API_Interface import APIInterface
 
 class Coinbase_Pro(Exchange):
     def __init__(self, name, user_preferences, auth):
@@ -66,8 +64,9 @@ class Coinbase_Pro(Exchange):
     """
     Append the models to the exchange, these can be run
     """
-    def append_model(self, coin, args=None, id=None):
-        added_model = Predictor("coinbase_pro", coin, self.__preferences, self.get_currency_state(coin), self.__APIInterface)
+    def append_model(self, model, coin, args=None, id=None):
+        added_model = model
+        model.setup("coinbase_pro", coin, self.__preferences, self.get_currency_state(coin), self.__APIInterface)
         self.models[coin] = {
             "model": added_model,
             "args": args

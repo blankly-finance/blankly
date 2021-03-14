@@ -1,5 +1,5 @@
 from requests.auth import AuthBase
-import time, base64, hmac, hashlib, requests, Utils, datetime as DT
+import time, base64, hmac, hashlib, requests, Blankly.Utils, datetime as DT
 
 
 # Create custom authentication for Exchange
@@ -39,7 +39,7 @@ class API:
     def __init__(self, API_KEY, API_SECRET, API_PASS, API_URL='https://api.pro.coinbase.com/'):
         self.__auth = CoinbaseExchangeAuth(API_KEY, API_SECRET, API_PASS)
         self.__api_url = API_URL
-        self.__Utils = Utils.Utils()
+        self.__Utils = Blankly.Utils.Utils()
 
     def getPortfolio(self, currency=None, show=False):
         output = requests.get(self.__api_url + 'accounts', auth=self.__auth).json()

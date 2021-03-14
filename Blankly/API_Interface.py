@@ -1,10 +1,6 @@
-# Object for managing information about the exchange
-import Coinbase_Pro.Coinbase_Pro, Exchange as Exchange
-# The API itself
-from Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
-from Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ticker
+from Blankly.Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ticker
 
-import Coinbase_Pro.Coinbase_Pro_Utils as Coinbase_Pro_Utils
+import Blankly.Coinbase_Pro.Coinbase_Pro_Utils as Coinbase_Pro_Utils
 
 
 class APIInterface:

@@ -1,4 +1,4 @@
-import _thread, json, time, Utils, ssl
+import _thread, json, time, Blankly.Utils, ssl
 from websocket import create_connection
 
 class Tickers:
@@ -24,7 +24,7 @@ class Tickers:
         self.__tickerFeed = []
         self.__timeFeed = []
         self.__websocket = ws
-        self.__utils = Utils.Utils()
+        self.__utils = Blankly.Utils.Utils()
         self.__mostRecentTick = None
         self.__managers = []
 

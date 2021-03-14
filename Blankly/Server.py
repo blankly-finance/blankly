@@ -1,3 +1,4 @@
+""" ZeroRPC server for communicating with other languages or GUIs """
 from __future__ import print_function
 from calc import calc as real_calc
 import sys
@@ -30,7 +31,7 @@ class TradeInterface(object):
                 self.__user_preferences = json.load(f)
         # Must've been run in this folder
         except FileNotFoundError as e:
-            with open('../Tradingbot/Settings.json', 'r') as f:
+            with open('../../Tradingbot/Settings.json', 'r') as f:
                 self.__user_preferences = json.load(f)
 
     def add_exchange(self, exchange_name, exchange_type, auth):
