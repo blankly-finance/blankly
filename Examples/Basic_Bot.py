@@ -1,7 +1,6 @@
 from multiprocessing import Process, Manager
 import time
-from Blankly.API_Interface import APIInterface
-from Blankly import Coinbase_Pro
+import Blankly
 
 
 class Bot:
@@ -63,7 +62,7 @@ class Bot:
 
     """ Main function to write the trading loop """
     def main(self, args=None):
-        assert isinstance(self.Interface, APIInterface)
+        assert isinstance(self.Interface, Blankly.APIInterface)
 
         # Add a heartbeat example to report to GUI
         self.update_state("Heartbeat", 0)
@@ -90,7 +89,7 @@ if __name__ == "__main__":
     auth = [Keys.API_KEY, Keys.API_SECRET, Keys.API_PASS]
 
     # This creates an authenticated exchange. Now we can append models.
-    exchange = Coinbase_Pro(name="API Exchange", user_preferences=user_preferences, auth=auth)
+    exchange = Blankly.Coinbase_Pro(name="API Exchange", user_preferences=user_preferences, auth=auth)
 
     # Create the bot and add it to run as a coinbase_pro bitcoin model.
     bot = Bot()
@@ -99,6 +98,7 @@ if __name__ == "__main__":
     # Begins running the main() function of the model on a different process
     exchange.start_models()
 
+    # Now other processes can be created or just continue with this one.
     while True:
         # Print the state every second
         print(exchange.get_currency_state("GRT"))
