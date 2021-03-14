@@ -9,7 +9,7 @@ setup(
     author='Emerson Dove',  # Type in your name
     # author_email = 'your.email@domain.com',      # Type in your E-Mail
     url='https://github.com/EmersonDove/Blankly',  # Provide either the link to your github or to your website
-    download_url='https://github.com/EmersonDove/Blankly/archive/v0.1.0-alpha.tar.gz',
+    download_url='https://github.com/EmersonDove/Blankly/archive/v0.1.1-alpha.tar.gz',
     keywords=['Crypto', 'Exchanges', 'Bot'],  # Keywords that define your package best
     install_requires=[
         'numpy',
