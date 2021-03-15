@@ -1,67 +1,16 @@
-from multiprocessing import Process, Manager
 import time
 import Blankly
+from Blankly import BlanklyBot
 
 
-class Bot:
+class Bot(BlanklyBot):
     def __init__(self):
-        """ Initialize state variables """
-        # If the start is called again, this will make sure multiple processes don't start
-        self.__is_running = False
-        self.__state = {}
-        self.__exchange_type = ""
-        self.__currency = ""
-        self.__user_preferences = {}
-        self.Interface = None
-        self.__coin_id = ""
-        self.__ticker = None
+        super().__init__()
 
-    """ This function is populated by the exchange. """
-    def setup(self, exchange_type, coin, user_preferences, initial_state, interface):
-        # Shared variables with the processing a manager
-        self.__state = Manager().dict(initial_state)
-        self.__exchange_type = exchange_type
-        self.__currency = coin
-        self.__user_preferences = user_preferences
-        self.Interface = interface
-
-        # Coin id is the currency and which market its on
-        self.__coin_id = coin + "-" + user_preferences["settings"]["base_currency"]
-        # Create the ticker for this kind of currency. Callbacks will occur in the "price_event" function
-        self.__ticker = self.Interface.create_ticker(self, self.__coin_id)
-
-    # Make sure the process knows that this model is on, removing this off could result in many threads
-    def is_running(self):
-        return self.__is_running
-
-    """ Called by GUI when the user starts the model """
-    def run(self, args):
-        # Start the process
-        if args is None:
-            p = Process(target=self.main)
-        else:
-            p = Process(target=self.main, args=args)
-        self.__is_running = True
-        p.start()
-
-    """ State getters and setters for writing to the GUI or as state updates """
-    def get_state(self):
-        return self.__state
-
-    def update_state(self, key, value):
-        self.__state[key] = value
-
-    def remove_key(self, key):
-        self.__state.pop(key)
-
-    """ Is called on price event updates by the ticker """
-    def price_event(self, tick):
-        # Example of updating the price state for the GUI
-        self.update_state("Price", tick["price"])
-        print(tick)
-
-    """ Main function to write the trading loop """
     def main(self, args=None):
+        """
+        Main function to write the trading loop
+        """
         assert isinstance(self.Interface, Blankly.APIInterface)
 
         # Add a heartbeat example to report to GUI
@@ -73,6 +22,14 @@ class Bot:
             """ Demo interface call """
             self.update_state("Heartbeat", self.get_state()["Heartbeat"] + 1)
             time.sleep(1)
+
+    def price_event(self, tick):
+        """
+        Is called on price event updates by the ticker
+        """
+        # Example of updating the price state for the GUI
+        self.update_state("Price", tick["price"])
+        print("New price tick at: " + tick["price"])
 
 
 if __name__ == "__main__":
