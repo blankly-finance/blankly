@@ -1,8 +1,9 @@
-from distutils.core import setup
+from setuptools import find_packages, setup
 
 setup(
     name='Blankly',  # How you named your package folder (MyLib)
-    packages=['Blankly'],  # Chose the same as "name"
+    packages=find_packages(),
+    # packages=['Blankly'],  # Chose the same as "name"
     version='v0.1.1-alpha',
     license='agpl-3.0',  # Chose a license from here: https://help.github.com/articles/licensing-a-repository
     description='Cryptocurrency bot development platform',  # Give a short description about your library
@@ -26,7 +27,7 @@ setup(
         'Intended Audience :: Developers',  # Define that your audience are developers
         'Intended Audience :: Financial and Insurance Industry',
         'License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)',  # Again, pick a license
-        'Programming Language :: Python :: 3',  # Specify which pyhton versions that you want to support
+        'Programming Language :: Python :: 3',  # Specify which python versions that you want to support
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
