@@ -1,6 +1,7 @@
 import _thread, json, time, Blankly.Utils, ssl
 from websocket import create_connection
 
+
 class Tickers:
     def __init__(self, coinID, log="", show=False, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
         self.__id = coinID
@@ -64,7 +65,10 @@ class Tickers:
                     if (counter % 100 == 0):
                         self.__file.close()
                         self.__file = open(self.__filePath, 'a')
-                    line = received["time"] + "," + str(time.time()) + "," + received["price"] + "," + received["open_24h"] + "," + received["volume_24h"] + "," + received["low_24h"] + "," + received["high_24h"] + "," + received["volume_30d"] + "," + received["best_bid"] + "," + received["best_ask"] + "," + received["last_size"] + "\n"
+                    line = received["time"] + "," + str(time.time()) + "," + received["price"] + "," + received[
+                        "open_24h"] + "," + received["volume_24h"] + "," + received["low_24h"] + "," + received[
+                               "high_24h"] + "," + received["volume_30d"] + "," + received["best_bid"] + "," + received[
+                               "best_ask"] + "," + received["last_size"] + "\n"
                     self.__file.write(line)
                     print(receivedString)
                 self.__tickerFeed.append(received)
@@ -85,6 +89,7 @@ class Tickers:
         return not self.__webSocketClosed
 
     """ Parallel with time feed """
+
     def getTickerFeed(self):
         return self.__tickerFeed
 
@@ -92,6 +97,7 @@ class Tickers:
         return self.__timeFeed
 
     """ Define a variable each time so there is no array manipulation """
+
     def getMostRecentTick(self):
         return self.__mostRecentTick
 

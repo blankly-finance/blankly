@@ -1,7 +1,7 @@
-import json
 from Blankly.Exchange import Exchange
 from Blankly.Coinbase_Pro.Coinbase_Pro_API import API
 from Blankly.API_Interface import APIInterface
+
 
 class Coinbase_Pro(Exchange):
     def __init__(self, name, user_preferences, auth):
@@ -16,12 +16,13 @@ class Coinbase_Pro(Exchange):
         self.models = {}
 
     def get_state(self):
-        self.__state = self.__calls.getPortfolio()
+        self.__state = self.__calls.get_portfolio()
         return self.__state
 
     """
     Portfolio state is the internal properties for the exchange block
     """
+
     def get_portfolio_state(self, only_active=True):
         self.get_state()
         self.__readable_state = {}
@@ -35,7 +36,8 @@ class Coinbase_Pro(Exchange):
                 currency = (self.__state[i]["currency"])
                 # There can be no currency state until a model is added to the currency
                 try:
-                    self.__readable_state[self.__state[i]["currency"]] = {**self.__readable_state[self.__state[i]["currency"]], **self.get_model_state(currency)}
+                    self.__readable_state[self.__state[i]["currency"]] = {
+                        **self.__readable_state[self.__state[i]["currency"]], **self.get_model_state(currency)}
                 except KeyError as e:
                     pass
             else:
@@ -51,12 +53,14 @@ class Coinbase_Pro(Exchange):
     """
     State for just this new currency
     """
+
     def get_currency_state(self, currency):
         return self.get_portfolio_state(False)[currency]
 
     """
     Exchange state is the external properties for the exchange block
     """
+
     def get_exchange_state(self):
         # TODO Populate this with useful information
         return self.__calls.getFees()
@@ -64,6 +68,7 @@ class Coinbase_Pro(Exchange):
     """
     Append the models to the exchange, these can be run
     """
+
     def append_model(self, model, coin, args=None, id=None):
         added_model = model
         model.setup("coinbase_pro", coin, self.__preferences, self.get_currency_state(coin), self.__APIInterface)
@@ -75,6 +80,7 @@ class Coinbase_Pro(Exchange):
     """
     Start all models or a specific one after appending it to to the exchange
     """
+
     def start_models(self, coin=None):
         if coin is not None:
             # Run a specific model with the args

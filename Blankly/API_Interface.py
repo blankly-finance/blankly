@@ -13,10 +13,10 @@ class APIInterface:
     """
     def get_currencies(self, id=None):
         if self.__type == "coinbase_pro":
-            if id == None:
-                return self.__calls.getPortfolio()
+            if id is None:
+                return self.__calls.get_portfolio()
             else:
-                return self.__calls.getPortfolio("id")
+                return self.__calls.get_portfolio("id")
 
     """
     Used for buying or selling market orders

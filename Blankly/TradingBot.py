@@ -56,7 +56,7 @@ time.sleep(2)
 
 """you always quit as soon as the going gets tough"""
 
-print(call.getPortfolio())
+print(call.get_portfolio())
 print(call.getAccountInfo('GRT-USD'))
 sys.exit()
 

@@ -41,7 +41,7 @@ class API:
         self.__api_url = API_URL
         self.__Utils = Blankly.Utils.Utils()
 
-    def getPortfolio(self, currency=None, show=False):
+    def get_portfolio(self, currency=None, show=False):
         output = requests.get(self.__api_url + 'accounts', auth=self.__auth).json()
         if show:
             self.__Utils.printJSON(output)
@@ -58,7 +58,7 @@ class API:
 
     @DeprecationWarning
     def getAccountInfo(self, currency, property=None, show=False):
-        accounts = self.getPortfolio()
+        accounts = self.get_portfolio()
         if property == None:
             for i in range(len(accounts)):
                 if accounts[i]["currency"] == currency:
