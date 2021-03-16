@@ -18,7 +18,8 @@ class Bot(BlanklyBot):
         self.update_state("Heartbeat", 0)
 
         # Example on how to interact with API
-        print(self.Interface.get_currencies())
+        # print(self.Interface.get_currencies())
+
         while True:
             """ Demo interface call """
             self.update_state("Heartbeat", self.get_state()["Heartbeat"] + 1)
@@ -81,4 +82,4 @@ if __name__ == "__main__":
     while True:
         # Print the state every 2 seconds
         print(exchange.get_currency_state("GRT"))
-        time.sleep(2)
+        time.sleep(1)
