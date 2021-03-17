@@ -20,13 +20,13 @@
 from Blankly.Exchange import Exchange
 from Blankly.Coinbase_Pro.Coinbase_Pro_API import API
 from Blankly.API_Interface import APIInterface
-import Blankly.auth
+import Blankly.auth_constructor
 
 
 class Coinbase_Pro(Exchange):
     def __init__(self, name, auth_path="Keys.json"):
         # Load the auth from the keys file
-        auth = Blankly.auth.load_auth_coinbase_pro(auth_path)
+        auth = Blankly.auth_constructor.load_auth_coinbase_pro(auth_path)
 
         self.__calls = API(auth[0], auth[1], auth[2])
 
@@ -39,7 +39,7 @@ class Coinbase_Pro(Exchange):
         self.models = {}
 
     def get_state(self):
-        self.__state = self.__calls.get_portfolio()
+        self.__state = self.__calls.get_accounts()
         return self.__state
 
     """
@@ -94,7 +94,7 @@ class Coinbase_Pro(Exchange):
 
     def append_model(self, model, coin, args=None, id=None):
         added_model = model
-        model.setup("coinbase_pro", coin, self.__preferences, self.get_currency_state(coin), self.__APIInterface)
+        model.setup("coinbase_pro", coin, self.get_preferences(), self.get_currency_state(coin), self.__APIInterface)
         self.models[coin] = {
             "model": added_model,
             "args": args

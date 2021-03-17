@@ -1,5 +1,5 @@
 """
-    Allows the user to load the Keys in any Keys.json fileZ.
+    Allows the user to load the Keys in any Keys.json.
     Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ def load_auth_coinbase_pro(keys_file):
     return [exchange_keys["API_KEY"], exchange_keys["API_SECRET"], exchange_keys["API_PASS"]]
 
 
-def load_auth_binace(keys_file):
+def load_auth_binance(keys_file):
     auth_object = load_json(keys_file)
     exchange_keys = auth_object["binance"]
     return [exchange_keys["API_KEY"], exchange_keys["API_SECRET"]]

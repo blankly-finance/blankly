@@ -18,7 +18,6 @@
 
 
 from Blankly.Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ticker
-
 import Blankly.Coinbase_Pro.Coinbase_Pro_Utils as Coinbase_Pro_Utils
 
 

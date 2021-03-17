@@ -35,5 +35,5 @@ class Exchange:
     def getType(self):
         return self.__type
 
-    def getPreferences(self):
+    def get_preferences(self):
         return self.__preferences

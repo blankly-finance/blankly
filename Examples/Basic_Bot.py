@@ -12,7 +12,7 @@ class Bot(BlanklyBot):
         Main function to write the trading logic
         """
         # Use this to get IDE autofill
-        assert isinstance(self.Interface, Blankly.APIInterface)
+        assert isinstance(self.Interface, Blankly.Interface)
 
         # Add a heartbeat example to report to GUI
         self.update_state("Heartbeat", 0)
