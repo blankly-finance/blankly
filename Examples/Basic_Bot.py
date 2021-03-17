@@ -38,21 +38,9 @@ if __name__ == "__main__":
     """
     Easily setup and run a model on any exchange
     """
-    # Define preferences, base currency is needed for the trading.
-    user_preferences = {
-        # Example portion of the settings to make a minimum example
-        "settings": {
-            "base_currency": "USD"
-        }
-    }
-
-    # Keys file contains authentication keys
-    import Keys
-
-    auth = [Keys.API_KEY, Keys.API_SECRET, Keys.API_PASS]
 
     # This creates an authenticated exchange. Now we can append models.
-    exchange = Blankly.Coinbase_Pro(name="API Exchange", user_preferences=user_preferences, auth=auth)
+    exchange = Blankly.Coinbase_Pro(name="API Exchange")
     # Imagine this:
     #   Coinbase Pro <-- Choosing to assign this bot to this exchange
     #   Kraken

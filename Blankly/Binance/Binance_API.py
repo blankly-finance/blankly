@@ -1,5 +1,5 @@
 """
-    Inherited exchange object.
+    Calls to the Binance API.
     Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
@@ -15,25 +15,13 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import json
+
+from binance.client import Client
 
 
-class Exchange:
-    def __init__(self, exchange_type, exchange_name):
-        self.__name = exchange_name
-        self.__type = exchange_type
-        try:
-            f = open("Settings.json",)
-            self.__preferences = json.load(f)
-        except FileNotFoundError as e:
-            FileNotFoundError("Place a Settings.json file in the same directory as the Blankly bot main class")
+class API:
+    def __init__(self, API_KEY, API_SECRET):
+        self.auth_client = Client(API_KEY, API_SECRET)
 
-
-    def get_name(self):
-        return self.__name
-
-    def getType(self):
-        return self.__type
-
-    def getPreferences(self):
-        return self.__preferences
+    def die(self):
+        print(self.auth_client.get_account())

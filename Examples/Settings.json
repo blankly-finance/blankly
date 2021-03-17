@@ -1,0 +1,7 @@
+{
+  "settings": {
+    "theme": "dark",
+    "account_update_time": 5000,
+    "base_currency": "USD"
+  }
+}

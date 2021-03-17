@@ -63,6 +63,8 @@ class API:
         if level == 3:
             warnings.warn("Abuse of polling at level 3 can result in a block. Consider using the websocket.")
 
+        # TODO add websocket feed for oder book
+
         return self.auth_client.get_product_order_book(product_id, level=level)
 
     """ PAGINATED """

@@ -1,5 +1,5 @@
 """
-    Inherited exchange object.
+    Allows the user to load the Keys in any Keys.json fileZ.
     Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
@@ -15,25 +15,22 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import json
 
 
-class Exchange:
-    def __init__(self, exchange_type, exchange_name):
-        self.__name = exchange_name
-        self.__type = exchange_type
-        try:
-            f = open("Settings.json",)
-            self.__preferences = json.load(f)
-        except FileNotFoundError as e:
-            FileNotFoundError("Place a Settings.json file in the same directory as the Blankly bot main class")
+def load_json(keys_file):
+    f = open(keys_file)
+    return json.load(f)
 
 
-    def get_name(self):
-        return self.__name
+def load_auth_coinbase_pro(keys_file):
+    auth_object = load_json(keys_file)
+    exchange_keys = auth_object["coinbase_pro"]
+    return [exchange_keys["API_KEY"], exchange_keys["API_SECRET"], exchange_keys["API_PASS"]]
 
-    def getType(self):
-        return self.__type
 
-    def getPreferences(self):
-        return self.__preferences
+def load_auth_binace(keys_file):
+    auth_object = load_json(keys_file)
+    exchange_keys = auth_object["binance"]
+    return [exchange_keys["API_KEY"], exchange_keys["API_SECRET"]]
