@@ -32,8 +32,26 @@ class Exchange:
     def get_name(self):
         return self.__name
 
-    def getType(self):
+    def get_type(self):
         return self.__type
 
     def get_preferences(self):
         return self.__preferences
+
+    def start_models(self, coin=None):
+        """
+        Start all models or a specific one after appending it to to the exchange
+        """
+        if coin is not None:
+            # Run a specific model with the args
+            if not self.models[coin]["model"].is_running():
+                self.models[coin]["model"].run(self.models[coin]["args"])
+            return "Started model attached to: " + coin
+        else:
+            for coin_iterator in self.models:
+                # Start all models
+                if not self.models[coin_iterator]["model"].is_running():
+                    self.models[coin_iterator]["model"].run(self.models[coin_iterator]["args"])
+                else:
+                    print("Ignoring the model on " + coin_iterator)
+            return "Started all models"

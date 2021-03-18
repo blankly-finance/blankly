@@ -45,15 +45,3 @@ class CoinbaseProUtils:
             'product_id': product_id,
         }
         return order
-
-    """
-    Size: Amount of base currency to buy or sell
-    (size in currency (like .01 BTC), buy/sell (string), product id (BTC-USD))
-    """
-    def generate_market_order(self, size, side, product_id):
-        order = {
-            'size': size,
-            'side': side,
-            'product_id': product_id,
-        }
-        return order

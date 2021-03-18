@@ -19,7 +19,9 @@ setup(
         'scikit-learn',
         'zerorpc',
         'requests',
-        'websocket-client'
+        'websocket-client',
+        'cbpro',
+        'python-binance'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

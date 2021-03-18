@@ -16,10 +16,9 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 from Blankly.Exchange import Exchange
 from Blankly.Coinbase_Pro.Coinbase_Pro_API import API
-from Blankly.API_Interface import APIInterface
+from Blankly.API_Interface import APIInterface as Interface
 import Blankly.auth_constructor
 
 
@@ -31,8 +30,10 @@ class Coinbase_Pro(Exchange):
         self.__calls = API(auth[0], auth[1], auth[2])
 
         Exchange.__init__(self, "coinbase_pro", name)
+
+
         # Create the authenticated object
-        self.__APIInterface = APIInterface("coinbase_pro", self.__calls)
+        self.__Interface = Interface("coinbase_pro", self.__calls)
         self.get_state()
 
         # Create the model container
@@ -42,11 +43,10 @@ class Coinbase_Pro(Exchange):
         self.__state = self.__calls.get_accounts()
         return self.__state
 
-    """
-    Portfolio state is the internal properties for the exchange block
-    """
-
     def get_portfolio_state(self, only_active=True):
+        """
+        Portfolio state is the internal properties for the exchange block
+        """
         self.get_state()
         self.__readable_state = {}
         unused = {}
@@ -67,57 +67,34 @@ class Coinbase_Pro(Exchange):
                 unused[self.__state[i]["currency"]] = {
                     "Qty:": 0,
                 }
-
         if only_active:
             return self.__readable_state
         else:
             return {**self.__readable_state, **unused}
 
-    """
-    State for just this new currency
-    """
-
     def get_currency_state(self, currency):
+        """
+        State for just this new currency
+        """
         return self.get_portfolio_state(False)[currency]
 
-    """
-    Exchange state is the external properties for the exchange block
-    """
-
     def get_exchange_state(self):
+        """
+        Exchange state is the external properties for the exchange block
+        """
         # TODO Populate this with useful information
-        return self.__calls.getFees()
-
-    """
-    Append the models to the exchange, these can be run
-    """
+        return self.__calls.get_fees()
 
     def append_model(self, model, coin, args=None, id=None):
+        """
+        Append the models to the exchange, these can be run
+        """
         added_model = model
-        model.setup("coinbase_pro", coin, self.get_preferences(), self.get_currency_state(coin), self.__APIInterface)
+        model.setup("coinbase_pro", coin, self.get_preferences(), self.get_currency_state(coin), self.__Interface)
         self.models[coin] = {
             "model": added_model,
             "args": args
         }
-
-    """
-    Start all models or a specific one after appending it to to the exchange
-    """
-
-    def start_models(self, coin=None):
-        if coin is not None:
-            # Run a specific model with the args
-            if not self.models[coin]["model"].is_running():
-                self.models[coin]["model"].run(self.models[coin]["args"])
-            return "Started model attached to: " + coin
-        else:
-            for coin_iterator in self.models:
-                # Start all models
-                if not self.models[coin_iterator]["model"].is_running():
-                    self.models[coin_iterator]["model"].run(self.models[coin_iterator]["args"])
-                else:
-                    print("Ignoring the model on " + coin_iterator)
-            return "Started all models"
 
     def get_model(self, coin):
         return self.models[coin]["model"]
@@ -126,4 +103,4 @@ class Coinbase_Pro(Exchange):
         return (self.get_model(coin)).get_state()
 
     def get_indicators(self):
-        return self.__calls.getFees()
+        return self.__calls.get_fees()

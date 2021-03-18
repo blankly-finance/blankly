@@ -18,7 +18,7 @@ class Bot(BlanklyBot):
         self.update_state("Heartbeat", 0)
 
         # Example on how to interact with API
-        # print(self.Interface.get_currencies())
+        print(self.Interface.get_account())
 
         while True:
             """ Demo interface call """
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     # Imagine this:
     #   Coinbase Pro <-- Choosing to assign this bot to this exchange
     #   Kraken
-    #   Bitfinex
+    #   Binance
 
     # Create the bot and add it to run as a coinbase_pro bitcoin model.
     bot = Bot()
