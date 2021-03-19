@@ -6,7 +6,7 @@ def tradeLocal(buy_or_sell, currency, crypto_amount_exchanged, ticker):
     if buy_or_sell == "sell":
         # You only get in USD the amount after fees though
         Local_Account.account["USD"] = Local_Account.account["USD"] + (
-                float(ticker.getMostRecentTick()["price"]) * crypto_amount_exchanged * (
+                float(ticker.get_most_recent_tick()["price"]) * crypto_amount_exchanged * (
                 1 - Constants.PRETEND_FEE_RATE))
         # When you sell you get all crypto deducted
         Local_Account.account[currency] = Local_Account.account[currency] - crypto_amount_exchanged
@@ -16,7 +16,7 @@ def tradeLocal(buy_or_sell, currency, crypto_amount_exchanged, ticker):
         # When you buy you get the full crypto amount, but more deducted in usd
         Local_Account.account["USD"] = Local_Account.account["USD"] - (
                 Constants.PRETEND_FEE_RATE * crypto_amount_exchanged + crypto_amount_exchanged) * float(
-            ticker.getMostRecentTick()["price"])
+            ticker.get_most_recent_tick()["price"])
         if Local_Account.account["USD"] < 0:
             Local_Account.account["USD"] = previous_account_value
             raise Exception("Insufficient funds")

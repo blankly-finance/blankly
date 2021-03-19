@@ -1,9 +1,8 @@
 import time
 import Blankly
-from Blankly import BlanklyBot
 
 
-class Bot(BlanklyBot):
+class Bot(Blankly.BlanklyBot):
     def __init__(self):
         super().__init__()
 
@@ -13,14 +12,15 @@ class Bot(BlanklyBot):
         """
         # Use this to get IDE autofill
         assert isinstance(self.Interface, Blankly.Interface)
+        assert isinstance(self.Ticker_Manager, Blankly.TickerInterface)
 
         # Add a heartbeat example to report to GUI
         self.update_state("Heartbeat", 0)
 
         # Example on how to interact with API
         print(self.__dir__())
-        print(self._BlanklyBot__coin_id)
-        print(self.Interface.get_product_history(self._BlanklyBot__coin_id, 1611029486, 1616123507, 10000))
+        print(self.coin_id)
+        print(self.Interface.get_product_history(self.coin_id, 1611029486, 1616123507, 10000))
 
         while True:
             """ Demo interface call """

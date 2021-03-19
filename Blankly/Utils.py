@@ -51,8 +51,8 @@ class Utils:
     Performs regression n points back
     """
     def getPriceDerivative(self, ticker, pointNumber):
-        feed = numpy.array(ticker.getTickerFeed()).reshape(-1, 1)
-        times = numpy.array(ticker.getTimeFeed()).reshape(-1, 1)
+        feed = numpy.array(ticker.get_ticker_feed()).reshape(-1, 1)
+        times = numpy.array(ticker.get_time_feed()).reshape(-1, 1)
         if pointNumber > len(feed):
             pointNumber = len(feed)
 
@@ -72,8 +72,8 @@ class Utils:
     Fit simple parabola 
     """
     def fitParabola(self, ticker, pointNumber):
-        feed = ticker.getTickerFeed()
-        times = ticker.getTimeFeed()
+        feed = ticker.get_ticker_feed()
+        times = ticker.get_time_feed()
         if pointNumber > len(feed):
             pointNumber = len(feed)
 

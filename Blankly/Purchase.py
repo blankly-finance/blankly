@@ -26,7 +26,7 @@ class Purchase:
 
     def __init__(self, order, response):
         self.__buyOrSell = order["side"]
-        self.__purchaseTime = (coinTicker.getMostRecentTick())["time"]
+        self.__purchaseTime = (coinTicker.get_most_recent_tick())["time"]
         # Assigned below if there is an ApiCall attached
         self.__coinBaseId = None
         self.__response = response
@@ -36,7 +36,7 @@ class Purchase:
         except Exception as e:
             self.__limit = None
 
-        self.__valueAtTime = float((coinTicker.getMostRecentTick())["price"])
+        self.__valueAtTime = float((coinTicker.get_most_recent_tick())["price"])
         # This is the amount before fees
         self.__amountCurrency = order["size"]
         self.__ticker = coinTicker
@@ -95,7 +95,7 @@ class Purchase:
 
     def isProfitable(self, show=False):
         if self.__buyOrSell == "buy":
-            if self.getProfitableSellPrice() < float(self.__ticker.getMostRecentTick()["price"]):
+            if self.getProfitableSellPrice() < float(self.__ticker.get_most_recent_tick()["price"]):
                 if show:
                     print(True)
                 return True
@@ -104,7 +104,7 @@ class Purchase:
                     print(False)
                 return False
         else:
-            if self.getProfitableSellPrice() > float(self.__ticker.getMostRecentTick()["price"]):
+            if self.getProfitableSellPrice() > float(self.__ticker.get_most_recent_tick()["price"]):
                 if show:
                     print(True)
                 return True
@@ -183,7 +183,7 @@ class Purchase:
     """
 
     def inProfitableSellZone(self, show=False):
-        self.__profitable = float((self.__ticker.getMostRecentTick()["price"])) > self.getProfitableSellPrice()
+        self.__profitable = float((self.__ticker.get_most_recent_tick()["price"])) > self.getProfitableSellPrice()
         if show:
             print(self.__profitable)
         return self.__profitable
@@ -197,12 +197,12 @@ class Purchase:
         if self.__calls is not None:
             # This doesn't need the fee calculation because that happens anyway
             self.__calls.placeOrder(
-                self.__utils.generateMarketOrder(self.__amountCurrency, "sell", self.__ticker.getCoinID()))
-            Trade_Local.tradeLocal("sell", self.__ticker.getCoinID(), self.__amountCurrency, self.__ticker)
+                self.__utils.generateMarketOrder(self.__amountCurrency, "sell", self.__ticker.get_currency_id()))
+            Trade_Local.tradeLocal("sell", self.__ticker.get_currency_id(), self.__amountCurrency, self.__ticker)
         else:
             print("Selling locally only")
             # This one needs to include fees before and after
-            self.__utils.tradeLocal("sell", self.__ticker.getCoinID(), self.__amountCurrency, self.__ticker)
+            self.__utils.tradeLocal("sell", self.__ticker.get_currency_id(), self.__amountCurrency, self.__ticker)
         self.__sold = True
 
     def setIfPastSellMin(self, val):

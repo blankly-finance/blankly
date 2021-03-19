@@ -17,6 +17,7 @@
 """
 
 from multiprocessing import Process, Manager
+import Blankly
 
 
 class BlanklyBot:
@@ -27,12 +28,13 @@ class BlanklyBot:
         # If the start is called again, this will make sure multiple processes don't start
         self.__is_running = False
         self.__state = {}
-        self.__exchange_type = ""
-        self.__currency = ""
-        self.__user_preferences = {}
+        self.exchange_type = ""
+        self.coin = ""
+        self.user_preferences = {}
         self.Interface = None
-        self.__coin_id = ""
-        self.__ticker = None
+        self.coin_id = ""
+        self.default_ticker = None
+        self.Ticker_Manager = None
 
     def setup(self, exchange_type, coin, user_preferences, initial_state, interface):
         """
@@ -40,15 +42,16 @@ class BlanklyBot:
         """
         # Shared variables with the processing a manager
         self.__state = Manager().dict(initial_state)
-        self.__exchange_type = exchange_type
-        self.__currency = coin
-        self.__user_preferences = user_preferences
+        self.exchange_type = exchange_type
+        self.coin = coin
+        self.user_preferences = user_preferences
         self.Interface = interface
 
         # Coin id is the currency and which market its on
-        self.__coin_id = coin + "-" + user_preferences["settings"]["base_currency"]
+        self.coin_id = coin + "-" + user_preferences["settings"]["base_currency"]
         # Create the ticker for this kind of currency. Callbacks will occur in the "price_event" function
-        self.__ticker = self.Interface.create_ticker(self, self.__coin_id)
+        self.Ticker_Manager = Blankly.TickerInterface(self.exchange_type)
+        self.default_ticker = self.Ticker_Manager.create_ticker(self.coin_id, self)
 
     # Make sure the process knows that this model is on, removing this off could result in many threads
     def is_running(self):

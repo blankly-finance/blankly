@@ -21,25 +21,26 @@ from websocket import create_connection
 
 
 class Tickers:
-    def __init__(self, coinID, log="", show=False, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
-        self.__id = coinID
+    def __init__(self, currency_id, log="", show=False, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
+        self.__id = currency_id
         if (len(log) > 1):
             self.__log = True
             self.__filePath = log
             try:
                 self.__file = open(log, 'xa')
                 self.__file.write(
-                    "time,system_time,price,open_24h,volume_24h,low_24h,high_24h,volume_30d,best_bid,best_ask,last_size\n")
+                    "time,system_time,price,open_24h,volume_24h,low_24h,high_24h,volume_30d,best_bid,best_ask,"
+                    "last_size\n")
             except:
                 self.__file = open(log, 'a')
         else:
             self.__log = False
 
         self.__webSocketClosed = False
-        ws = self.createTickerConnection(coinID, WEBSOCKET_URL)
+        ws = self.create_ticker_connection(currency_id, WEBSOCKET_URL)
         self.__response = ws.recv()
         self.__show = show
-        _thread.start_new_thread(self.readWebsocket, (ws,))
+        _thread.start_new_thread(self.read_websocket, (ws,))
         self.__tickerFeed = []
         self.__timeFeed = []
         self.__websocket = ws
@@ -47,7 +48,7 @@ class Tickers:
         self.__mostRecentTick = None
         self.__managers = []
 
-    def createTickerConnection(self, id, url):
+    def create_ticker_connection(self, id, url):
         # ws = create_connection(url)
         ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
         request = """{
@@ -67,11 +68,11 @@ class Tickers:
         ws.send(request)
         return ws
 
-    def closeWebSocket(self):
+    def close_websocket(self):
         self.__webSocketClosed = True
         print("Closed websocket for " + self.__id)
 
-    def readWebsocket(self, ws):
+    def read_websocket(self, ws):
         counter = 0
         try:
             while not self.__webSocketClosed:
@@ -103,33 +104,33 @@ class Tickers:
         ws.close()
         print("websocket closed")
 
-    def isWebsocketOpen(self):
+    def is_websocket_open(self):
         return not self.__webSocketClosed
 
     """ Parallel with time feed """
 
-    def getTickerFeed(self):
+    def get_ticker_feed(self):
         return self.__tickerFeed
 
-    def getTimeFeed(self):
+    def get_time_feed(self):
         return self.__timeFeed
 
     """ Define a variable each time so there is no array manipulation """
 
-    def getMostRecentTick(self):
+    def get_most_recent_tick(self):
         return self.__mostRecentTick
 
-    def getMostRecentTime(self):
+    def get_most_recent_time(self):
         return self.__timeFeed[-1]
 
-    def getResponse(self):
+    def get_response(self):
         return self.__response
 
-    def updateShow(self, value):
+    def update_show(self, value):
         self.__show = value
 
     def append_callback(self, obj):
         self.__managers.append(obj)
 
-    def getCoinID(self):
+    def get_currency_id(self):
         return self.__id
