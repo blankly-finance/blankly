@@ -19,12 +19,14 @@
 from Blankly.Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ticker
 import Blankly.Coinbase_Pro.Coinbase_Pro_Utils as Coinbase_Pro_Utils
 from Blankly.Purchase import Purchase
-
+from Blankly.Utils import Utils as Utils
+import time
 
 class APIInterface:
     def __init__(self, type, authenticated_API):
         self.__type = type
         self.__calls = authenticated_API
+        self.__utils = Utils()
 
     """
     Get all currencies in an account
@@ -67,6 +69,58 @@ class APIInterface:
             order = Coinbase_Pro_Utils.CoinbaseProUtils().generate_limit_order(size, price, side, id)
             # TODO exchange object needs to be generated here and then returned at some point, this invovles creating a ticker. Tickers are something that need to be managed carefully
             self.__calls.placeOrder(order)
+
+    def get_fees(self):
+        if self.__type == "coinbase_pro":
+            return self.__calls.get_fees()
+
+    def get_products(self):
+        if self.__type == "coinbase_pro":
+            return self.__calls.get_products()
+
+
+    def get_product_history(self, product_id, epoch_start, epoch_stop, granularity):
+        if self.__type == "coinbase_pro":
+            accepted_grans = [60, 300, 900, 3600, 21600, 86400]
+            if granularity not in accepted_grans:
+                if granularity < 60:
+                    granularity = 60
+                elif granularity < 300:
+                    granularity = 60
+                elif granularity < 900:
+                    granularity = 300
+                elif granularity < 3600:
+                    granularity = 900
+                elif granularity < 21600:
+                    granularity = 3600
+                elif granularity < 86400:
+                    granularity = 21600
+                else:
+                    granularity = 86400
+
+            print(granularity)
+            # Figure out how many points are needed
+            need = int((epoch_stop-epoch_start)/granularity)
+            window_open = epoch_start
+            history = []
+            # Iterate while its more than max
+            while need > 300:
+                # Close is always 300 points ahead
+                window_close = window_open + 300 * granularity
+                open_iso = self.__utils.ISO8601_from_epoch(window_open)
+                close_iso = self.__utils.ISO8601_from_epoch(window_close)
+                # output = self.__calls.get_product_historic_rates(product_id, open_iso, close_iso, granularity)
+                history = history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso, granularity)
+
+                window_open = window_close
+                need -= 300
+                time.sleep(1)
+
+            # Fill the remainder
+            open_iso = self.__utils.ISO8601_from_epoch(window_open)
+            close_iso = self.__utils.ISO8601_from_epoch(epoch_stop)
+            return history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso, granularity)
+
 
     def create_ticker(self, callback, currency_id, log=''):
         """

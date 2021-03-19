@@ -96,7 +96,7 @@ class Tickers:
                 for i in range(len(self.__managers)):
                     self.__managers[i].price_event(self.__mostRecentTick)
 
-                self.__timeFeed.append(self.__utils.getEpochFromISO8601(received["time"]))
+                self.__timeFeed.append(self.__utils.epoch_from_ISO8601(received["time"]))
                 counter += 1
         except Exception as e:
             print("Error reading websocket")

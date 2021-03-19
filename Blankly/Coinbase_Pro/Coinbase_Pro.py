@@ -48,6 +48,7 @@ class Coinbase_Pro(Exchange):
         Portfolio state is the internal properties for the exchange block
         """
         self.get_state()
+        # print(self.__state)
         self.__readable_state = {}
         unused = {}
         for i in range(len(self.__state)):

@@ -1,6 +1,6 @@
 """
     Calls to the Coinbase Pro API.
-    Copyright (C) 2021  Emerson Dove
+    Copyright (C) 2021  Emerson Dove, Daniel Paquin
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -58,10 +58,12 @@ class API:
         self.__auth = CoinbaseExchangeAuth(API_KEY, API_SECRET, API_PASS)
         self.auth_client = cbpro.AuthenticatedClient(API_KEY, API_SECRET, API_PASS, API_URL)
         self.__api_url = API_URL
+        self.session = requests.Session()
 
     """
     Public Client Calls
     """
+
     def get_products(self):
         """
             Returns:
@@ -78,7 +80,9 @@ class API:
                     }
                 ]
         """
-        return self.auth_client.get_products()
+        # self._send_message('get', '/products')
+        return requests.get(self.__api_url + 'products', auth=self.__auth).json()
+        # return self.auth_client.get_products()
 
     def get_product_order_book(self, product_id, level=1):
         """
@@ -103,6 +107,7 @@ class API:
         return self.auth_client.get_product_order_book(product_id, level=level)
 
     """ PAGINATED """
+
     def get_product_trades(self, product_id, before='', after='', limit=None, result=None):
         """
             Returns:
@@ -121,7 +126,8 @@ class API:
                      "side": "sell"
          }]
         """
-        return self.auth_client.get_product_trades(product_id=product_id, before=before, after=after, limit=limit, result=result)
+        return self.auth_client.get_product_trades(product_id=product_id, before=before, after=after, limit=limit,
+                                                   result=result)
 
     def get_product_historic_rates(self, product_id, start=None, end=None, granularity=None):
         """
@@ -133,7 +139,15 @@ class API:
                     ...
                 ]
         """
-        return self.auth_client.get_product_historic_rates(product_id, start, end, granularity)
+        params = {}
+        if start is not None:
+            params['start'] = start
+        if end is not None:
+            params['end'] = end
+
+        params['granularity'] = granularity
+
+        return requests.get(self.__api_url + 'products/{}/candles'.format(product_id), params=params).json()
 
     def get_product_24hr_stats(self, product_id):
         """
@@ -147,7 +161,7 @@ class API:
                         "volume": "2.41000000"
                     }
         """
-        return self.auth_client.get_product_24hr_stats(product_id=product_id)
+        return requests.get(self.__api_url + 'products/{}/stats'.format(product_id), auth=self.__auth).json()
 
     def get_currencies(self):
         """
@@ -163,7 +177,7 @@ class API:
                     "min_size": "0.01000000"
                 }]
         """
-        return self.auth_client.get_currencies()
+        return requests.get(self.__api_url + 'currencies', auth=self.__auth).json()
 
     def get_time(self):
         """
@@ -175,7 +189,7 @@ class API:
                         "epoch": 1420674445.201
                     }
         """
-        return self.auth_client.get_time()
+        return requests.get(self.__api_url + 'time', auth=self.__auth).json()
 
     """
     Private API Calls
@@ -193,13 +207,17 @@ class API:
                     "currency": "USD"
                 }
         """
-        # output = requests.get(self.__api_url + 'accounts', auth=self.__auth).json()
-        # return output
-        return self.auth_client.get_accounts()
+        return requests.get(self.__api_url + 'accounts', auth=self.__auth).json()
 
     def get_account(self, account_id):
-        """
-            Returns:
+        """ Get information for a single account.
+
+        Use this endpoint when you know the account_id.
+
+        Args:
+            account_id (str): Account id for account you want to get.
+
+        Returns:
             dict: Account information. Example::
                 {
                     "id": "a1b2c3d4",
@@ -209,9 +227,24 @@ class API:
                     "currency": "USD"
                 }
         """
-        return self.auth_client.get_account(account_id=account_id)
+        return self._send_message('get', '/accounts/' + account_id)
+
+    # def get_account(self, account_id):
+    #     """
+    #         Returns:
+    #         dict: Account information. Example::
+    #             {
+    #                 "id": "a1b2c3d4",
+    #                 "balance": "1.100",
+    #                 "holds": "0.100",
+    #                 "available": "1.00",
+    #                 "currency": "USD"
+    #             }
+    #     """
+    #     return self.auth_client.get_account(account_id=account_id)
 
     """ PAGINATED """
+
     def get_account_history(self, account_id):
         """
             Returns:
@@ -238,6 +271,7 @@ class API:
         return self.auth_client.get_account_history(account_id=account_id)
 
     """ PAGINATED """
+
     def get_account_holds(self, account_id):
         """
             Returns:
@@ -262,6 +296,7 @@ class API:
     """
     Buy & sell
     """
+
     def place_limit_order(self, product_id, side, price, size):
         """
             Returns:
@@ -336,8 +371,6 @@ class API:
         """
         return self.auth_client.place_stop_order(product_id, stop_type, price, size)
 
-
-
     def cancel_order(self, order_id):
         """
             Returns:
@@ -347,6 +380,7 @@ class API:
         return self.auth_client.cancel_order(order_id)
 
     """ PAGINATED """
+
     def get_orders(self):
         """
             Returns:
@@ -401,6 +435,7 @@ class API:
         return self.auth_client.get_order(order_id)
 
     """ PAGINATED """
+
     def get_fills(self, order_id=None, product_id=None):
         """
             Returns:
@@ -436,8 +471,6 @@ class API:
             }
         """
         return requests.get(self.__api_url + "fees", auth=self.__auth).json()
-
-
 
 # # Create custom authentication for Exchange
 # class CoinbaseExchangeAuth(AuthBase):

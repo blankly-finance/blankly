@@ -20,6 +20,7 @@
 import json, numpy, time
 from sklearn.linear_model import LinearRegression
 import iso8601
+import datetime as DT
 
 
 class Utils:
@@ -39,8 +40,11 @@ class Utils:
         out = json.dumps(jsonObject.json(), indent=2)
         return out
 
-    def getEpochFromISO8601(self, ISO8601):
+    def epoch_from_ISO8601(self, ISO8601):
         return time.mktime(iso8601.parse_date(ISO8601).timetuple())
+
+    def ISO8601_from_epoch(self, epoch):
+        return DT.datetime.utcfromtimestamp(epoch).isoformat() + 'Z'
 
 
     """

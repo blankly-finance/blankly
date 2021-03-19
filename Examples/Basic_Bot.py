@@ -18,7 +18,9 @@ class Bot(BlanklyBot):
         self.update_state("Heartbeat", 0)
 
         # Example on how to interact with API
-        print(self.Interface.get_account())
+        print(self.__dir__())
+        print(self._BlanklyBot__coin_id)
+        print(self.Interface.get_product_history(self._BlanklyBot__coin_id, 1611029486, 1616123507, 10000))
 
         while True:
             """ Demo interface call """
