@@ -62,6 +62,8 @@ class BlanklyBot:
         self.Ticker_Manager = Blankly.TickerManager(self.exchange_type)
         self.default_ticker = self.Ticker_Manager.create_ticker(self.coin_id, self)
 
+        self.Interface.append_ticker_manager(self.Ticker_Manager)
+
     def is_running(self):
         """
         This function returns the status of the process. This ensures that two processes cannot be started on the same

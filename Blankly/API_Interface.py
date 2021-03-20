@@ -24,10 +24,11 @@ import time, warnings
 
 
 class APIInterface:
-    def __init__(self, exchange_name, authenticated_API):
+    def __init__(self, exchange_name, authenticated_API, ticker_manager):
         self.__exchange_name = exchange_name
         self.__calls = authenticated_API
         self.__utils = Utils()
+        self.__ticker_manager = None
 
     """
     Get all currencies in an account
@@ -58,10 +59,9 @@ class APIInterface:
                 'side': side,
                 'product_id': product_id,
             }
-            # TODO exchange object needs to be generated here and then returned at some point, this invovles creating a ticker. Tickers are something that need to be managed carefully
             response = self.__calls.place_market_order(product_id, side, funds)
-            return response
-            # return Purchase(order, response)
+            return Purchase(order, response,
+                            self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"))
 
     def limit_order(self, size, price, side, id):
         """
@@ -123,11 +123,14 @@ class APIInterface:
             close_iso = self.__utils.ISO8601_from_epoch(epoch_stop)
             return history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso, granularity)
 
-    def create_ticker(self, callback, currency_id, log=''):
-        """
-        Creates ticker connection.
-        """
-        if self.__exchange_name == "coinbase_pro":
-            ticker = Coinbase_Pro_Ticker(currency_id, log=log)
-            ticker.append_callback(callback)
-            return ticker
+    # def create_ticker(self, callback, currency_id, log=''):
+    #     """
+    #     Creates ticker connection.
+    #     """
+    #     if self.__exchange_name == "coinbase_pro":
+    #         ticker = Coinbase_Pro_Ticker(currency_id, log=log)
+    #         ticker.append_callback(callback)
+    #         return ticker
+
+    def append_ticker_manager(self, ticker_manager):
+        self.__ticker_manager = ticker_manager

@@ -22,7 +22,7 @@ from Blankly.Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ti
 
 class TickerManager:
     def __init__(self, exchange_name):
-        self.__exchange_name = exchange_name
+        self.__default_exchange_name = exchange_name
         self.__tickers = {
             "coinbase_pro": {
 
@@ -33,7 +33,7 @@ class TickerManager:
         """
         Create a ticker on the
         """
-        exchange_name = self.__exchange_name
+        exchange_name = self.__default_exchange_name
         if override_exchange is not None:
             exchange_name = override_exchange
 
@@ -44,16 +44,31 @@ class TickerManager:
             self.__tickers['coinbase_pro'][currency_id] = ticker
             return ticker
 
+    # TODO, add the getattribute needed for the override_callback feature.
     def append_callback(self, currency_id, callback_object, override_callback_name=None, override_exchange=None):
         """
         Add another object to have the price_event() function called.
         Generally the callback object should be "self" and the callback_name should only be filled if you want to
         override the default "price_event()" function call.
         This can be very useful in working with multiple tickers, but not necessary on a simple bot.
+
+        Args:
+            currency_id: Ticker id, such as "BTC-USD" or exchange equivalents.
+            callback_object: Generally "self" of the object calling. This is called by the callback function.
+            override_exchange: Forces the manager to use a different supported exchange.
         """
-        exchange_name = self.__exchange_name
+        exchange_name = self.__default_exchange_name
         if override_exchange is not None:
             exchange_name = override_exchange
 
         if exchange_name == "coinbase_pro":
             self.__tickers['coinbase_pro'][currency_id].append_callback(callback_object)
+
+    def get_default_exchange_name(self):
+        return self.__default_exchange_name
+
+    def get_ticker(self, currency_id, override_default_exchange_name=None):
+        if override_default_exchange_name is None:
+            return self.__tickers[self.__default_exchange_name][currency_id]
+        else:
+            return self.__tickers[override_default_exchange_name][currency_id]

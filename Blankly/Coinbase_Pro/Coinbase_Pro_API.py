@@ -130,6 +130,7 @@ class API:
 
         # TODO add websocket feed for oder book
 
+        params = {'level': level}
         return requests.get(self.__api_url + "products/{}/book".format(product_id), params=params)
 
     """ PAGINATED """

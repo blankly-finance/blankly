@@ -24,11 +24,11 @@ class Purchase:
     """ (Buying or selling (string), amount in currency (BTC/XLM), ticker object (so we can get time and value),
     limit if there is one) """
 
-    def __init__(self, order, response):
+    def __init__(self, order, response, ticker):
         self.__buyOrSell = order["side"]
-        self.__purchaseTime = (coinTicker.get_most_recent_tick())["time"]
+        self.__purchaseTime = (ticker.get_most_recent_tick())["time"]
         # Assigned below if there is an ApiCall attached
-        self.__coinBaseId = None
+        self.__purchase_id = None
         self.__response = response
 
         try:
@@ -36,11 +36,10 @@ class Purchase:
         except Exception as e:
             self.__limit = None
 
-        self.__valueAtTime = float((coinTicker.get_most_recent_tick())["price"])
+        self.__valueAtTime = float((ticker.get_most_recent_tick())["price"])
         # This is the amount before fees
         self.__amountCurrency = order["size"]
-        self.__ticker = coinTicker
-        self.__active = True
+        self.__ticker = ticker
         self.__utils = Utils()
         """ 
         self.__profitable is for any degree of profitability
@@ -49,53 +48,41 @@ class Purchase:
         self.__profitable = False
         self.__reachedPastMinToSell = False
         self.__sold = False
-        # Disable buying through here.
-        # if self.__calls is None:
-        #     print("Buying locally")
-        #     # Fees are calculated in the tradelocal function
-        #     Trade_Local.tradeLocal(order["side"], self.__ticker.getCoinID(), order["size"], self.__ticker)
-        # else:
-        #     response = self.__calls.placeOrder(order, self.__ticker, show=False)
-        #     self.__coinBaseId = response["id"]
 
-    def getPurchaseTime(self):
+    def get_purchase_time(self):
         return self.__purchaseTime
 
-    def getSetLimit(self):
+    def get_set_limit(self):
         return self.__limit
 
     """
     When these orders are used the amount of currency changes throughout the lifetime by the fee rate each time
     """
-
-    def getAmountCurrencyExchanged(self):
+    def get_amount_currency_exchanged(self):
         return self.__amountCurrency
-
     """
-    On sell, we want to know how many dollars we got back.
+    On sell, we want to know how much money we got back.
     """
-
-    def getDollarReturnOnSell(self):
+    def get_value_returned_on_sell(self):
         # TODO
         return None
 
-    def getBoughtOrSold(self):
+    def get_side(self):
         return self.__buyOrSell
 
-    def getValueAtTime(self):
+    def get_value_at_time(self):
         return self.__valueAtTime
 
-    def getCoinBaseId(self):
-        return self.__coinBaseId
+    def get_purchase_id(self):
+        return self.__purchase_id
 
-    def getIfActive(self):
+    def is_active(self):
         return self.__active
 
     """ Returns true if the buy order can be sold at a profit or the sell order didn't loose money """
-
-    def isProfitable(self, show=False):
+    def is_profitable(self, show=False):
         if self.__buyOrSell == "buy":
-            if self.getProfitableSellPrice() < float(self.__ticker.get_most_recent_tick()["price"]):
+            if self.is_profitable_buy() < float(self.__ticker.get_most_recent_tick()["price"]):
                 if show:
                     print(True)
                 return True
@@ -104,7 +91,7 @@ class Purchase:
                     print(False)
                 return False
         else:
-            if self.getProfitableSellPrice() > float(self.__ticker.get_most_recent_tick()["price"]):
+            if self.is_profitable_buy() > float(self.__ticker.get_most_recent_tick()["price"]):
                 if show:
                     print(True)
                 return True
@@ -133,31 +120,31 @@ class Purchase:
         #     else:
         #         return False
 
-    def getFee(self, show=False):
+    def get_fee(self, show=False):
         fee = (self.__valueAtTime * self.__amountCurrency) * Constants.PRETEND_FEE_RATE
-        if (show):
+        if show:
             print(fee)
         return fee
 
-    def cancelOrder(self):
+    def cancel_order(self):
         if self.__calls is not None:
-            response = self.__calls.deleteOrder(self.__coinBaseId, show=False)
+            response = self.__calls.deleteOrder(self.__purchase_id, show=False)
             try:
                 if response["message"] == "Unauthorized.":
-                    print("Not authorized to delete order: " + self.__coinBaseId)
+                    print("Not authorized to delete order: " + self.__purchase_id)
             except TypeError as e:
                 print("Canceled Order " + response)
             except Exception as e:
-                print("FAILED to cancel order " + self.__coinBaseId)
+                print("FAILED to cancel order " + self.__purchase_id)
             self.__active = False
         else:
             print("Cannot cancel order")
 
-    def confirmCanceled(self):
+    def confirm_canceled(self):
         if self.__calls is not None:
             response = self.__calls.getOpenOrders()
             for i in range(len(response)):
-                if (response[i]["id"] == self.__coinBaseId):
+                if (response[i]["id"] == self.__purchase_id):
                     return False
             self.__active = False
             return True
@@ -168,8 +155,7 @@ class Purchase:
     Returns the price that a BUY needs to reach to be profitable
     Ths can be used to set limit orders
     """
-
-    def getProfitableSellPrice(self, show=False):
+    def is_profitable_buy(self, show=False):
         # price = self.__valueAtTime/(1 - Constants.PRETEND_FEE_RATE)
         # This one didn't work for the USD amount modified
         # price = self.__valueAtTime/(1 - (2 * Constants.PRETEND_FEE_RATE) + (Constants.PRETEND_FEE_RATE * Constants.PRETEND_FEE_RATE))
@@ -182,8 +168,8 @@ class Purchase:
     This allows this to be checked if this buy became profitable 
     """
 
-    def inProfitableSellZone(self, show=False):
-        self.__profitable = float((self.__ticker.get_most_recent_tick()["price"])) > self.getProfitableSellPrice()
+    def is_profitable_sell(self, show=False):
+        self.__profitable = float((self.__ticker.get_most_recent_tick()["price"])) > self.is_profitable_buy()
         if show:
             print(self.__profitable)
         return self.__profitable
@@ -191,27 +177,26 @@ class Purchase:
     """ 
     Allows this exchange to be sold back in its entirety 
     """
+    # # TODO - This has turned into spaghetti code, fix it
+    # def sellSelf(self):
+    #     if self.__calls is not None:
+    #         # This doesn't need the fee calculation because that happens anyway
+    #         self.__calls.placeOrder(
+    #             self.__utils.generateMarketOrder(self.__amountCurrency, "sell", self.__ticker.get_currency_id()))
+    #         Trade_Local.tradeLocal("sell", self.__ticker.get_currency_id(), self.__amountCurrency, self.__ticker)
+    #     else:
+    #         print("Selling locally only")
+    #         # This one needs to include fees before and after
+    #         self.__utils.tradeLocal("sell", self.__ticker.get_currency_id(), self.__amountCurrency, self.__ticker)
+    #     self.__sold = True
 
-    # TODO - This has turned into spaghetti code, fix it
-    def sellSelf(self):
-        if self.__calls is not None:
-            # This doesn't need the fee calculation because that happens anyway
-            self.__calls.placeOrder(
-                self.__utils.generateMarketOrder(self.__amountCurrency, "sell", self.__ticker.get_currency_id()))
-            Trade_Local.tradeLocal("sell", self.__ticker.get_currency_id(), self.__amountCurrency, self.__ticker)
-        else:
-            print("Selling locally only")
-            # This one needs to include fees before and after
-            self.__utils.tradeLocal("sell", self.__ticker.get_currency_id(), self.__amountCurrency, self.__ticker)
-        self.__sold = True
+    # def setIfPastSellMin(self, val):
+    #     self.__reachedPastMinToSell = val
+    #
+    # def getIfPastSellMin(self, show=False):
+    #     if show:
+    #         print(self.__reachedPastMinToSell)
+    #     return self.__reachedPastMinToSell
 
-    def setIfPastSellMin(self, val):
-        self.__reachedPastMinToSell = val
-
-    def getIfPastSellMin(self, show=False):
-        if show:
-            print(self.__reachedPastMinToSell)
-        return self.__reachedPastMinToSell
-
-    def getIfSold(self):
-        return self.__sold
+    # def getIfSold(self):
+    #     return self.__sold

@@ -110,11 +110,11 @@ while True:
 
 sys.exit()
 print("Fee:")
-exchange.getFee(show=True)
+exchange.get_fee(show=True)
 print("Value:")
-print(exchange.getValueAtTime())
+print(exchange.get_value_at_time())
 print("Profitable")
-exchange.getProfitableSellPrice(show=True)
+exchange.is_profitable_buy(show=True)
 sys.exit()
 
 # print(utils.getPriceDerivative(bitcoinTicker, 1000))
@@ -148,7 +148,7 @@ call.getAccountInfo("BTC", "balance")
 sys.exit()
 exchange = Exchange.Exchange("buy", 46, bitcoinTicker, response, call)
 while True:
-    print(exchange.isProfitable(show=True))
+    print(exchange.is_profitable(show=True))
     time.sleep(1)
     utils.getPriceDerivative(bitcoinTicker, 10)
 

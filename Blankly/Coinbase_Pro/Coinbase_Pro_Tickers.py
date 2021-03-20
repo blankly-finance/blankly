@@ -19,7 +19,7 @@
 import _thread, json, time, Blankly.Utils, ssl
 from websocket import create_connection
 
-
+# TODO add an inherited object so that each of these have a similar way of interacting
 class Tickers:
     def __init__(self, currency_id, log="", show=False, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
         self.__id = currency_id
