@@ -46,7 +46,8 @@ class Coinbase_Pro(Exchange):
             "model": added_model,
             "args": args
         }
-        model.setup("coinbase_pro", coin, coin_id, self.get_preferences(), self.get_currency_state(coin), self.__Interface)
+        model.setup("coinbase_pro", coin, coin_id, self.get_preferences(), self.get_currency_state(coin),
+                    self.__Interface)
 
     def get_model(self, coin):
         return self.models[coin]["model"]
@@ -61,10 +62,13 @@ class Coinbase_Pro(Exchange):
         return (self.get_model(currency)).get_state()
 
     def get_state(self):
+        """
+        Calls to to the interface to receive info on all currencies.
+        """
         self.__state = self.__calls.get_accounts()
         return self.__state
 
-    def get_portfolio_state(self, only_active=True):
+    def get_portfolio_state(self):
         """
         Portfolio state is the internal properties for the exchange block
         """
@@ -89,7 +93,6 @@ class Coinbase_Pro(Exchange):
             "account": slice,
             "model": self.get_model_state(currency)
         }
-        # return self.get_portfolio_state(False)[currency]
 
     def get_exchange_state(self):
         """

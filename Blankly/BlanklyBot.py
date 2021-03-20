@@ -27,6 +27,7 @@ class BlanklyBot:
         """
         # If the start is called again, this will make sure multiple processes don't start
         self.__state = {}
+        self.initial_state = None
         self.exchange_type = ""
         self.coin = ""
         self.user_preferences = {}
@@ -48,7 +49,8 @@ class BlanklyBot:
             interface: Object for consistent trading on the supported exchanges
         """
         # Shared variables with the processing a manager
-        self.__state = Manager().dict(initial_state)
+        self.initial_state = initial_state
+        self.__state = Manager().dict({})
         self.exchange_type = exchange_type
         self.coin = coin
         self.user_preferences = user_preferences
