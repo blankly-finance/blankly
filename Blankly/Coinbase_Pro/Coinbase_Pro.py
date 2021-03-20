@@ -58,6 +58,7 @@ class Coinbase_Pro(Exchange):
     """
     Exchange and model state management.
     """
+
     def get_model_state(self, currency):
         return (self.get_model(currency)).get_state()
 
@@ -70,7 +71,7 @@ class Coinbase_Pro(Exchange):
 
     def get_portfolio_state(self):
         """
-        Portfolio state is the internal properties for the exchange block
+        Portfolio state is the internal properties for the exchange block.
         """
         self.get_state()
         return self.__state

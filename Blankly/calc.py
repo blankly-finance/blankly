@@ -1,5 +1,7 @@
 """
 A calculator based on https://en.wikipedia.org/wiki/Reverse_Polish_notation
+
+Used for testing basic ZeroRPC server interaction.
 """
 
 from __future__ import print_function
