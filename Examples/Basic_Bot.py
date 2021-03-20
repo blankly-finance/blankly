@@ -18,8 +18,6 @@ class Bot(Blankly.BlanklyBot):
         self.update_state("Heartbeat", 0)
 
         # Example on how to interact with API
-        print(self.__dir__())
-        print(self.coin_id)
         print(self.Interface.get_product_history(self.coin_id, 1611029486, 1616123507, 10000))
 
         while True:
@@ -50,7 +48,6 @@ if __name__ == "__main__":
 
     # Create the bot and add it to run as a coinbase_pro bitcoin model.
     bot = Bot()
-
     exchange.append_model(bot, "GRT")
     # Imagine this:
     #   Coinbase Pro:

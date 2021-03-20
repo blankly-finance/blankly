@@ -26,11 +26,8 @@ class Coinbase_Pro(Exchange):
     def __init__(self, name, auth_path="Keys.json"):
         # Load the auth from the keys file
         auth = Blankly.auth_constructor.load_auth_coinbase_pro(auth_path)
-
         self.__calls = API(auth[0], auth[1], auth[2])
-
         Exchange.__init__(self, "coinbase_pro", name)
-
 
         # Create the authenticated object
         self.__Interface = Interface("coinbase_pro", self.__calls)
@@ -48,7 +45,6 @@ class Coinbase_Pro(Exchange):
         Portfolio state is the internal properties for the exchange block
         """
         self.get_state()
-        # print(self.__state)
         self.__readable_state = {}
         unused = {}
         for i in range(len(self.__state)):

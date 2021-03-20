@@ -20,7 +20,7 @@ from Blankly.Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ti
 import Blankly.Coinbase_Pro.Coinbase_Pro_Utils as Coinbase_Pro_Utils
 from Blankly.Purchase import Purchase
 from Blankly.Utils import Utils as Utils
-import time
+import time, warnings
 
 
 class APIInterface:
@@ -84,6 +84,7 @@ class APIInterface:
         if self.__exchange_name == "coinbase_pro":
             accepted_grans = [60, 300, 900, 3600, 21600, 86400]
             if granularity not in accepted_grans:
+                warnings.warn("Granularity is not in accepted granularity...rounding down.")
                 if granularity < 60:
                     granularity = 60
                 elif granularity < 300:
@@ -99,7 +100,6 @@ class APIInterface:
                 else:
                     granularity = 86400
 
-            print(granularity)
             # Figure out how many points are needed
             need = int((epoch_stop - epoch_start) / granularity)
             window_open = epoch_start
