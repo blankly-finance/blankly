@@ -21,4 +21,4 @@ from Blankly.API_Interface import APIInterface as Interface
 from Blankly.BlanklyBot import BlanklyBot as BlanklyBot
 
 from Blankly.Coinbase_Pro.Coinbase_Pro_API import API as Direct_Coinbase_Pro_API
-from Blankly.TickerInterface import TickerInterface as TickerInterface
+from Blankly.TickerManager import TickerManager as TickerManager

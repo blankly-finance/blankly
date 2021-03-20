@@ -36,6 +36,30 @@ class Coinbase_Pro(Exchange):
         # Create the model container
         self.models = {}
 
+    def append_model(self, model, coin, args=None, id=None):
+        """
+        Append the models to the exchange, these can be run
+        """
+        coin_id = coin + "-" + self.get_preferences()["settings"]["base_currency"]
+        added_model = model
+        self.models[coin] = {
+            "model": added_model,
+            "args": args
+        }
+        model.setup("coinbase_pro", coin, coin_id, self.get_preferences(), self.get_currency_state(coin), self.__Interface)
+
+    def get_model(self, coin):
+        return self.models[coin]["model"]
+
+    def get_indicators(self):
+        return self.__calls.get_fees()
+
+    """
+    Exchange and model state management.
+    """
+    def get_model_state(self, currency):
+        return (self.get_model(currency)).get_state()
+
     def get_state(self):
         self.__state = self.__calls.get_accounts()
         return self.__state
@@ -43,6 +67,49 @@ class Coinbase_Pro(Exchange):
     def get_portfolio_state(self, only_active=True):
         """
         Portfolio state is the internal properties for the exchange block
+        """
+        self.get_state()
+        return self.__state
+
+    def get_currency_state(self, currency):
+        """
+        State for just this new currency
+
+        Args:
+            currency: Currency to filter for. This filters model information and the exchange information.
+        """
+        portfolio_state = self.get_portfolio_state()
+        slice = None
+        for i in portfolio_state:
+            if i["currency"] == currency:
+                slice = i
+                break
+
+        return {
+            "account": slice,
+            "model": self.get_model_state(currency)
+        }
+        # return self.get_portfolio_state(False)[currency]
+
+    def get_exchange_state(self):
+        """
+        Exchange state is the external properties for the exchange block
+        """
+        # TODO Populate this with useful information
+        return self.__calls.get_fees()
+
+    """
+    For future use
+    """
+    def filter_relevant(self, dict):
+        """
+        Currently unused. Will be used for filtering for user-relevant currencies
+
+        Args:
+            dict: Dictionary to filter important currencies from
+
+        Returns:
+            list: filtered information about the account dictionary
         """
         self.get_state()
         self.__readable_state = {}
@@ -64,40 +131,4 @@ class Coinbase_Pro(Exchange):
                 unused[self.__state[i]["currency"]] = {
                     "Qty:": 0,
                 }
-        if only_active:
-            return self.__readable_state
-        else:
-            return {**self.__readable_state, **unused}
-
-    def get_currency_state(self, currency):
-        """
-        State for just this new currency
-        """
-        return self.get_portfolio_state(False)[currency]
-
-    def get_exchange_state(self):
-        """
-        Exchange state is the external properties for the exchange block
-        """
-        # TODO Populate this with useful information
-        return self.__calls.get_fees()
-
-    def append_model(self, model, coin, args=None, id=None):
-        """
-        Append the models to the exchange, these can be run
-        """
-        added_model = model
-        model.setup("coinbase_pro", coin, self.get_preferences(), self.get_currency_state(coin), self.__Interface)
-        self.models[coin] = {
-            "model": added_model,
-            "args": args
-        }
-
-    def get_model(self, coin):
-        return self.models[coin]["model"]
-
-    def get_model_state(self, coin):
-        return (self.get_model(coin)).get_state()
-
-    def get_indicators(self):
-        return self.__calls.get_fees()
+        return self.__readable_state

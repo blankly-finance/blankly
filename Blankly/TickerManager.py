@@ -1,7 +1,7 @@
 from Blankly.Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ticker
 
 
-class TickerInterface:
+class TickerManager:
     def __init__(self, exchange_name):
         self.__exchange_name = exchange_name
         self.__tickers = {

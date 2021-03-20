@@ -23,10 +23,9 @@ import Blankly
 class BlanklyBot:
     def __init__(self):
         """
-        Initialize state variables
+        Initialize state variables when the bot is created
         """
         # If the start is called again, this will make sure multiple processes don't start
-        self.__is_running = False
         self.__state = {}
         self.exchange_type = ""
         self.coin = ""
@@ -35,10 +34,18 @@ class BlanklyBot:
         self.coin_id = ""
         self.default_ticker = None
         self.Ticker_Manager = None
+        self.process = Process(target=self.main)
 
-    def setup(self, exchange_type, coin, user_preferences, initial_state, interface):
+    def setup(self, exchange_type, coin, coin_id, user_preferences, initial_state, interface):
         """
         This function is populated by the exchange.
+        Args:
+            exchange_type (str): Type of exchange i.e "binance" or "coinbase_pro"
+            coin: Type of coin, i.e "BTC"
+            coin_id: Identifier for the coin market, i.e "BTC-USD"
+            user_preferences: Dictionary with the defined preferences
+            initial_state: Information about the account the model is defaulted to running on
+            interface: Object for consistent trading on the supported exchanges
         """
         # Shared variables with the processing a manager
         self.__state = Manager().dict(initial_state)
@@ -46,39 +53,51 @@ class BlanklyBot:
         self.coin = coin
         self.user_preferences = user_preferences
         self.Interface = interface
-
         # Coin id is the currency and which market its on
-        self.coin_id = coin + "-" + user_preferences["settings"]["base_currency"]
+        self.coin_id = coin_id
+
         # Create the ticker for this kind of currency. Callbacks will occur in the "price_event" function
-        self.Ticker_Manager = Blankly.TickerInterface(self.exchange_type)
+        self.Ticker_Manager = Blankly.TickerManager(self.exchange_type)
         self.default_ticker = self.Ticker_Manager.create_ticker(self.coin_id, self)
 
-    # Make sure the process knows that this model is on, removing this off could result in many threads
     def is_running(self):
-        return self.__is_running
+        """
+        This function returns the status of the process. This ensures that two processes cannot be started on the same
+        account.
+        """
+        return self.process.is_alive()
 
     def run(self, args):
         """
-        Called by GUI when the user starts the model
+        Called when the user starts the model. This is what begins and manages the process.
         """
         # Start the process
         if args is None:
             p = Process(target=self.main)
         else:
             p = Process(target=self.main, args=args)
-        self.__is_running = True
-        p.start()
+        self.process = p
+        self.process.start()
 
     """
-    State getters and setters for writing to the GUI or as state updates
+    State getters and setters for external understanding of the operation
     """
-
     def get_state(self):
         return self.__state
 
     def update_state(self, key, value):
+        """
+        This function adds or removes state values from the state dictionary
+        Args:
+            key: The key value to be added/changed
+            value: The value the key should be set to
+        """
         self.__state[key] = value
 
     def remove_key(self, key):
+        """
+        This function removes a key from the state variable
+        Args:
+            key: This specifies the key value to remove from the state dictionary
+        """
         self.__state.pop(key)
-
