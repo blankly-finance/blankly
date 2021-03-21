@@ -19,6 +19,7 @@ class Bot(Blankly.BlanklyBot):
 
         # Example on how to interact with API
         # print(self.Interface.get_product_history(self.coin_id, 1611029486, 1616123507, 10000))
+        print(self.Interface.get_fees())
 
         while True:
             # This demonstrates a way to change the state. The default script just reports the state on this currency.
@@ -48,7 +49,7 @@ if __name__ == "__main__":
 
     # Create the bot and add it to run as a coinbase_pro bitcoin model.
     bot = Bot()
-    exchange.append_model(bot, "XLMAS")
+    exchange.append_model(bot, "GRT")
     # Imagine this:
     #   Coinbase Pro:
     #       Bitcoin
@@ -68,5 +69,6 @@ if __name__ == "__main__":
     # Now other processes can be created or just continue with this one.
     while True:
         # Print the state every 2 seconds
-        print(exchange.get_currency_state("XLMAS")["model"])
+        state = exchange.get_currency_state("GRT")
+        Blankly.Utils.pretty_print_JSON(state)
         time.sleep(1)

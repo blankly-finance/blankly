@@ -87,7 +87,7 @@ class BlanklyBot:
     State getters and setters for external understanding of the operation
     """
     def get_state(self):
-        return self.__state
+        return self.__state.copy()
 
     def update_state(self, key, value):
         """

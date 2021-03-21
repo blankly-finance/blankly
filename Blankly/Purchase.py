@@ -17,7 +17,7 @@
 """
 
 import Blankly.Local_Account.Trade_Local as Trade_Local
-from Blankly.Utils import Utils
+import Blankly.Utils
 
 
 class Purchase:

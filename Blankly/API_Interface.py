@@ -19,15 +19,14 @@
 from Blankly.Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ticker
 import Blankly.Coinbase_Pro.Coinbase_Pro_Utils as Coinbase_Pro_Utils
 from Blankly.Purchase import Purchase
-from Blankly.Utils import Utils as Utils
+import Blankly.Utils
 import time, warnings
 
 
 class APIInterface:
-    def __init__(self, exchange_name, authenticated_API, ticker_manager):
+    def __init__(self, exchange_name, authenticated_API):
         self.__exchange_name = exchange_name
         self.__calls = authenticated_API
-        self.__utils = Utils()
         self.__ticker_manager = None
 
     """
@@ -41,7 +40,7 @@ class APIInterface:
             else:
                 return self.__calls.get_account(id)
 
-    def market_order(self, product_id, side, funds):
+    def market_order(self, product_id, side, funds, **kwargs):
         """
         Used for buying or selling market orders
         Args:
@@ -59,16 +58,16 @@ class APIInterface:
                 'side': side,
                 'product_id': product_id,
             }
-            response = self.__calls.place_market_order(product_id, side, funds)
+            response = self.__calls.place_market_order(product_id, side, funds, **kwargs)
             return Purchase(order, response,
                             self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"))
 
-    def limit_order(self, size, price, side, id):
+    def limit_order(self, size, price, side, id, ):
         """
         Used for buying or selling limit orders
         """
         if self.__exchange_name == "coinbase_pro":
-            order = Coinbase_Pro_Utils.CoinbaseProUtils().generate_limit_order(size, price, side, id)
+            # order = Coinbase_Pro_Utils.CoinbaseProUtils().generate_limit_order(size, price, side, id)
             # TODO exchange object needs to be generated here and then returned at some point, this invovles creating a ticker. Tickers are something that need to be managed carefully
             self.__calls.placeOrder(order)
 
