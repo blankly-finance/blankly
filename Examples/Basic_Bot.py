@@ -32,6 +32,7 @@ class Bot(Blankly.BlanklyBot):
         """
         # Example of updating the price state for the GUI
         self.update_state("Price", tick["price"])
+        # Show these new ticks to the console
         print("New price tick at: " + tick["price"])
 
 
@@ -41,7 +42,7 @@ if __name__ == "__main__":
     """
 
     # This creates an authenticated exchange. Now we can append models.
-    exchange = Blankly.Coinbase_Pro(name="API Exchange")
+    exchange = Blankly.Coinbase_Pro()
     # Imagine this:
     #   Coinbase Pro <-- Choosing to assign this bot to this exchange
     #   Kraken

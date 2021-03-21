@@ -1,11 +1,15 @@
 {
     "coinbase_pro": {
-        "API_KEY": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "API_SECRET": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "API_PASS": "aaaaaaaaaa"
+        "Some Unique Portfolio Name": {
+            "API_KEY": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "API_SECRET": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "API_PASS": "aaaaaaaaaa"
+        }
     },
     "binance": {
-        "API_KEY": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "API_SECRET": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "Some Other Unique Portfolio Name": {
+            "API_KEY": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "API_SECRET": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
     }
 }
