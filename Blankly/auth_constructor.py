@@ -18,10 +18,13 @@
 
 import json
 
-
 def load_json(keys_file):
-    f = open(keys_file)
-    return json.load(f)
+    try:
+        f = open(keys_file)
+        return json.load(f)
+    except FileNotFoundError as e:
+        raise FileNotFoundError("Make sure a Keys.json file is placed in the same folder as the project working "
+                                "directory!")
 
 
 def load_auth_coinbase_pro(keys_file):

@@ -26,7 +26,8 @@ class Exchange:
             f = open("Settings.json",)
             self.__preferences = json.load(f)
         except FileNotFoundError as e:
-            FileNotFoundError("Place a Settings.json file in the same directory as the Blankly bot main class")
+            raise FileNotFoundError("Make sure a Settings.json file is placed in the same folder as the project "
+                                    "working directory!")
 
 
     def get_name(self):
