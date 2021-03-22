@@ -5,6 +5,10 @@
 
 ​	Blankly is an elegant python library for interacting with many different crypto exchanges on multiple portfolios in a consistent way. Blankly offers a powerful feature-set, optimized for speed and ease of use.
 
+
+
+Check out our [website](http://blankly.net).
+
 ## Features
 
 - Full REST API support for non-margin accounts on listed exchanges
@@ -37,7 +41,7 @@
 
 - Interface that allows calls to each supported exchange to be identical:
 
-  > Sell example for Coinbase Pro and Binance:
+  > Buy example for Coinbase Pro and Binance:
   >
   > Coinbase Pro:
   >
@@ -81,7 +85,7 @@
 
 5. **Insert the API keys** from your exchange into the renamed `Keys.json` file.
 
-   1. **You can add multiple portfolios**! You can specify the name of the portfolio to load when you construct the exchange 
+   1. **You can add multiple portfolios**! You can specify the name of the portfolio to load when you construct the exchange.
    2. Example: `Blankly.Coinbase_Pro(portfolio_name="my cool portfolio")`). 
    3. If you don't provide one it will just default to the first one given in the `Keys.json` file and show a warning.
 
@@ -235,7 +239,7 @@ Blankly is designed to allow running models independently, each on their own pro
 
 ## Bugs
 
-Please report any bugs or issues in Github's Issues page
+Please report any bugs or issues in Github's Issues page.
 
 ## Disclaimer 
 

@@ -1,13 +1,13 @@
 {
     "coinbase_pro": {
-        "Some Unique Portfolio Name": {
+        "my cool portfolio": {
             "API_KEY": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "API_SECRET": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "API_PASS": "aaaaaaaaaa"
         }
     },
     "binance": {
-        "Some Other Unique Portfolio Name": {
+        "another cool portfolio": {
             "API_KEY": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "API_SECRET": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         }
