@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg width="100%" height="100%" viewBox="0 0 210 64" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(1.48272e-15,23.229,-14.0848,9.32479e-16,421.017,-2595.37)">
+        <rect x="111.73" y="14.994" width="2.734" height="14.898" style="fill:rgb(14,17,22);fill-rule:nonzero;"/>
+    </g>
     <g>
         <g transform="matrix(2.57287,0,0,2.57287,-7.41105,-25.992)">
             <g transform="matrix(1,0,-2.77556e-17,0.5572,-38.9939,13.236)">
