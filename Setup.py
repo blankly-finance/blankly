@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 from os import path
 this_directory = path.abspath(path.dirname(__file__))
-with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+with open(path.join(this_directory, './README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 """
@@ -18,6 +18,7 @@ setup(
     license='agpl-3.0',  # Chose a license from here: https://help.github.com/articles/licensing-a-repository
     description='Cryptocurrency bot development platform',  # Give a short description about your library
     long_description=long_description,
+    long_description_content_type='text/markdown',
     author='Emerson Dove',  # Type in your name
     # author_email = 'your.email@domain.com',      # Type in your E-Mail
     url='https://github.com/EmersonDove/Blankly',  # Provide either the link to your github or to your website
