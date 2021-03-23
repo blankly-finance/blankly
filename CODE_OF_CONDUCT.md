@@ -47,7 +47,7 @@ threatening, offensive, or harmful.
 
 Project maintainers have the right and responsibility to immediately remove
 without any sort of dispute any issues or pull requests that do not align
-with their corresponding templates. Absolutely no leniancy shall be accepted
+with their corresponding templates. Absolutely no leniency shall be accepted
 with these terms.
 
 ## Scope
@@ -62,7 +62,7 @@ further defined and clarified by project maintainers.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported by contacting the project team at complaints@leijurv.com. All
+reported by contacting the project team at #TODO. All
 complaints will be reviewed and investigated and will result in a response that
 is deemed necessary and appropriate to the circumstances. The project team is
 obligated to maintain confidentiality with regard to the reporter of an incident.

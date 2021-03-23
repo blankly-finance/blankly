@@ -29,6 +29,9 @@ class APIInterface:
         self.__calls = authenticated_API
         self.__ticker_manager = None
 
+    def get_calls(self):
+        return self.__calls
+
     """
     Get all currencies in an account
     """
@@ -62,7 +65,7 @@ class APIInterface:
             return Purchase(order, response,
                             self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"))
 
-    def limit_order(self, size, price, side, id, ):
+    def limit_order(self, size, price, side, id):
         """
         Used for buying or selling limit orders
         """
@@ -107,8 +110,8 @@ class APIInterface:
             while need > 300:
                 # Close is always 300 points ahead
                 window_close = window_open + 300 * granularity
-                open_iso = self.__utils.ISO8601_from_epoch(window_open)
-                close_iso = self.__utils.ISO8601_from_epoch(window_close)
+                open_iso = Blankly.Utils.ISO8601_from_epoch(window_open)
+                close_iso = Blankly.Utils.ISO8601_from_epoch(window_close)
                 # output = self.__calls.get_product_historic_rates(product_id, open_iso, close_iso, granularity)
                 history = history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso,
                                                                             granularity)
@@ -118,8 +121,8 @@ class APIInterface:
                 time.sleep(1)
 
             # Fill the remainder
-            open_iso = self.__utils.ISO8601_from_epoch(window_open)
-            close_iso = self.__utils.ISO8601_from_epoch(epoch_stop)
+            open_iso = Blankly.Utils.ISO8601_from_epoch(window_open)
+            close_iso = Blankly.Utils.ISO8601_from_epoch(epoch_stop)
             return history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso, granularity)
 
     # def create_ticker(self, callback, currency_id, log=''):

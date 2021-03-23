@@ -313,7 +313,7 @@ class API:
                     "currency": "USD"
                 }
         """
-        return requests.get(self.__api_url + 'accounts/' + account_id, auth=self.__auth)
+        return requests.get(self.__api_url + 'accounts/' + account_id, auth=self.__auth).json()
 
     """ PAGINATED """
     def get_account_history(self, account_id, **kwargs):
@@ -485,7 +485,7 @@ class API:
                   'side': side,
                   'type': order_type}
         params.update(kwargs)
-        return requests.post(self.__api_url + 'orders', data=json.dumps(params), auth=self.__auth)
+        return requests.post(self.__api_url + 'orders', data=json.dumps(params), auth=self.__auth).json()
 
 
     def place_limit_order(self, product_id, side, price, size,
@@ -909,7 +909,7 @@ class API:
             params['account_id'] = account_id
         if email is not None:
             params['email'] = email
-        return requests.post(self.__api_url + "reports", data=json.dumps(params), auth=self.__auth)
+        return requests.post(self.__api_url + "reports", data=json.dumps(params), auth=self.__auth).json()
 
     def get_report(self, report_id):
         """ Get report status.
@@ -923,7 +923,7 @@ class API:
             dict: Report details, including file url once it is created.
 
         """
-        return requests.get(self.__api_url + "reports/" + report_id, auth=self.__auth)
+        return requests.get(self.__api_url + "reports/" + report_id, auth=self.__auth).json()
 
     def get_trailing_volume(self):
         """  Get your 30-day trailing volume for all products.
@@ -945,10 +945,17 @@ class API:
                 ]
 
         """
-        return requests.get(self.__api_url + "users/self/trailing-volume", auth=self.__auth)
+        return requests.get(self.__api_url + "users/self/trailing-volume", auth=self.__auth).json()
 
+    def get_coinbase_accounts(self):
+        """ Get a list of your coinbase accounts.
 
+        Returns:
+            list: Coinbase account details.
 
+        """
+        print(self.__api_url)
+        return requests.get(self.__api_url + 'coinbase-accounts', auth=self.__auth).json()
 
 
 

@@ -35,6 +35,7 @@ class BlanklyBot:
         self.coin_id = ""
         self.default_ticker = None
         self.Ticker_Manager = None
+        self.direct_calls = None
         self.process = Process(target=self.main)
 
     def setup(self, exchange_type, coin, coin_id, user_preferences, initial_state, interface):
@@ -57,6 +58,7 @@ class BlanklyBot:
         self.Interface = interface
         # Coin id is the currency and which market its on
         self.coin_id = coin_id
+        self.direct_calls = interface.get_calls()
 
         # Create the ticker for this kind of currency. Callbacks will occur in the "price_event" function
         self.Ticker_Manager = Blankly.TickerManager(self.exchange_type)

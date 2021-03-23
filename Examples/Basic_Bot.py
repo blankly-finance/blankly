@@ -19,7 +19,14 @@ class Bot(Blankly.BlanklyBot):
 
         # Example on how to interact with API
         # print(self.Interface.get_product_history(self.coin_id, 1611029486, 1616123507, 10000))
-        print(self.Interface.get_fees())
+        print("Interface call: " + str(self.Interface.get_fees()))
+
+        # You can also bypass the interface and make calls directly to the exchange:
+        try:
+            # Because this is direct, some exchanges have different commands, so this demo is wrapped in try/except
+            print("Direct call: " + str(self.direct_calls.get_fees()))
+        except AttributeError:
+            print("Chosen exchange doesn't have that function")
 
         while True:
             # This demonstrates a way to change the state. The default script just reports the state on this currency.
