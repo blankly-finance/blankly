@@ -31,7 +31,6 @@ def load_auth_coinbase_pro(keys_file, name):
     auth_object = load_json(keys_file)
     exchange_keys = auth_object["coinbase_pro"]
     if name is None:
-        print(exchange_keys.keys())
         first_key = list(exchange_keys.keys())[0]
         warning_string = "No portfolio name to load specified, defaulting to the first in the file: " \
                          "(" + first_key + "). This is fine if there is only one portfolio in use."

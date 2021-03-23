@@ -954,7 +954,6 @@ class API:
             list: Coinbase account details.
 
         """
-        print(self.__api_url)
         return requests.get(self.__api_url + 'coinbase-accounts', auth=self.__auth).json()
 
 
