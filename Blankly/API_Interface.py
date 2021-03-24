@@ -24,10 +24,11 @@ import time, warnings
 
 
 class APIInterface:
-    def __init__(self, exchange_name, authenticated_API):
+    def __init__(self, exchange_name, authenticated_API, exchange_properties):
         self.__exchange_name = exchange_name
         self.__calls = authenticated_API
         self.__ticker_manager = None
+        self.__exchange_properties = exchange_properties
 
     def get_calls(self):
         return self.__calls
@@ -62,8 +63,10 @@ class APIInterface:
                 'product_id': product_id,
             }
             response = self.__calls.place_market_order(product_id, side, funds, **kwargs)
-            return Purchase(order, response,
-                            self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"))
+            return Purchase(order,
+                            response,
+                            self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"),
+                            self.__exchange_properties)
 
     def limit_order(self, size, price, side, id):
         """

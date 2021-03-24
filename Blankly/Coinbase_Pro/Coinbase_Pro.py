@@ -30,7 +30,12 @@ class Coinbase_Pro(Exchange):
         Exchange.__init__(self, "coinbase_pro", defined_name)
 
         # Create the authenticated object
-        self.__Interface = Interface("coinbase_pro", self.__calls)
+        fees = self.__calls.get_fees()
+        exchange_properties = {
+            "maker_fee_rate": fees['maker_fee_rate'],
+            "taker_fee_rate": fees['taker_fee_rate']
+        }
+        self.__Interface = Interface("coinbase_pro", self.__calls, exchange_properties)
         self.get_state()
 
         # Create the model container

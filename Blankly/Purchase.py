@@ -18,18 +18,20 @@
 
 import Blankly.Local_Account.Trade_Local as Trade_Local
 import Blankly.Utils
+import Blankly.Constants
 
 
 class Purchase:
     """ (Buying or selling (string), amount in currency (BTC/XLM), ticker object (so we can get time and value),
     limit if there is one) """
 
-    def __init__(self, order, response, ticker):
+    def __init__(self, order, response, ticker, exchange_properties):
         self.__buyOrSell = order["side"]
         self.__purchaseTime = (ticker.get_most_recent_tick())["time"]
         # Assigned below if there is an ApiCall attached
         self.__purchase_id = None
         self.__response = response
+        self.__exchange_properties = exchange_properties
 
         try:
             self.__limit = order["price"]
@@ -40,7 +42,6 @@ class Purchase:
         # This is the amount before fees
         self.__amountCurrency = order["size"]
         self.__ticker = ticker
-        self.__utils = Utils()
         """ 
         self.__profitable is for any degree of profitability
         self.__reachedPastSellMin is if it's gone up a significant amount
@@ -75,9 +76,6 @@ class Purchase:
 
     def get_purchase_id(self):
         return self.__purchase_id
-
-    def is_active(self):
-        return self.__active
 
     """ Returns true if the buy order can be sold at a profit or the sell order didn't loose money """
     def is_profitable(self, show=False):
@@ -121,35 +119,35 @@ class Purchase:
         #         return False
 
     def get_fee(self, show=False):
-        fee = (self.__valueAtTime * self.__amountCurrency) * Constants.PRETEND_FEE_RATE
+        fee = (self.__valueAtTime * self.__amountCurrency) * Blankly.Constants.PRETEND_FEE_RATE
         if show:
             print(fee)
         return fee
 
-    def cancel_order(self):
-        if self.__calls is not None:
-            response = self.__calls.deleteOrder(self.__purchase_id, show=False)
-            try:
-                if response["message"] == "Unauthorized.":
-                    print("Not authorized to delete order: " + self.__purchase_id)
-            except TypeError as e:
-                print("Canceled Order " + response)
-            except Exception as e:
-                print("FAILED to cancel order " + self.__purchase_id)
-            self.__active = False
-        else:
-            print("Cannot cancel order")
+    # def cancel_order(self):
+    #     if self.__calls is not None:
+    #         response = self.__calls.deleteOrder(self.__purchase_id, show=False)
+    #         try:
+    #             if response["message"] == "Unauthorized.":
+    #                 print("Not authorized to delete order: " + self.__purchase_id)
+    #         except TypeError as e:
+    #             print("Canceled Order " + response)
+    #         except Exception as e:
+    #             print("FAILED to cancel order " + self.__purchase_id)
+    #         self.__active = False
+    #     else:
+    #         print("Cannot cancel order")
 
-    def confirm_canceled(self):
-        if self.__calls is not None:
-            response = self.__calls.getOpenOrders()
-            for i in range(len(response)):
-                if (response[i]["id"] == self.__purchase_id):
-                    return False
-            self.__active = False
-            return True
-        else:
-            return "Cannot confirm cancellation"
+    # def confirm_canceled(self):
+    #     if self.__calls is not None:
+    #         response = self.__calls.getOpenOrders()
+    #         for i in range(len(response)):
+    #             if (response[i]["id"] == self.__purchase_id):
+    #                 return False
+    #         self.__active = False
+    #         return True
+    #     else:
+    #         return "Cannot confirm cancellation"
 
     """ 
     Returns the price that a BUY needs to reach to be profitable
@@ -159,7 +157,8 @@ class Purchase:
         # price = self.__valueAtTime/(1 - Constants.PRETEND_FEE_RATE)
         # This one didn't work for the USD amount modified
         # price = self.__valueAtTime/(1 - (2 * Constants.PRETEND_FEE_RATE) + (Constants.PRETEND_FEE_RATE * Constants.PRETEND_FEE_RATE))
-        price = ((Constants.PRETEND_FEE_RATE + 1) * (self.__valueAtTime) / (1 - Constants.PRETEND_FEE_RATE))
+        maker_fee_rate = self.__exchange_properties['maker_fee_rate']
+        price = ((maker_fee_rate + 1) * (self.__valueAtTime) / (1 - maker_fee_rate))
         if show:
             print(price)
         return price
