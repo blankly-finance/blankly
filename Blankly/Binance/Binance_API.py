@@ -23,5 +23,3 @@ class API:
     def __init__(self, API_KEY, API_SECRET):
         self.auth_client = Client(API_KEY, API_SECRET)
 
-    def die(self):
-        print(self.auth_client.get_account())

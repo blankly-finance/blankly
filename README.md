@@ -26,7 +26,7 @@ Check out our [website](http://blankly.net).
 
 - Profit management **
 
-- Long term and high resolution historical data downloads
+- Long term and high resolution historical data downloads as pandas dataframes
 
 - Single pip module (`pip install Blankly`)
 
@@ -247,3 +247,4 @@ Trading is risky. We are not responsible for losses incurred using this software
 ## Contributing
 
 If you would like to support the project, pull requests are welcome.
+New updates every day 💪.

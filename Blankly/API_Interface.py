@@ -21,6 +21,7 @@ import Blankly.Coinbase_Pro.Coinbase_Pro_Utils as Coinbase_Pro_Utils
 from Blankly.Purchase import Purchase
 import Blankly.Utils
 import time, warnings
+import pandas as pd
 
 
 class APIInterface:
@@ -126,7 +127,9 @@ class APIInterface:
             # Fill the remainder
             open_iso = Blankly.Utils.ISO8601_from_epoch(window_open)
             close_iso = Blankly.Utils.ISO8601_from_epoch(epoch_stop)
-            return history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso, granularity)
+            history_block = history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso,
+                                                                              granularity)
+            return pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 
     # def create_ticker(self, callback, currency_id, log=''):
     #     """
