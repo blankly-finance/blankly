@@ -16,7 +16,7 @@ Check out our [website](http://blankly.net).
 
 - Order book websocket support **
 
-- Fully multiprocessed bots
+- Fully multiprocessed bots with flexible arguments.
 
 - Quickstart access for interacting with exchanges
 
