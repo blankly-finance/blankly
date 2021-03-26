@@ -35,7 +35,7 @@ class Coinbase_Pro(Exchange):
             "maker_fee_rate": fees['maker_fee_rate'],
             "taker_fee_rate": fees['taker_fee_rate']
         }
-        self.__Interface = Interface("coinbase_pro", self.__calls, exchange_properties)
+        self.__Interface = Interface("coinbase_pro", self.__calls, exchange_properties, self.get_preferences())
         self.get_state()
 
         # Create the model container

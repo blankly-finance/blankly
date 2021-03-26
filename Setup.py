@@ -32,6 +32,7 @@ setup(
         'zerorpc',
         'requests',
         'websocket-client',
+        'pandas'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

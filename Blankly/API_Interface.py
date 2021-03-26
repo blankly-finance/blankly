@@ -16,20 +16,23 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from Blankly.Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ticker
-import Blankly.Coinbase_Pro.Coinbase_Pro_Utils as Coinbase_Pro_Utils
-from Blankly.Purchase import Purchase
-import Blankly.Utils
-import time, warnings
+import time
+import warnings
 import pandas as pd
+import datetime
+
+import Blankly.Utils
+from Blankly.Purchase import Purchase
 
 
 class APIInterface:
-    def __init__(self, exchange_name, authenticated_API, exchange_properties):
+    def __init__(self, exchange_name, authenticated_API, exchange_properties, user_preferences):
         self.__exchange_name = exchange_name
         self.__calls = authenticated_API
         self.__ticker_manager = None
         self.__exchange_properties = exchange_properties
+        self.__user_preferences = user_preferences
+        self.__paper_trading = self.__user_preferences["settings"]["paper_trade"]
 
     def get_calls(self):
         return self.__calls
@@ -37,27 +40,23 @@ class APIInterface:
     """
     Get all currencies in an account
     """
-
-    def get_account(self, id=None):
+    def get_account(self, account_id=None):
         if self.__exchange_name == "coinbase_pro":
-            if id is None:
+            if account_id is None:
                 return self.__calls.get_accounts()
             else:
-                return self.__calls.get_account(id)
+                return self.__calls.get_account(account_id)
 
-    def market_order(self, product_id, side, funds, **kwargs):
+    def market_order(self, product_id, side, funds, kwargs):
         """
         Used for buying or selling market orders
         Args:
             product_id: currency to buy
             side: buy/sell
             funds: desired amount of quote currency to use
+            kwargs: specific arguments that may be used by each exchange, if exchange is known
         """
         if self.__exchange_name == "coinbase_pro":
-            """
-            Size: Amount of base currency to buy or sell
-            (size in currency (like .01 BTC), buy/sell (string), product id (BTC-USD))
-            """
             order = {
                 'funds': funds,
                 'side': side,
@@ -69,14 +68,35 @@ class APIInterface:
                             self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"),
                             self.__exchange_properties)
 
-    def limit_order(self, size, price, side, id):
+    def limit_order(self, product_id, side, price, size, kwargs):
         """
         Used for buying or selling limit orders
+        Args:
+            product_id: currency to buy
+            side: buy/sell
+            price: price to set limit order
+            size: amount of currency (like BTC) for the limit to be valued
+            kwargs: specific arguments that may be used by each exchange, (if exchange is known)
         """
         if self.__exchange_name == "coinbase_pro":
             # order = Coinbase_Pro_Utils.CoinbaseProUtils().generate_limit_order(size, price, side, id)
-            # TODO exchange object needs to be generated here and then returned at some point, this invovles creating a ticker. Tickers are something that need to be managed carefully
-            self.__calls.placeOrder(order)
+            order = {
+                'size': size,
+                'side': side,
+                'product_id': product_id,
+            }
+            self.__calls.placeOrder(product_id, side, price, size)
+            response = self.__calls.place_market_order(product_id, side, price, size, **kwargs)
+            return Purchase(order,
+                            response,
+                            self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"),
+                            self.__exchange_properties)
+
+    def stop_order(self, product_id, side, price, size=None, funds=None):
+        """
+
+        """
+        pass
 
     def get_fees(self):
         if self.__exchange_name == "coinbase_pro":

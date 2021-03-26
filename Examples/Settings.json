@@ -1,7 +1,7 @@
 {
   "settings": {
-    "theme": "dark",
     "account_update_time": 5000,
+    "paper_trade": true,
     "base_currency": "USD"
   }
 }
