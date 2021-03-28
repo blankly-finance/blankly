@@ -15,12 +15,12 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import uuid
 
 
 class CoinbaseProUtils:
     def __init__(self):
         pass
-
 
     """
     Size: Amount of base currency to buy or sell
@@ -45,3 +45,7 @@ class CoinbaseProUtils:
             'product_id': product_id,
         }
         return order
+
+    def generate_uuid(self):
+        # This should be a reasonable approximation for order UUIDs
+        return uuid.uuid4()

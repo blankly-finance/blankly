@@ -19,7 +19,6 @@
 import time
 import warnings
 import pandas as pd
-import datetime
 
 import Blankly.Utils
 from Blankly.Purchase import Purchase
@@ -35,6 +34,11 @@ class APIInterface:
         self.__paper_trading = self.__user_preferences["settings"]["paper_trade"]
 
     def get_calls(self):
+        """
+        Returns:
+             The exchange's direct calls object. A Blankly Bot class should have immediate access to this by
+             default
+        """
         return self.__calls
 
     """
@@ -79,7 +83,6 @@ class APIInterface:
             kwargs: specific arguments that may be used by each exchange, (if exchange is known)
         """
         if self.__exchange_name == "coinbase_pro":
-            # order = Coinbase_Pro_Utils.CoinbaseProUtils().generate_limit_order(size, price, side, id)
             order = {
                 'size': size,
                 'side': side,
@@ -92,12 +95,6 @@ class APIInterface:
                             self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"),
                             self.__exchange_properties)
 
-    def stop_order(self, product_id, side, price, size=None, funds=None):
-        """
-
-        """
-        pass
-
     def get_fees(self):
         if self.__exchange_name == "coinbase_pro":
             return self.__calls.get_fees()
@@ -107,6 +104,16 @@ class APIInterface:
             return self.__calls.get_products()
 
     def get_product_history(self, product_id, epoch_start, epoch_stop, granularity):
+        """
+        Returns the product history from an exchange
+        Args:
+            product_id: Blankly product ID format
+            epoch_start: Time to begin download
+            epoch_stop: Time to stop download
+            granularity: Resolution in seconds between tick (ex: 60 = 1 per minute)
+        Returns:
+            Dataframe with 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
+        """
         if self.__exchange_name == "coinbase_pro":
             accepted_grans = [60, 300, 900, 3600, 21600, 86400]
             if granularity not in accepted_grans:
@@ -151,14 +158,10 @@ class APIInterface:
                                                                               granularity)
             return pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 
-    # def create_ticker(self, callback, currency_id, log=''):
-    #     """
-    #     Creates ticker connection.
-    #     """
-    #     if self.__exchange_name == "coinbase_pro":
-    #         ticker = Coinbase_Pro_Ticker(currency_id, log=log)
-    #         ticker.append_callback(callback)
-    #         return ticker
-
     def append_ticker_manager(self, ticker_manager):
         self.__ticker_manager = ticker_manager
+
+    def get_latest_trades(self, product_id, kwargs):
+        if self.__exchange_name == "coinbase_pro":
+            # De-paginate
+            return list(self.__calls.get_product_trades(product_id, **kwargs))

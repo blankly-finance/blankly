@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import Keys
 import Utils
 import time
 from Server import TradeInterface as TI

@@ -16,14 +16,20 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import _thread, json, time, Blankly.Utils, ssl
+import Blankly
+import _thread
+import json
+import ssl
+import time
+
 from websocket import create_connection
+
 
 # TODO add an inherited object so that each of these have a similar way of interacting
 class Tickers:
     def __init__(self, currency_id, log="", show=False, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
         self.__id = currency_id
-        if (len(log) > 1):
+        if len(log) > 1:
             self.__log = True
             self.__filePath = log
             try:
@@ -75,12 +81,12 @@ class Tickers:
         counter = 0
         try:
             while not self.__webSocketClosed:
-                receivedString = ws.recv()
-                received = json.loads(receivedString)
+                received_string = ws.recv()
+                received = json.loads(received_string)
                 if self.__show:
                     print(received)
                 if self.__log:
-                    if (counter % 100 == 0):
+                    if counter % 100 == 0:
                         self.__file.close()
                         self.__file = open(self.__filePath, 'a')
                     line = received["time"] + "," + str(time.time()) + "," + received["price"] + "," + received[
@@ -88,7 +94,7 @@ class Tickers:
                                "high_24h"] + "," + received["volume_30d"] + "," + received["best_bid"] + "," + received[
                                "best_ask"] + "," + received["last_size"] + "\n"
                     self.__file.write(line)
-                    print(receivedString)
+                    print(received_string)
                 self.__tickerFeed.append(received)
                 self.__mostRecentTick = received
 
@@ -99,6 +105,7 @@ class Tickers:
                 self.__timeFeed.append(Blankly.Utils.epoch_from_ISO8601(received["time"]))
                 counter += 1
         except Exception as e:
+            # TODO Determine the error type because exception clause is too broad, there is also another above
             print("Error reading websocket")
         ws.close()
         print("websocket closed")
@@ -115,7 +122,6 @@ class Tickers:
         return self.__timeFeed
 
     """ Define a variable each time so there is no array manipulation """
-
     def get_most_recent_tick(self):
         return self.__mostRecentTick
 

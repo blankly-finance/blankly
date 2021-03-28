@@ -70,6 +70,7 @@ class API:
     Public Client Calls
     """
 
+    """ Full interface support """
     def get_products(self):
         """Get a list of available currency pairs for trading.
 
@@ -133,7 +134,7 @@ class API:
         params = {'level': level}
         return requests.get(self.__api_url + "products/{}/book".format(product_id), params=params)
 
-    """ PAGINATED """
+    """ PAGINATED """ """ Full interface support """
     def get_product_trades(self, product_id, before='', after='', limit=None, result=None):
         """List the latest trades for a product.
 
@@ -146,7 +147,7 @@ class API:
              after (Optional[str]): end time in ISO 8601
              limit (Optional[int]): the desired number of trades (can be more than 100,
                           automatically paginated)
-             results (Optional[list]): list of results that is used for the pagination
+             result (Optional[list]): list of results that is used for the pagination
         Returns:
              list: Latest trades. Example::
                  [{
@@ -166,6 +167,7 @@ class API:
         return self._send_paginated_message('/products/{}/trades'
                                             .format(product_id))
 
+    """ Full interface support """
     def get_product_historic_rates(self, product_id, start=None, end=None, granularity=None):
         """Historic rates for a product.
 
