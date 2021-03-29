@@ -113,29 +113,34 @@ class Tickers:
     def is_websocket_open(self):
         return not self.__webSocketClosed
 
-    """ Parallel with time feed """
-
-    def get_ticker_feed(self):
-        return self.__tickerFeed
-
-    def get_time_feed(self):
-        return self.__timeFeed
-
-    """ Define a variable each time so there is no array manipulation """
-    def get_most_recent_tick(self):
-        return self.__mostRecentTick
-
-    def get_most_recent_time(self):
-        return self.__timeFeed[-1]
-
-    def get_response(self):
-        return self.__response
+    def get_currency_id(self):
+        return self.__id
 
     def update_show(self, value):
         self.__show = value
 
+    """ Required in manager """
     def append_callback(self, obj):
         self.__managers.append(obj)
 
-    def get_currency_id(self):
-        return self.__id
+    """ Define a variable each time so there is no array manipulation """
+    """ Required in manager """
+    def get_most_recent_tick(self):
+        return self.__mostRecentTick
+
+    """ Required in manager """
+    def get_most_recent_time(self):
+        return self.__timeFeed[-1]
+
+    """ Required in manager """
+    def get_time_feed(self):
+        return self.__timeFeed
+
+    """ Parallel with time feed """
+    """ Required in manager """
+    def get_ticker_feed(self):
+        return self.__tickerFeed
+
+    """ Required in manager """
+    def get_response(self):
+        return self.__response

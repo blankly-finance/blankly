@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     # Create the bot and add it to run as a coinbase_pro bitcoin model.
     bot = Bot()
-    exchange.append_model(bot, "GRT")
+    exchange.append_model(bot, "BTC")
     # Imagine this:
     #   Coinbase Pro:
     #       Bitcoin
@@ -77,6 +77,6 @@ if __name__ == "__main__":
     # Now other processes can be created or just continue with this one.
     while True:
         # Print the state every 2 seconds
-        state = exchange.get_currency_state("GRT")
+        state = exchange.get_currency_state("BTC")
         Blankly.Utils.pretty_print_JSON(state)
         time.sleep(1)

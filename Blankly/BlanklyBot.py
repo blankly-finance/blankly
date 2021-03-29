@@ -60,8 +60,8 @@ class BlanklyBot:
         self.coin_id = coin_id
         self.direct_calls = interface.get_calls()
 
-        # Create the ticker for this kind of currency. Callbacks will occur in the "price_event" function
-        self.Ticker_Manager = Blankly.TickerManager(self.exchange_type)
+        # Create the ticker for this kind of currency. Callbacks will occur in the "price_event" function.
+        self.Ticker_Manager = Blankly.TickerManager(self.exchange_type, coin_id)
         self.default_ticker = self.Ticker_Manager.create_ticker(self.coin_id, self)
 
         self.Interface.append_ticker_manager(self.Ticker_Manager)
