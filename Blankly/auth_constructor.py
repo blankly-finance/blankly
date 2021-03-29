@@ -16,7 +16,9 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import json, warnings
+import json
+import warnings
+
 
 def load_json(keys_file):
     try:

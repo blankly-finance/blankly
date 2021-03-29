@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from Blankly.Exchange import Exchange
+from Blankly.exchange import Exchange
 from Blankly.Coinbase_Pro.Coinbase_Pro_API import API
 from Blankly.API_Interface import APIInterface as Interface
 import Blankly.auth_constructor

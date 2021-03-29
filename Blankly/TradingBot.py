@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import Utils
+import utils
 import time
 from Server import TradeInterface as TI
 from Coinbase_Pro.Coinbase_Pro_API import API
@@ -38,7 +38,7 @@ buys = ["2:00"]
 sells = ["21:00"]
 
 """ Define libraries & Connections """
-utils = Utils.Utils()
+utils = utils.Utils()
 Server = TI()
 
 # exchange = Coinbase_Pro("bill", {}, [API_KEY, API_SECRET, API_PASS])

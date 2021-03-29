@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+# TODO allow these to be dynamically changed and updated
 """ BTC """
 MINIMUM_BUY_SELL = .001
 CURRENT_HIGHEST_USD = 42000

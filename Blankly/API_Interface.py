@@ -20,7 +20,7 @@ import time
 import warnings
 import pandas as pd
 
-import Blankly.Utils
+import Blankly.utils
 from Blankly.Purchase import Purchase
 
 

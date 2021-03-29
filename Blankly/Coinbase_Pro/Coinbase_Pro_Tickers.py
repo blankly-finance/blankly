@@ -54,7 +54,6 @@ class Tickers:
         self.__managers = []
 
     def create_ticker_connection(self, id, url):
-        # ws = create_connection(url)
         ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
         request = """{
         "type": "subscribe",
@@ -102,7 +101,7 @@ class Tickers:
                 for i in range(len(self.__managers)):
                     self.__managers[i].price_event(self.__mostRecentTick)
 
-                self.__timeFeed.append(Blankly.Utils.epoch_from_ISO8601(received["time"]))
+                self.__timeFeed.append(Blankly.utils.epoch_from_ISO8601(received["time"]))
                 counter += 1
         except Exception as e:
             # TODO Determine the error type because exception clause is too broad, there is also another above

@@ -78,5 +78,5 @@ if __name__ == "__main__":
     while True:
         # Print the state every 2 seconds
         state = exchange.get_currency_state("BTC")
-        Blankly.Utils.pretty_print_JSON(state)
+        Blankly.utils.pretty_print_JSON(state)
         time.sleep(1)

@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from Utils import Utils
+import utils
 import Constants
 
 
@@ -28,7 +28,6 @@ class ProfitManager:
         self.__exchanges = exchanges
         self.__ticker = ticker
         ticker.append_callback(self)
-        self.__utils = Utils()
         self.__show = show
 
     def addExchange(self, exchange):
