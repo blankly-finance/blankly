@@ -51,7 +51,7 @@ class Tickers:
         self.__timeFeed = []
         self.__websocket = ws
         self.__mostRecentTick = None
-        self.__managers = []
+        self.__callbacks = []
 
     def create_ticker_connection(self, id, url):
         ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
@@ -93,13 +93,12 @@ class Tickers:
                                "high_24h"] + "," + received["volume_30d"] + "," + received["best_bid"] + "," + received[
                                "best_ask"] + "," + received["last_size"] + "\n"
                     self.__file.write(line)
-                    print(received_string)
                 self.__tickerFeed.append(received)
                 self.__mostRecentTick = received
 
                 # Manage price events and fire for each manager attached
-                for i in range(len(self.__managers)):
-                    self.__managers[i].price_event(self.__mostRecentTick)
+                for i in range(len(self.__callbacks)):
+                    self.__callbacks[i].price_event(self.__mostRecentTick)
 
                 self.__timeFeed.append(Blankly.utils.epoch_from_ISO8601(received["time"]))
                 counter += 1
@@ -120,7 +119,7 @@ class Tickers:
 
     """ Required in manager """
     def append_callback(self, obj):
-        self.__managers.append(obj)
+        self.__callbacks.append(obj)
 
     """ Define a variable each time so there is no array manipulation """
     """ Required in manager """

@@ -76,6 +76,14 @@ class TickerManager:
         else:
             return self.__tickers[override_default_exchange_name][currency_id]
 
+    def get_all_tickers(self):
+        """
+        Get the tickers object dictionary
+        Returns:
+            Dictionary with tickers referenced for each currency
+        """
+        return self.__tickers
+
     """ Ticker Functions """
     # TODO, add the getattribute needed for the override_callback feature.
     def append_callback(self, currency_id, callback_object, override_callback_name=None, override_exchange=None):
@@ -103,7 +111,14 @@ class TickerManager:
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
         if self.__default_exchange == "coinbase_pro":
-            self.__tickers[exchange][currency_id].get_most_recent_tick()
+            """
+            Returns:
+                {'type': 'ticker', 'sequence': 23300178473, 'product_id': 'BTC-USD', 'price': '58833.23', 
+                'open_24h': '57734.69', 'volume_24h': '16926.11727388', 'low_24h': '57000', 'high_24h': '59397.48', 
+                'volume_30d': '585271.95796211', 'best_bid': '58833.22', 'best_ask': '58833.23', 'side': 'buy', 
+                'time': '2021-03-30T15:21:23.201930Z', 'trade_id': 151058458, 'last_size': '0.00121711'}
+            """
+            return self.__tickers[exchange][currency_id].get_most_recent_tick()
 
     def get_most_recent_time(self, override_currency=None, override_exchange=None):
         """
@@ -111,7 +126,7 @@ class TickerManager:
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
         if self.__default_exchange == "coinbase_pro":
-            self.__tickers[exchange][currency_id].get_most_recent_time()
+            return self.__tickers[exchange][currency_id].get_most_recent_time()
 
     def get_time_feed(self, override_currency=None, override_exchange=None):
         """
@@ -119,7 +134,7 @@ class TickerManager:
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
         if self.__default_exchange == "coinbase_pro":
-            self.__tickers[exchange][currency_id].get_time_feed()
+            return self.__tickers[exchange][currency_id].get_time_feed()
 
     def get_ticker_feed(self, override_currency=None, override_exchange=None):
         """
@@ -127,7 +142,7 @@ class TickerManager:
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
         if self.__default_exchange == "coinbase_pro":
-            self.__tickers[exchange][currency_id].get_ticker_feed()
+            return self.__tickers[exchange][currency_id].get_ticker_feed()
 
     def get_response(self, override_currency=None, override_exchange=None):
         """
@@ -135,4 +150,4 @@ class TickerManager:
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
         if self.__default_exchange == "coinbase_pro":
-            self.__tickers[exchange][currency_id].get_response()
+            return self.__tickers[exchange][currency_id].get_response()

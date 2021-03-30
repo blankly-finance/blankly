@@ -18,9 +18,10 @@
 
 from multiprocessing import Process, Manager
 import Blankly
+import time
 
 
-class BlanklyBot:
+class BlanklyBot(object):
     def __init__(self):
         """
         Initialize state variables when the bot is created
@@ -60,11 +61,6 @@ class BlanklyBot:
         self.coin_id = coin_id
         self.direct_calls = interface.get_calls()
 
-        # Create the ticker for this kind of currency. Callbacks will occur in the "price_event" function.
-        self.Ticker_Manager = Blankly.TickerManager(self.exchange_type, coin_id)
-        self.default_ticker = self.Ticker_Manager.create_ticker(self.coin_id, self)
-
-        self.Interface.append_ticker_manager(self.Ticker_Manager)
 
     def is_running(self):
         """
@@ -77,13 +73,19 @@ class BlanklyBot:
         """
         Called when the user starts the model. This is what begins and manages the process.
         """
-        # Start the process
-        if args is None:
-            p = Process(target=self.main)
-        else:
-            p = Process(target=self.main, args=(args,))
+        # Start the setup process and then call the main
+        p = Process(target=self.setup_process, args=(args,))
         self.process = p
         self.process.start()
+
+    def setup_process(self, args):
+        """
+        Create any multiprocessed objects in this function
+        """
+        self.Ticker_Manager = Blankly.TickerManager(self.exchange_type, self.coin_id)
+        self.default_ticker = self.Ticker_Manager.create_ticker(self.coin_id, self)
+        self.Interface.append_ticker_manager(self.Ticker_Manager)
+        self.main(args)
 
     """
     State getters and setters for external understanding of the operation
