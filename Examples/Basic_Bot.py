@@ -6,7 +6,7 @@ class Bot(Blankly.BlanklyBot):
     def __init__(self):
         super().__init__()
 
-    def main(self, args=None):
+    def main(self, args):
         """
         Main function to write the trading logic
         """

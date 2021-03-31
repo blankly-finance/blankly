@@ -19,7 +19,6 @@
 import time
 import warnings
 import pandas as pd
-
 import Blankly.utils
 from Blankly.Purchase import Purchase
 
@@ -141,8 +140,8 @@ class APIInterface:
             while need > 300:
                 # Close is always 300 points ahead
                 window_close = window_open + 300 * granularity
-                open_iso = Blankly.Utils.ISO8601_from_epoch(window_open)
-                close_iso = Blankly.Utils.ISO8601_from_epoch(window_close)
+                open_iso = Blankly.utils.ISO8601_from_epoch(window_open)
+                close_iso = Blankly.utils.ISO8601_from_epoch(window_close)
                 # output = self.__calls.get_product_historic_rates(product_id, open_iso, close_iso, granularity)
                 history = history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso,
                                                                             granularity)
@@ -152,11 +151,32 @@ class APIInterface:
                 time.sleep(1)
 
             # Fill the remainder
-            open_iso = Blankly.Utils.ISO8601_from_epoch(window_open)
-            close_iso = Blankly.Utils.ISO8601_from_epoch(epoch_stop)
+            open_iso = Blankly.utils.ISO8601_from_epoch(window_open)
+            close_iso = Blankly.utils.ISO8601_from_epoch(epoch_stop)
             history_block = history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso,
                                                                               granularity)
             return pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
+
+        elif self.__exchange_name == "binance":
+            """
+            Accepted granularity:
+                1m
+                3m
+                5m
+                15m
+                30m
+                1h
+                2h
+                4h
+                6h
+                8h
+                12h
+                1d
+                3d
+                1w
+                1M
+            """
+            return self.__calls.get_klines(symbol="BTCUSDT", interval="1m")
 
     def append_ticker_manager(self, ticker_manager):
         self.__ticker_manager = ticker_manager

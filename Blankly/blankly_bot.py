@@ -37,7 +37,7 @@ class BlanklyBot(object):
         self.default_ticker = None
         self.Ticker_Manager = None
         self.direct_calls = None
-        self.process = Process(target=self.main)
+        self.process = Process(target=self.setup_process)
 
     def setup(self, exchange_type, coin, coin_id, user_preferences, initial_state, interface):
         """
@@ -60,7 +60,6 @@ class BlanklyBot(object):
         # Coin id is the currency and which market its on
         self.coin_id = coin_id
         self.direct_calls = interface.get_calls()
-
 
     def is_running(self):
         """

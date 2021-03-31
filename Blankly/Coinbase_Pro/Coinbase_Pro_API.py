@@ -1,6 +1,6 @@
 """
     Calls to the Coinbase Pro API.
-    Copyright (C) 2021  Emerson Dove, Daniel Paquin
+    Copyright (C) 2021  Daniel Paquin. Adapted by Emerson Dove under the MIT license
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published

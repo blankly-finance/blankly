@@ -16,27 +16,27 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import json, numpy, time
-from sklearn.linear_model import LinearRegression
-import iso8601
 import datetime as DT
+import json
+import numpy
+import time
 
-""" 
-Json pretty printer for show arguments
-"""
-
-
-def printJSON(jsonObject):
-    print(pretty_print_JSON(jsonObject))
+import iso8601
+from sklearn.linear_model import LinearRegression
 
 
-""" 
-Json pretty printer for general string usage
-"""
+# def printJSON(jsonObject):
+#     """
+#     Json pretty printer for show arguments
+#     """
+#     print(pretty_print_JSON(jsonObject))
 
 
-def pretty_print_JSON(jsonObject):
-    out = json.dumps(jsonObject, indent=2)
+def pretty_print_JSON(json_object):
+    """
+    Json pretty printer for general string usage
+    """
+    out = json.dumps(json_object, indent=2)
     print(out)
     return out
 
@@ -49,21 +49,19 @@ def ISO8601_from_epoch(epoch):
     return DT.datetime.utcfromtimestamp(epoch).isoformat() + 'Z'
 
 
-"""
-Performs regression n points back
-"""
-
-
-def getPriceDerivative(ticker, pointNumber):
+def getPriceDerivative(ticker, point_number):
+    """
+    Performs regression n points back
+    """
     feed = numpy.array(ticker.get_ticker_feed()).reshape(-1, 1)
     times = numpy.array(ticker.get_time_feed()).reshape(-1, 1)
-    if pointNumber > len(feed):
-        pointNumber = len(feed)
+    if point_number > len(feed):
+        point_number = len(feed)
 
-    feed = feed[-pointNumber:]
-    times = times[-pointNumber:]
+    feed = feed[-point_number:]
+    times = times[-point_number:]
     prices = []
-    for i in range(pointNumber):
+    for i in range(point_number):
         prices.append(feed[i][0]["price"])
     prices = numpy.array(prices).reshape(-1, 1)
 
@@ -73,27 +71,25 @@ def getPriceDerivative(ticker, pointNumber):
     return regressor.coef_[0][0]
 
 
-""" 
-Fit simple parabola 
-"""
-
-
-def fitParabola(ticker, pointNumber):
+def fitParabola(ticker, point_number):
+    """
+    Fit simple parabola
+    """
     feed = ticker.get_ticker_feed()
     times = ticker.get_time_feed()
-    if pointNumber > len(feed):
-        pointNumber = len(feed)
+    if point_number > len(feed):
+        point_number = len(feed)
 
-    feed = feed[-pointNumber:]
-    times = times[-pointNumber:]
+    feed = feed[-point_number:]
+    times = times[-point_number:]
     prices = []
-    for i in range(pointNumber):
+    for i in range(point_number):
         prices.append(float(feed[i]["price"]))
         times[i] = float(times[i])
 
     # Pull the times back to x=0 so we can know what happens next
-    latestTime = times[-1]
+    latest_time = times[-1]
     for i in range(len(prices)):
-        times[i] = times[i] - latestTime
+        times[i] = times[i] - latest_time
 
     return numpy.polyfit(times, prices, 2, full=True)

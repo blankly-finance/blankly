@@ -27,7 +27,9 @@ class TickerManager:
         self.__tickers = {}
         self.__tickers[exchange_name] = {}
 
-    """ Manager Functions """
+    """ 
+    Manager Functions 
+    """
     def create_ticker(self, currency_id, callback, log='', override_exchange=None):
         """
         Create a ticker on a given exchange.
@@ -55,8 +57,9 @@ class TickerManager:
             return ticker
 
     def __evaluate_overrides(self, override_currency, override_exchange):
-        currency_id = self.__default_currency
-        exchange = self.__default_exchange
+        """
+        Switches to inputted exchanges, used in the public methods
+        """
         if override_currency is not None:
             currency_id = override_currency
         else:
@@ -71,6 +74,12 @@ class TickerManager:
         return self.__default_exchange
 
     def get_ticker(self, currency_id, override_default_exchange_name=None):
+        """
+        Retrieve the ticker attached to a currency
+        Args:
+            currency_id: The currency ID of ticker (required) such as "BTC-USD"
+            override_default_exchange_name: Override the default to get tickers for different exchanges
+        """
         if override_default_exchange_name is None:
             return self.__tickers[self.__default_exchange][currency_id]
         else:
@@ -84,7 +93,9 @@ class TickerManager:
         """
         return self.__tickers
 
-    """ Ticker Functions """
+    """ 
+    Ticker Functions 
+    """
     # TODO, add the getattribute needed for the override_callback feature.
     def append_callback(self, currency_id, callback_object, override_callback_name=None, override_exchange=None):
         """
