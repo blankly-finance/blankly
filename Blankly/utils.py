@@ -49,7 +49,7 @@ def ISO8601_from_epoch(epoch):
     return DT.datetime.utcfromtimestamp(epoch).isoformat() + 'Z'
 
 
-def getPriceDerivative(ticker, point_number):
+def get_price_derivative(ticker, point_number):
     """
     Performs regression n points back
     """
@@ -71,7 +71,7 @@ def getPriceDerivative(ticker, point_number):
     return regressor.coef_[0][0]
 
 
-def fitParabola(ticker, point_number):
+def fit_parabola(ticker, point_number):
     """
     Fit simple parabola
     """
@@ -93,3 +93,15 @@ def fitParabola(ticker, point_number):
         times[i] = times[i] - latest_time
 
     return numpy.polyfit(times, prices, 2, full=True)
+
+def convert_coin_id(coin_id, exchange, base_currency):
+    if exchange == "binance":
+        index = int(coin_id.find(base_currency))
+
+        print(index)
+
+        coin_id = coin_id[0:index]
+        coin_id = coin_id + "-" + base_currency
+        return coin_id
+    if exchange == "coinbase_pro":
+        return coin_id

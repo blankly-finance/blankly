@@ -149,7 +149,7 @@ exchange = Exchange.Exchange("buy", 46, bitcoinTicker, response, call)
 while True:
     print(exchange.is_profitable(show=True))
     time.sleep(1)
-    utils.getPriceDerivative(bitcoinTicker, 10)
+    utils.get_price_derivative(bitcoinTicker, 10)
 
 """ Main trade loop """
 scheduler = sched.scheduler(time.time, time.sleep)

@@ -78,7 +78,7 @@ class ProfitManager:
                                                                                                                                profitableSellPrice * Constants.SELL_MIN)) - profitableSellPrice) / 2)) and (
             not self.__exchanges[i].getIfPastSellMin()):
                 # Sell even if it hasn't gone very high and the price is looking down
-                if self.__utils.getPriceDerivative(self.__ticker, Constants.EMERGENCY_SELL_SAMPLE) < 0:
+                if self.__utils.get_price_derivative(self.__ticker, Constants.EMERGENCY_SELL_SAMPLE) < 0:
                     print("Emergency selling self because market is trending downwards: " + str(
                         self.__exchanges[i].get_purchase_id()))
                     self.__exchanges[i].sellSelf()
