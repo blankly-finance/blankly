@@ -40,8 +40,14 @@ class APIInterface:
         """
         return self.__calls
 
+    def get_products(self):
+        if self.__exchange_name == "coinbase_pro":
+            return self.__calls.get_products()
+
     """
     Get all currencies in an account
+    Coinbase Pro: get_account
+    Binance: get_account["balances"]
     """
     def get_account(self, account_id=None):
         if self.__exchange_name == "coinbase_pro":
@@ -64,6 +70,7 @@ class APIInterface:
                 'funds': funds,
                 'side': side,
                 'product_id': product_id,
+                'type': 'market'
             }
             response = self.__calls.place_market_order(product_id, side, funds, **kwargs)
             return Purchase(order,
@@ -86,6 +93,7 @@ class APIInterface:
                 'size': size,
                 'side': side,
                 'product_id': product_id,
+                'type': 'limit'
             }
             self.__calls.placeOrder(product_id, side, price, size)
             response = self.__calls.place_market_order(product_id, side, price, size, **kwargs)
@@ -94,14 +102,64 @@ class APIInterface:
                             self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"),
                             self.__exchange_properties)
 
+    def stop_order(self, product_id, side, price, size, kwargs):
+        """
+        Used for placing stop orders
+        Args:
+            product_id: currency to buy
+            side: buy/sell
+            price: price to set limit order
+            size: amount of currency (like BTC) for the limit to be valued
+            kwargs: specific arguments that may be used by each exchange, (if exchange is known)
+        """
+        if self.__exchange_name == "coinbase_pro":
+            order = {
+                'size': size,
+                'side': side,
+                'product_id': product_id,
+                'type': 'stop'
+            }
+            self.__calls.placeOrder(product_id, side, price, size)
+            response = self.__calls.place_market_order(product_id, side, price, size, **kwargs)
+            return Purchase(order,
+                            response,
+                            self.__ticker_manager.get_ticker(product_id,
+                                                             override_default_exchange_name="coinbase_pro"),
+                            self.__exchange_properties)
+
+    def cancel_order(self, order_id):
+        if self.__exchange_name == "coinbase_pro":
+            return self.__calls.cancel_order(order_id)
+
+    def get_open_orders(self, product_id=None, kwargs=None):
+        """
+        List open orders.
+        """
+        if self.__exchange_name == "coinbase_pro":
+            if kwargs is not None:
+                return list(self.__calls.get_orders(product_id, kwargs))
+            else:
+                return list(self.__calls.get_orders(product_id))
+
+    def get_order(self, order_id):
+        if self.__exchange_name == "coinbase_pro":
+            return self.__calls.get_order(order_id)
+
+    """
+    Coinbase Pro: get_fees
+    Binance: get_trade_fee
+    """
     def get_fees(self):
         if self.__exchange_name == "coinbase_pro":
             return self.__calls.get_fees()
 
-    def get_products(self):
-        if self.__exchange_name == "coinbase_pro":
-            return self.__calls.get_products()
-
+    """
+    Coinbase Pro: get_account_history
+    Binance: 
+        get_deposit_history
+        get_withdraw_history
+        
+    """
     def get_product_history(self, product_id, epoch_start, epoch_stop, granularity):
         """
         Returns the product history from an exchange
@@ -185,3 +243,24 @@ class APIInterface:
         if self.__exchange_name == "coinbase_pro":
             # De-paginate
             return list(self.__calls.get_product_trades(product_id, **kwargs))
+
+    """
+    Coinbase Pro: Get Currencies
+    Binance: get_products
+    """
+    def get_currencies(self):
+        if self.__exchange_name == "coinbase_pro":
+            """
+            Returns:
+            list: List of currencies. Example::
+                [{
+                    "id": "BTC",
+                    "name": "Bitcoin",
+                    "min_size": "0.00000001"
+                }, {
+                    "id": "USD",
+                    "name": "United States Dollar",
+                    "min_size": "0.01000000"
+                }]
+                """
+            return self.__calls.get_currencies()

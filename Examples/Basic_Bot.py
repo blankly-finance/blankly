@@ -31,6 +31,7 @@ class Bot(Blankly.BlanklyBot):
         while True:
             # This demonstrates a way to change the state. The default script just reports the state on this currency.
             self.update_state("Heartbeat", self.get_state()["Heartbeat"] + 1)
+
             # print(self.Ticker_Manager.get_most_recent_tick())
             time.sleep(1)
 

@@ -233,6 +233,7 @@ class API:
         """
         return requests.get(self.__api_url + 'products/{}/stats'.format(product_id), auth=self.__auth).json()
 
+    """ Full interface support """
     def get_currencies(self):
         """List known currencies.
 
@@ -268,7 +269,6 @@ class API:
     """
     Private API Calls
     """
-
     def get_accounts(self):
         """ Get a list of trading all accounts.
 
@@ -297,6 +297,7 @@ class API:
         """
         return requests.get(self.__api_url + 'accounts', auth=self.__auth).json()
 
+    """ Full interface support """
     def get_account(self, account_id):
         """ Get information for a single account.
 
@@ -489,7 +490,6 @@ class API:
         params.update(kwargs)
         return requests.post(self.__api_url + 'orders', data=json.dumps(params), auth=self.__auth).json()
 
-
     def place_limit_order(self, product_id, side, price, size,
                           client_oid=None,
                           stp=None,
@@ -628,6 +628,7 @@ class API:
         params = dict((k, v) for k, v in params.items() if v is not None)
         return self.place_order(**params)
 
+    """ Full interface support """
     def cancel_order(self, order_id):
         """ Cancel a previously placed order.
 
@@ -651,6 +652,7 @@ class API:
         return requests.delete(self.__api_url + 'orders/' + order_id, auth=self.__auth).json()
 
     """ PAGINATED """
+    """ Full interface support (untested) """
     def get_orders(self, product_id=None, status=None, **kwargs):
         """ List your current open orders.
 
@@ -716,6 +718,7 @@ class API:
             params['status'] = status
         return self._send_paginated_message('/orders', params=params)
 
+    """ Full interface support (untested) """
     def get_order(self, order_id):
         """ Get a single order by order id.
 
@@ -810,6 +813,7 @@ class API:
 
         return self._send_paginated_message('/fills', params=params)
 
+    """ Full interface support (tested) """
     def get_fees(self):
         """
             Returns:
