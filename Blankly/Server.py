@@ -40,7 +40,6 @@ class TradeInterface(object):
 
     def init(self):
         self.__exchanges = []
-        self.__utils = Utils.Utils()
         # Called from the dashboard
         try:
             with open('./Settings.json', 'r') as f:
@@ -52,7 +51,7 @@ class TradeInterface(object):
 
     def add_exchange(self, exchange_name, exchange_type, auth):
         if exchange_type == "coinbase_pro":
-            self.__exchanges.append(Coinbase_Pro(exchange_name, self.__user_preferences, auth))
+            self.__exchanges.append(Coinbase_Pro(exchange_name))
             return exchange_name
         else:
             Exception("Exchange type not found")

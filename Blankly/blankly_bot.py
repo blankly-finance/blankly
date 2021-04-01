@@ -18,7 +18,6 @@
 
 from multiprocessing import Process, Manager
 import Blankly
-import time
 
 
 class BlanklyBot(object):

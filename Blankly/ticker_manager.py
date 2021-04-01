@@ -30,7 +30,7 @@ class TickerManager:
     """ 
     Manager Functions 
     """
-    def create_ticker(self, currency_id, callback, log='', override_exchange=None):
+    def create_ticker(self, currency_id, callback, log=None, override_exchange=None):
         """
         Create a ticker on a given exchange.
         Args:
@@ -116,6 +116,15 @@ class TickerManager:
         if exchange_name == "coinbase_pro":
             self.__tickers['coinbase_pro'][currency_id].append_callback(callback_object)
 
+    def is_websocket_open(self, override_currency=None, override_exchange=None):
+        """
+        Check if the websocket attached to a currency is open
+        """
+        currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
+        if self.__default_exchange == "coinbase_pro":
+            return self.__tickers[exchange][currency_id].is_websocket_open()
+
+
     def get_most_recent_tick(self, override_currency=None, override_exchange=None):
         """
         Get the most recent tick received
@@ -162,3 +171,19 @@ class TickerManager:
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
         if self.__default_exchange == "coinbase_pro":
             return self.__tickers[exchange][currency_id].get_response()
+
+    def close_websocket(self, override_currency=None, override_exchange=None):
+        """
+        Close a websocket thread
+        """
+        currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
+        if self.__default_exchange == "coinbase_pro":
+            self.__tickers[exchange][currency_id].close_websocket()
+
+    def restart_ticker(self, override_currency=None, override_exchange=None):
+        """
+        Restart a websocket feed after asking it to stop
+        """
+        currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
+        if self.__default_exchange == "coinbase_pro":
+            self.__tickers[exchange][currency_id].restart_ticker()

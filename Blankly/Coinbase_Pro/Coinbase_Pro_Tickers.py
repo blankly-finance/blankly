@@ -21,15 +21,44 @@ import _thread
 import json
 import ssl
 import time
+import traceback
 
 from websocket import create_connection
 
 
-# TODO add an inherited object so that each of these have a similar way of interacting
+def create_ticker_connection(id, url):
+    ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
+    request = """{
+    "type": "subscribe",
+    "product_ids": [
+        \"""" + id + """\"
+    ],
+    "channels": [
+        {
+            "name": "ticker",
+            "product_ids": [
+                \"""" + id + """\"
+            ]
+        }
+    ]
+    }"""
+    ws.send(request)
+    return ws
+
+
 class Tickers:
-    def __init__(self, currency_id, log="", show=False, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
+    def __init__(self, currency_id, log=None, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
+        """
+        Create and initialize the ticker
+        Args:
+            currency_id: Currency to initialize on such as "BTC-USD"
+            log: Fill this with a path to a log file that should be created
+            WEBSOCKET_URL: Default websocket URL feed.
+        """
         self.__id = currency_id
-        if len(log) > 1:
+
+        # Initialize log file
+        if log is not None:
             self.__log = True
             self.__filePath = log
             try:
@@ -37,53 +66,47 @@ class Tickers:
                 self.__file.write(
                     "time,system_time,price,open_24h,volume_24h,low_24h,high_24h,volume_30d,best_bid,best_ask,"
                     "last_size\n")
-            except:
+            except FileExistsError:
                 self.__file = open(log, 'a')
         else:
             self.__log = False
 
-        self.__webSocketClosed = False
-        ws = self.create_ticker_connection(currency_id, WEBSOCKET_URL)
-        self.__response = ws.recv()
-        self.__show = show
-        _thread.start_new_thread(self.read_websocket, (ws,))
+        self.URL = WEBSOCKET_URL
+        self.ws = None
+        self.__response = None
         self.__tickerFeed = []
         self.__timeFeed = []
-        self.__websocket = ws
         self.__mostRecentTick = None
         self.__callbacks = []
+        # Start the websocket
+        self.start_websocket()
 
-    def create_ticker_connection(self, id, url):
-        ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
-        request = """{
-        "type": "subscribe",
-        "product_ids": [
-            \"""" + id + """\"
-        ],
-        "channels": [
-            {
-                "name": "ticker",
-                "product_ids": [
-                    \"""" + id + """\"
-                ]
-            }
-        ]
-        }"""
-        ws.send(request)
-        return ws
+    def start_websocket(self):
+        """
+        Restart websocket if it was asked to stop.
+        """
+        if self.ws is None:
+            self.ws = create_ticker_connection(self.__id, self.URL)
+            self.__response = self.ws.recv()
+            _thread.start_new_thread(self.read_websocket, ())
+        else:
+            if self.ws.connected:
+                print("Already running...")
+                pass
+            else:
+                # Use recursion to restart, continue appending to time feed and ticker feed
+                self.ws = None
+                self.start_websocket()
 
-    def close_websocket(self):
-        self.__webSocketClosed = True
-        print("Closed websocket for " + self.__id)
-
-    def read_websocket(self, ws):
+    def read_websocket(self):
         counter = 0
-        try:
-            while not self.__webSocketClosed:
-                received_string = ws.recv()
+        # TODO port this to "WebSocketApp" found in the websockets documentation
+        while self.ws.connected:
+            # In case the user closes while its reading from the websocket
+            persist_connected = self.ws.connected
+            try:
+                received_string = self.ws.recv()
                 received = json.loads(received_string)
-                if self.__show:
-                    print(received)
                 if self.__log:
                     if counter % 100 == 0:
                         self.__file.close()
@@ -102,20 +125,25 @@ class Tickers:
 
                 self.__timeFeed.append(Blankly.utils.epoch_from_ISO8601(received["time"]))
                 counter += 1
-        except Exception as e:
-            # TODO Determine the error type because exception clause is too broad, there is also another above
-            print("Error reading websocket")
-        ws.close()
-        print("websocket closed")
+            except Exception as e:
+                if persist_connected:
+                    pass
+                else:
+                    print(traceback.format_exc())
+                    print("Error reading websocket for " + self.__id + ": attempting to re-initialize")
+                    # Give a delay so this doesn't eat up from the main thread if it takes many tries to initialize
+                    time.sleep(2)
+                    self.ws.close()
+                    self.ws = create_ticker_connection(self.__id, self.URL)
+                    # Update response
+                    self.__response = self.ws.recv()
 
+    """ Required in manager """
     def is_websocket_open(self):
-        return not self.__webSocketClosed
+        return self.ws.connected
 
     def get_currency_id(self):
         return self.__id
-
-    def update_show(self, value):
-        self.__show = value
 
     """ Required in manager """
     def append_callback(self, obj):
@@ -142,3 +170,15 @@ class Tickers:
     """ Required in manager """
     def get_response(self):
         return self.__response
+
+    """ Required in manager """
+    def close_websocket(self):
+        if self.ws.connected:
+            self.ws.close()
+            print("Closed websocket for " + self.__id)
+        else:
+            print("Websocket for " + self.__id + " is already closed")
+
+    """ Required in manager """
+    def restart_ticker(self):
+        self.start_websocket()
