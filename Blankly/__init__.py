@@ -22,4 +22,5 @@ from Blankly.blankly_bot import BlanklyBot
 
 from Blankly.Coinbase_Pro.Coinbase_Pro_API import API as Direct_Coinbase_Pro_API
 from Blankly.ticker_manager import TickerManager as TickerManager
+from Blankly.Coinbase_Pro.orderbook import OrderBook as Coinbase_Pro_OrderBook
 import Blankly.utils

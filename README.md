@@ -85,7 +85,7 @@ Check out our [website](http://blankly.net).
 
    1. **You can add multiple portfolios**! You can specify the name of the portfolio to load when you construct the exchange.
    2. Example: `Blankly.Coinbase_Pro(portfolio_name="my cool portfolio")`). 
-   3. If you don't provide one it will just default to the first one given in the `Keys.json` file and show a warning.
+   3. If you don't provide one to the constructor, it will just default to the first one given in the `Keys.json` file and show a warning.
 
 6. **The script defaults to Coinbase Pro**. If you're using that, great! If not, change the line that says:
 
@@ -197,7 +197,7 @@ The comments offer a decent amount of description for the behavior, but here is 
 
 | Exchange     | REST Support | Ticker Websocket | Order Book | Interface |
 | ------------ | ------------ | ---------------- | ---------- | --------- |
-| Coinbase Pro | 🟢            | 🟢                | 🟡          | 🟢         |
+| Coinbase Pro | 🟢            | 🟢                | 🟢          | 🟢         |
 | Binance      | 🟡            | 🟡                | 🔴          | 🟡         |
 | Kraken       | 🔴            | 🔴                | 🔴          | 🔴         |
 

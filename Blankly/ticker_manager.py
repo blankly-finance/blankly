@@ -124,7 +124,6 @@ class TickerManager:
         if self.__default_exchange == "coinbase_pro":
             return self.__tickers[exchange][currency_id].is_websocket_open()
 
-
     def get_most_recent_tick(self, override_currency=None, override_exchange=None):
         """
         Get the most recent tick received

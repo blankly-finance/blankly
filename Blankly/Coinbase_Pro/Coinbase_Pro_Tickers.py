@@ -130,7 +130,7 @@ class Tickers:
                     pass
                 else:
                     print(traceback.format_exc())
-                    print("Error reading websocket for " + self.__id + ": attempting to re-initialize")
+                    print("Error reading ticker websocket for " + self.__id + ": attempting to re-initialize")
                     # Give a delay so this doesn't eat up from the main thread if it takes many tries to initialize
                     time.sleep(2)
                     self.ws.close()
@@ -175,7 +175,6 @@ class Tickers:
     def close_websocket(self):
         if self.ws.connected:
             self.ws.close()
-            print("Closed websocket for " + self.__id)
         else:
             print("Websocket for " + self.__id + " is already closed")
 
