@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import Blankly
 import _thread
 import json
 import ssl
@@ -34,7 +33,7 @@ def create_websocket_connection(id, url):
         \"""" + id + """\"
     ],
     "channels": [
-        "level2"
+        "full"
     ]
     }"""
     ws.send(request)
@@ -47,7 +46,6 @@ class OrderBook:
         Create and initialize the orderbook connection
         Args:
             currency_id: Currency to listen on such as "BTC-USD"
-            log: Fill this with a path to a log file that should be created
             WEBSOCKET_URL: Default websocket URL feed.
         """
         self.__id = currency_id
