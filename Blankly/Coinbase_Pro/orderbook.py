@@ -56,12 +56,16 @@ class OrderBook(IExchangeOrderbook):
         self.URL = WEBSOCKET_URL
         self.ws = None
         self.__response = None
-        self.__mostRecentTick = None
+        self.__most_recent_tick = None
+        self.__most_recent_time = None
         self.__callbacks = []
-        # Start the websocket
+
+        # Load preferences and create the buffers
         self.__preferences = Blankly.utils.load_user_preferences()
         self.__orderbook_feed = collections.deque(maxlen=self.__preferences["settings"]["orderbook_buffer_size"])
         self.__time_feed = collections.deque(maxlen=self.__preferences["settings"]["orderbook_buffer_size"])
+
+        # Start the websocket
         self.start_websocket()
 
     # This could be made static with some changes, would make the code in the loop cleaner
@@ -90,9 +94,11 @@ class OrderBook(IExchangeOrderbook):
             try:
                 received_string = self.ws.recv()
                 received = json.loads(received_string)
+                self.__most_recent_time = Blankly.utils.epoch_from_ISO8601(received["time"])
+                received = received["time"] = self.__most_recent_time
                 self.__orderbook_feed.append(received)
-                self.__mostRecentTick = received
-                self.__time_feed.append(Blankly.utils.epoch_from_ISO8601(received["time"]))
+                self.__most_recent_tick = received
+                self.__time_feed.append(self.__most_recent_time)
 
                 # Manage price events and fire for each manager attached
                 for i in range(len(self.__callbacks)):
@@ -124,20 +130,20 @@ class OrderBook(IExchangeOrderbook):
     """ Define a variable each time so there is no array manipulation """
     """ Required in manager """
     def get_most_recent_tick(self):
-        return self.__mostRecentTick
+        return self.__most_recent_tick
 
     """ Required in manager """
     def get_most_recent_time(self):
-        return self.__time_feed[-1]
+        return self.__most_recent_time
 
     """ Required in manager """
     def get_time_feed(self):
-        return self.__time_feed
+        return list(self.__time_feed)
 
     """ Parallel with time feed """
     """ Required in manager """
     def get_orderbook_feed(self):
-        return self.__orderbook_feed
+        return list(self.__orderbook_feed)
 
     """ Required in manager """
     def get_response(self):

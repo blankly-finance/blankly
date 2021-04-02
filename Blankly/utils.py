@@ -17,6 +17,7 @@
 """
 
 import datetime as DT
+import dateutil.parser as DP
 import json
 import numpy
 import time
@@ -55,8 +56,7 @@ def pretty_print_JSON(json_object):
 
 
 def epoch_from_ISO8601(ISO8601):
-    return time.mktime(iso8601.parse_date(ISO8601).timetuple())
-
+    return DP.parse(ISO8601).timestamp()
 
 def ISO8601_from_epoch(epoch):
     return DT.datetime.utcfromtimestamp(epoch).isoformat() + 'Z'

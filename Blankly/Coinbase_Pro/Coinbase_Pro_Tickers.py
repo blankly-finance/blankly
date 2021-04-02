@@ -76,7 +76,8 @@ class Tickers(IExchangeTicker):
         self.URL = WEBSOCKET_URL
         self.ws = None
         self.__response = None
-        self.__mostRecentTick = None
+        self.__most_recent_tick = None
+        self.__most_recent_time = None
         self.__callbacks = []
 
         # Reload preferences
@@ -113,6 +114,13 @@ class Tickers(IExchangeTicker):
             try:
                 received_string = self.ws.recv()
                 received = json.loads(received_string)
+                self.__most_recent_time = Blankly.utils.epoch_from_ISO8601(received["time"])
+                # Modify time to use epoch
+                received["time"] = self.__most_recent_time
+                self.__most_recent_tick = received
+                self.__ticker_feed.append(received)
+                self.__time_feed.append(self.__most_recent_time)
+
                 if self.__log:
                     if counter % 100 == 0:
                         self.__file.close()
@@ -122,14 +130,12 @@ class Tickers(IExchangeTicker):
                                "high_24h"] + "," + received["volume_30d"] + "," + received["best_bid"] + "," + received[
                                "best_ask"] + "," + received["last_size"] + "\n"
                     self.__file.write(line)
-                self.__ticker_feed.append(received)
-                self.__mostRecentTick = received
 
                 # Manage price events and fire for each manager attached
                 for i in range(len(self.__callbacks)):
-                    self.__callbacks[i].price_event(self.__mostRecentTick)
+                    self.__callbacks[i].price_event(self.__most_recent_tick)
 
-                self.__time_feed.append(Blankly.utils.epoch_from_ISO8601(received["time"]))
+
                 counter += 1
             except Exception as e:
                 if persist_connected:
@@ -158,20 +164,20 @@ class Tickers(IExchangeTicker):
     """ Define a variable each time so there is no array manipulation """
     """ Required in manager """
     def get_most_recent_tick(self):
-        return self.__mostRecentTick
+        return self.__most_recent_tick
 
     """ Required in manager """
     def get_most_recent_time(self):
-        return self.__time_feed[-1]
+        return self.__most_recent_time
 
     """ Required in manager """
     def get_time_feed(self):
-        return self.__time_feed
+        return list(self.__time_feed)
 
     """ Parallel with time feed """
     """ Required in manager """
     def get_ticker_feed(self):
-        return self.__ticker_feed
+        return list(self.__ticker_feed)
 
     """ Required in manager """
     def get_response(self):
