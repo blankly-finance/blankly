@@ -20,9 +20,7 @@ import datetime as DT
 import dateutil.parser as DP
 import json
 import numpy
-import time
 
-import iso8601
 from sklearn.linear_model import LinearRegression
 
 
