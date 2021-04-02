@@ -23,6 +23,7 @@ import ssl
 import time
 import traceback
 from Blankly.IExchange_Ticker import IExchangeTicker
+import collections
 
 from websocket import create_connection
 
@@ -75,10 +76,14 @@ class Tickers(IExchangeTicker):
         self.URL = WEBSOCKET_URL
         self.ws = None
         self.__response = None
-        self.__tickerFeed = []
-        self.__timeFeed = []
         self.__mostRecentTick = None
         self.__callbacks = []
+
+        # Reload preferences
+        self.__preferences = Blankly.utils.load_user_preferences()
+        self.__ticker_feed = collections.deque(maxlen=self.__preferences["settings"]["ticker_buffer_size"])
+        self.__time_feed = collections.deque(maxlen=self.__preferences["settings"]["ticker_buffer_size"])
+
         # Start the websocket
         self.start_websocket()
 
@@ -117,14 +122,14 @@ class Tickers(IExchangeTicker):
                                "high_24h"] + "," + received["volume_30d"] + "," + received["best_bid"] + "," + received[
                                "best_ask"] + "," + received["last_size"] + "\n"
                     self.__file.write(line)
-                self.__tickerFeed.append(received)
+                self.__ticker_feed.append(received)
                 self.__mostRecentTick = received
 
                 # Manage price events and fire for each manager attached
                 for i in range(len(self.__callbacks)):
                     self.__callbacks[i].price_event(self.__mostRecentTick)
 
-                self.__timeFeed.append(Blankly.utils.epoch_from_ISO8601(received["time"]))
+                self.__time_feed.append(Blankly.utils.epoch_from_ISO8601(received["time"]))
                 counter += 1
             except Exception as e:
                 if persist_connected:
@@ -157,16 +162,16 @@ class Tickers(IExchangeTicker):
 
     """ Required in manager """
     def get_most_recent_time(self):
-        return self.__timeFeed[-1]
+        return self.__time_feed[-1]
 
     """ Required in manager """
     def get_time_feed(self):
-        return self.__timeFeed
+        return self.__time_feed
 
     """ Parallel with time feed """
     """ Required in manager """
     def get_ticker_feed(self):
-        return self.__tickerFeed
+        return self.__ticker_feed
 
     """ Required in manager """
     def get_response(self):

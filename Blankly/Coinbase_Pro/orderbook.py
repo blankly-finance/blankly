@@ -21,6 +21,9 @@ import json
 import ssl
 import time
 import traceback
+import Blankly
+import collections
+from Blankly.IExchange_Orderbook import IExchangeOrderbook
 
 from websocket import create_connection
 
@@ -40,7 +43,7 @@ def create_websocket_connection(id, url):
     return ws
 
 
-class OrderBook:
+class OrderBook(IExchangeOrderbook):
     def __init__(self, currency_id, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
         """
         Create and initialize the orderbook connection
@@ -53,11 +56,12 @@ class OrderBook:
         self.URL = WEBSOCKET_URL
         self.ws = None
         self.__response = None
-        self.__orderbook_feed = []
-        self.__timeFeed = []
         self.__mostRecentTick = None
         self.__callbacks = []
         # Start the websocket
+        self.__preferences = Blankly.utils.load_user_preferences()
+        self.__orderbook_feed = collections.deque(maxlen=self.__preferences["settings"]["orderbook_buffer_size"])
+        self.__time_feed = collections.deque(maxlen=self.__preferences["settings"]["orderbook_buffer_size"])
         self.start_websocket()
 
     # This could be made static with some changes, would make the code in the loop cleaner
@@ -86,17 +90,16 @@ class OrderBook:
             try:
                 received_string = self.ws.recv()
                 received = json.loads(received_string)
-                # self.__orderbook_feed.append(received)
-                # self.__mostRecentTick = received
+                self.__orderbook_feed.append(received)
+                self.__mostRecentTick = received
+                self.__time_feed.append(Blankly.utils.epoch_from_ISO8601(received["time"]))
 
                 # Manage price events and fire for each manager attached
                 for i in range(len(self.__callbacks)):
                     self.__callbacks[i].orderbook_event(received)
-
-                # self.__timeFeed.append(Blankly.utils.epoch_from_ISO8601(received["time"]))
             except Exception as e:
                 if persist_connected:
-                    pass
+                    continue
                 else:
                     print(traceback.format_exc())
                     print("Error reading orderbook for " + self.__id + ": attempting to re-initialize")
@@ -125,11 +128,11 @@ class OrderBook:
 
     """ Required in manager """
     def get_most_recent_time(self):
-        return self.__timeFeed[-1]
+        return self.__time_feed[-1]
 
     """ Required in manager """
     def get_time_feed(self):
-        return self.__timeFeed
+        return self.__time_feed
 
     """ Parallel with time feed """
     """ Required in manager """

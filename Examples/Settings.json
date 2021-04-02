@@ -3,6 +3,8 @@
     "account_update_time": 5000,
     "paper_trade": true,
     "base_currency": "USD",
-    "binance_tld": "us"
+    "binance_tld": "us",
+    "orderbook_buffer_size": 100000,
+    "ticker_buffer_size": 10000
   }
 }

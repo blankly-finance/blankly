@@ -24,12 +24,13 @@ from Blankly.Purchase import Purchase
 
 
 class APIInterface:
-    def __init__(self, exchange_name, authenticated_API, exchange_properties, user_preferences):
+    def __init__(self, exchange_name, authenticated_API, exchange_properties):
         self.__exchange_name = exchange_name
         self.__calls = authenticated_API
         self.__ticker_manager = None
         self.__exchange_properties = exchange_properties
-        self.__user_preferences = user_preferences
+        # Reload user preferences here
+        self.__user_preferences = Blankly.utils.load_user_preferences()
         self.__paper_trading = self.__user_preferences["settings"]["paper_trade"]
 
     def get_calls(self):

@@ -31,6 +31,19 @@ from sklearn.linear_model import LinearRegression
 #     """
 #     print(pretty_print_JSON(jsonObject))
 
+def load_user_preferences(override_path=None):
+    try:
+        if override_path is None:
+            f = open("Settings.json", )
+            preferences = json.load(f)
+        else:
+            f = open(override_path, )
+            preferences = json.load(f)
+    except FileNotFoundError as e:
+        raise FileNotFoundError("Make sure a Settings.json file is placed in the same folder as the project "
+                                "working directory!")
+    return preferences
+
 
 def pretty_print_JSON(json_object):
     """

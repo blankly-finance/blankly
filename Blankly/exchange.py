@@ -15,20 +15,14 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import json
+import Blankly
 
 
 class Exchange:
     def __init__(self, exchange_type, exchange_name):
         self.__name = exchange_name
         self.__type = exchange_type
-        try:
-            f = open("Settings.json",)
-            self.__preferences = json.load(f)
-        except FileNotFoundError as e:
-            raise FileNotFoundError("Make sure a Settings.json file is placed in the same folder as the project "
-                                    "working directory!")
-
+        self.preferences = Blankly.utils.load_user_preferences()
 
     def get_name(self):
         return self.__name
@@ -37,7 +31,7 @@ class Exchange:
         return self.__type
 
     def get_preferences(self):
-        return self.__preferences
+        return self.preferences
 
     def start_models(self, coin=None):
         """

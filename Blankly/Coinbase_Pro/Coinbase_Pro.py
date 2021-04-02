@@ -35,7 +35,7 @@ class Coinbase_Pro(Exchange):
             "maker_fee_rate": fees['maker_fee_rate'],
             "taker_fee_rate": fees['taker_fee_rate']
         }
-        self.__Interface = Interface("coinbase_pro", self.__calls, exchange_properties, self.get_preferences())
+        self.__Interface = Interface("coinbase_pro", self.__calls, exchange_properties)
         self.get_state()
 
         # Create the model container
@@ -45,13 +45,13 @@ class Coinbase_Pro(Exchange):
         """
         Append the models to the exchange, these can be run
         """
-        coin_id = coin + "-" + self.get_preferences()["settings"]["base_currency"]
+        coin_id = coin + "-" + self.preferences["settings"]["base_currency"]
         added_model = model
         self.models[coin] = {
             "model": added_model,
             "args": args
         }
-        model.setup("coinbase_pro", coin, coin_id, self.get_preferences(), self.get_currency_state(coin),
+        model.setup("coinbase_pro", coin, coin_id, self.preferences, self.get_currency_state(coin),
                     self.__Interface)
 
     def get_model(self, coin):

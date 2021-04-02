@@ -36,6 +36,8 @@ Check out our [website](http://blankly.net).
 
 - Easy access to raw API calls
 
+- Customizable circular buffer websocket feeds
+
 - Interface that allows calls to each supported exchange to be identical:
 
   > Buy example for Coinbase Pro and Binance:
