@@ -95,7 +95,7 @@ class OrderBook(IExchangeOrderbook):
                 received_string = self.ws.recv()
                 received = json.loads(received_string)
                 self.__most_recent_time = Blankly.utils.epoch_from_ISO8601(received["time"])
-                received = received["time"] = self.__most_recent_time
+                received["time"] = self.__most_recent_time
                 self.__orderbook_feed.append(received)
                 self.__most_recent_tick = received
                 self.__time_feed.append(self.__most_recent_time)
