@@ -20,6 +20,7 @@ import datetime as DT
 import dateutil.parser as DP
 import json
 import numpy
+import warnings
 
 from sklearn.linear_model import LinearRegression
 
@@ -29,6 +30,44 @@ from sklearn.linear_model import LinearRegression
 #     Json pretty printer for show arguments
 #     """
 #     print(pretty_print_JSON(jsonObject))
+
+# Recursively check if the user has all the preferences, inform when defaults are missing
+def __compare_dicts(default_settings, user_settings):
+    for k, v in default_settings.items():
+        if isinstance(v, dict):
+            if k in user_settings:
+                __compare_dicts(v, user_settings[k])
+            else:
+                if not repress_preferences_warning:
+                    warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
+                                     "\""
+                    warnings.warn(warning_string)
+                user_settings[k] = v
+        else:
+            if k in user_settings:
+                continue
+            else:
+                if not repress_preferences_warning:
+                    warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
+                                     "\""
+                    warnings.warn(warning_string)
+                user_settings[k] = v
+    return user_settings
+
+
+repress_preferences_warning = False
+
+default_settings = {
+    "settings": {
+        "account_update_time": 5000,
+        "paper_trade": True,
+        "base_currency": "USD",
+        "binance_tld": "us",
+        "orderbook_buffer_size": 100000,
+        "ticker_buffer_size": 10000
+    }
+}
+
 
 def load_user_preferences(override_path=None):
     try:
@@ -41,6 +80,9 @@ def load_user_preferences(override_path=None):
     except FileNotFoundError as e:
         raise FileNotFoundError("Make sure a Settings.json file is placed in the same folder as the project "
                                 "working directory!")
+    preferences = __compare_dicts(default_settings, preferences)
+    global repress_preferences_warning
+    repress_preferences_warning = True
     return preferences
 
 
@@ -56,8 +98,10 @@ def pretty_print_JSON(json_object):
 def epoch_from_ISO8601(ISO8601):
     return DP.parse(ISO8601).timestamp()
 
+
 def ISO8601_from_epoch(epoch):
     return DT.datetime.utcfromtimestamp(epoch).isoformat() + 'Z'
+
 
 def get_price_derivative(ticker, point_number):
     """
