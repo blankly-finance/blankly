@@ -1,5 +1,6 @@
 import time
 import Blankly
+# Have feedback? Use this: https://forms.gle/4oAjG9MKRTYKX2hP9
 
 
 class Bot(Blankly.BlanklyBot):
@@ -17,7 +18,7 @@ class Bot(Blankly.BlanklyBot):
         # Add a heartbeat example to report to GUI
         self.update_state("Heartbeat", 0)
 
-        # Dataframe price history
+        # Dataframe price history (commented because it takes time to run)
         # print(self.Interface.get_product_history(self.coin_id, 1611029486, 1616123507, 10000))
         print("Interface call: " + str(self.Interface.get_fees()))
 
@@ -41,6 +42,12 @@ class Bot(Blankly.BlanklyBot):
         self.update_state("Price", tick["price"])
         # Show these new ticks to the console
         print("New price tick at: " + tick["price"])
+
+    def orderbook_event(self, tick):
+        """
+        Similar to the price_event function, this is called by orderbook updates
+        """
+        pass
 
 
 if __name__ == "__main__":

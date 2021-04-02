@@ -248,4 +248,6 @@ Trading is risky. We are not responsible for losses incurred using this software
 ## Contributing
 
 If you would like to support the project, pull requests are welcome.
+You can also contribute just by telling us what you think of Blankly: https://forms.gle/4oAjG9MKRTYKX2hP9
+
 New updates every day 💪.
