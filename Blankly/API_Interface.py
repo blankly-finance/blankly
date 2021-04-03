@@ -43,6 +43,19 @@ class APIInterface:
 
     def get_products(self):
         if self.__exchange_name == "coinbase_pro":
+            """
+            [
+                {
+                    "id": "BTC-USD",
+                    "display_name": "BTC/USD",
+                    "base_currency": "BTC",
+                    "quote_currency": "USD",
+                    "base_min_size": "0.01",
+                    "base_max_size": "10000.00",
+                    "quote_increment": "0.01"
+                }
+            ]
+            """
             return self.__calls.get_products()
 
     """
@@ -53,11 +66,35 @@ class APIInterface:
     def get_account(self, account_id=None):
         if self.__exchange_name == "coinbase_pro":
             if account_id is None:
+                """
+                [
+                    {
+                        "id": "71452118-efc7-4cc4-8780-a5e22d4baa53",
+                        "currency": "BTC",
+                        "balance": "0.0000000000000000",
+                        "available": "0.0000000000000000",
+                        "hold": "0.0000000000000000",
+                        "profile_id": "75da88c5-05bf-4f54-bc85-5c775bd68254"
+                    },
+                    {
+                        ...
+                    }
+                ]
+                """
                 return self.__calls.get_accounts()
             else:
+                """
+                {
+                    "id": "a1b2c3d4",
+                    "balance": "1.100",
+                    "holds": "0.100",
+                    "available": "1.00",
+                    "currency": "USD"
+                }
+                """
                 return self.__calls.get_account(account_id)
 
-    def market_order(self, product_id, side, funds, kwargs):
+    def market_order(self, product_id, side, funds, **kwargs):
         """
         Used for buying or selling market orders
         Args:
@@ -67,19 +104,38 @@ class APIInterface:
             kwargs: specific arguments that may be used by each exchange, if exchange is known
         """
         if self.__exchange_name == "coinbase_pro":
+            """
+            {
+                "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
+                "price": "0.10000000",
+                "size": "0.01000000",
+                "product_id": "BTC-USD",
+                "side": "buy",
+                "stp": "dc",
+                "type": "limit",
+                "time_in_force": "GTC",
+                "post_only": false,
+                "created_at": "2016-12-08T20:02:28.53864Z",
+                "fill_fees": "0.0000000000000000",
+                "filled_size": "0.00000000",
+                "executed_value": "0.0000000000000000",
+                "status": "pending",
+                "settled": false
+            }
+            """
             order = {
                 'funds': funds,
                 'side': side,
                 'product_id': product_id,
                 'type': 'market'
             }
-            response = self.__calls.place_market_order(product_id, side, funds, **kwargs)
+            response = self.__calls.place_market_order(product_id, side, funds, kwargs=kwargs)
             return Purchase(order,
                             response,
                             self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"),
                             self.__exchange_properties)
 
-    def limit_order(self, product_id, side, price, size, kwargs):
+    def limit_order(self, product_id, side, price, size, **kwargs):
         """
         Used for buying or selling limit orders
         Args:
@@ -90,6 +146,25 @@ class APIInterface:
             kwargs: specific arguments that may be used by each exchange, (if exchange is known)
         """
         if self.__exchange_name == "coinbase_pro":
+            """
+            {
+                "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
+                "price": "0.10000000",
+                "size": "0.01000000",
+                "product_id": "BTC-USD",
+                "side": "buy",
+                "stp": "dc",
+                "type": "limit",
+                "time_in_force": "GTC",
+                "post_only": false,
+                "created_at": "2016-12-08T20:02:28.53864Z",
+                "fill_fees": "0.0000000000000000",
+                "filled_size": "0.00000000",
+                "executed_value": "0.0000000000000000",
+                "status": "pending",
+                "settled": false
+            }
+            """
             order = {
                 'size': size,
                 'side': side,
@@ -97,13 +172,13 @@ class APIInterface:
                 'type': 'limit'
             }
             self.__calls.placeOrder(product_id, side, price, size)
-            response = self.__calls.place_market_order(product_id, side, price, size, **kwargs)
+            response = self.__calls.place_market_order(product_id, side, price, size, kwargs=kwargs)
             return Purchase(order,
                             response,
                             self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"),
                             self.__exchange_properties)
 
-    def stop_order(self, product_id, side, price, size, kwargs):
+    def stop_order(self, product_id, side, price, size, **kwargs):
         """
         Used for placing stop orders
         Args:
@@ -114,6 +189,25 @@ class APIInterface:
             kwargs: specific arguments that may be used by each exchange, (if exchange is known)
         """
         if self.__exchange_name == "coinbase_pro":
+            """
+            {
+                "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
+                "price": "0.10000000",
+                "size": "0.01000000",
+                "product_id": "BTC-USD",
+                "side": "buy",
+                "stp": "dc",
+                "type": "limit",
+                "time_in_force": "GTC",
+                "post_only": false,
+                "created_at": "2016-12-08T20:02:28.53864Z",
+                "fill_fees": "0.0000000000000000",
+                "filled_size": "0.00000000",
+                "executed_value": "0.0000000000000000",
+                "status": "pending",
+                "settled": false
+            }
+            """
             order = {
                 'size': size,
                 'side': side,
@@ -121,7 +215,7 @@ class APIInterface:
                 'type': 'stop'
             }
             self.__calls.placeOrder(product_id, side, price, size)
-            response = self.__calls.place_market_order(product_id, side, price, size, **kwargs)
+            response = self.__calls.place_market_order(product_id, side, price, size, kwargs=kwargs)
             return Purchase(order,
                             response,
                             self.__ticker_manager.get_ticker(product_id,
@@ -130,20 +224,63 @@ class APIInterface:
 
     def cancel_order(self, order_id):
         if self.__exchange_name == "coinbase_pro":
+            """
+            [ "c5ab5eae-76be-480e-8961-00792dc7e138" ]
+            """
             return self.__calls.cancel_order(order_id)
 
-    def get_open_orders(self, product_id=None, kwargs=None):
+    def get_open_orders(self, product_id=None, **kwargs):
         """
         List open orders.
         """
         if self.__exchange_name == "coinbase_pro":
-            if kwargs is not None:
-                return list(self.__calls.get_orders(product_id, kwargs))
-            else:
-                return list(self.__calls.get_orders(product_id))
+            """
+            [
+                {
+                    "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
+                    "price": "0.10000000",
+                    "size": "0.01000000",
+                    "product_id": "BTC-USD",
+                    "side": "buy",
+                    "stp": "dc",
+                    "type": "limit",
+                    "time_in_force": "GTC",
+                    "post_only": false,
+                    "created_at": "2016-12-08T20:02:28.53864Z",
+                    "fill_fees": "0.0000000000000000",
+                    "filled_size": "0.00000000",
+                    "executed_value": "0.0000000000000000",
+                    "status": "open",
+                    "settled": false
+                },
+                {
+                    ...
+                }
+            ]
+            """
+            return list(self.__calls.get_orders(product_id, kwargs=kwargs))
 
     def get_order(self, order_id):
         if self.__exchange_name == "coinbase_pro":
+            """
+            {
+                "created_at": "2017-06-18T00:27:42.920136Z",
+                "executed_value": "0.0000000000000000",
+                "fill_fees": "0.0000000000000000",
+                "filled_size": "0.00000000",
+                "id": "9456f388-67a9-4316-bad1-330c5353804f",
+                "post_only": true,
+                "price": "1.00000000",
+                "product_id": "BTC-USD",
+                "settled": false,
+                "side": "buy",
+                "size": "1.00000000",
+                "status": "pending",
+                "stp": "dc",
+                "time_in_force": "GTC",
+                "type": "limit"
+            }
+            """
             return self.__calls.get_order(order_id)
 
     """
@@ -152,6 +289,13 @@ class APIInterface:
     """
     def get_fees(self):
         if self.__exchange_name == "coinbase_pro":
+            """
+            {
+                'maker_fee_rate': '0.0050',
+                'taker_fee_rate': '0.0050',
+                'usd_volume': '37.69'
+            }
+            """
             return self.__calls.get_fees()
 
     """
@@ -201,7 +345,6 @@ class APIInterface:
                 window_close = window_open + 300 * granularity
                 open_iso = Blankly.utils.ISO8601_from_epoch(window_open)
                 close_iso = Blankly.utils.ISO8601_from_epoch(window_close)
-                # output = self.__calls.get_product_historic_rates(product_id, open_iso, close_iso, granularity)
                 history = history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso,
                                                                             granularity)
 
@@ -240,10 +383,25 @@ class APIInterface:
     def append_ticker_manager(self, ticker_manager):
         self.__ticker_manager = ticker_manager
 
-    def get_latest_trades(self, product_id, kwargs):
+    def get_latest_trades(self, product_id, **kwargs):
         if self.__exchange_name == "coinbase_pro":
             # De-paginate
-            return list(self.__calls.get_product_trades(product_id, **kwargs))
+            """
+            [{
+                 "time": "2014-11-07T22:19:28.578544Z",
+                 "trade_id": 74,
+                 "price": "10.00000000",
+                 "size": "0.01000000",
+                 "side": "buy"
+             }, {
+                 "time": "2014-11-07T01:08:43.642366Z",
+                 "trade_id": 73,
+                 "price": "100.00000000",
+                 "size": "0.01000000",
+                 "side": "sell"
+            }]
+            """
+            return list(self.__calls.get_product_trades(product_id, kwargs=kwargs))
 
     """
     Coinbase Pro: Get Currencies
