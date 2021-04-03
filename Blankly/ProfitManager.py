@@ -1,5 +1,5 @@
 """
-    Risk management or purchase management for recent buys.
+    Deprecated Risk management or purchase management for recent buys.
     Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,9 @@
 
 import Constants
 
-
+"""
+-------Deprecated-------
+"""
 class ProfitManager:
     def __init__(self, currencyType, ticker, exchanges=None, show=False):
         if exchanges is None:
