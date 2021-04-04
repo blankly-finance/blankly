@@ -33,6 +33,23 @@ class APIInterface:
         self.__user_preferences = Blankly.utils.load_user_preferences()
         self.__paper_trading = self.__user_preferences["settings"]["paper_trade"]
 
+    @staticmethod
+    # Non-recursive check
+    def __isolate_specific(needed, compare_dictionary):
+        # Create an area to hold the specific data
+        exchange_specific = {}
+        for k, v in compare_dictionary.items():
+            if k in needed:
+                pass
+            else:
+                # Append non-necessary to the exchange specific dict
+                exchange_specific[k] = compare_dictionary[k]
+        compare_dictionary["exchange_specific"] = exchange_specific
+        # Pull the specific keys out
+        for k, v in exchange_specific.items():
+            del compare_dictionary[k]
+        return compare_dictionary
+
     def get_calls(self):
         """
         Returns:
@@ -41,22 +58,75 @@ class APIInterface:
         """
         return self.__calls
 
-    def get_products(self):
+    def get_products(self, product_id=None):
+        needed = ["currency_id", "base_currency", "quote_currency", "base_min_size", "base_max_size"]
         if self.__exchange_name == "coinbase_pro":
             """
             [
                 {
                     "id": "BTC-USD",
-                    "display_name": "BTC/USD",
                     "base_currency": "BTC",
                     "quote_currency": "USD",
-                    "base_min_size": "0.01",
-                    "base_max_size": "10000.00",
-                    "quote_increment": "0.01"
-                }
+                    "base_min_size": "0.0001",
+                    "base_max_size": "280",
+                    "quote_increment": "0.01",
+                    "base_increment": "0.00000001",
+                    "display_name": "BTC/USD",
+                    "min_market_funds": "5",
+                    "max_market_funds": "1000000",
+                    "margin_enabled": False,
+                    "post_only": False,
+                    "limit_only": False,
+                    "cancel_only": False,
+                    "trading_disabled": False,
+                    "status": "online",
+                    "status_message": "",
+                },
             ]
             """
-            return self.__calls.get_products()
+            products = self.__calls.get_products()
+            for i in range(len(products)):
+                # Rename needed
+                products[i]["currency_id"] = products[i].pop("id")
+                # Isolate unimportant
+                return self.__isolate_specific(needed, products[i])
+
+            return products
+        elif self.__exchange_name == "binance":
+            """
+            {
+              "s": "WRXUSDT",
+              "st": "TRADING",
+              "b": "WRX",
+              "q": "USDT",
+              "ba": "",
+              "qa": "",
+              "i": 0.1,
+              "ts": 1e-05,
+              "an": "WazirX",
+              "qn": "TetherUS",
+              "o": 0.57398,
+              "h": 0.955,
+              "l": 0.55362,
+              "c": 0.81143,
+              "v": 179068359.9,
+              "qv": 141730637.189914,
+              "y": 0,
+              "as": 179068359.9,
+              "pm": "USD\u24c8",
+              "pn": "USD\u24c8",
+              "cs": 186821429,
+              "tags": [],
+              "pom": false,
+              "pomt": null,
+              "etf": false
+            },
+            """
+            unimportant = ["s", "st", "ba", "qa", "i", ""]
+            products = self.__calls.get_products["data"]
+            for i in range(len(products)):
+                unused = {}
+
 
     """
     Get all currencies in an account
