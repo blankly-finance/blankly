@@ -77,6 +77,3 @@ class Exchange(IExchange):
             "account": state,
             "model": self.get_model_state(currency)
         }
-
-    def get_portfolio_state(self, currency):
-        pass
