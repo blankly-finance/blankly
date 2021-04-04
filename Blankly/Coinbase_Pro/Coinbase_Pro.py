@@ -30,20 +30,18 @@ class Coinbase_Pro(Exchange):
         Exchange.__init__(self, "coinbase_pro", defined_name)
 
         # Create the authenticated object
-        fees = self.__calls.get_fees()
-        exchange_properties = {
-            "maker_fee_rate": fees['maker_fee_rate'],
-            "taker_fee_rate": fees['taker_fee_rate']
-        }
-        self.__Interface = Interface("coinbase_pro", self.__calls, exchange_properties)
-        self.get_state()
+        self.__Interface = Interface("coinbase_pro", self.__calls)
 
         # Create the model container
         self.models = {}
 
-    def append_model(self, model, coin, args=None, id=None):
+    def append_model(self, model, coin, args=None):
         """
         Append the models to the exchange, these can be run
+        Args:
+            model: Model object to be used. This is objects inheriting blankly_bot
+            coin: the currency to use, such as "BTC"
+            args: Args to pass into the model when it is run. This can be any datatype, the object is passed
         """
         coin_id = coin + "-" + self.preferences["settings"]["base_currency"]
         added_model = model
@@ -51,55 +49,28 @@ class Coinbase_Pro(Exchange):
             "model": added_model,
             "args": args
         }
-        model.setup("coinbase_pro", coin, coin_id, self.preferences, self.get_currency_state(coin),
+        model.setup("coinbase_pro", coin, coin_id, self.preferences, self.get_full_state(coin),
                     self.__Interface)
 
-    def get_model(self, coin):
-        return self.models[coin]["model"]
-
-    def get_indicators(self):
-        return self.__calls.get_fees()
-
     """
-    Exchange and model state management.
+    Builds information about the currency on this exchange by making particular API calls
     """
-
-    def get_model_state(self, currency):
-        return (self.get_model(currency)).get_state()
-
-    def get_state(self):
+    def get_portfolio_state(self, currency=None):
         """
-        Calls to to the interface to receive info on all currencies.
+        This determines the internal properties of the exchange block.
+        Should be implemented per-class because it requires different types of interaction with each exchange.
         """
-        self.__state = self.__calls.get_accounts()
-        return self.__state
-
-    def get_portfolio_state(self):
-        """
-        Portfolio state is the internal properties for the exchange block.
-        """
-        self.get_state()
-        return self.__state
-
-    def get_currency_state(self, currency):
-        """
-        State for just this new currency
-
-        Args:
-            currency: Currency to filter for. This filters model information and the exchange information.
-        """
-        portfolio_state = self.get_portfolio_state()
+        accounts = self.__Interface.get_account()
         slice = None
-        for i in portfolio_state:
+        for i in accounts:
             if i["currency"] == currency:
                 slice = i
                 break
+        return slice
 
-        return {
-            "account": slice,
-            "model": self.get_model_state(currency)
-        }
-
+    """
+    GUI Functions:
+    """
     def get_exchange_state(self):
         """
         Exchange state is the external properties for the exchange block
@@ -107,9 +78,9 @@ class Coinbase_Pro(Exchange):
         # TODO Populate this with useful information
         return self.__calls.get_fees()
 
-    """
-    For future use
-    """
+    def get_indicators(self):
+        return self.__calls.get_fees()
+
     def filter_relevant(self, dict):
         """
         Currently unused. Will be used for filtering for user-relevant currencies

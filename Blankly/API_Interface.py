@@ -24,14 +24,23 @@ from Blankly.Purchase import Purchase
 
 
 class APIInterface:
-    def __init__(self, exchange_name, authenticated_API, exchange_properties):
+    def __init__(self, exchange_name, authenticated_API):
         self.__exchange_name = exchange_name
         self.__calls = authenticated_API
         self.__ticker_manager = None
-        self.__exchange_properties = exchange_properties
         # Reload user preferences here
         self.__user_preferences = Blankly.utils.load_user_preferences()
         self.__paper_trading = self.__user_preferences["settings"]["paper_trade"]
+        # TODO, improve creation of its own properties
+        self.__exchange_properties = None
+
+    def generate_properties(self):
+        if self.__exchange_name == "coinbase_pro":
+            fees = self.__calls.get_fees()
+            self.__exchange_properties = {
+                "maker_fee_rate": fees['maker_fee_rate'],
+                "taker_fee_rate": fees['taker_fee_rate']
+            }
 
     @staticmethod
     # Non-recursive check
@@ -59,7 +68,7 @@ class APIInterface:
         return self.__calls
 
     def get_products(self, product_id=None):
-        needed = ["currency_id", "base_currency", "quote_currency", "base_min_size", "base_max_size"]
+        needed = ["currency_id", "base_currency", "quote_currency", "base_min_size", "base_max_size", "base_increment"]
         if self.__exchange_name == "coinbase_pro":
             """
             [
@@ -90,42 +99,95 @@ class APIInterface:
                 products[i]["currency_id"] = products[i].pop("id")
                 # Isolate unimportant
                 return self.__isolate_specific(needed, products[i])
-
             return products
         elif self.__exchange_name == "binance":
             """
-            {
-              "s": "WRXUSDT",
-              "st": "TRADING",
-              "b": "WRX",
-              "q": "USDT",
-              "ba": "",
-              "qa": "",
-              "i": 0.1,
-              "ts": 1e-05,
-              "an": "WazirX",
-              "qn": "TetherUS",
-              "o": 0.57398,
-              "h": 0.955,
-              "l": 0.55362,
-              "c": 0.81143,
-              "v": 179068359.9,
-              "qv": 141730637.189914,
-              "y": 0,
-              "as": 179068359.9,
-              "pm": "USD\u24c8",
-              "pn": "USD\u24c8",
-              "cs": 186821429,
-              "tags": [],
-              "pom": false,
-              "pomt": null,
-              "etf": false
-            },
+            [
+                {
+                    "symbol": "BTCUSD",
+                    "status": "TRADING",
+                    "baseAsset": "BTC",
+                    "baseAssetPrecision": 8,
+                    "quoteAsset": "USD",
+                    "quotePrecision": 4,
+                    "quoteAssetPrecision": 4,
+                    "baseCommissionPrecision": 8,
+                    "quoteCommissionPrecision": 2,
+                    "orderTypes": [
+                        "LIMIT",
+                        "LIMIT_MAKER",
+                        "MARKET",
+                        "STOP_LOSS_LIMIT",
+                        "TAKE_PROFIT_LIMIT",
+                    ],
+                    "icebergAllowed": True,
+                    "ocoAllowed": True,
+                    "quoteOrderQtyMarketAllowed": True,
+                    "isSpotTradingAllowed": True,
+                    "isMarginTradingAllowed": False,
+                    "filters": [
+                        {
+                            "filterType": "PRICE_FILTER",
+                            "minPrice": "0.0100",
+                            "maxPrice": "100000.0000",
+                            "tickSize": "0.0100",
+                        },
+                        {
+                            "filterType": "PERCENT_PRICE",
+                            "multiplierUp": "5",
+                            "multiplierDown": "0.2",
+                            "avgPriceMins": 5,
+                        },
+                        {
+                            "filterType": "LOT_SIZE",
+                            "minQty": "0.00000100",
+                            "maxQty": "9000.00000000",
+                            "stepSize": "0.00000100",
+                        },
+                        {
+                            "filterType": "MIN_NOTIONAL",
+                            "minNotional": "10.0000",
+                            "applyToMarket": True,
+                            "avgPriceMins": 5,
+                        },
+                        {"filterType": "ICEBERG_PARTS", "limit": 10},
+                        {
+                            "filterType": "MARKET_LOT_SIZE",
+                            "minQty": "0.00000000",
+                            "maxQty": "3200.00000000",
+                            "stepSize": "0.00000000",
+                        },
+                        {"filterType": "MAX_NUM_ORDERS", "maxNumOrders": 200},
+                        {"filterType": "MAX_NUM_ALGO_ORDERS", "maxNumAlgoOrders": 5},
+                    ],
+                    "permissions": ["SPOT"],
+                },
+            ]
             """
-            unimportant = ["s", "st", "ba", "qa", "i", ""]
-            products = self.__calls.get_products["data"]
+            products = self.__calls.get_exchange_info()["data"]
             for i in range(len(products)):
-                unused = {}
+                # Rename needed
+                products[i]["currency_id"] = products[i]["baseAsset"] + "-" + products[i]["quoteAsset"]
+                products[i]["base_currency"] = products[i].pop("baseAsset")
+                products[i]["quote_currency"] = products[i].pop("q")
+                filters = products[i]["filters"]
+                # Iterate to find the next few
+                min_qty = None
+                max_qty = None
+                base_increment = None
+                for filters_array in filters:
+                    if filters_array["filterType"] == "LOT_SIZE":
+                        min_qty = filters_array["minQty"]
+                        max_qty = filters_array["maxQty"]
+                        base_increment = filters_array["stepSize"]
+                        break
+                products[i]["base_min_size"] = min_qty
+                products[i]["base_max_size"] = max_qty
+                products[i]["base_increment"] = base_increment
+                # Isolate keys unimportant for the interface's functionality
+                return self.__isolate_specific(needed, products[i])
+            return products
+
 
 
     """

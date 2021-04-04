@@ -70,7 +70,7 @@ class TradeInterface(object):
     def get_portfolio_state(self, name):
         for i in range(len(self.__exchanges)):
             if self.__exchanges[i].get_name() == name:
-                return [self.__exchanges[i].get_portfolio_state(), name]
+                return [self.__exchanges[i].__get_portfolio_state(), name]
 
     def run_model(self, name, currency=None):
         for i in range(len(self.__exchanges)):

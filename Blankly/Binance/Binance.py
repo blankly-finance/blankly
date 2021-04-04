@@ -37,7 +37,7 @@ class Binance(Exchange):
         #     "taker_fee_rate": fees['taker_fee_rate']
         # }
         exchange_properties = {}
-        self.__Interface = Interface("coinbase_pro", self.__calls, exchange_properties, self.get_preferences())
+        self.__Interface = Interface("binance", self.__calls, exchange_properties)
         self.get_state()
 
         # Create the model container
@@ -53,7 +53,7 @@ class Binance(Exchange):
             "model": added_model,
             "args": args
         }
-        model.setup("coinbase_pro", coin, coin_id, self.get_preferences(), self.get_currency_state(coin),
+        model.setup("coinbase_pro", coin, coin_id, self.get_preferences(), self.get_full_state(coin),
                     self.__Interface)
 
     def get_model(self, coin):
@@ -76,21 +76,21 @@ class Binance(Exchange):
         self.__state = self.__calls.get_accounts()
         return self.__state
 
-    def get_portfolio_state(self):
+    def __get_portfolio_state(self):
         """
         Portfolio state is the internal properties for the exchange block.
         """
         self.get_state()
         return self.__state
 
-    def get_currency_state(self, currency):
+    def get_full_state(self, currency):
         """
         State for just this new currency
 
         Args:
             currency: Currency to filter for. This filters model information and the exchange information.
         """
-        portfolio_state = self.get_portfolio_state()
+        portfolio_state = self.__get_portfolio_state()
         slice = None
         for i in portfolio_state:
             if i["currency"] == currency:

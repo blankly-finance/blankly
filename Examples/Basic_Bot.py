@@ -84,6 +84,6 @@ if __name__ == "__main__":
     # Now other processes can be created or just continue with this one.
     while True:
         # Print the state every 1 seconds
-        state = exchange.get_currency_state("BTC")
+        state = exchange.get_full_state("BTC")
         Blankly.utils.pretty_print_JSON(state)
         time.sleep(1)

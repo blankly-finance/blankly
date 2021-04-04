@@ -16,9 +16,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import Blankly
+from Blankly.IExchange import IExchange
 
 
-class Exchange:
+class Exchange(IExchange):
     def __init__(self, exchange_type, exchange_name):
         self.__name = exchange_name
         self.__type = exchange_type
@@ -50,3 +51,32 @@ class Exchange:
                 else:
                     print("Ignoring the model on " + coin_iterator)
             return "Started all models"
+
+    def get_model(self, coin):
+        return self.models[coin]["model"]
+
+    def get_model_state(self, currency):
+        """
+        Returns JUST the model state, as opposed to all the data returned by get_currency_state()
+
+        Args:
+            currency: Currency that the selected model is running on.
+        """
+        return (self.get_model(currency)).get_state()
+
+    def get_full_state(self, currency):
+        """
+        Makes API calls to determine the state of the currency. This also returns the state of the model on that currency.
+
+        Args:
+            currency: Currency to filter for. This filters model information and the exchange information.
+        """
+        state = self.get_portfolio_state(currency)
+
+        return {
+            "account": state,
+            "model": self.get_model_state(currency)
+        }
+
+    def get_portfolio_state(self, currency):
+        pass

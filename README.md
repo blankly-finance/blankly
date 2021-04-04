@@ -176,7 +176,7 @@ The comments offer a decent amount of description for the behavior, but here is 
      # Now other processes can be created or just continue with this one.
      while True:
         # Print the state every 2 seconds
-        state = exchange.get_currency_state("GRT")
+        state = exchange.get_full_state("GRT")
         Blankly.Utils.pretty_print_JSON(state)
         time.sleep(1)
      ```
