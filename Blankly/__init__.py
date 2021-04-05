@@ -17,6 +17,7 @@
 """
 
 from Blankly.Coinbase_Pro.Coinbase_Pro import Coinbase_Pro as Coinbase_Pro
+from Blankly.Binance.Binance import Binance as Binance
 from Blankly.API_Interface import APIInterface as Interface
 from Blankly.blankly_bot import BlanklyBot
 

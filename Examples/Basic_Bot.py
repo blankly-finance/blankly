@@ -52,7 +52,7 @@ class Bot(Blankly.BlanklyBot):
 
 if __name__ == "__main__":
     """
-    Easily setup and run a model on any exchange
+    Easily setup and run a model on any supported exchange
     """
 
     # This creates an authenticated exchange. Now we can append models.
@@ -67,23 +67,21 @@ if __name__ == "__main__":
     exchange.append_model(bot, "BTC")
     # Imagine this:
     #   Coinbase Pro:
-    #       Bitcoin
+    #       Bitcoin <-- Added to the data from this currency
     #       Ethereum
     #       Stellar
-    #       The Graph <-- Added to the data from this currency
 
     # Begins running the main() function of the model on a different process
     exchange.start_models()
     # Imagine this:
     #   Coinbase Pro:
-    #       Bitcoin
+    #       Bitcoin <-- Bot <-- Asking to start
     #       Ethereum
     #       Stellar
-    #       The Graph <-- Bot <-- Asking to start
 
     # Now other processes can be created or just continue with this one.
     while True:
-        # Print the state every 1 seconds
+        # Print the state every 1 second
         state = exchange.get_full_state("BTC")
         Blankly.utils.pretty_print_JSON(state)
         time.sleep(1)

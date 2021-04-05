@@ -95,5 +95,5 @@ class Exchange(IExchange):
             "model": added_model,
             "args": args
         }
-        model.setup("coinbase_pro", coin, coin_id, self.preferences, self.get_full_state(coin),
+        model.setup(self.__type, coin, coin_id, self.preferences, self.get_full_state(coin),
                     self.Interface)

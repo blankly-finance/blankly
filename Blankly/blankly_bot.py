@@ -79,7 +79,7 @@ class BlanklyBot(abc.ABC):
 
     def setup_process(self, args):
         """
-        Create any multiprocessed objects in this function
+        Create any objects that need to be process-specific in the other process
         """
         self.Ticker_Manager = Blankly.TickerManager(self.exchange_type, self.coin_id)
         self.default_ticker = self.Ticker_Manager.create_ticker(self.coin_id, self)

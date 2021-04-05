@@ -429,6 +429,8 @@ class APIInterface:
             }
             """
             return self.__calls.get_fees()
+        elif self.__exchange_name == "binance":
+            return "NOT YET SUPPORTED"
 
     """
     Coinbase Pro: get_account_history

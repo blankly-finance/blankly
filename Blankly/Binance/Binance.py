@@ -1,5 +1,5 @@
 """
-    Coinbase Pro exchange definitions and setup
+    Binance exchange definitions and setup
     Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
@@ -36,11 +36,11 @@ class Binance(Exchange):
     """
     Builds information about the currency on this exchange by making particular API calls
     """
-
     def get_currency_state(self, currency):
         """
         Portfolio state is the internal properties for the exchange block.
         """
+        return {}
         # TODO Populate this with useful information
         accounts = self.Interface.get_account()
         slice = None
@@ -48,7 +48,6 @@ class Binance(Exchange):
             if i["currency"] == currency:
                 slice = i
                 break
-        return slice
 
     def get_exchange_state(self):
         """
