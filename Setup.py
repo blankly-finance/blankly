@@ -31,7 +31,8 @@ setup(
         'zerorpc',
         'requests',
         'websocket-client',
-        'pandas'
+        'pandas',
+        'python-binance'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

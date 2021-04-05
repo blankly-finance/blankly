@@ -42,8 +42,8 @@ class APIInterface:
                 "taker_fee_rate": fees['taker_fee_rate']
             }
 
-    @staticmethod
     # Non-recursive check
+    @staticmethod
     def __isolate_specific(needed, compare_dictionary):
         # Create an area to hold the specific data
         exchange_specific = {}
@@ -102,7 +102,7 @@ class APIInterface:
             return products
         elif self.__exchange_name == "binance":
             """
-            This is the symbols array
+            This is a section of the symbols array
             [
                 {
                     "symbol": "BTCUSD",
@@ -194,7 +194,10 @@ class APIInterface:
     Coinbase Pro: get_account
     Binance: get_account["balances"]
     """
-    def get_account(self, account_id=None):
+    def get_account(self, currency=None, account_id=None):
+        if currency is not None and account_id is not None:
+            warnings.warn("One of \"account_id\" or \"currency\" must be empty. Defaulting to \"account_id\".")
+            currency = None
         if self.__exchange_name == "coinbase_pro":
             if account_id is None:
                 """
@@ -224,6 +227,32 @@ class APIInterface:
                 }
                 """
                 return self.__calls.get_account(account_id)
+        elif self.__exchange_name == "binance":
+            """
+            {
+                "makerCommission": 15,
+                "takerCommission": 15,
+                "buyerCommission": 0,
+                "sellerCommission": 0,
+                "canTrade": true,
+                "canWithdraw": true,
+                "canDeposit": true,
+                "balances": [
+                    {
+                        "asset": "BTC",
+                        "free": "4723846.89208129",
+                        "locked": "0.00000000"
+                    },
+                    {
+                        "asset": "LTC",
+                        "free": "4763368.68006011",
+                        "locked": "0.00000000"
+                    }
+                ]
+            }
+            """
+            print("Not yet supported")
+            pass
 
     def market_order(self, product_id, side, funds, **kwargs):
         """
