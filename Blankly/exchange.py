@@ -25,6 +25,9 @@ class Exchange(IExchange):
         self.__type = exchange_type
         self.preferences = Blankly.utils.load_user_preferences()
 
+        # Create the model container
+        self.models = {}
+
     def get_name(self):
         return self.__name
 
@@ -71,9 +74,26 @@ class Exchange(IExchange):
         Args:
             currency: Currency to filter for. This filters model information and the exchange information.
         """
-        state = self.get_portfolio_state(currency)
+        state = self.get_currency_state(currency)
 
         return {
             "account": state,
             "model": self.get_model_state(currency)
         }
+
+    def append_model(self, model, coin, args=None):
+        """
+        Append the models to the exchange, these can be run
+        Args:
+            model: Model object to be used. This is objects inheriting blankly_bot
+            coin: the currency to use, such as "BTC"
+            args: Args to pass into the model when it is run. This can be any datatype, the object is passed
+        """
+        coin_id = coin + "-" + self.preferences["settings"]["base_currency"]
+        added_model = model
+        self.models[coin] = {
+            "model": added_model,
+            "args": args
+        }
+        model.setup("coinbase_pro", coin, coin_id, self.preferences, self.get_full_state(coin),
+                    self.Interface)

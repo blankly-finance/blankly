@@ -41,5 +41,8 @@ class IExchange(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_portfolio_state(self, currency):
+    def get_currency_state(self, currency):
+        pass
+
+    def get_exchange_state(self):
         pass

@@ -30,37 +30,21 @@ class Coinbase_Pro(Exchange):
         Exchange.__init__(self, "coinbase_pro", defined_name)
 
         # Create the authenticated object
-        self.__Interface = Interface("coinbase_pro", self.__calls)
+        self.Interface = Interface("coinbase_pro", self.__calls)
 
         # Create the model container
         self.models = {}
 
-    def append_model(self, model, coin, args=None):
-        """
-        Append the models to the exchange, these can be run
-        Args:
-            model: Model object to be used. This is objects inheriting blankly_bot
-            coin: the currency to use, such as "BTC"
-            args: Args to pass into the model when it is run. This can be any datatype, the object is passed
-        """
-        coin_id = coin + "-" + self.preferences["settings"]["base_currency"]
-        added_model = model
-        self.models[coin] = {
-            "model": added_model,
-            "args": args
-        }
-        model.setup("coinbase_pro", coin, coin_id, self.preferences, self.get_full_state(coin),
-                    self.__Interface)
-
     """
     Builds information about the currency on this exchange by making particular API calls
     """
-    def get_portfolio_state(self, currency=None):
+    def get_currency_state(self, currency):
         """
         This determines the internal properties of the exchange block.
         Should be implemented per-class because it requires different types of interaction with each exchange.
         """
-        accounts = self.__Interface.get_account()
+        # TODO Populate this with useful information
+        accounts = self.Interface.get_account()
         slice = None
         for i in accounts:
             if i["currency"] == currency:
@@ -68,16 +52,16 @@ class Coinbase_Pro(Exchange):
                 break
         return slice
 
-    """
-    GUI Functions:
-    """
     def get_exchange_state(self):
         """
         Exchange state is the external properties for the exchange block
         """
         # TODO Populate this with useful information
-        return self.__calls.get_fees()
+        return self.Interface.get_fees()
 
+    """
+    GUI Testing Functions | These only exist in the Coinbase_Pro class:
+    """
     def get_indicators(self):
         return self.__calls.get_fees()
 

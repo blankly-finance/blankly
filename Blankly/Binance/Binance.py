@@ -31,115 +31,28 @@ class Binance(Exchange):
                            tld=self.get_preferences()["settings"]["binance_tld"])
 
         # Create the authenticated object
-        fees = self.__calls.get_trade_fee()
-        # exchange_properties = {
-        #     "maker_fee_rate": fees['maker_fee_rate'],
-        #     "taker_fee_rate": fees['taker_fee_rate']
-        # }
-        exchange_properties = {}
-        self.__Interface = Interface("binance", self.__calls, exchange_properties)
-        self.get_state()
-
-        # Create the model container
-        self.models = {}
-
-    def append_model(self, model, coin, args=None, id=None):
-        """
-        Append the models to the exchange, these can be run
-        """
-        coin_id = coin + "-" + self.get_preferences()["settings"]["base_currency"]
-        added_model = model
-        self.models[coin] = {
-            "model": added_model,
-            "args": args
-        }
-        model.setup("coinbase_pro", coin, coin_id, self.get_preferences(), self.get_full_state(coin),
-                    self.__Interface)
-
-    def get_model(self, coin):
-        return self.models[coin]["model"]
-
-    # def get_indicators(self):
-    #     return self.__calls.get_fees()
+        self.Interface = Interface("binance", self.__calls)
 
     """
-    Exchange and model state management.
+    Builds information about the currency on this exchange by making particular API calls
     """
 
-    def get_model_state(self, currency):
-        return (self.get_model(currency)).get_state()
-
-    def get_state(self):
-        """
-        Calls to to the interface to receive info on all currencies.
-        """
-        self.__state = self.__calls.get_accounts()
-        return self.__state
-
-    def __get_portfolio_state(self):
+    def get_currency_state(self, currency):
         """
         Portfolio state is the internal properties for the exchange block.
         """
-        self.get_state()
-        return self.__state
-
-    def get_full_state(self, currency):
-        """
-        State for just this new currency
-
-        Args:
-            currency: Currency to filter for. This filters model information and the exchange information.
-        """
-        portfolio_state = self.__get_portfolio_state()
+        # TODO Populate this with useful information
+        accounts = self.Interface.get_account()
         slice = None
-        for i in portfolio_state:
+        for i in accounts:
             if i["currency"] == currency:
                 slice = i
                 break
-
-        return {
-            "account": slice,
-            "model": self.get_model_state(currency)
-        }
+        return slice
 
     def get_exchange_state(self):
         """
         Exchange state is the external properties for the exchange block
         """
         # TODO Populate this with useful information
-        return self.__calls.get_fees()
-
-    """
-    For future use
-    """
-    def filter_relevant(self, dict):
-        """
-        Currently unused. Will be used for filtering for user-relevant currencies
-
-        Args:
-            dict: Dictionary to filter important currencies from
-
-        Returns:
-            list: filtered information about the account dictionary
-        """
-        self.get_state()
-        self.__readable_state = {}
-        unused = {}
-        for i in range(len(self.__state)):
-            value = float((self.__state[i]["balance"]))
-            if value > 0:
-                self.__readable_state[self.__state[i]["currency"]] = {
-                    "Qty:": value,
-                }
-                currency = (self.__state[i]["currency"])
-                # There can be no currency state until a model is added to the currency
-                try:
-                    self.__readable_state[self.__state[i]["currency"]] = {
-                        **self.__readable_state[self.__state[i]["currency"]], **self.get_model_state(currency)}
-                except KeyError as e:
-                    pass
-            else:
-                unused[self.__state[i]["currency"]] = {
-                    "Qty:": 0,
-                }
-        return self.__readable_state
+        return self.Interface.get_fees()
