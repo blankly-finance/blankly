@@ -56,7 +56,7 @@ class TickerManager:
             self.__tickers['coinbase_pro'][currency_id] = ticker
             return ticker
         else:
-            print("Ticker supported, skipping creation")
+            print(exchange_name + " ticker supported, skipping creation")
 
     def __evaluate_overrides(self, override_currency, override_exchange):
         """

@@ -17,9 +17,10 @@
 """
 
 from Blankly.exchange import Exchange
-from Blankly.Binance.Binance_API import API
 from Blankly.API_Interface import APIInterface as Interface
 import Blankly.auth_constructor
+
+from binance.client import Client
 
 
 class Binance(Exchange):
@@ -27,7 +28,7 @@ class Binance(Exchange):
         # Load the auth from the keys file
         auth, defined_name = Blankly.auth_constructor.load_auth_binance(auth_path, portfolio_name)
         Exchange.__init__(self, "binance", defined_name)
-        self.__calls = API(API_KEY=auth[0], API_SECRET=auth[1],
+        self.__calls = Client(api_key=auth[0], api_secret=auth[1],
                            tld=self.get_preferences()["settings"]["binance_tld"])
 
         # Create the authenticated object

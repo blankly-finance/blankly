@@ -102,6 +102,7 @@ class APIInterface:
             return products
         elif self.__exchange_name == "binance":
             """
+            This is the symbols array
             [
                 {
                     "symbol": "BTCUSD",
@@ -164,12 +165,12 @@ class APIInterface:
                 },
             ]
             """
-            products = self.__calls.get_exchange_info()["data"]
+            products = self.__calls.get_exchange_info()["symbols"]
             for i in range(len(products)):
                 # Rename needed
                 products[i]["currency_id"] = products[i]["baseAsset"] + "-" + products[i]["quoteAsset"]
                 products[i]["base_currency"] = products[i].pop("baseAsset")
-                products[i]["quote_currency"] = products[i].pop("q")
+                products[i]["quote_currency"] = products[i].pop("quoteAsset")
                 filters = products[i]["filters"]
                 # Iterate to find the next few
                 min_qty = None
@@ -187,8 +188,6 @@ class APIInterface:
                 # Isolate keys unimportant for the interface's functionality
                 return self.__isolate_specific(needed, products[i])
             return products
-
-
 
     """
     Get all currencies in an account
