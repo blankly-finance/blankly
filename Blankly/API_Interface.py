@@ -189,12 +189,13 @@ class APIInterface:
                 return self.__isolate_specific(needed, products[i])
             return products
 
-    """
-    Get all currencies in an account
-    Coinbase Pro: get_account
-    Binance: get_account["balances"]
-    """
     def get_account(self, currency=None, account_id=None):
+        """
+        Get all currencies in an account, or sort by currency/account_id
+        Coinbase Pro: get_account
+        Binance: get_account["balances"]
+        """
+        needed = ["currency", "available", "hold"]
         if currency is not None and account_id is not None:
             warnings.warn("One of \"account_id\" or \"currency\" must be empty. Defaulting to \"account_id\".")
             currency = None
@@ -215,7 +216,19 @@ class APIInterface:
                     }
                 ]
                 """
-                return self.__calls.get_accounts()
+                accounts = self.__calls.get_accounts()
+                # We have to sort through it if the accounts are none
+                if currency is None:
+                    # If this is also none we just return raw, which we do later
+                    pass
+                else:
+                    for i in accounts:
+                        if i["currency"] == currency:
+                            return self.__isolate_specific(needed, i)
+                warnings.warn("Currency not found")
+                for i in range(len(accounts)):
+                    accounts[i] = self.__isolate_specific(needed, accounts[i])
+                return accounts
             else:
                 """
                 {
@@ -251,8 +264,25 @@ class APIInterface:
                 ]
             }
             """
-            print("Not yet supported")
-            pass
+            if account_id is not None:
+                warnings.warn("account_id parameter is not supported on binance, use currency instead")
+            accounts = self.__calls.get_account()["balances"]
+            # Isolate for currency, warn if not found or default to just returning a parsed version
+            if currency is not None:
+                for i in range(len(accounts)):
+                    if accounts[i]["asset"] == currency:
+                        accounts[i]["currency"] = accounts[i].pop("asset")
+                        accounts[i]["available"] = accounts[i].pop("free")
+                        accounts[i]["hold"] = accounts[i].pop("locked")
+                        return self.__isolate_specific(needed, accounts[i])
+                warnings.warn("Currency not found, or balance is zero.")
+            for i in range(len(accounts)):
+                accounts[i]["currency"] = accounts[i].pop("asset")
+                accounts[i]["available"] = accounts[i].pop("free")
+                accounts[i]["hold"] = accounts[i].pop("locked")
+                accounts[i] = self.__isolate_specific(needed, accounts[i])
+            return accounts
+
 
     def market_order(self, product_id, side, funds, **kwargs):
         """
