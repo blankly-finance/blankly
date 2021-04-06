@@ -209,6 +209,8 @@ The comments offer a decent amount of description for the behavior, but here is 
 
 🔴 = planned but not yet in development
 
+* Interface calls take ~300 microseconds extra to homogenize the exchange data.
+
 
 
 ## A start on the command documentation:
