@@ -225,7 +225,7 @@ class APIInterface:
                     for i in accounts:
                         if i["currency"] == currency:
                             return self.__isolate_specific(needed, i)
-                warnings.warn("Currency not found")
+                    warnings.warn("Currency not found")
                 for i in range(len(accounts)):
                     accounts[i] = self.__isolate_specific(needed, accounts[i])
                 return accounts
