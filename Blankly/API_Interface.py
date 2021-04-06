@@ -299,8 +299,8 @@ class APIInterface:
                 warnings.warn("Currency not found, or balance is zero.")
             for i in range(len(accounts)):
                 accounts[i]["currency"] = accounts[i].pop("asset")
-                accounts[i]["available"] = float(accounts[i].pop("free"))
-                accounts[i]["hold"] = float(accounts[i].pop("locked"))
+                accounts[i]["available"] = accounts[i].pop("free")
+                accounts[i]["hold"] = accounts[i].pop("locked")
                 accounts[i] = self.__isolate_specific(needed, accounts[i])
             return accounts
 
