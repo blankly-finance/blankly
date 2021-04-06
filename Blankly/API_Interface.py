@@ -45,13 +45,25 @@ class APIInterface:
     # Non-recursive check
     @staticmethod
     def __isolate_specific(needed, compare_dictionary):
+        # Create a column vector for the keys
+        column = [column[0] for column in needed]
         # Create an area to hold the specific data
         exchange_specific = {}
+        required = False
         for k, v in compare_dictionary.items():
-            if k in needed:
-                pass
-            else:
-                # Append non-necessary to the exchange specific dict
+            # Check if the value is one of the keys
+            for index, val in enumerate(column):
+                required = False
+                # If it is, there is a state value for it
+                if k == val:
+                    # Push type to value
+                    compare_dictionary[k] = needed[index][1](v)
+                    required = True
+                    break
+            # Must not be found
+            # Append non-necessary to the exchange specific dict
+            # There has to be a way to do this without raising a flag value
+            if not required:
                 exchange_specific[k] = compare_dictionary[k]
         compare_dictionary["exchange_specific"] = exchange_specific
         # Pull the specific keys out
@@ -68,7 +80,12 @@ class APIInterface:
         return self.__calls
 
     def get_products(self, product_id=None):
-        needed = ["currency_id", "base_currency", "quote_currency", "base_min_size", "base_max_size", "base_increment"]
+        needed = [["currency_id", str],
+                  ["base_currency", str],
+                  ["quote_currency", str],
+                  ["base_min_size", float],
+                  ["base_max_size", float],
+                  ["base_increment", float]]
         if self.__exchange_name == "coinbase_pro":
             """
             [
@@ -195,7 +212,9 @@ class APIInterface:
         Coinbase Pro: get_account
         Binance: get_account["balances"]
         """
-        needed = ["currency", "available", "hold"]
+        needed = [["currency", str],
+                  ["available", float],
+                  ["hold", float]]
         if currency is not None and account_id is not None:
             warnings.warn("One of \"account_id\" or \"currency\" must be empty. Defaulting to \"account_id\".")
             currency = None
@@ -224,7 +243,8 @@ class APIInterface:
                 else:
                     for i in accounts:
                         if i["currency"] == currency:
-                            return self.__isolate_specific(needed, i)
+                            parsed_value = self.__isolate_specific(needed, i)
+                            return parsed_value
                     warnings.warn("Currency not found")
                 for i in range(len(accounts)):
                     accounts[i] = self.__isolate_specific(needed, accounts[i])
@@ -274,15 +294,15 @@ class APIInterface:
                         accounts[i]["currency"] = accounts[i].pop("asset")
                         accounts[i]["available"] = accounts[i].pop("free")
                         accounts[i]["hold"] = accounts[i].pop("locked")
-                        return self.__isolate_specific(needed, accounts[i])
+                        parsed_value = self.__isolate_specific(needed, accounts[i])
+                        return parsed_value
                 warnings.warn("Currency not found, or balance is zero.")
             for i in range(len(accounts)):
                 accounts[i]["currency"] = accounts[i].pop("asset")
-                accounts[i]["available"] = accounts[i].pop("free")
-                accounts[i]["hold"] = accounts[i].pop("locked")
+                accounts[i]["available"] = float(accounts[i].pop("free"))
+                accounts[i]["hold"] = float(accounts[i].pop("locked"))
                 accounts[i] = self.__isolate_specific(needed, accounts[i])
             return accounts
-
 
     def market_order(self, product_id, side, funds, **kwargs):
         """
