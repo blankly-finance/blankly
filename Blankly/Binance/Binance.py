@@ -41,14 +41,15 @@ class Binance(Exchange):
         """
         Portfolio state is the internal properties for the exchange block.
         """
-        return {}
         # TODO Populate this with useful information
         accounts = self.Interface.get_account()
+        print(accounts)
         slice = None
         for i in accounts:
             if i["currency"] == currency:
                 slice = i
                 break
+        return slice
 
     def get_exchange_state(self):
         """

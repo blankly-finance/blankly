@@ -20,6 +20,7 @@ from Blankly.IExchange import IExchange
 
 
 class Exchange(IExchange):
+
     def __init__(self, exchange_type, exchange_name):
         self.__name = exchange_name
         self.__type = exchange_type
@@ -97,3 +98,6 @@ class Exchange(IExchange):
         }
         model.setup(self.__type, coin, coin_id, self.preferences, self.get_full_state(coin),
                     self.Interface)
+
+    def get_currency_state(self, currency):
+        pass
