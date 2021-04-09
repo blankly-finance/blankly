@@ -33,14 +33,30 @@ class APIInterface:
         self.__paper_trading = self.__user_preferences["settings"]["paper_trade"]
         # TODO, improve creation of its own properties
         self.__exchange_properties = None
+        # Some exchanges like binance will not return a value of 0.00 if there is no balance
+        self.__available_currencies = {}
+        self.__init_exchange__()
 
-    def generate_properties(self):
+    def __init_exchange__(self):
         if self.__exchange_name == "coinbase_pro":
             fees = self.__calls.get_fees()
             self.__exchange_properties = {
                 "maker_fee_rate": fees['maker_fee_rate'],
                 "taker_fee_rate": fees['taker_fee_rate']
             }
+        if self.__exchange_name == "binance":
+            account = self.__calls.get_account()
+            self.__exchange_properties = {
+                "maker_fee_rate": account['makerCommission'],
+                "taker_fee_rate": account['takerCommission'],
+                "buyer_fee_rate": account['buyerCommission'],  # I'm not sure of the case when these are nonzero
+                "seller_fee_rate": account['sellerCommission'],
+            }
+            symbols = self.__calls.get_exchange_info()["symbols"]
+            base_assets = []
+            for i in symbols:
+                base_assets.append(i["baseAsset"])
+            self.__available_currencies = base_assets
 
     # Non-recursive check
     @staticmethod
@@ -289,14 +305,21 @@ class APIInterface:
             accounts = self.__calls.get_account()["balances"]
             # Isolate for currency, warn if not found or default to just returning a parsed version
             if currency is not None:
-                for i in range(len(accounts)):
-                    if accounts[i]["asset"] == currency:
-                        accounts[i]["currency"] = accounts[i].pop("asset")
-                        accounts[i]["available"] = accounts[i].pop("free")
-                        accounts[i]["hold"] = accounts[i].pop("locked")
-                        parsed_value = self.__isolate_specific(needed, accounts[i])
-                        return parsed_value
-                warnings.warn("Currency not found, or balance is zero.")
+                if currency in self.__available_currencies:
+                    for i in range(len(accounts)):
+                        if accounts[i]["asset"] == currency:
+                            accounts[i]["currency"] = accounts[i].pop("asset")
+                            accounts[i]["available"] = accounts[i].pop("free")
+                            accounts[i]["hold"] = accounts[i].pop("locked")
+                            parsed_value = self.__isolate_specific(needed, accounts[i])
+                            return parsed_value
+                    return {
+                        "currency": currency,
+                        "available": 0.0,
+                        "hold": 0.0
+                    }
+                else:
+                    raise ValueError("Currency not found")
             for i in range(len(accounts)):
                 accounts[i]["currency"] = accounts[i].pop("asset")
                 accounts[i]["available"] = accounts[i].pop("free")
