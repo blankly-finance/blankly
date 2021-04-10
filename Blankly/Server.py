@@ -24,7 +24,6 @@ from Coinbase_Pro.Coinbase_Pro import Coinbase_Pro
 import json
 
 
-# A new process will be created for each total exchange. Bots can be appended to the predictor
 class TradeInterface(object):
     def calc(self, text):
         """based on the input text, return the int result"""
@@ -53,7 +52,7 @@ class TradeInterface(object):
             self.__exchanges.append(Coinbase_Pro(exchange_name))
             return exchange_name
         else:
-            Exception("Exchange type not found")
+            Exception("Exchange settings not found")
 
     """ External State """
 
