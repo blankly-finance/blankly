@@ -301,7 +301,8 @@ class APIInterface:
             }
             """
             if account_id is not None:
-                warnings.warn("account_id parameter is not supported on binance, use currency instead")
+                warnings.warn("account_id parameter is not supported on binance, use currency instead. This parameter"
+                              "will be removed soon.")
             accounts = self.__calls.get_account()["balances"]
             # Isolate for currency, warn if not found or default to just returning a parsed version
             if currency is not None:
@@ -320,12 +321,33 @@ class APIInterface:
                     }
                 else:
                     raise ValueError("Currency not found")
-            for i in range(len(accounts)):
-                accounts[i]["currency"] = accounts[i].pop("asset")
-                accounts[i]["available"] = accounts[i].pop("free")
-                accounts[i]["hold"] = accounts[i].pop("locked")
-                accounts[i] = self.__isolate_specific(needed, accounts[i])
-            return accounts
+
+            # If binance returned something relevant, scan and add that to the array. If not just default to nothing
+            owned_assets = [column[0] for column in accounts]
+            # Fill this list for return
+            filled_dict_list = []
+            # Iterate through
+            for i in self.__available_currencies:
+                # Iterate through everything binance returned
+                for index, val in enumerate(owned_assets):
+                    # If the current available currency matches one from binance
+                    if val == i:
+                        # Do the normal thing above and append
+                        accounts[index]["currency"] = accounts[index].pop("asset")
+                        accounts[index]["available"] = accounts[index].pop("free")
+                        accounts[index]["hold"] = accounts[index].pop("locked")
+                        accounts[index] = self.__isolate_specific(needed, accounts[index])
+                        filled_dict_list.append({
+                            accounts[index]
+                        })
+                        continue
+                # If it wasn't found just default here
+                filled_dict_list.append({
+                    "currency": i,
+                    "available": 0.0,
+                    "hold": 0.0
+                })
+            return filled_dict_list
 
     def market_order(self, product_id, side, funds, **kwargs):
         """
