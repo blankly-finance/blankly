@@ -68,8 +68,8 @@ class APIInterface:
                     ["id", "user_id"],
                     ["frankie", "gerald"],
                 ]
+            renaming_dictionary: Dictionary to perform the renaming on
         """
-        new_names = [column[0] for column in keys_array]
         renaming_dictionary["exchange_specific"] = {}
         for i in keys_array:
             try:
@@ -80,6 +80,7 @@ class APIInterface:
             except KeyError:
                 pass
             renaming_dictionary[i[1]] = renaming_dictionary.pop(i[0])
+        return renaming_dictionary
 
     # Non-recursive check
     @staticmethod
@@ -335,6 +336,11 @@ class APIInterface:
                 ]
             }
             """
+            renames = [
+                ["asset", "currency"],
+                ["free", "available"],
+                ["locked", "hold"],
+            ]
             if account_id is not None:
                 warnings.warn("account_id parameter is not supported on binance, use currency instead. This parameter"
                               "will be removed soon.")
@@ -345,9 +351,7 @@ class APIInterface:
                 if currency in self.__available_currencies:
                     for i in range(len(accounts)):
                         if accounts[i]["asset"] == currency:
-                            accounts[i]["currency"] = accounts[i].pop("asset")
-                            accounts[i]["available"] = accounts[i].pop("free")
-                            accounts[i]["hold"] = accounts[i].pop("locked")
+                            accounts = self.__rename_to(renames, accounts)
                             parsed_value = self.__isolate_specific(needed, accounts[i])
                             return parsed_value
                     return {
@@ -369,9 +373,7 @@ class APIInterface:
                     # If the current available currency matches one from binance
                     if val == i:
                         # Do the normal thing above and append
-                        accounts[index]["currency"] = accounts[index].pop("asset")
-                        accounts[index]["available"] = accounts[index].pop("free")
-                        accounts[index]["hold"] = accounts[index].pop("locked")
+                        accounts = self.__rename_to(renames, accounts)
                         accounts[index] = self.__isolate_specific(needed, accounts[index])
                         filled_dict_list.append({
                             accounts[index]
@@ -557,7 +559,15 @@ class APIInterface:
                 }
             ]
             """
-            return list(self.__calls.get_orders(product_id, kwargs=kwargs))
+            if product_id is None:
+                orders = list(self.__calls.get_orders(kwargs=kwargs))
+            else:
+                orders = list(self.__calls.get_orders(product_id, kwargs=kwargs))
+
+            for i in range(len(orders)):
+                orders[i] = self.__isolate_specific(needed, orders[i])
+
+            return orders
         elif self.__exchange_name == "binance":
             """
             [
@@ -583,7 +593,21 @@ class APIInterface:
                 }
             ]
             """
-            pass
+            if product_id is not None:
+                product_id = Blankly.utils.to_exchange_coin_id(product_id, "binance")
+                orders = self.__calls.get_open_orders(symbol=product_id)
+            else:
+                orders = self.__calls.get_open_orders()
+            renames = [
+                ["orderId", "id"],
+                ["origQty", "size"],
+                ["isWorking", "status"]
+            ]
+            for i in range(len(orders)):
+                orders[i] = self.__rename_to(renames, orders[i])
+                orders[i] = self.__isolate_specific(needed, orders[i])
+
+            return orders
 
     def get_order(self, order_id):
         if self.__exchange_name == "coinbase_pro":
