@@ -58,9 +58,35 @@ class APIInterface:
                 base_assets.append(i["baseAsset"])
             self.__available_currencies = base_assets
 
+    @staticmethod
+    def __rename_to(keys_array, renaming_dictionary):
+        """
+        Args:
+            keys_array: A two dimensional array that contains information on which keys are changed:
+                keys_array = [
+                    ["key1", "new name"],
+                    ["id", "user_id"],
+                    ["frankie", "gerald"],
+                ]
+        """
+        new_names = [column[0] for column in keys_array]
+        renaming_dictionary["exchange_specific"] = {}
+        for i in keys_array:
+            try:
+                # Check if it has the new name
+                error_test = renaming_dictionary[i[1]]
+                # If we're here this key has already been defined, push it to the specific
+                renaming_dictionary["exchange_specific"][i[1]] = renaming_dictionary.pop(i[1])
+            except KeyError:
+                pass
+            renaming_dictionary[i[1]] = renaming_dictionary.pop(i[0])
+
     # Non-recursive check
     @staticmethod
     def __isolate_specific(needed, compare_dictionary):
+        """
+        This is the parsing algorithm used to homogenize the dictionaries
+        """
         # Create a column vector for the keys
         column = [column[0] for column in needed]
         # Create an area to hold the specific data
@@ -81,7 +107,16 @@ class APIInterface:
             # There has to be a way to do this without raising a flag value
             if not required:
                 exchange_specific[k] = compare_dictionary[k]
-        compare_dictionary["exchange_specific"] = exchange_specific
+
+        # If there exists the exchange specific dict in the compare dictionary
+        # This is done because after renaming, if there are naming conflicts they will already have been pushed here,
+        # generally the "else" should always be what runs.
+        if "exchange_specific" not in compare_dictionary:
+            # If there isn't, just add it directly
+            compare_dictionary["exchange_specific"] = exchange_specific
+        else:
+            # If there is, pull them together
+            compare_dictionary["exchange_specific"] = {**compare_dictionary["exchange_specific"], **exchange_specific}
         # Pull the specific keys out
         for k, v in exchange_specific.items():
             del compare_dictionary[k]
@@ -489,6 +524,14 @@ class APIInterface:
         """
         List open orders.
         """
+        needed = [
+            ["id", str],
+            ["price", float],
+            ["size", float],
+            ["type", str],
+            ["side", str],
+            ["open", bool]
+        ]
         if self.__exchange_name == "coinbase_pro":
             """
             [
@@ -515,6 +558,32 @@ class APIInterface:
             ]
             """
             return list(self.__calls.get_orders(product_id, kwargs=kwargs))
+        elif self.__exchange_name == "binance":
+            """
+            [
+                {
+                    "symbol": "LTCBTC",
+                    "orderId": 1,
+                    "orderListId": -1, //Unless OCO, the value will always be -1
+                    "clientOrderId": "myOrder1",
+                    "price": "0.1",
+                    "origQty": "1.0",    <- what are these??
+                    "executedQty": "0.0",    <- what are these??
+                    "cummulativeQuoteQty": "0.0",    <- what are these??
+                    "status": "NEW",
+                    "timeInForce": "GTC",
+                    "type": "LIMIT",
+                    "side": "BUY",
+                    "stopPrice": "0.0",
+                    "icebergQty": "0.0",
+                    "time": 1499827319559,
+                    "updateTime": 1499827319559,
+                    "isWorking": true,
+                    "origQuoteOrderQty": "0.000000"    <- what are these??
+                }
+            ]
+            """
+            pass
 
     def get_order(self, order_id):
         if self.__exchange_name == "coinbase_pro":
@@ -581,6 +650,7 @@ class APIInterface:
                 ]
             }
             """
+            # TODO: make sure this functions with Binance Coin (BNB)
             account = self.__calls.get_account()
             # Get rid of the stuff we really don't need this time
             account.pop('canTrade')

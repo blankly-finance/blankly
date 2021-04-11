@@ -98,6 +98,7 @@ Check out our [website](http://blankly.net).
    > `exchange = Blankly.Binance()`
 
 7. **Everything should work**! Run the `Basic_Bot` example in `Basic_Bot.py`. Note a warning will be shown because the `Basic_Bot` script does not specify the exchange name by default (explained in step 5 above).
+    - Note the library is developed on Python 3.7, but most modern versions of python 3 should work.
 
 ## What is it doing?
 
