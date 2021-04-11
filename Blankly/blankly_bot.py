@@ -19,7 +19,7 @@
 from multiprocessing import Process, Manager
 import Blankly
 import abc
-
+import copy
 
 class BlanklyBot(abc.ABC):
     def __init__(self):
@@ -56,7 +56,10 @@ class BlanklyBot(abc.ABC):
         self.exchange_type = exchange_type
         self.coin = coin
         self.user_preferences = user_preferences
-        self.Interface = interface
+        # TODO. This copy is a bad solution. It generally means that there will be a ticker object used on each process.
+        #  The worry is that if we implement auto rate limits, each process won't know whats going on. This might need
+        #  to be the case however to keep things static
+        self.Interface = copy.deepcopy(interface)
         # Coin id is the currency and which market its on
         self.coin_id = coin_id
         self.direct_calls = interface.get_calls()

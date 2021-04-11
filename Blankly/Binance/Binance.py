@@ -29,7 +29,7 @@ class Binance(Exchange):
         auth, defined_name = Blankly.auth_constructor.load_auth_binance(auth_path, portfolio_name)
         Exchange.__init__(self, "binance", defined_name)
         self.__calls = Client(api_key=auth[0], api_secret=auth[1],
-                           tld=self.get_preferences()["settings"]["binance_tld"])
+                              tld=self.get_preferences()["settings"]["binance_tld"])
 
         # Create the authenticated object
         self.Interface = Interface("binance", self.__calls)
@@ -42,7 +42,8 @@ class Binance(Exchange):
         Portfolio state is the internal properties for the exchange block.
         """
         # TODO Populate this with useful information
-        return self.Interface.get_account(currency=currency)
+        account = self.Interface.get_account(currency=currency)
+        return account
 
     def get_exchange_state(self):
         """

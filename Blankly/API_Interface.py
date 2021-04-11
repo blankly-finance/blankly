@@ -303,6 +303,7 @@ class APIInterface:
             if account_id is not None:
                 warnings.warn("account_id parameter is not supported on binance, use currency instead. This parameter"
                               "will be removed soon.")
+
             accounts = self.__calls.get_account()["balances"]
             # Isolate for currency, warn if not found or default to just returning a parsed version
             if currency is not None:

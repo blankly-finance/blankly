@@ -16,9 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from binance.client import Client
-
 
 class API:
-    def __init__(self, API_KEY, API_SECRET, requests_params=None, tld='com'):
-        self.authenticated_client = Client(API_KEY, API_SECRET, tld=tld)
+    pass
+    # def __init__(self, API_KEY, API_SECRET, requests_params=None, tld='com'):
+    #     self.authenticated_client = Client(API_KEY, API_SECRET, tld=tld)
