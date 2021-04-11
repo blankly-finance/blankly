@@ -544,6 +544,10 @@ class APIInterface:
     Binance: get_trade_fee
     """
     def get_fees(self):
+        needed = [
+            ['maker_fee_rate', float],
+            ['taker_fee_rate', float]
+        ]
         if self.__exchange_name == "coinbase_pro":
             """
             {
@@ -554,7 +558,40 @@ class APIInterface:
             """
             return self.__calls.get_fees()
         elif self.__exchange_name == "binance":
-            return "NOT YET SUPPORTED"
+            """
+            {
+                "makerCommission": 15,
+                "takerCommission": 15,
+                "buyerCommission": 0,
+                "sellerCommission": 0,
+                "canTrade": true,
+                "canWithdraw": true,
+                "canDeposit": true,
+                "balances": [
+                    {
+                        "asset": "BTC",
+                        "free": "4723846.89208129",
+                        "locked": "0.00000000"
+                    },
+                    {
+                        "asset": "LTC",
+                        "free": "4763368.68006011",
+                        "locked": "0.00000000"
+                    }
+                ]
+            }
+            """
+            account = self.__calls.get_account()
+            # Get rid of the stuff we really don't need this time
+            account.pop('canTrade')
+            account.pop('canWithdraw')
+            account.pop('canDeposit')
+            account.pop('balances')
+            # Rename makers and takers
+            account['maker_fee_rate'] = account.pop('makerCommission')
+            account['taker_fee_rate'] = account.pop('takerCommission')
+            # Isolate
+            return self.__isolate_specific(needed, account)
 
     """
     Coinbase Pro: get_account_history

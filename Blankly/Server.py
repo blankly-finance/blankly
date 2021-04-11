@@ -23,7 +23,7 @@ import zerorpc
 from Coinbase_Pro.Coinbase_Pro import Coinbase_Pro
 import json
 
-
+# Tickers shouldn't be accessed from this class. Interfaces will not have access to them
 class TradeInterface(object):
     def calc(self, text):
         """based on the input text, return the int result"""

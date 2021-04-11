@@ -44,13 +44,7 @@ class Coinbase_Pro(Exchange):
         Should be implemented per-class because it requires different types of interaction with each exchange.
         """
         # TODO Populate this with useful information
-        accounts = self.Interface.get_account()
-        slice = None
-        for i in accounts:
-            if i["currency"] == currency:
-                slice = i
-                break
-        return slice
+        return self.Interface.get_account(currency)
 
     def get_exchange_state(self):
         """
