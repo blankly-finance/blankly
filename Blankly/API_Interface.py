@@ -123,6 +123,9 @@ class APIInterface:
             del compare_dictionary[k]
         return compare_dictionary
 
+    def append_ticker_manager(self, ticker_manager):
+        self.__ticker_manager = ticker_manager
+
     def get_calls(self):
         """
         Returns:
@@ -674,7 +677,7 @@ class APIInterface:
                 ]
             }
             """
-            # TODO: make sure this functions with Binance Coin (BNB)
+            # TODO: make sure this supports with Binance Coin (BNB) discount
             account = self.__calls.get_account()
             # Get rid of the stuff we really don't need this time
             account.pop('canTrade')
@@ -698,31 +701,25 @@ class APIInterface:
         """
         Returns the product history from an exchange
         Args:
-            product_id: Blankly product ID format
+            product_id: Blankly product ID format (BTC-USD)
             epoch_start: Time to begin download
             epoch_stop: Time to stop download
             granularity: Resolution in seconds between tick (ex: 60 = 1 per minute)
         Returns:
-            Dataframe with 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
+            Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
         """
+        # Hope nobody is fixing this in the year 5138 at 9:46:40 AM (GMT)
+        if epoch_start > 100000000000:
+            epoch_start = int(epoch_start / 1000)
+        if epoch_stop > 100000000000:
+            epoch_stop = int(epoch_stop / 1000)
+
         if self.__exchange_name == "coinbase_pro":
             accepted_grans = [60, 300, 900, 3600, 21600, 86400]
             if granularity not in accepted_grans:
-                warnings.warn("Granularity is not in accepted granularity...rounding down.")
-                if granularity < 60:
-                    granularity = 60
-                elif granularity < 300:
-                    granularity = 60
-                elif granularity < 900:
-                    granularity = 300
-                elif granularity < 3600:
-                    granularity = 900
-                elif granularity < 21600:
-                    granularity = 3600
-                elif granularity < 86400:
-                    granularity = 21600
-                else:
-                    granularity = 86400
+                warnings.warn("Granularity is not an accepted granularity...rounding to nearest valid value.")
+                granularity = accepted_grans[min(range(len(accepted_grans)),
+                                                 key=lambda i: abs(accepted_grans[i]-granularity))]
 
             # Figure out how many points are needed
             need = int((epoch_stop - epoch_start) / granularity)
@@ -749,28 +746,61 @@ class APIInterface:
             return pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 
         elif self.__exchange_name == "binance":
-            """
-            Accepted granularity:
-                1m
-                3m
-                5m
-                15m
-                30m
-                1h
-                2h
-                4h
-                6h
-                8h
-                12h
-                1d
-                3d
-                1w
-                1M
-            """
-            return self.__calls.get_klines(symbol="BTCUSDT", interval="1m")
+            accepted_grans = [60, 180, 300, 900, 1800, 3600, 7200, 14400,
+                              21600, 28800, 43200, 86400, 259200, 604800, 2592000]
+            if granularity not in accepted_grans:
+                warnings.warn("Granularity is not an accepted granularity...rounding to nearest valid value.")
+                granularity = accepted_grans[min(range(len(accepted_grans)),
+                                                 key=lambda i: abs(accepted_grans[i]-granularity))]
+            lookup_dict = {
+                60: "1m",
+                180: "3m",
+                300: "5m",
+                900: "15m",
+                1800: "30m",
+                3600: "1h",
+                7200: "2h",
+                14400: "4h",
+                21600: "6h",
+                28800: "8h",
+                43200: "12h",
+                86400: "1d",
+                259200: "3d",
+                604800: "1w",
+                2592000: "1M"
+            }
+            gran_string = lookup_dict[granularity]
 
-    def append_ticker_manager(self, ticker_manager):
-        self.__ticker_manager = ticker_manager
+            # Figure out how many points are needed
+            need = int((epoch_stop - epoch_start) / granularity)
+            window_open = epoch_start
+            history = []
+
+            # Convert coin id to binance coin
+            product_id = Blankly.utils.to_exchange_coin_id(product_id, 'binance')
+            while need > 1000:
+                # Close is always 300 points ahead
+                window_close = window_open + 1000 * granularity
+                history = history + self.__calls.get_klines(symbol=product_id, startTime=window_open*1000,
+                                                            endTime=window_close*1000, interval=gran_string, limit=1000)
+
+                window_open = window_close
+                need -= 1000
+                time.sleep(1)
+
+            # Fill the remainder
+            history_block = history + self.__calls.get_klines(symbol=product_id, startTime=window_open*1000,
+                                                              endTime=epoch_stop*1000, interval=gran_string, limit=1000)
+
+            data_frame = pd.DataFrame(history_block, columns=['time', 'open', 'high', 'low', 'close', 'volume',
+                                                              'close time', 'quote asset volume', 'number of trades',
+                                                              'taker buy base asset volume',
+                                                              'taker buy quote asset volume', 'ignore'])
+            # Clear the ignore column, why is that there binance?
+            del data_frame['ignore']
+            # Want them in this order: ['time (epoch)', 'low', 'high', 'open', 'close', 'volume']
+
+            return data_frame.reindex(columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 
     def get_latest_trades(self, product_id, **kwargs):
         if self.__exchange_name == "coinbase_pro":

@@ -19,7 +19,7 @@ class Bot(Blankly.BlanklyBot):
         self.update_state("Heartbeat", 0)
 
         # Dataframe price history (commented because it takes time to run)
-        # print(self.Interface.get_product_history(self.coin_id, 1611029486, 1616123507, 10000))
+        print(self.Interface.get_product_history(self.coin_id, 1611029486, 1616123507, 10000))
         print("Interface call: " + str(self.Interface.get_fees()))
 
         # You can also bypass the interface and make calls directly to the exchange:
