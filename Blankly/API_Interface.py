@@ -869,16 +869,20 @@ class APIInterface:
                     ...
                 ]
                 """
-            products = self.__calls.get_products()
-            for i in products:
+            response = self.__calls.get_products()
+            products = None
+            for i in response:
                 if i["id"] == product_id:
                     products = i
-                    break
+
+            if products is None:
                 raise ValueError("Specified market not found")
+
             products = self.__rename_to(renames, products)
             products["min_price"] = 0
-            products["max_price"] = None
-            products["max_orders"] = None
+            # These don't really exist on this exchange
+            products["max_price"] = -1
+            products["max_orders"] = -1
             return self.__isolate_specific(needed, products)
         elif self.__exchange_name == "binance":
             """
@@ -952,6 +956,7 @@ class APIInterface:
                     symbol_data = i
                     current_price = float(self.__calls.get_avg_price(symbol=converted_symbol)['price'])
                     break
+            if current_price is None:
                 raise ValueError("Specified market not found")
 
             filters = symbol_data["filters"]
