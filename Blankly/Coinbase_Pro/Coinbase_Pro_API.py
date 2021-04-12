@@ -84,7 +84,6 @@ class API:
                         "quote_increment": "0.01"
                     }
                 ]
-
         """
         return requests.get(self.__api_url + 'products', auth=self.__auth).json()
 

@@ -827,7 +827,7 @@ class APIInterface:
     Coinbase Pro: Get Currencies
     Binance: get_products
     """
-    def get_market_limits(self):
+    def get_market_limits(self, product_id):
         needed = [
             ["market", str],
             ["base_currency", str],
@@ -867,14 +867,30 @@ class APIInterface:
                 ]
                 """
             products = self.__calls.get_products()
-            for i in range(len(products)):
-                products[i] = self.__rename_to(renames, products[i])
-            for i in range(len(products)):
-                products[i] = self.__isolate_specific(needed, products[i])
+            for i in products:
+                if i["id"] == product_id:
+                    products = i
+                    break
+                raise ValueError("Specified market not found")
 
-            return products
+            products = self.__rename_to(renames, products)
+            return self.__isolate_specific(needed, products)
         elif self.__exchange_name == "binance":
+            converted_symbol = Blankly.utils.to_exchange_coin_id(product_id, 'binance')
+            current_price = self.__calls.get_avg_price(symbol=converted_symbol)
+            symbol_data = self.__calls.get_products()["symbols"]
+            renames = [
+                ["baseAsset", "base_asset"],
+                ["quoteAsset", "quote_asset"],
+            ]
+            for i in symbol_data:
+                if i["symbol"] == converted_symbol:
+                    symbol_data = i
+                    break
+                raise ValueError("Specified market not found")
+
             """
+            Optimally we'll just remove the filter section and make the returns accurate
             {
                 "symbol": "BTCUSD",
                 "status": "TRADING",
