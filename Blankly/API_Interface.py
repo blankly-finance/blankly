@@ -946,11 +946,11 @@ class APIInterface:
 
             converted_symbol = Blankly.utils.to_exchange_coin_id(product_id, 'binance')
             current_price = None
-            symbol_data = self.__calls.get_products()["symbols"]
+            symbol_data = self.__calls.get_exchange_info()["symbols"]
             for i in symbol_data:
                 if i["symbol"] == converted_symbol:
                     symbol_data = i
-                    current_price = self.__calls.get_avg_price(symbol=converted_symbol)
+                    current_price = float(self.__calls.get_avg_price(symbol=converted_symbol)['price'])
                     break
                 raise ValueError("Specified market not found")
 
@@ -968,8 +968,6 @@ class APIInterface:
 
             max_orders = int(filters[6]["maxNumOrders"])
 
-            min_price = None
-            max_price = None
             if hard_min_price < percent_min_price:
                 min_price = percent_min_price
             else:
@@ -982,8 +980,8 @@ class APIInterface:
 
             return {
                 "market": product_id,
-                "base_currency": symbol_data["base_asset"],
-                "quote_currency": symbol_data["quote_asset"],
+                "base_currency": symbol_data["baseAsset"],
+                "quote_currency": symbol_data["quoteAsset"],
                 "base_min_size": min_quantity,  # Minimum size to buy
                 "base_max_size": max_quantity,  # Maximum size to buy
                 "quote_increment": quote_increment,  # Specifies the min order price as well as the price increment.
