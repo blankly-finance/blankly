@@ -316,6 +316,7 @@ class APIInterface:
                 """
                 return self.__calls.get_account(account_id)
         elif self.__exchange_name == "binance":
+            # TODO this should really use the get_asset_balance() function from binance.
             """
             {
                 "makerCommission": 15,
@@ -826,19 +827,112 @@ class APIInterface:
     Coinbase Pro: Get Currencies
     Binance: get_products
     """
-    def get_currencies(self):
+    def get_market_limits(self):
+        needed = [
+            ["market", str],
+            ["base_currency", str],
+            ["quote_currency", str],
+            ["base_min_size", float],  # Minimum size to buy
+            ["base_max_size", float],  # Maximum size to buy
+            ["quote_increment", float],  # Specifies the min order price as well as the price increment.
+            ["base_increment", float]  # Specifies the minimum increment for the base_currency.
+        ]
         if self.__exchange_name == "coinbase_pro":
+            renames = [
+                ["id", "market"]
+            ]
             """
             Returns:
-            list: List of currencies. Example::
-                [{
-                    "id": "BTC",
-                    "name": "Bitcoin",
-                    "min_size": "0.00000001"
-                }, {
-                    "id": "USD",
-                    "name": "United States Dollar",
-                    "min_size": "0.01000000"
-                }]
+            list: List of available currency pairs. Example::
+                [
+                    {
+                        "id": "BTC-USD",
+                        "display_name": "BTC/USD",
+                        "base_currency": "BTC",
+                        "quote_currency": "USD",
+                        "base_increment": "0.00000001",
+                        "quote_increment": "0.01000000",
+                        "base_min_size": "0.00100000",
+                        "base_max_size": "280.00000000",
+                        "min_market_funds": "5",
+                        "max_market_funds": "1000000",
+                        "status": "online",
+                        "status_message": "",
+                        "cancel_only": false,
+                        "limit_only": false,
+                        "post_only": false,
+                        "trading_disabled": false
+                    },
+                    ...
+                ]
                 """
-            return self.__calls.get_currencies()
+            products = self.__calls.get_products()
+            for i in range(len(products)):
+                products[i] = self.__rename_to(renames, products[i])
+            for i in range(len(products)):
+                products[i] = self.__isolate_specific(needed, products[i])
+
+            return products
+        elif self.__exchange_name == "binance":
+            """
+            {
+                "symbol": "BTCUSD",
+                "status": "TRADING",
+                "baseAsset": "BTC",
+                "baseAssetPrecision": 8,
+                "quoteAsset": "USD",
+                "quotePrecision": 4,
+                "quoteAssetPrecision": 4,
+                "baseCommissionPrecision": 8,
+                "quoteCommissionPrecision": 2,
+                "orderTypes": [
+                    "LIMIT",
+                    "LIMIT_MAKER",
+                    "MARKET",
+                    "STOP_LOSS_LIMIT",
+                    "TAKE_PROFIT_LIMIT",
+                ],
+                "icebergAllowed": True,
+                "ocoAllowed": True,
+                "quoteOrderQtyMarketAllowed": True,
+                "isSpotTradingAllowed": True,
+                "isMarginTradingAllowed": False,
+                "filters": [
+                    {
+                        "filterType": "PRICE_FILTER",
+                        "minPrice": "0.0100",
+                        "maxPrice": "100000.0000",
+                        "tickSize": "0.0100",
+                    },
+                    {
+                        "filterType": "PERCENT_PRICE",
+                        "multiplierUp": "5",
+                        "multiplierDown": "0.2",
+                        "avgPriceMins": 5,
+                    },
+                    {
+                        "filterType": "LOT_SIZE",
+                        "minQty": "0.00000100",
+                        "maxQty": "9000.00000000",
+                        "stepSize": "0.00000100",
+                    },
+                    {
+                        "filterType": "MIN_NOTIONAL",
+                        "minNotional": "10.0000",
+                        "applyToMarket": True,
+                        "avgPriceMins": 5,
+                    },
+                    {"filterType": "ICEBERG_PARTS", "limit": 10},
+                    {
+                        "filterType": "MARKET_LOT_SIZE",
+                        "minQty": "0.00000000",
+                        "maxQty": "3200.00000000",
+                        "stepSize": "0.00000000",
+                    },
+                    {"filterType": "MAX_NUM_ORDERS", "maxNumOrders": 200},
+                    {"filterType": "MAX_NUM_ALGO_ORDERS", "maxNumAlgoOrders": 5},
+                ],
+                "permissions": ["SPOT"],
+            },
+            """
+            pass
