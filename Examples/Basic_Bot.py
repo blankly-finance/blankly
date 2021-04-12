@@ -17,7 +17,6 @@ class Bot(Blankly.BlanklyBot):
 
         # Add a heartbeat example to report to GUI
         self.update_state("Heartbeat", 0)
-        print(self.Interface.get_currencies())
 
         # Dataframe price history (commented because it takes time to run)
         # print(self.Interface.get_product_history(self.coin_id, 1611029486, 1616123507, 10000))
