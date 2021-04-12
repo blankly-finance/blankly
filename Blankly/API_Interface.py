@@ -835,7 +835,10 @@ class APIInterface:
             ["base_min_size", float],  # Minimum size to buy
             ["base_max_size", float],  # Maximum size to buy
             ["quote_increment", float],  # Specifies the min order price as well as the price increment.
-            ["base_increment", float]  # Specifies the minimum increment for the base_currency.
+            ["base_increment", float],  # Specifies the minimum increment for the base_currency.
+            ["max_orders", int],
+            ["min_price", float],
+            ["max_price", float]
         ]
         if self.__exchange_name == "coinbase_pro":
             renames = [
@@ -872,23 +875,12 @@ class APIInterface:
                     products = i
                     break
                 raise ValueError("Specified market not found")
-
             products = self.__rename_to(renames, products)
+            products["min_price"] = 0
+            products["max_price"] = None
+            products["max_orders"] = None
             return self.__isolate_specific(needed, products)
         elif self.__exchange_name == "binance":
-            converted_symbol = Blankly.utils.to_exchange_coin_id(product_id, 'binance')
-            current_price = self.__calls.get_avg_price(symbol=converted_symbol)
-            symbol_data = self.__calls.get_products()["symbols"]
-            renames = [
-                ["baseAsset", "base_asset"],
-                ["quoteAsset", "quote_asset"],
-            ]
-            for i in symbol_data:
-                if i["symbol"] == converted_symbol:
-                    symbol_data = i
-                    break
-                raise ValueError("Specified market not found")
-
             """
             Optimally we'll just remove the filter section and make the returns accurate
             {
@@ -951,4 +943,52 @@ class APIInterface:
                 "permissions": ["SPOT"],
             },
             """
-            pass
+
+            converted_symbol = Blankly.utils.to_exchange_coin_id(product_id, 'binance')
+            current_price = None
+            symbol_data = self.__calls.get_products()["symbols"]
+            for i in symbol_data:
+                if i["symbol"] == converted_symbol:
+                    symbol_data = i
+                    current_price = self.__calls.get_avg_price(symbol=converted_symbol)
+                    break
+                raise ValueError("Specified market not found")
+
+            filters = symbol_data["filters"]
+            hard_min_price = float(filters[0]["minPrice"])
+            hard_max_price = float(filters[0]["maxPrice"])
+            quote_increment = float(filters[0]["tickSize"])
+
+            percent_min_price = float(filters[1]["multiplierUp"]) * current_price
+            percent_max_price = float(filters[1]["multiplierDown"]) * current_price
+
+            min_quantity = float(filters[2]["minQty"])
+            max_quantity = float(filters[2]["maxQty"])
+            base_increment = float(filters[2]["stepSize"])
+
+            max_orders = int(filters[6]["maxNumOrders"])
+
+            min_price = None
+            max_price = None
+            if hard_min_price < percent_min_price:
+                min_price = percent_min_price
+            else:
+                min_price = hard_min_price
+
+            if hard_max_price > percent_max_price:
+                max_price = percent_max_price
+            else:
+                max_price = hard_max_price
+
+            return {
+                "market": product_id,
+                "base_currency": symbol_data["base_asset"],
+                "quote_currency": symbol_data["quote_asset"],
+                "base_min_size": min_quantity,  # Minimum size to buy
+                "base_max_size": max_quantity,  # Maximum size to buy
+                "quote_increment": quote_increment,  # Specifies the min order price as well as the price increment.
+                "base_increment": base_increment,  # Specifies the minimum increment for the base_currency.
+                "max_orders": max_orders,
+                "min_price": min_price,
+                "max_price": max_price,
+            }
