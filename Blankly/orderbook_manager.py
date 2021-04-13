@@ -65,25 +65,27 @@ class OrderbookManger:
     def binance_update(self, update):
         pass
 
-    def append_callback(self, currency_id, callback_object, override_exchange=None):
+    def append_direct_callback(self, callback_object, override_currency_id=None, override_exchange=None):
         """
-        Add another object to have the price_event() function called.
+        This is a bit different than above. This will give the direct feed of the websocket instead of a sorted book.
         Generally the callback object should be "self" and the callback_name should only be filled if you want to
         override the default "price_event()" function call.
         This can be very useful in working with multiple tickers, but not necessary on a simple bot.
 
         Args:
-            currency_id: Ticker id, such as "BTC-USD" or exchange equivalents.
             callback_object: Reference for the callback function. The price_event(self, tick)
-                function would be passed in as just self.price_event  -- no parenthesis or arguments, just the object
+                function would be passed in as just self.price_event -- no parenthesis or arguments, just the reference
+            override_currency_id: Ticker id, such as "BTC-USD" or exchange equivalents.
             override_exchange: Forces the manager to use a different supported exchange.
         """
-        exchange_name = self.__default_exchange
-        if override_exchange is not None:
-            exchange_name = override_exchange
+        if override_currency_id is None:
+            override_currency_id = self.__default_currency
 
-        if exchange_name == "coinbase_pro":
-            self.__websockets['coinbase_pro'][currency_id].append_callback(callback_object)
+        if override_exchange is None:
+            override_exchange = self.__default_exchange
+
+        if override_exchange == "coinbase_pro":
+            self.__websockets['coinbase_pro'][override_currency_id].append_callback(callback_object)
 
     def __evaluate_overrides(self, override_currency, override_exchange):
         """
@@ -118,7 +120,7 @@ class OrderbookManger:
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
         if self.__default_exchange == "coinbase_pro":
-            #TODO fix the returned value below
+            # TODO fix the returned value below
             """
             Returns:
                 {'type': 'ticker', 'sequence': 23300178473, 'product_id': 'BTC-USD', 'price': '58833.23', 

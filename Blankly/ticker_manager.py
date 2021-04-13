@@ -118,7 +118,7 @@ class TickerManager:
     """ 
     Ticker Functions 
     """
-    def append_callback(self, currency_id, callback_object, override_exchange=None):
+    def append_callback(self, callback_object, override_currency_id=None, override_exchange=None):
         """
         Add another object to have the price_event() function called.
         Generally the callback object should be "self" and the callback_name should only be filled if you want to
@@ -126,17 +126,19 @@ class TickerManager:
         This can be very useful in working with multiple tickers, but not necessary on a simple bot.
 
         Args:
-            currency_id: Ticker id, such as "BTC-USD" or exchange equivalents.
             callback_object: Reference for the callback function. The price_event(self, tick)
                 function would be passed in as just self.price_event  -- no parenthesis or arguments, just the object
+            override_currency_id: Ticker id, such as "BTC-USD" or exchange equivalents.
             override_exchange: Forces the manager to use a different supported exchange.
         """
-        exchange_name = self.__default_exchange
-        if override_exchange is not None:
-            exchange_name = override_exchange
+        if override_currency_id is None:
+            override_currency_id = self.__default_currency
 
-        if exchange_name == "coinbase_pro":
-            self.__tickers['coinbase_pro'][currency_id].append_callback(callback_object)
+        if override_exchange is None:
+            override_exchange = self.__default_exchange
+
+        if override_exchange == "coinbase_pro":
+            self.__tickers['coinbase_pro'][override_currency_id].append_callback(callback_object)
 
     def is_websocket_open(self, override_currency=None, override_exchange=None):
         """
