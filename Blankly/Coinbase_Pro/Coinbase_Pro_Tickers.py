@@ -133,7 +133,7 @@ class Tickers(IExchangeTicker):
 
                 # Manage price events and fire for each manager attached
                 for i in range(len(self.__callbacks)):
-                    self.__callbacks[i].price_event(self.__most_recent_tick)
+                    self.__callbacks[i](self.__most_recent_tick)
 
 
                 counter += 1

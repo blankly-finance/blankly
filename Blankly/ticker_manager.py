@@ -99,7 +99,7 @@ class TickerManager:
     Ticker Functions 
     """
     # TODO, add the getattribute needed for the override_callback feature.
-    def append_callback(self, currency_id, callback_object, override_callback_name=None, override_exchange=None):
+    def append_callback(self, currency_id, callback_object, override_exchange=None):
         """
         Add another object to have the price_event() function called.
         Generally the callback object should be "self" and the callback_name should only be filled if you want to
