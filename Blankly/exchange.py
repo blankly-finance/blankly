@@ -70,7 +70,8 @@ class Exchange(IExchange):
 
     def get_full_state(self, currency):
         """
-        Makes API calls to determine the state of the currency. This also returns the state of the model on that currency.
+        Makes API calls to determine the state of the currency. This also returns the state of the model on that
+        currency.
 
         Args:
             currency: Currency to filter for. This filters model information and the exchange information.

@@ -20,6 +20,8 @@ from multiprocessing import Process, Manager
 import Blankly
 import abc
 import copy
+import warnings
+
 
 class BlanklyBot(abc.ABC):
     def __init__(self):
@@ -114,7 +116,7 @@ class BlanklyBot(abc.ABC):
 
     @abc.abstractmethod
     def main(self, args):
-        pass
+        warnings.warn("No user-created main function to run, stopping...")
 
     @abc.abstractmethod
     def price_event(self, tick):
