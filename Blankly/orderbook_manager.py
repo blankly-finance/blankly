@@ -30,6 +30,7 @@ class OrderbookManger:
         self.__default_currency = default_currency
         self.__orderbooks = {}
         self.__websockets = {}
+        self.__websockets_callbacks = {}
         self.__websockets[default_exchange] = {}
 
     def create_orderbook(self, callback, currency_id=None, override_exchange=None):
@@ -45,6 +46,7 @@ class OrderbookManger:
         if override_exchange is not None:
             if override_exchange not in self.__websockets.keys():
                 self.__websockets[override_exchange] = {}
+                self.__websockets_callbacks[override_exchange] = {}
             # Write this value so it can be used later
             exchange_name = override_exchange
 
@@ -52,9 +54,10 @@ class OrderbookManger:
             if currency_id is None:
                 currency_id = self.__default_currency
             websocket = Coinbase_Pro_Orderbook(currency_id)
-            websocket.append_callback(callback)
+            websocket.append_callback(self.coinbase_update)
             # Store this object
             self.__websockets['coinbase_pro'][currency_id] = websocket
+            self.__websockets_callbacks['coinbase_pro'][currency_id] = callback
             return websocket
         else:
             print(exchange_name + " ticker not supported, skipping creation")
@@ -86,6 +89,25 @@ class OrderbookManger:
 
         if override_exchange == "coinbase_pro":
             self.__websockets['coinbase_pro'][override_currency_id].append_callback(callback_object)
+
+    def append_orderbook_callback(self, callback_object, override_currency_id=None, override_exchange=None):
+        """
+        These are appended calls to a sorted orderbook. Functions added to this will be fired every time the orderbook
+        changes.
+        Args:
+            callback_object: Reference for the callback function. The price_event(self, tick)
+                function would be passed in as just self.price_event -- no parenthesis or arguments, just the reference
+            override_currency_id: Ticker id, such as "BTC-USD" or exchange equivalents.
+            override_exchange: Forces the manager to use a different supported exchange.
+        """
+        if override_currency_id is None:
+            override_currency_id = self.__default_currency
+
+        if override_exchange is None:
+            override_exchange = self.__default_exchange
+
+        if override_exchange == "coinbase_pro":
+            self.__websockets_callbacks['coinbase_pro'][override_currency_id] = callback_object
 
     def __evaluate_overrides(self, override_currency, override_exchange):
         """
