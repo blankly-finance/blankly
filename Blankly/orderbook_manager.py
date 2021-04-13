@@ -54,6 +54,7 @@ class OrderbookManger:
             if currency_id is None:
                 currency_id = self.__default_currency
             websocket = Coinbase_Pro_Orderbook(currency_id)
+            # This is where the sorting magic happens
             websocket.append_callback(self.coinbase_update)
             # Store this object
             self.__websockets['coinbase_pro'][currency_id] = websocket

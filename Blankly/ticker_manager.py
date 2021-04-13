@@ -58,6 +58,7 @@ class TickerManager:
         if exchange_name == "coinbase_pro":
             if currency_id is None:
                 currency_id = self.__default_currency
+
             ticker = Coinbase_Pro_Ticker(currency_id, log=log)
             ticker.append_callback(callback)
             # Store this object

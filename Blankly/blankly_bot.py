@@ -87,7 +87,7 @@ class BlanklyBot(abc.ABC):
         Create any objects that need to be process-specific in the other process
         """
         self.Ticker_Manager = Blankly.TickerManager(self.exchange_type, self.coin_id)
-        self.default_ticker = self.Ticker_Manager.create_ticker(self.coin_id, self.price_event)
+        self.default_ticker = self.Ticker_Manager.create_ticker(self.price_event)
         self.Interface.append_ticker_manager(self.Ticker_Manager)
         self.main(args)
 
