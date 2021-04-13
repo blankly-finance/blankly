@@ -22,6 +22,12 @@ from Blankly.Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ti
 
 class TickerManager:
     def __init__(self, exchange_name, default_currency):
+        """
+        Create a new manager.
+        Args:
+            exchange_name: Add an exchange name for the manager to favor
+            default_currency: Add a default currency for the manager to favor
+        """
         self.__default_exchange = exchange_name
         self.__default_currency = default_currency
         self.__tickers = {}
@@ -95,10 +101,19 @@ class TickerManager:
         """
         return self.__tickers
 
+    def delete_ticker(self, exchange, currency):
+        """
+        Deletes the ticker on the specified exchange currency
+        Args:
+            exchange: Exchange name such as "coinbase_pro"
+            currency: Currency to remove, such as "BTC-USd"
+        """
+        self.__tickers[exchange][currency].close_websocket()
+        del self.__tickers[exchange][currency]
+
     """ 
     Ticker Functions 
     """
-    # TODO, add the getattribute needed for the override_callback feature.
     def append_callback(self, currency_id, callback_object, override_exchange=None):
         """
         Add another object to have the price_event() function called.
@@ -108,7 +123,8 @@ class TickerManager:
 
         Args:
             currency_id: Ticker id, such as "BTC-USD" or exchange equivalents.
-            callback_object: Generally "self" of the object calling. This is called by the callback function.
+            callback_object: Reference for the callback function. The price_event(self, tick)
+                function would be passed in as just self.price_event  -- no parenthesis or arguments, just the object
             override_exchange: Forces the manager to use a different supported exchange.
         """
         exchange_name = self.__default_exchange
