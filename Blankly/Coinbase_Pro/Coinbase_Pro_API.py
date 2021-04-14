@@ -125,10 +125,8 @@ class API:
         if level == 3:
             warnings.warn("Abuse of polling at level 3 can result in a block. Consider using the websocket.")
 
-        # TODO add websocket feed for oder book
-
         params = {'level': level}
-        return requests.get(self.__api_url + "products/{}/book".format(product_id), params=params)
+        return requests.get(self.__api_url + "products/{}/book".format(product_id), params=params).json()
 
     """ PAGINATED """ """ Full interface support """
     def get_product_trades(self, product_id, before='', after='', limit=None, result=None):

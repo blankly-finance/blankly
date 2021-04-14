@@ -56,7 +56,7 @@ if __name__ == "__main__":
     """
 
     # This creates an authenticated exchange. Now we can append models.
-    exchange = Blankly.Coinbase_Pro()
+    portfolio = Blankly.Coinbase_Pro()
     # Imagine this:
     #   Coinbase Pro <-- Choosing to assign this bot to this exchange
     #   Kraken
@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     # Create the bot and add it to run as a coinbase_pro bitcoin model.
     bot = Bot()
-    exchange.append_model(bot, "BTC")
+    portfolio.append_model(model=bot, coin="BTC")
     # Imagine this:
     #   Coinbase Pro:
     #       Bitcoin <-- Added to the data from this currency
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     #       Stellar
 
     # Begins running the main() function of the model on a different process
-    exchange.start_models()
+    portfolio.start_models(coin="BTC")
     # Imagine this:
     #   Coinbase Pro:
     #       Bitcoin <-- Bot <-- Asking to start
@@ -82,6 +82,6 @@ if __name__ == "__main__":
     # Now other processes can be created or just continue with this one.
     while True:
         # Print the state every 1 second
-        state = exchange.get_full_state("BTC")
+        state = portfolio.get_full_state("BTC")
         Blankly.utils.pretty_print_JSON(state)
         time.sleep(1)
