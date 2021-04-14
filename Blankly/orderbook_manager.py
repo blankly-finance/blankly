@@ -59,12 +59,19 @@ class OrderbookManger:
             # Store this object
             self.__websockets['coinbase_pro'][currency_id] = websocket
             self.__websockets_callbacks['coinbase_pro'][currency_id] = callback
+            # TODO call to level 3 orderbook should be done here
+            self.__orderbooks['coinbase_pro'][currency_id] = {}
             return websocket
         else:
             print(exchange_name + " ticker not supported, skipping creation")
 
     def coinbase_update(self, update):
-        pass
+        book = self.__orderbooks[update['product_id']]
+        type = update['type']
+        if type == 'open':
+            pass
+        elif type == 'done':
+            pass
 
     def binance_update(self, update):
         pass
