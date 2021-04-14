@@ -47,10 +47,10 @@ class APIInterface:
         if self.__exchange_name == "binance":
             account = self.__calls.get_account()
             self.__exchange_properties = {
-                "maker_fee_rate": account['makerCommission'],
-                "taker_fee_rate": account['takerCommission'],
-                "buyer_fee_rate": account['buyerCommission'],  # I'm not sure of the case when these are nonzero
-                "seller_fee_rate": account['sellerCommission'],
+                "maker_fee_rate": account['makerCommission']/100,
+                "taker_fee_rate": account['takerCommission']/100,
+                "buyer_fee_rate": account['buyerCommission']/100,  # I'm not sure of the case when these are nonzero
+                "seller_fee_rate": account['sellerCommission']/100,
             }
             symbols = self.__calls.get_exchange_info()["symbols"]
             base_assets = []
@@ -653,7 +653,8 @@ class APIInterface:
                 'usd_volume': '37.69'
             }
             """
-            return self.__calls.get_fees()
+            fees = self.__calls.get_fees()
+            return self.__isolate_specific(needed, fees)
         elif self.__exchange_name == "binance":
             """
             {
@@ -686,8 +687,8 @@ class APIInterface:
             account.pop('canDeposit')
             account.pop('balances')
             # Rename makers and takers
-            account['maker_fee_rate'] = account.pop('makerCommission')
-            account['taker_fee_rate'] = account.pop('takerCommission')
+            account['maker_fee_rate'] = account.pop('makerCommission')/100
+            account['taker_fee_rate'] = account.pop('takerCommission')/100
             # Isolate
             return self.__isolate_specific(needed, account)
 
