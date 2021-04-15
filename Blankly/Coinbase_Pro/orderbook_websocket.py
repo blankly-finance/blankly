@@ -102,9 +102,10 @@ class OrderBook(IExchangeOrderbook):
 
                 # Manage price events and fire for each manager attached
                 for i in range(len(self.__callbacks)):
-                    self.__callbacks[i].orderbook_event(received)
+                    self.__callbacks[i](received)
             except Exception as e:
                 if persist_connected:
+                    print("Error: " + str(e))
                     continue
                 else:
                     print(traceback.format_exc())

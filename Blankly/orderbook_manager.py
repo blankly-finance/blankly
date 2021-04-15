@@ -29,9 +29,11 @@ class OrderbookManger:
         self.__default_exchange = default_exchange
         self.__default_currency = default_currency
         self.__orderbooks = {}
+        self.__orderbooks[default_exchange] = {}
         self.__websockets = {}
-        self.__websockets_callbacks = {}
         self.__websockets[default_exchange] = {}
+        self.__websockets_callbacks = {}
+        self.__websockets_callbacks[default_exchange] = {}
 
     def create_orderbook(self, callback, currency_id=None, override_exchange=None):
         """
@@ -66,12 +68,19 @@ class OrderbookManger:
             print(exchange_name + " ticker not supported, skipping creation")
 
     def coinbase_update(self, update):
-        book = self.__orderbooks[update['product_id']]
+        book = self.__orderbooks['coinbase_pro'][update['product_id']]
         type = update['type']
         if type == 'open':
-            pass
+            book[update['order_id']] = {
+                'side': update['side'],
+                'price': update['price'],
+                'size': update['remaining_size']
+            }
         elif type == 'done':
-            pass
+            book.pop(update['order_id'])
+        self.__orderbooks[update['product_id']] = book
+        self.__websockets_callbacks['coinbase_pro'][update['product_id']](book)
+
 
     def binance_update(self, update):
         pass
