@@ -16,12 +16,12 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from Blankly.Coinbase_Pro.Coinbase_Pro import Coinbase_Pro as Coinbase_Pro
-from Blankly.Binance.Binance import Binance as Binance
+from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro import Coinbase_Pro as Coinbase_Pro
+from Blankly.exchanges.Binance.Binance import Binance as Binance
 from Blankly.API_Interface import APIInterface as Interface
 from Blankly.blankly_bot import BlanklyBot
 
-from Blankly.Coinbase_Pro.Coinbase_Pro_API import API as Direct_Coinbase_Pro_API
-from Blankly.ticker_manager import TickerManager as TickerManager
-from Blankly.orderbook_manager import OrderbookManger as OrderbookManager
+from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Direct_Coinbase_Pro_API
+from Blankly.exchanges.ticker_manager import TickerManager as TickerManager
+from Blankly.exchanges.orderbook_manager import OrderbookManger as OrderbookManager
 import Blankly.utils

@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import Blankly
-from Blankly.IExchange import IExchange
+from Blankly.exchanges.IExchange import IExchange
 
 
 class Exchange(IExchange):

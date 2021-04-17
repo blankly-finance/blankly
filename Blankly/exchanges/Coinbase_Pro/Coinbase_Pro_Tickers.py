@@ -1,5 +1,5 @@
 """
-    Coinbase Pro orderbook websocket feed.
+    Coinbase Pro ticker manager.
     Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
@@ -16,19 +16,19 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import Blankly
 import _thread
 import json
 import ssl
 import time
 import traceback
-import Blankly
+from Blankly.exchanges.IExchange_Ticker import IExchangeTicker
 import collections
-from Blankly.IExchange_Orderbook import IExchangeOrderbook
 
 from websocket import create_connection
 
 
-def create_websocket_connection(id, url):
+def create_ticker_connection(id, url):
     ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
     request = """{
     "type": "subscribe",
@@ -36,22 +36,42 @@ def create_websocket_connection(id, url):
         \"""" + id + """\"
     ],
     "channels": [
-        "full"
+        {
+            "name": "ticker",
+            "product_ids": [
+                \"""" + id + """\"
+            ]
+        }
     ]
     }"""
     ws.send(request)
     return ws
 
 
-class OrderBook(IExchangeOrderbook):
-    def __init__(self, currency_id, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
+class Tickers(IExchangeTicker):
+    def __init__(self, currency_id, log=None, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
         """
-        Create and initialize the orderbook connection
+        Create and initialize the ticker
         Args:
-            currency_id: Currency to listen on such as "BTC-USD"
+            currency_id: Currency to initialize on such as "BTC-USD"
+            log: Fill this with a path to a log file that should be created
             WEBSOCKET_URL: Default websocket URL feed.
         """
         self.__id = currency_id
+
+        # Initialize log file
+        if log is not None:
+            self.__log = True
+            self.__filePath = log
+            try:
+                self.__file = open(log, 'xa')
+                self.__file.write(
+                    "time,system_time,price,open_24h,volume_24h,low_24h,high_24h,volume_30d,best_bid,best_ask,"
+                    "last_size\n")
+            except FileExistsError:
+                self.__file = open(log, 'a')
+        else:
+            self.__log = False
 
         self.URL = WEBSOCKET_URL
         self.ws = None
@@ -60,21 +80,20 @@ class OrderBook(IExchangeOrderbook):
         self.__most_recent_time = None
         self.__callbacks = []
 
-        # Load preferences and create the buffers
+        # Reload preferences
         self.__preferences = Blankly.utils.load_user_preferences()
-        self.__orderbook_feed = collections.deque(maxlen=self.__preferences["settings"]["orderbook_buffer_size"])
-        self.__time_feed = collections.deque(maxlen=self.__preferences["settings"]["orderbook_buffer_size"])
+        self.__ticker_feed = collections.deque(maxlen=self.__preferences["settings"]["ticker_buffer_size"])
+        self.__time_feed = collections.deque(maxlen=self.__preferences["settings"]["ticker_buffer_size"])
 
         # Start the websocket
         self.start_websocket()
 
-    # This could be made static with some changes, would make the code in the loop cleaner
     def start_websocket(self):
         """
         Restart websocket if it was asked to stop.
         """
         if self.ws is None:
-            self.ws = create_websocket_connection(self.__id, self.URL)
+            self.ws = create_ticker_connection(self.__id, self.URL)
             self.__response = self.ws.recv()
             _thread.start_new_thread(self.read_websocket, ())
         else:
@@ -82,11 +101,12 @@ class OrderBook(IExchangeOrderbook):
                 print("Already running...")
                 pass
             else:
-                # Use recursion to restart, continue appending to time feed and orderbook feed
+                # Use recursion to restart, continue appending to time feed and ticker feed
                 self.ws = None
                 self.start_websocket()
 
     def read_websocket(self):
+        counter = 0
         # TODO port this to "WebSocketApp" found in the websockets documentation
         while self.ws.connected:
             # In case the user closes while its reading from the websocket
@@ -95,25 +115,38 @@ class OrderBook(IExchangeOrderbook):
                 received_string = self.ws.recv()
                 received = json.loads(received_string)
                 self.__most_recent_time = Blankly.utils.epoch_from_ISO8601(received["time"])
+                # Modify time to use epoch
                 received["time"] = self.__most_recent_time
-                self.__orderbook_feed.append(received)
                 self.__most_recent_tick = received
+                self.__ticker_feed.append(received)
                 self.__time_feed.append(self.__most_recent_time)
+
+                if self.__log:
+                    if counter % 100 == 0:
+                        self.__file.close()
+                        self.__file = open(self.__filePath, 'a')
+                    line = received["time"] + "," + str(time.time()) + "," + received["price"] + "," + received[
+                        "open_24h"] + "," + received["volume_24h"] + "," + received["low_24h"] + "," + received[
+                               "high_24h"] + "," + received["volume_30d"] + "," + received["best_bid"] + "," + received[
+                               "best_ask"] + "," + received["last_size"] + "\n"
+                    self.__file.write(line)
 
                 # Manage price events and fire for each manager attached
                 for i in range(len(self.__callbacks)):
-                    self.__callbacks[i](received)
+                    self.__callbacks[i](self.__most_recent_tick)
+
+
+                counter += 1
             except Exception as e:
                 if persist_connected:
-                    print("Error: " + str(e))
-                    continue
+                    pass
                 else:
                     print(traceback.format_exc())
-                    print("Error reading orderbook for " + self.__id + ": attempting to re-initialize")
+                    print("Error reading ticker websocket for " + self.__id + ": attempting to re-initialize")
                     # Give a delay so this doesn't eat up from the main thread if it takes many tries to initialize
                     time.sleep(2)
                     self.ws.close()
-                    self.ws = create_websocket_connection(self.__id, self.URL)
+                    self.ws = create_ticker_connection(self.__id, self.URL)
                     # Update response
                     self.__response = self.ws.recv()
 
@@ -143,8 +176,8 @@ class OrderBook(IExchangeOrderbook):
 
     """ Parallel with time feed """
     """ Required in manager """
-    def get_orderbook_feed(self):
-        return list(self.__orderbook_feed)
+    def get_ticker_feed(self):
+        return list(self.__ticker_feed)
 
     """ Required in manager """
     def get_response(self):
@@ -158,5 +191,5 @@ class OrderBook(IExchangeOrderbook):
             print("Websocket for " + self.__id + " is already closed")
 
     """ Required in manager """
-    def restart_websocket(self):
+    def restart_ticker(self):
         self.start_websocket()

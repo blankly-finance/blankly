@@ -20,7 +20,7 @@ from __future__ import print_function
 from calc import calc as real_calc
 import sys
 import zerorpc
-from Coinbase_Pro.Coinbase_Pro import Coinbase_Pro
+from Blankly.exchanges.Coinbase_Pro import Coinbase_Pro
 import json
 
 # Tickers shouldn't be accessed from this class. Interfaces will not have access to them
