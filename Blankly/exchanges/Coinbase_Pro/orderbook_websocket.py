@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import _thread
+import threading
 import json
 import ssl
 import time
@@ -76,7 +76,8 @@ class OrderBook(IExchangeOrderbook):
         if self.ws is None:
             self.ws = create_websocket_connection(self.__id, self.URL)
             self.__response = self.ws.recv()
-            _thread.start_new_thread(self.read_websocket, ())
+            thread = threading.Thread(target=self.read_websocket)
+            thread.start()
         else:
             if self.ws.connected:
                 print("Already running...")

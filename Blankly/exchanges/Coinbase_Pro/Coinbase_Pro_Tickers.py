@@ -95,7 +95,7 @@ class Tickers(IExchangeTicker):
         if self.ws is None:
             self.ws = create_ticker_connection(self.__id, self.URL)
             self.__response = self.ws.recv()
-            thread = threading.Thread(target=self.read_websocket())
+            thread = threading.Thread(target=self.read_websocket)
             thread.start()
         else:
             if self.ws.connected:
