@@ -102,8 +102,12 @@ class OrderBook(IExchangeOrderbook):
                 self.__time_feed.append(self.__most_recent_time)
 
                 # Manage price events and fire for each manager attached
-                for i in range(len(self.__callbacks)):
-                    self.__callbacks[i](received)
+                try:
+                    for i in range(len(self.__callbacks)):
+                        self.__callbacks[i](received)
+                except Exception:
+                    traceback.print_exc()
+
             except Exception as e:
                 if persist_connected:
                     print("Error: " + str(e))
