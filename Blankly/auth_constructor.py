@@ -18,13 +18,14 @@
 
 import json
 import warnings
+from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
 
 
 def load_json(keys_file):
     try:
         f = open(keys_file)
         return json.load(f)
-    except FileNotFoundError as e:
+    except FileNotFoundError:
         raise FileNotFoundError("Make sure a Keys.json file is placed in the same folder as the project working "
                                 "directory!")
 
@@ -36,8 +37,8 @@ def load_auth_coinbase_pro(keys_file, name):
         name, portfolio = __determine_first_key(exchange_keys)
     else:
         portfolio = exchange_keys[name]
-
-    return [portfolio["API_KEY"], portfolio["API_SECRET"], portfolio["API_PASS"]], name
+    # TODO, add this same method to the binance method
+    return Coinbase_Pro_API(portfolio["API_KEY"], portfolio["API_SECRET"], portfolio["API_PASS"]), name
 
 
 def load_auth_binance(keys_file, name):
