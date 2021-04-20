@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from Blankly.exchanges.Coinbase_Pro.orderbook_websocket import OrderBook as Coinbase_Pro_Orderbook
+import time
 
 
 class OrderbookManger:
@@ -58,6 +59,7 @@ class OrderbookManger:
             websocket = Coinbase_Pro_Orderbook(currency_id)
             # This is where the sorting magic happens
             websocket.append_callback(self.coinbase_update)
+            websocket.append_snapshot_callback(self.coinbase_snapshot_update)
             # Store this object
             self.__websockets['coinbase_pro'][currency_id] = websocket
             self.__websockets_callbacks['coinbase_pro'][currency_id] = callback
@@ -69,6 +71,26 @@ class OrderbookManger:
             return websocket
         else:
             print(exchange_name + " ticker not supported, skipping creation")
+
+    def coinbase_snapshot_update(self, update):
+        # Clear whatever book we had
+        book = {
+            "buy": {},
+            "sell": {}
+        }
+        # Get all bids
+        buys = update['bids']
+        # Convert these to float and write to our order dictionaries
+        for i in range(len(buys)):
+            buy = buys[i]
+            book['buy'][float(buy[0])] = float(buy[1])
+
+        sells = update['asks']
+        for i in range(len(sells)):
+            sell = sells[i]
+            book['sell'][float(sell[0])] = float(sell[1])
+
+        self.__orderbooks['coinbase_pro'][update['product_id']] = book
 
     def coinbase_update(self, update):
         # Side is first in tuple

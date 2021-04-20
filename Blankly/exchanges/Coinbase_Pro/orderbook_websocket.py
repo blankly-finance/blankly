@@ -59,6 +59,7 @@ class OrderBook(IExchangeOrderbook):
         self.__most_recent_tick = None
         self.__most_recent_time = None
         self.__callbacks = []
+        self.__snapshot_callbacks = []
 
         # Load preferences and create the buffers
         self.__preferences = Blankly.utils.load_user_preferences()
@@ -66,7 +67,7 @@ class OrderBook(IExchangeOrderbook):
         self.__time_feed = collections.deque(maxlen=self.__preferences["settings"]["orderbook_buffer_size"])
 
         # Create the snapshot load
-        self.__snapshot = {}
+        self.__snapshot = None
 
         # Start the websocket
         self.start_websocket()
@@ -92,7 +93,15 @@ class OrderBook(IExchangeOrderbook):
 
     def read_websocket(self):
         # This is unique because coinbase first sends the entire orderbook to use
-        self.store_snapshot()
+        received_string = json.loads(self.ws.recv())
+        if received_string['type'] == 'snapshot':
+            self.__snapshot = received_string
+        try:
+            for i in self.__snapshot_callbacks:
+                i(received_string)
+        except:
+            traceback.print_exc()
+
         # TODO port this to "WebSocketApp" found in the websockets documentation
         while self.ws.connected:
             # In case the user closes while its reading from the websocket
@@ -100,7 +109,6 @@ class OrderBook(IExchangeOrderbook):
             try:
                 received_string = self.ws.recv()
                 received = json.loads(received_string)
-                print(received)
                 self.__most_recent_time = Blankly.utils.epoch_from_ISO8601(received['time'])
                 received['time'] = self.__most_recent_time
                 self.__orderbook_feed.append(received)
@@ -127,11 +135,9 @@ class OrderBook(IExchangeOrderbook):
                     self.ws = create_websocket_connection(self.__id, self.URL)
                     # Update response
                     self.__response = self.ws.recv()
-                    self.store_snapshot()
-
-    def store_snapshot(self):
-        received_string = self.ws.recv()
-        self.__snapshot = json.loads(received_string)
+                    # This allows us to put initialization at the top of the function
+                    self.read_websocket()
+                    break
 
     """ Required in manager """
     def is_websocket_open(self):
@@ -143,6 +149,9 @@ class OrderBook(IExchangeOrderbook):
     """ Required in manager """
     def append_callback(self, obj):
         self.__callbacks.append(obj)
+
+    def append_snapshot_callback(self, obj):
+        self.__snapshot_callbacks.append(obj)
 
     """ Define a variable each time so there is no array manipulation """
     """ Required in manager """
@@ -176,7 +185,4 @@ class OrderBook(IExchangeOrderbook):
     """ Required in manager """
     def restart_websocket(self):
         self.start_websocket()
-
-    def get_snapshot(self):
-        return self.__snapshot
 
