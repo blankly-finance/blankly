@@ -65,6 +65,9 @@ class OrderBook(IExchangeOrderbook):
         self.__orderbook_feed = collections.deque(maxlen=self.__preferences["settings"]["orderbook_buffer_size"])
         self.__time_feed = collections.deque(maxlen=self.__preferences["settings"]["orderbook_buffer_size"])
 
+        # Create the snapshot load
+        self.__snapshot = {}
+
         # Start the websocket
         self.start_websocket()
 
@@ -88,6 +91,8 @@ class OrderBook(IExchangeOrderbook):
                 self.start_websocket()
 
     def read_websocket(self):
+        # This is unique because coinbase first sends the entire orderbook to use
+        self.store_snapshot()
         # TODO port this to "WebSocketApp" found in the websockets documentation
         while self.ws.connected:
             # In case the user closes while its reading from the websocket
@@ -95,8 +100,9 @@ class OrderBook(IExchangeOrderbook):
             try:
                 received_string = self.ws.recv()
                 received = json.loads(received_string)
-                self.__most_recent_time = Blankly.utils.epoch_from_ISO8601(received["time"])
-                received["time"] = self.__most_recent_time
+                print(received)
+                self.__most_recent_time = Blankly.utils.epoch_from_ISO8601(received['time'])
+                received['time'] = self.__most_recent_time
                 self.__orderbook_feed.append(received)
                 self.__most_recent_tick = received
                 self.__time_feed.append(self.__most_recent_time)
@@ -110,7 +116,7 @@ class OrderBook(IExchangeOrderbook):
 
             except Exception as e:
                 if persist_connected:
-                    print("Error: " + str(e))
+                    traceback.print_exc()
                     continue
                 else:
                     print(traceback.format_exc())
@@ -121,6 +127,11 @@ class OrderBook(IExchangeOrderbook):
                     self.ws = create_websocket_connection(self.__id, self.URL)
                     # Update response
                     self.__response = self.ws.recv()
+                    self.store_snapshot()
+
+    def store_snapshot(self):
+        received_string = self.ws.recv()
+        self.__snapshot = json.loads(received_string)
 
     """ Required in manager """
     def is_websocket_open(self):
@@ -165,3 +176,7 @@ class OrderBook(IExchangeOrderbook):
     """ Required in manager """
     def restart_websocket(self):
         self.start_websocket()
+
+    def get_snapshot(self):
+        return self.__snapshot
+
