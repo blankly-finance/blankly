@@ -36,7 +36,7 @@ def create_websocket_connection(id, url):
         \"""" + id + """\"
     ],
     "channels": [
-        "full"
+        "level2"
     ]
     }"""
     ws.send(request)

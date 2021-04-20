@@ -71,20 +71,17 @@ class OrderbookManger:
             print(exchange_name + " ticker not supported, skipping creation")
 
     def coinbase_update(self, update):
-        book = self.__orderbooks['coinbase_pro'][update['product_id']]
-        type = update['type']
-        book_side = update['side']
-        if type == 'open':
-            book[book_side][update['order_id']] = {
-                'side': update['side'],
-                'price': update['price'],
-                'size': update['remaining_size'],
-                'time': update['time'],
-                'product_id': update['product_id']
-            }
-        elif type == 'done':
-            book[book_side].pop(update['order_id'])
-        self.__orderbooks[update['product_id']] = book
+        print(update)
+        # Side is first in tuple
+        side = update['changes'][0][0]
+        # Price is second
+        price = float(update['changes'][0][1])
+        # Quantity at that point is third
+        book = self.__orderbooks['coinbase_pro'][update['product_id']][side]
+
+        book[price] = float(update['changes'][0][2])
+        print(self.__orderbooks)
+        self.__orderbooks['coinbase_pro'][update['product_id']][side] = book
         self.__websockets_callbacks['coinbase_pro'][update['product_id']](book)
 
 

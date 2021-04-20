@@ -37,7 +37,7 @@ def load_auth_coinbase_pro(keys_file, name):
         name, portfolio = __determine_first_key(exchange_keys)
     else:
         portfolio = exchange_keys[name]
-    # TODO, add this same method to the binance method
+    # TODO, add this new auth creation to the binance method
     return Coinbase_Pro_API(portfolio["API_KEY"], portfolio["API_SECRET"], portfolio["API_PASS"]), name
 
 

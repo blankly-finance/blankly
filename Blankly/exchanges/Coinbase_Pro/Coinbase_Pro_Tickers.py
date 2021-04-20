@@ -133,9 +133,11 @@ class Tickers(IExchangeTicker):
                     self.__file.write(line)
 
                 # Manage price events and fire for each manager attached
-                for i in range(len(self.__callbacks)):
-                    self.__callbacks[i](self.__most_recent_tick)
-
+                try:
+                    for i in range(len(self.__callbacks)):
+                        self.__callbacks[i](self.__most_recent_tick)
+                except Exception:
+                    traceback.print_exc()
 
                 counter += 1
             except Exception as e:
