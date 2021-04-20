@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from Blankly.exchanges.Coinbase_Pro.orderbook_websocket import OrderBook as Coinbase_Pro_Orderbook
-
+import collections
 
 class OrderbookManger:
     def __init__(self, default_exchange, default_currency):
@@ -71,16 +71,21 @@ class OrderbookManger:
             print(exchange_name + " ticker not supported, skipping creation")
 
     def coinbase_update(self, update):
-        print(update)
         # Side is first in tuple
         side = update['changes'][0][0]
         # Price is second
         price = float(update['changes'][0][1])
-        # Quantity at that point is third
         book = self.__orderbooks['coinbase_pro'][update['product_id']][side]
 
-        book[price] = float(update['changes'][0][2])
-        print(self.__orderbooks)
+        # Quantity at that point is third
+        qty = float(update['changes'][0][2])
+        if qty == 0:
+            try:
+                book.pop(price)
+            except KeyError:
+                pass
+        else:
+            book[price] = float(update['changes'][0][2])
         self.__orderbooks['coinbase_pro'][update['product_id']][side] = book
         self.__websockets_callbacks['coinbase_pro'][update['product_id']](book)
 
