@@ -73,6 +73,7 @@ class OrderbookManger:
             print(exchange_name + " ticker not supported, skipping creation")
 
     def coinbase_snapshot_update(self, update):
+        print("Orderbook snapshot acquired for: " + update['product_id'])
         # Clear whatever book we had
         book = {
             "buy": {},

@@ -17,6 +17,7 @@
 """
 import Blankly
 from Blankly.exchanges.IExchange import IExchange
+import time
 
 
 class Exchange(IExchange):
@@ -52,6 +53,7 @@ class Exchange(IExchange):
                 # Start all models
                 if not self.models[coin_iterator]["model"].is_running():
                     self.models[coin_iterator]["model"].run(self.models[coin_iterator]["args"])
+                    time.sleep(2)
                 else:
                     print("Ignoring the model on " + coin_iterator)
             return "Started all models"

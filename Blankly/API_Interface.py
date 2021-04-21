@@ -431,6 +431,64 @@ class APIInterface:
                             response,
                             self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"),
                             self.__exchange_properties)
+        elif self.__exchange_name == "binance":
+            """
+            Send in a new market order
+
+            :param symbol: required
+            :type symbol: str
+            :param side: required
+            :type side: str
+            :param quantity: required
+            :type quantity: decimal
+            :param quoteOrderQty: amount the user wants to spend (when buying) or receive (when selling)
+                of the quote asset
+            :type quoteOrderQty: decimal
+            :param newClientOrderId: A unique id for the order. Automatically generated if not sent.
+            :type newClientOrderId: str
+            :param newOrderRespType: Set the response JSON. ACK, RESULT, or FULL; default: RESULT.
+            :type newOrderRespType: str
+            :param recvWindow: the number of milliseconds the request is valid for
+            :type recvWindow: int
+
+            :returns: API response
+
+            See order endpoint for full response options
+
+            :raises: BinanceRequestException, BinanceAPIException, BinanceOrderException, BinanceOrderMinAmountException, BinanceOrderMinPriceException, BinanceOrderMinTotalException, BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
+
+
+
+            Response RESULT:
+
+            .. code-block:: python
+
+            {
+                "symbol": "BTCUSDT",
+                "orderId": 28,
+                "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
+                "transactTime": 1507725176595,
+                "price": "0.00000000",
+                "origQty": "10.00000000",
+                "executedQty": "10.00000000",
+                "status": "FILLED",
+                "timeInForce": "GTC",
+                "type": "MARKET",
+                "side": "SELL"
+            }
+            """
+            order = {
+                'funds': funds,
+                'side': side,
+                'product_id': product_id,
+                'type': 'market'
+            }
+            product_id = Blankly.utils.to_exchange_coin_id(product_id, "binance")
+            response = self.__calls.order_market(symbol=product_id, side=side, quoteOrderQty=funds)
+            return Purchase(order,
+                            response,
+                            self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="binance"),
+                            self.__exchange_properties)
 
     def limit_order(self, product_id, side, price, size, **kwargs):
         """
@@ -474,6 +532,44 @@ class APIInterface:
                             response,
                             self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"),
                             self.__exchange_properties)
+        elif self.__exchange_name == "binance":
+            """Send in a new limit order
+
+            Any order with an icebergQty MUST have timeInForce set to GTC.
+
+            :param symbol: required
+            :type symbol: str
+            :param side: required
+            :type side: str
+            :param quantity: required
+            :type quantity: decimal
+            :param price: required
+            :type price: str
+            :param timeInForce: default Good till cancelled
+            :type timeInForce: str
+            :param newClientOrderId: A unique id for the order. Automatically generated if not sent.
+            :type newClientOrderId: str
+            :param icebergQty: Used with LIMIT, STOP_LOSS_LIMIT, and TAKE_PROFIT_LIMIT to create an iceberg order.
+            :type icebergQty: decimal
+            :param newOrderRespType: Set the response JSON. ACK, RESULT, or FULL; default: RESULT.
+            :type newOrderRespType: str
+            :param recvWindow: the number of milliseconds the request is valid for
+            :type recvWindow: int
+
+            :returns: API response
+
+            See order endpoint for full response options
+
+            :raises: BinanceRequestException, BinanceAPIException, BinanceOrderException, BinanceOrderMinAmountException, BinanceOrderMinPriceException, BinanceOrderMinTotalException, BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
+
+            """
+            order = {
+                'size': size,
+                'side': side,
+                'product_id': product_id,
+                'type': 'limit'
+            }
+            pass
 
     def stop_order(self, product_id, side, price, size, **kwargs):
         """
@@ -804,6 +900,7 @@ class APIInterface:
 
             return data_frame.reindex(columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 
+    # TODO this can probably be removed
     def get_latest_trades(self, product_id, **kwargs):
         if self.__exchange_name == "coinbase_pro":
             # De-paginate
