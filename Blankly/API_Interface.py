@@ -455,8 +455,9 @@ class APIInterface:
 
             See order endpoint for full response options
 
-            :raises: BinanceRequestException, BinanceAPIException, BinanceOrderException, BinanceOrderMinAmountException, BinanceOrderMinPriceException, BinanceOrderMinTotalException, BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
-
+            :raises: BinanceRequestException, BinanceAPIException, BinanceOrderException, 
+            BinanceOrderMinAmountException, BinanceOrderMinPriceException, BinanceOrderMinTotalException, 
+            BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
 
 
             Response RESULT:
@@ -483,8 +484,10 @@ class APIInterface:
                 'product_id': product_id,
                 'type': 'market'
             }
-            product_id = Blankly.utils.to_exchange_coin_id(product_id, "binance")
-            response = self.__calls.order_market(symbol=product_id, side=side, quoteOrderQty=funds)
+            modified_product_id = Blankly.utils.to_exchange_coin_id(product_id, "binance")
+            # The interface here will be the query of order status from this object, because orders are dynamic
+            # creatures
+            response = self.__calls.order_market(symbol=modified_product_id, side=side, quoteOrderQty=funds)
             return Purchase(order,
                             response,
                             self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="binance"),
@@ -523,11 +526,11 @@ class APIInterface:
             order = {
                 'size': size,
                 'side': side,
+                'price': price,
                 'product_id': product_id,
                 'type': 'limit'
             }
-            self.__calls.placeOrder(product_id, side, price, size)
-            response = self.__calls.place_market_order(product_id, side, price, size, kwargs=kwargs)
+            response = self.__calls.place_limit_order(product_id, side, price, size, kwargs=kwargs)
             return Purchase(order,
                             response,
                             self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"),
@@ -560,16 +563,25 @@ class APIInterface:
 
             See order endpoint for full response options
 
-            :raises: BinanceRequestException, BinanceAPIException, BinanceOrderException, BinanceOrderMinAmountException, BinanceOrderMinPriceException, BinanceOrderMinTotalException, BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
+            :raises: BinanceRequestException, BinanceAPIException, BinanceOrderException, BinanceOrderMinAmountException,
+            BinanceOrderMinPriceException, BinanceOrderMinTotalException,
+            BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
 
             """
             order = {
                 'size': size,
                 'side': side,
+                'price': price,
                 'product_id': product_id,
                 'type': 'limit'
             }
-            pass
+            modified_product_id = Blankly.utils.to_exchange_coin_id(product_id, 'binance')
+            response = self.__calls.order_limit(symbol=modified_product_id, side=side, price=price, quantity=size,
+                                                kwargs=kwargs)
+            return Purchase(order,
+                            response,
+                            self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"),
+                            self.__exchange_properties)
 
     def stop_order(self, product_id, side, price, size, **kwargs):
         """
@@ -615,12 +627,54 @@ class APIInterface:
                                                              override_default_exchange_name="coinbase_pro"),
                             self.__exchange_properties)
 
-    def cancel_order(self, order_id):
+    def cancel_order(self, currency_id, order_id):
         if self.__exchange_name == "coinbase_pro":
             """
-            [ "c5ab5eae-76be-480e-8961-00792dc7e138" ]
+            Returns:
+                list: Containing the order_id of cancelled order. Example::
+                [ "c5ab5eae-76be-480e-8961-00792dc7e138" ]
             """
-            return self.__calls.cancel_order(order_id)
+            return {"order_id": self.__calls.cancel_order(order_id)[0]}
+        elif self.__exchange_name == "binance":
+            """Cancel an active order. Either orderId or origClientOrderId must be sent.
+
+            https://github.com/binance/binance-spot-api-docs/blob/master/rest-api.md#cancel-order-trade
+
+            :param symbol: required
+            :type symbol: str
+            :param orderId: The unique order id
+            :type orderId: int
+            :param origClientOrderId: optional
+            :type origClientOrderId: str
+            :param newClientOrderId: Used to uniquely identify this cancel. Automatically generated by default.
+            :type newClientOrderId: str
+            :param recvWindow: the number of milliseconds the request is valid for
+            :type recvWindow: int
+
+            :returns: API response
+
+            .. code-block:: python
+
+            {
+              "symbol": "LTCBTC",
+              "origClientOrderId": "myOrder1",
+              "orderId": 4,
+              "orderListId": -1, //Unless part of an OCO, the value will always be -1.
+              "clientOrderId": "cancelMyOrder1",
+              "price": "2.00000000",
+              "origQty": "1.00000000",
+              "executedQty": "0.00000000",
+              "cummulativeQuoteQty": "0.00000000",
+              "status": "CANCELED",
+              "timeInForce": "GTC",
+              "type": "LIMIT",
+              "side": "BUY"
+            }
+
+            :raises: BinanceRequestException, BinanceAPIException
+
+            """
+            return self.__calls.cancel_order(symbol=currency_id, orderID=order_id)["origClientOrderId"]
 
     def get_open_orders(self, product_id=None, **kwargs):
         """
@@ -899,27 +953,6 @@ class APIInterface:
             # Want them in this order: ['time (epoch)', 'low', 'high', 'open', 'close', 'volume']
 
             return data_frame.reindex(columns=['time', 'low', 'high', 'open', 'close', 'volume'])
-
-    # TODO this can probably be removed
-    def get_latest_trades(self, product_id, **kwargs):
-        if self.__exchange_name == "coinbase_pro":
-            # De-paginate
-            """
-            [{
-                 "time": "2014-11-07T22:19:28.578544Z",
-                 "trade_id": 74,
-                 "price": "10.00000000",
-                 "size": "0.01000000",
-                 "side": "buy"
-             }, {
-                 "time": "2014-11-07T01:08:43.642366Z",
-                 "trade_id": 73,
-                 "price": "100.00000000",
-                 "size": "0.01000000",
-                 "side": "sell"
-            }]
-            """
-            return list(self.__calls.get_product_trades(product_id, kwargs=kwargs))
 
     """
     Coinbase Pro: Get Currencies
