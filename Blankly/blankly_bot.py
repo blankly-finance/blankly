@@ -118,10 +118,9 @@ class BlanklyBot(abc.ABC):
     def main(self, args):
         warnings.warn("No user-created main function to run, stopping...")
 
-    @abc.abstractmethod
+    # Allow these overrides to be optional
     def price_event(self, tick):
         pass
 
-    @abc.abstractmethod
     def orderbook_event(self, tick):
         pass

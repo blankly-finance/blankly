@@ -1,58 +1,3 @@
-import websocket
-
-from binance.websockets import BinanceSocketManager as bsm
-from binance.client import Client
-
-
-def price_event(tick):
-    print(tick)
-
-try:
-    import thread
-except ImportError:
-    import _thread as thread
-import time
-
-
-def on_message(ws, message):
-    print(message)
-
-
-def on_error(ws, error):
-    print(error)
-
-
-def on_close(ws):
-    print("### closed ###")
-
-
-def on_open(ws):
-    def run(*args):
-        ws.send(
-            {
-                "method": "SUBSCRIBE",
-                "params": [
-                    "btcusdt@aggTrade",
-                    "btcusdt@depth"
-                ],
-                "id": 1
-            }
-        )
-
-    thread.start_new_thread(run, ())
-
-
-if __name__ == "__main__":
-    client = Client()
-    Client.get_symbol_ticker(price_event)
-    while True:
-        time.sleep(1)
-
-
-
-
-
-
 """
     Coinbase Pro ticker manager.
     Copyright (C) 2021  Emerson Dove
@@ -77,7 +22,7 @@ import json
 import ssl
 import time
 import traceback
-from Blankly.IExchange_Ticker import IExchangeTicker
+from Blankly.exchanges.IExchange_Ticker import IExchangeTicker
 import collections
 
 from websocket import create_connection
@@ -85,26 +30,22 @@ from websocket import create_connection
 
 def create_ticker_connection(id, url):
     ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
-    request = """{
-    "type": "subscribe",
-    "product_ids": [
-        \"""" + id + """\"
-    ],
-    "channels": [
-        {
-            "name": "ticker",
-            "product_ids": [
-                \"""" + id + """\"
-            ]
-        }
-    ]
-    }"""
+    request = """ {
+        "method": "SUBSCRIBE",
+        "params": [
+            \"""" + id + """\"@aggTrade",
+            \"""" + id + """\"@depth"
+        ],
+        "id": 1
+    }
+    """
+    print("sent request")
     ws.send(request)
     return ws
 
 
 class Tickers(IExchangeTicker):
-    def __init__(self, currency_id, log=None, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
+    def __init__(self, currency_id, log=None, WEBSOCKET_URL="wss://stream.binance.com:9443/ws/btcusdt@trade"):
         """
         Create and initialize the ticker
         Args:
@@ -136,9 +77,11 @@ class Tickers(IExchangeTicker):
         self.__callbacks = []
 
         # Reload preferences
-        self.__preferences = Blankly.utils.load_user_preferences()
-        self.__ticker_feed = collections.deque(maxlen=self.__preferences["settings"]["ticker_buffer_size"])
-        self.__time_feed = collections.deque(maxlen=self.__preferences["settings"]["ticker_buffer_size"])
+        # self.__preferences = Blankly.utils.load_user_preferences()
+        # self.__ticker_feed = collections.deque(maxlen=self.__preferences["settings"]["ticker_buffer_size"])
+        # self.__time_feed = collections.deque(maxlen=self.__preferences["settings"]["ticker_buffer_size"])
+        self.__ticker_feed = collections.deque(maxlen=100)
+        self.__time_feed = collections.deque(maxlen=100)
 
         # Start the websocket
         self.start_websocket()
@@ -248,3 +191,15 @@ class Tickers(IExchangeTicker):
     """ Required in manager """
     def restart_ticker(self):
         self.start_websocket()
+
+
+def callback(tick):
+    print("ticked")
+    print(tick)
+
+
+if __name__ == "__main__":
+    ticker = Tickers("BTCUSD")
+    ticker.append_callback(callback)
+    while True:
+        time.sleep(1)
