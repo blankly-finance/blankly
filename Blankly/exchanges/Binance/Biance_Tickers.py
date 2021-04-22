@@ -17,18 +17,13 @@
 """
 
 import websocket
-import time
 from Blankly.exchanges.IExchange_Ticker import IExchangeTicker
 import collections
 import json
-import traceback
 import Blankly
 import threading
-
-try:
-    import thread
-except ImportError:
-    import _thread as thread
+import time
+import traceback
 
 
 class Tickers(IExchangeTicker):
@@ -62,6 +57,8 @@ class Tickers(IExchangeTicker):
         self.__most_recent_tick = None
         self.__most_recent_time = None
         self.__callbacks = []
+        # This is created so that we know when a message has come back that we're waiting for
+        self.__single_message = None
 
         # Reload preferences
         self.__preferences = Blankly.utils.load_user_preferences()
@@ -76,7 +73,6 @@ class Tickers(IExchangeTicker):
         Restart websocket if it was asked to stop.
         """
         if self.ws is None:
-            websocket.enableTrace(True)
             self.ws = websocket.WebSocketApp("wss://stream.binance.com:9443/ws",
                                              on_open=self.on_open,
                                              on_message=self.on_message,
@@ -93,12 +89,26 @@ class Tickers(IExchangeTicker):
                 self.ws = None
                 self.start_websocket()
 
-
     def read_websocket(self):
-        self.ws.run_forever()
+        # Main thread to sit here and run
+        while True:
+            self.ws.run_forever()
 
     def on_message(self, ws, message):
-        print(message)
+        message = json.loads(message)
+        try:
+            print(message['E'])
+            self.__time_feed.append(message['E'])
+            self.__ticker_feed.append(message)
+            # Run callbacks on message
+            for i in self.__callbacks:
+                i(message)
+        except KeyError:
+            try:
+                if message['result'] is None:
+                    self.__response = message
+            except KeyError:
+                traceback.print_exc()
 
     def on_error(self, ws, error):
         print(error)
@@ -107,15 +117,47 @@ class Tickers(IExchangeTicker):
         print("### closed ###")
 
     def on_open(self, ws):
-        request = """ {
-            "method": "SUBSCRIBE",
-            "params": [
-                "btcusdt@depth@100ms"
-            ],
-            "id": 1
-        }
-        """
+        # request = """
+        # {
+        #     "method": "SUBSCRIBE",
+        #     "params": [
+        #         \"""" + self.__id + """t@trade"
+        #     ],
+        #     "id": 1
+        # }
+        # """
+        # TODO make an overhaul to the front to specify trading pair because binance refuses to be normal
+        request = """
+                {
+                    "method": "SUBSCRIBE",
+                    "params": [
+                        "btcusdt@trade"
+                    ],
+                    "id": 1
+                }
+                """
         ws.send(request)
+
+    """ Logic to extract a single message when prompted """
+    def __get_message(self, ws, message):
+        self.__single_message = message
+
+    def __get_single_message(self, message=None):
+        # Save the current callback for later
+        current_callback = self.ws.on_message
+
+        # Switch out the callbacks and wait for response
+        while self.__single_message is None:
+            time.sleep(.1)
+        response = self.__single_message
+
+        # Clear this for the next run
+        self.__single_message = None
+
+        # Restore original callback
+        self.ws.on_message = current_callback
+        return response
+
 
     """ Required in manager """
     def is_websocket_open(self):
