@@ -67,8 +67,6 @@ class Tickers(IExchangeTicker):
         self.__preferences = Blankly.utils.load_user_preferences()
         self.__ticker_feed = collections.deque(maxlen=self.__preferences["settings"]["ticker_buffer_size"])
         self.__time_feed = collections.deque(maxlen=self.__preferences["settings"]["ticker_buffer_size"])
-        # self.__ticker_feed = collections.deque(maxlen=100)
-        # self.__time_feed = collections.deque(maxlen=100)
 
         # Start the websocket
         self.start_websocket()
@@ -80,10 +78,10 @@ class Tickers(IExchangeTicker):
         if self.ws is None:
             websocket.enableTrace(True)
             self.ws = websocket.WebSocketApp("wss://stream.binance.com:9443/ws",
-                                             on_open=on_open,
-                                             on_message=on_message,
-                                             on_error=on_error,
-                                             on_close=on_close)
+                                             on_open=self.on_open,
+                                             on_message=self.on_message,
+                                             on_error=self.on_error,
+                                             on_close=self.on_close)
             thread = threading.Thread(target=self.read_websocket)
             thread.start()
         else:
@@ -95,55 +93,31 @@ class Tickers(IExchangeTicker):
                 self.ws = None
                 self.start_websocket()
 
+
     def read_websocket(self):
+        self.ws.run_forever()
 
-        ws.run_forever()
+    def on_message(self, ws, message):
+        print(message)
 
-        counter = 0
-        # TODO port this to "WebSocketApp" found in the websockets documentation
-        while self.ws.connected:
-            # In case the user closes while its reading from the websocket
-            persist_connected = self.ws.connected
-            try:
-                received_string = self.ws.recv()
-                received = json.loads(received_string)
-                self.__most_recent_time = Blankly.utils.epoch_from_ISO8601(received["time"])
-                # Modify time to use epoch
-                received["time"] = self.__most_recent_time
-                self.__most_recent_tick = received
-                self.__ticker_feed.append(received)
-                self.__time_feed.append(self.__most_recent_time)
+    def on_error(self, ws, error):
+        print(error)
 
-                if self.__log:
-                    if counter % 100 == 0:
-                        self.__file.close()
-                        self.__file = open(self.__filePath, 'a')
-                    line = received["time"] + "," + str(time.time()) + "," + received["price"] + "," + received[
-                        "open_24h"] + "," + received["volume_24h"] + "," + received["low_24h"] + "," + received[
-                               "high_24h"] + "," + received["volume_30d"] + "," + received["best_bid"] + "," + received[
-                               "best_ask"] + "," + received["last_size"] + "\n"
-                    self.__file.write(line)
+    def on_close(self, ws):
+        print("### closed ###")
 
-                # Manage price events and fire for each manager attached
-                for i in range(len(self.__callbacks)):
-                    self.__callbacks[i].price_event(self.__most_recent_tick)
-
-                counter += 1
-            except Exception as e:
-                if persist_connected:
-                    pass
-                else:
-                    print(traceback.format_exc())
-                    print("Error reading ticker websocket for " + self.__id + ": attempting to re-initialize")
-                    # Give a delay so this doesn't eat up from the main thread if it takes many tries to initialize
-                    time.sleep(2)
-                    self.ws.close()
-                    self.ws = create_ticker_connection(self.__id, self.URL)
-                    # Update response
-                    self.__response = self.ws.recv()
+    def on_open(self, ws):
+        request = """ {
+            "method": "SUBSCRIBE",
+            "params": [
+                "btcusdt@depth@100ms"
+            ],
+            "id": 1
+        }
+        """
+        ws.send(request)
 
     """ Required in manager """
-
     def is_websocket_open(self):
         return self.ws.connected
 
@@ -151,39 +125,32 @@ class Tickers(IExchangeTicker):
         return self.__id
 
     """ Required in manager """
-
     def append_callback(self, obj):
         self.__callbacks.append(obj)
 
     """ Define a variable each time so there is no array manipulation """
     """ Required in manager """
-
     def get_most_recent_tick(self):
         return self.__most_recent_tick
 
     """ Required in manager """
-
     def get_most_recent_time(self):
         return self.__most_recent_time
 
     """ Required in manager """
-
     def get_time_feed(self):
         return list(self.__time_feed)
 
     """ Parallel with time feed """
     """ Required in manager """
-
     def get_ticker_feed(self):
         return list(self.__ticker_feed)
 
     """ Required in manager """
-
     def get_response(self):
         return self.__response
 
     """ Required in manager """
-
     def close_websocket(self):
         if self.ws.connected:
             self.ws.close()
@@ -191,54 +158,6 @@ class Tickers(IExchangeTicker):
             print("Websocket for " + self.__id + " is already closed")
 
     """ Required in manager """
-
     def restart_ticker(self):
         self.start_websocket()
 
-
-def on_message(ws, message):
-    print(message)
-
-
-def on_error(ws, error):
-    print(error)
-
-
-def on_close(ws):
-    print("### closed ###")
-
-
-def on_open(ws):
-    request = """ {
-        "method": "SUBSCRIBE",
-        "params": [
-            "btcusdt@depth@100ms"
-        ],
-        "id": 1
-    }
-    """
-    ws.send(request)
-
-    # time.sleep(5)
-    #
-    # request = """ {
-    #     "method": "SUBSCRIBE",
-    #     "params": [
-    #         "ethusdt@trade"
-    #     ],
-    #     "id": 1
-    # }
-    # """
-    # ws.send(request)
-
-
-if __name__ == "__main__":
-    websocket.enableTrace(True)
-    ws = websocket.WebSocketApp("wss://stream.binance.com:9443/ws",
-                                on_open=on_open,
-                                on_message=on_message,
-                                on_error=on_error,
-                                on_close=on_close)
-
-    ws.run_forever()
-    print("continued with main...")
