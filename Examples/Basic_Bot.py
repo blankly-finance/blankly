@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     # Create the bot and add it to run as a coinbase_pro bitcoin model.
     bot = Bot()
-    portfolio.append_model(model=bot, coin="BTC")
+    portfolio.append_model(model=bot, coin_id="BTC-USD")
     # Imagine this:
     #   Coinbase Pro:
     #       Bitcoin <-- Added to the data from this currency
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     #       Stellar
 
     # Begins running the main() function of the model on a different process
-    portfolio.start_models(coin="BTC")
+    portfolio.start_models(coin_id="BTC-USD")
     # Imagine this:
     #   Coinbase Pro:
     #       Bitcoin <-- Bot <-- Asking to start
@@ -82,6 +82,6 @@ if __name__ == "__main__":
     # Now other processes can be created or just continue with this one.
     while True:
         # Print the state every 1 second
-        state = portfolio.get_full_state("BTC")
+        state = portfolio.get_full_state("BTC-USD")
         Blankly.utils.pretty_print_JSON(state)
         time.sleep(1)

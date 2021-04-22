@@ -41,12 +41,11 @@ class BlanklyBot(abc.ABC):
         self.direct_calls = None
         self.process = Process(target=self.setup_process)
 
-    def setup(self, exchange_type, coin, coin_id, user_preferences, initial_state, interface):
+    def setup(self, exchange_type, coin_id, user_preferences, initial_state, interface):
         """
         This function is populated by the exchange.
         Args:
             exchange_type (str): Type of exchange i.e "binance" or "coinbase_pro"
-            coin: Type of coin, i.e "BTC"
             coin_id: Identifier for the coin market, i.e "BTC-USD"
             user_preferences: Dictionary with the defined preferences
             initial_state: Information about the account the model is defaulted to running on
@@ -56,7 +55,6 @@ class BlanklyBot(abc.ABC):
         self.initial_state = initial_state
         self.__state = Manager().dict({})
         self.exchange_type = exchange_type
-        self.coin = coin
         self.user_preferences = user_preferences
         # TODO. This copy is a bad solution. It generally means that there will be a ticker object used on each process.
         #  The worry is that if we implement auto rate limits, each process won't know whats going on. This might need

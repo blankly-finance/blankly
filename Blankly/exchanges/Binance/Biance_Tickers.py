@@ -35,7 +35,7 @@ class Tickers(IExchangeTicker):
             log: Fill this with a path to a log file that should be created
             WEBSOCKET_URL: Default websocket URL feed.
         """
-        self.__id = currency_id
+        self.__id = currency_id.lower()
 
         # Initialize log file
         if log is not None:
@@ -97,7 +97,6 @@ class Tickers(IExchangeTicker):
     def on_message(self, ws, message):
         message = json.loads(message)
         try:
-            print(message['E'])
             self.__time_feed.append(message['E'])
             self.__ticker_feed.append(message)
             # Run callbacks on message
@@ -117,25 +116,15 @@ class Tickers(IExchangeTicker):
         print("### closed ###")
 
     def on_open(self, ws):
-        # request = """
-        # {
-        #     "method": "SUBSCRIBE",
-        #     "params": [
-        #         \"""" + self.__id + """t@trade"
-        #     ],
-        #     "id": 1
-        # }
-        # """
-        # TODO make an overhaul to the front to specify trading pair because binance refuses to be normal
         request = """
-                {
-                    "method": "SUBSCRIBE",
-                    "params": [
-                        "btcusdt@trade"
-                    ],
-                    "id": 1
-                }
-                """
+        {
+            "method": "SUBSCRIBE",
+            "params": [
+                \"""" + self.__id + """@trade"
+            ],
+            "id": 1
+        }
+        """
         ws.send(request)
 
     """ Logic to extract a single message when prompted """

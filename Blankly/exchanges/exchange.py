@@ -39,15 +39,15 @@ class Exchange(IExchange):
     def get_preferences(self):
         return self.preferences
 
-    def start_models(self, coin=None):
+    def start_models(self, coin_id=None):
         """
         Start all models or a specific one after appending it to to the exchange
         """
-        if coin is not None:
+        if coin_id is not None:
             # Run a specific model with the args
-            if not self.models[coin]["model"].is_running():
-                self.models[coin]["model"].run(self.models[coin]["args"])
-            return "Started model attached to: " + coin
+            if not self.models[coin_id]["model"].is_running():
+                self.models[coin_id]["model"].run(self.models[coin_id]["args"])
+            return "Started model attached to: " + coin_id
         else:
             for coin_iterator in self.models:
                 # Start all models
@@ -85,21 +85,20 @@ class Exchange(IExchange):
             "model": self.get_model_state(currency)
         }
 
-    def append_model(self, model, coin, args=None):
+    def append_model(self, model, coin_id, args=None):
         """
         Append the models to the exchange, these can be run
         Args:
             model: Model object to be used. This is objects inheriting blankly_bot
-            coin: the currency to use, such as "BTC"
+            coin_id: the currency to use, such as "BTC-USD"
             args: Args to pass into the model when it is run. This can be any datatype, the object is passed
         """
-        coin_id = coin + "-" + self.preferences["settings"]["base_currency"]
         added_model = model
-        self.models[coin] = {
+        self.models[coin_id] = {
             "model": added_model,
             "args": args
         }
-        model.setup(self.__type, coin, coin_id, self.preferences, self.get_full_state(coin),
+        model.setup(self.__type, coin_id, self.preferences, self.get_full_state(coin_id),
                     self.Interface)
 
     def get_currency_state(self, currency):

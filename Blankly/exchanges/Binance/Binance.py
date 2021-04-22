@@ -42,6 +42,7 @@ class Binance(Exchange):
         Portfolio state is the internal properties for the exchange block.
         """
         # TODO Populate this with useful information
+        currency = Blankly.utils.get_base_currency(currency)
         account = self.Interface.get_account(currency=currency)
         return account
 
