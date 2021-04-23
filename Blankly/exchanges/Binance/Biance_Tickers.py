@@ -59,6 +59,7 @@ class Tickers(IExchangeTicker):
         self.__callbacks = []
         # This is created so that we know when a message has come back that we're waiting for
         self.__single_message = None
+        self.__connected = False
 
         # Reload preferences
         self.__preferences = Blankly.utils.load_user_preferences()
@@ -81,7 +82,7 @@ class Tickers(IExchangeTicker):
             thread = threading.Thread(target=self.read_websocket)
             thread.start()
         else:
-            if self.ws.connected:
+            if self.__connected:
                 print("Already running...")
                 pass
             else:
@@ -91,8 +92,14 @@ class Tickers(IExchangeTicker):
 
     def read_websocket(self):
         # Main thread to sit here and run
-        while True:
-            self.ws.run_forever()
+        """
+        {'e': 'trade', 'E': 1619149864634, 's': 'BTCUSDT', 't': 787178035, 'p': '50322.05000000',
+        'q': '0.00577200', 'b': 5644954701, 'a': 5644954632, 'T': 1619149864634, 'm': False, 'M': True}
+        """
+        self.__connected = True
+        self.ws.run_forever()
+        # This repeats the close behavior just in case something happens
+        self.__connected = False
 
     def on_message(self, ws, message):
         message = json.loads(message)
@@ -113,7 +120,8 @@ class Tickers(IExchangeTicker):
         print(error)
 
     def on_close(self, ws):
-        print("### closed ###")
+        # This repeats the close behavior just in case something happens
+        self.__connected = False
 
     def on_open(self, ws):
         request = """
@@ -147,10 +155,9 @@ class Tickers(IExchangeTicker):
         self.ws.on_message = current_callback
         return response
 
-
     """ Required in manager """
     def is_websocket_open(self):
-        return self.ws.connected
+        return self.__connected
 
     def get_currency_id(self):
         return self.__id
@@ -183,7 +190,7 @@ class Tickers(IExchangeTicker):
 
     """ Required in manager """
     def close_websocket(self):
-        if self.ws.connected:
+        if self.__connected:
             self.ws.close()
         else:
             print("Websocket for " + self.__id + " is already closed")
@@ -191,4 +198,3 @@ class Tickers(IExchangeTicker):
     """ Required in manager """
     def restart_ticker(self):
         self.start_websocket()
-

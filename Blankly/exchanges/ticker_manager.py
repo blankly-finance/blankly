@@ -91,6 +91,9 @@ class TickerManager:
             exchange = override_exchange
         else:
             exchange = self.__default_exchange
+
+        if exchange == "binance":
+            currency_id = Blankly.utils.to_exchange_coin_id(currency_id, "binance")
         return currency_id, exchange
 
     def get_default_exchange_name(self):
@@ -129,7 +132,7 @@ class TickerManager:
     """ 
     Ticker Functions 
     """
-    def append_callback(self, callback_object, override_currency_id=None, override_exchange=None):
+    def append_callback(self, callback_object, override_currency=None, override_exchange=None):
         """
         Add another object to have the price_event() function called.
         Generally the callback object should be "self" and the callback_name should only be filled if you want to
@@ -139,85 +142,82 @@ class TickerManager:
         Args:
             callback_object: Reference for the callback function. The price_event(self, tick)
                 function would be passed in as just self.price_event  -- no parenthesis or arguments, just the object
-            override_currency_id: Ticker id, such as "BTC-USD" or exchange equivalents.
+            override_currency: Ticker id, such as "BTC-USD" or exchange equivalents.
             override_exchange: Forces the manager to use a different supported exchange.
         """
-        if override_currency_id is None:
-            override_currency_id = self.__default_currency
+        currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
 
-        if override_exchange is None:
-            override_exchange = self.__default_exchange
-
-        if override_exchange == "coinbase_pro":
-            self.__tickers['coinbase_pro'][override_currency_id].append_callback(callback_object)
+        # if override_exchange == "coinbase_pro":
+        self.__tickers[exchange][currency_id].append_callback(callback_object)
 
     def is_websocket_open(self, override_currency=None, override_exchange=None):
         """
         Check if the websocket attached to a currency is open
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
-        if self.__default_exchange == "coinbase_pro":
-            return self.__tickers[exchange][currency_id].is_websocket_open()
+
+        # if self.__default_exchange == "coinbase_pro":
+        return self.__tickers[exchange][currency_id].is_websocket_open()
 
     def get_most_recent_tick(self, override_currency=None, override_exchange=None):
         """
         Get the most recent tick received
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
-        if self.__default_exchange == "coinbase_pro":
-            """
-            Returns:
-                {'type': 'ticker', 'sequence': 23300178473, 'product_id': 'BTC-USD', 'price': '58833.23', 
-                'open_24h': '57734.69', 'volume_24h': '16926.11727388', 'low_24h': '57000', 'high_24h': '59397.48', 
-                'volume_30d': '585271.95796211', 'best_bid': '58833.22', 'best_ask': '58833.23', 'side': 'buy', 
-                'time': '2021-03-30T15:21:23.201930Z', 'trade_id': 151058458, 'last_size': '0.00121711'}
-            """
-            return self.__tickers[exchange][currency_id].get_most_recent_tick()
+        # if self.__default_exchange == "coinbase_pro":
+        """
+        Returns:
+            {'type': 'ticker', 'sequence': 23300178473, 'product_id': 'BTC-USD', 'price': '58833.23', 
+            'open_24h': '57734.69', 'volume_24h': '16926.11727388', 'low_24h': '57000', 'high_24h': '59397.48', 
+            'volume_30d': '585271.95796211', 'best_bid': '58833.22', 'best_ask': '58833.23', 'side': 'buy', 
+            'time': '2021-03-30T15:21:23.201930Z', 'trade_id': 151058458, 'last_size': '0.00121711'}
+        """
+        return self.__tickers[exchange][currency_id].get_most_recent_tick()
 
     def get_most_recent_time(self, override_currency=None, override_exchange=None):
         """
         Get the most recent time associated with the most recent tick
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
-        if self.__default_exchange == "coinbase_pro":
-            return self.__tickers[exchange][currency_id].get_most_recent_time()
+        # if self.__default_exchange == "coinbase_pro":
+        return self.__tickers[exchange][currency_id].get_most_recent_time()
 
     def get_time_feed(self, override_currency=None, override_exchange=None):
         """
         Get a time array associated with the ticker feed.
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
-        if self.__default_exchange == "coinbase_pro":
-            return self.__tickers[exchange][currency_id].get_time_feed()
+        # if self.__default_exchange == "coinbase_pro":
+        return self.__tickers[exchange][currency_id].get_time_feed()
 
     def get_ticker_feed(self, override_currency=None, override_exchange=None):
         """
         Get the full ticker array. This can be extremely large.
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
-        if self.__default_exchange == "coinbase_pro":
-            return self.__tickers[exchange][currency_id].get_ticker_feed()
+        # if self.__default_exchange == "coinbase_pro":
+        return self.__tickers[exchange][currency_id].get_ticker_feed()
 
     def get_response(self, override_currency=None, override_exchange=None):
         """
         Get the exchange's response to the request to subscribe to a feed
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
-        if self.__default_exchange == "coinbase_pro":
-            return self.__tickers[exchange][currency_id].get_response()
+        # if self.__default_exchange == "coinbase_pro":
+        return self.__tickers[exchange][currency_id].get_response()
 
     def close_websocket(self, override_currency=None, override_exchange=None):
         """
         Close a websocket thread
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
-        if self.__default_exchange == "coinbase_pro":
-            self.__tickers[exchange][currency_id].close_websocket()
+        # if self.__default_exchange == "coinbase_pro":
+        self.__tickers[exchange][currency_id].close_websocket()
 
     def restart_ticker(self, override_currency=None, override_exchange=None):
         """
         Restart a websocket feed after asking it to stop
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
-        if self.__default_exchange == "coinbase_pro":
-            self.__tickers[exchange][currency_id].restart_ticker()
+        # if self.__default_exchange == "coinbase_pro":
+        self.__tickers[exchange][currency_id].restart_ticker()
