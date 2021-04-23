@@ -26,13 +26,11 @@ class Coinbase_Pro(Exchange):
         # Load the auth from the keys file
         self.__calls, defined_name = Blankly.auth_constructor.load_auth_coinbase_pro(auth_path, portfolio_name)
         # self.__calls = API(auth[0], auth[1], auth[2])
-        Exchange.__init__(self, "coinbase_pro", defined_name)
 
         # Create the authenticated object
-        self.Interface = Interface("coinbase_pro", self.__calls)
 
-        # Create the model container
-        self.models = {}
+
+        Exchange.__init__(self, "coinbase_pro", defined_name, self.__calls)
 
     """
     Builds information about the currency on this exchange by making particular API calls
