@@ -17,7 +17,6 @@
 """
 
 from Blankly.exchanges.exchange import Exchange
-from Blankly.API_Interface import APIInterface as Interface
 import Blankly.auth_constructor
 
 
@@ -28,9 +27,9 @@ class Coinbase_Pro(Exchange):
         # self.__calls = API(auth[0], auth[1], auth[2])
 
         # Create the authenticated object
+        Exchange.__init__(self, "coinbase_pro", defined_name)
 
-
-        Exchange.__init__(self, "coinbase_pro", defined_name, self.__calls)
+        self.construct_interface(self.__calls)
 
     """
     Builds information about the currency on this exchange by making particular API calls

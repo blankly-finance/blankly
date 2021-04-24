@@ -23,14 +23,12 @@ import time
 
 class Exchange(IExchange):
 
-    def __init__(self, exchange_type, exchange_name, calls):
-        self.__name = exchange_name # my_cool_portfolio
-        self.__type = exchange_type # coinbasepro, binance,
+    def __init__(self, exchange_type, exchange_name):
+        self.__name = exchange_name  # my_cool_portfolio
+        self.__type = exchange_type  # coinbase_pro, binance,
         self.preferences = Blankly.utils.load_user_preferences()
 
-        self.__calls = calls
-        self.Interface = Interface(self.__type, self.__calls)
-
+        self.Interface = None
         # Create the model container
         self.models = {}
 
@@ -42,6 +40,9 @@ class Exchange(IExchange):
 
     def get_preferences(self):
         return self.preferences
+
+    def construct_interface(self, calls):
+        self.Interface = Interface(self.__type, calls)
 
     def start_models(self, coin_id=None):
         """

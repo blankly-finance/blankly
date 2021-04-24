@@ -18,7 +18,7 @@
 import Blankly.utils
 
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ticker
-from Blankly.exchanges.Binance.Biance_Tickers import Tickers as Binance_Ticker
+from Blankly.exchanges.Binance.Binance_Tickers import Tickers as Binance_Ticker
 
 
 class TickerManager:

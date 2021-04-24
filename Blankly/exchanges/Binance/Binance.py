@@ -27,12 +27,16 @@ class Binance(Exchange):
     def __init__(self, portfolio_name=None, auth_path="Keys.json"):
         # Load the auth from the keys file
         auth, defined_name = Blankly.auth_constructor.load_auth_binance(auth_path, portfolio_name)
+
         Exchange.__init__(self, "binance", defined_name)
+
         self.__calls = Client(api_key=auth[0], api_secret=auth[1],
                               tld=self.get_preferences()["settings"]["binance_tld"])
 
         # Create the authenticated object
         self.Interface = Interface("binance", self.__calls)
+
+        self.construct_interface(self.__calls)
 
     """
     Builds information about the currency on this exchange by making particular API calls
