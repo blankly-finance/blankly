@@ -64,7 +64,7 @@ class Tickers(IExchangeTicker):
             self.__log = True
             self.__filePath = log
             try:
-                self.__file = open(log, 'xa')
+                self.__file = open(log, 'x+')
                 self.__file.write(
                     "time,system_time,price,open_24h,volume_24h,low_24h,high_24h,volume_30d,best_bid,best_ask,"
                     "last_size\n")
@@ -110,7 +110,7 @@ class Tickers(IExchangeTicker):
         counter = 0
         # TODO port this to "WebSocketApp" found in the websockets documentation
         while self.ws.connected:
-            # In case the user closes while its reading from the websocket
+            # In case the user closes while its reading from the websocket, this will let it expire
             persist_connected = self.ws.connected
             try:
                 received_string = self.ws.recv()
@@ -126,7 +126,7 @@ class Tickers(IExchangeTicker):
                     if counter % 100 == 0:
                         self.__file.close()
                         self.__file = open(self.__filePath, 'a')
-                    line = received["time"] + "," + str(time.time()) + "," + received["price"] + "," + received[
+                    line = str(received["time"]) + "," + str(time.time()) + "," + received["price"] + "," + received[
                         "open_24h"] + "," + received["volume_24h"] + "," + received["low_24h"] + "," + received[
                                "high_24h"] + "," + received["volume_30d"] + "," + received["best_bid"] + "," + received[
                                "best_ask"] + "," + received["last_size"] + "\n"
@@ -134,17 +134,18 @@ class Tickers(IExchangeTicker):
 
                 # Manage price events and fire for each manager attached
                 try:
-                    for i in range(len(self.__callbacks)):
-                        self.__callbacks[i](self.__most_recent_tick)
+                    for i in self.__callbacks:
+                        i(self.__most_recent_tick)
                 except Exception:
                     traceback.print_exc()
 
                 counter += 1
             except Exception as e:
                 if persist_connected:
+                    traceback.print_exc()
                     pass
                 else:
-                    print(traceback.format_exc())
+                    traceback.print_exc()
                     print("Error reading ticker websocket for " + self.__id + ": attempting to re-initialize")
                     # Give a delay so this doesn't eat up from the main thread if it takes many tries to initialize
                     time.sleep(2)

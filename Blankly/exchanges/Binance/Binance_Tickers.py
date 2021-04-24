@@ -42,10 +42,10 @@ class Tickers(IExchangeTicker):
             self.__log = True
             self.__filePath = log
             try:
-                self.__file = open(log, 'xa')
+                self.__file = open(log, 'x+')
                 self.__file.write(
-                    "time,system_time,price,open_24h,volume_24h,low_24h,high_24h,volume_30d,best_bid,best_ask,"
-                    "last_size\n")
+                    "event_time,system_time,event_type,symbol,trade_id,price,quantity,buyer_order_id,seller_order_id,"
+                    "trade_time,buyer_is_maker\n")
             except FileExistsError:
                 self.__file = open(log, 'a')
         else:
@@ -58,8 +58,8 @@ class Tickers(IExchangeTicker):
         self.__most_recent_time = None
         self.__callbacks = []
         # This is created so that we know when a message has come back that we're waiting for
-        self.__single_message = None
         self.__connected = False
+        self.__message_count = 0
 
         # Reload preferences
         self.__preferences = Blankly.utils.load_user_preferences()
@@ -93,8 +93,29 @@ class Tickers(IExchangeTicker):
     def read_websocket(self):
         # Main thread to sit here and run
         """
-        {'e': 'trade', 'E': 1619149864634, 's': 'BTCUSDT', 't': 787178035, 'p': '50322.05000000',
-        'q': '0.00577200', 'b': 5644954701, 'a': 5644954632, 'T': 1619149864634, 'm': False, 'M': True}
+        Response from trade streams
+        {
+            'e': 'trade',  # Event Type
+            'E': 1619149864634,  # Event time
+            's': 'BTCUSDT', # Symbol
+            't': 787178035,  # Trade ID
+            'p': '50322.05000000',  # Price
+            'q': '0.00577200',  # Quantity
+            'b': 5644954701,  # Buyer order id
+            'a': 5644954632,  # Seller order id
+            'T': 1619149864634,  # Trade time
+            'm': False,  # Is the buyer the market maker?
+            'M': True  # Ignore
+        }
+
+        Similar ticks with coinbase pro
+        {
+            'type': 'ticker',
+            'product_id': 'BTC-USD',
+            'price': '50141.55',
+            'time': 1619286924.397969,
+            'trade_id': 160775277,
+        }
         """
         self.__connected = True
         self.ws.run_forever()
@@ -102,6 +123,7 @@ class Tickers(IExchangeTicker):
         self.__connected = False
 
     def on_message(self, ws, message):
+        self.__message_count += 1
         message = json.loads(message)
         try:
             self.__time_feed.append(message['E'])
@@ -109,6 +131,16 @@ class Tickers(IExchangeTicker):
             # Run callbacks on message
             for i in self.__callbacks:
                 i(message)
+
+            if self.__log:
+                if self.__message_count % 100 == 0:
+                    self.__file.close()
+                    self.__file = open(self.__filePath, 'a')
+                line = str(message["E"]) + "," + str(time.time()) + "," + message["e"] + "," + message[
+                    "s"] + "," + str(message["t"]) + "," + message["p"] + "," + message[
+                        "q"] + "," + str(message["b"]) + "," + str(message[
+                            "a"]) + "," + str(message["T"]) + "," + str(message["m"]) + "\n"
+                self.__file.write(line)
         except KeyError:
             try:
                 if message['result'] is None:
@@ -134,26 +166,6 @@ class Tickers(IExchangeTicker):
         }
         """
         ws.send(request)
-
-    """ Logic to extract a single message when prompted """
-    def __get_message(self, ws, message):
-        self.__single_message = message
-
-    def __get_single_message(self, message=None):
-        # Save the current callback for later
-        current_callback = self.ws.on_message
-
-        # Switch out the callbacks and wait for response
-        while self.__single_message is None:
-            time.sleep(.1)
-        response = self.__single_message
-
-        # Clear this for the next run
-        self.__single_message = None
-
-        # Restore original callback
-        self.ws.on_message = current_callback
-        return response
 
     """ Required in manager """
     def is_websocket_open(self):
