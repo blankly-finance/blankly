@@ -25,6 +25,8 @@ import Blankly.utils.time_builder as TB
 import threading
 import functools
 import time
+import traceback
+import os
 
 from sklearn.linear_model import LinearRegression
 
@@ -178,25 +180,29 @@ def get_quote_currency(blankly_coin_id):
     return blankly_coin_id.split('-')[1]
 
 
-def scheduler(interval):
+def scheduler(function, interval):
     """
     Wrapper for functions that run at a set interval
     Args:
+        function: Function reference to create the scheduler on ex: self.price_event
         interval: int of delay between calls in seconds, or a string that takes units s, m, h, d w, M, y (second,
         minute, hour, day, week, month, year) after a magnitude. Examples: "4s", "6h", "10d":
     """
     if isinstance(interval, str):
         interval = TB.time_interval_to_seconds(interval)
-    elif isinstance(interval, int):
-        pass
 
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper():
-            thread = threading.Thread(target=threading_wait, args=(func, interval,))
-            thread.start()
-        wrapper()
-    return decorator
+    thread = threading.Thread(target=threading_wait, args=(function, interval,))
+    thread.start()
+
+    # This can be used for a statically typed, single-process bot decorator.
+
+    # def decorator(function):
+    #     @functools.wraps(function)
+    #     def wrapper():
+    #         thread = threading.Thread(target=threading_wait, args=(function, interval,))
+    #         thread.start()
+    #     wrapper()
+    # return decorator
 
 
 def threading_wait(func, interval):
@@ -205,4 +211,7 @@ def threading_wait(func, interval):
     """
     while True:
         time.sleep(interval)
-        func(func)
+        try:
+            func()
+        except Exception:
+            traceback.print_exc()
