@@ -15,11 +15,14 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import Blankly.utils.utils
+
 from Blankly.exchanges.Coinbase_Pro.orderbook_websocket import OrderBook as Coinbase_Pro_Orderbook
-import time
+from Blankly.exchanges.Binance.Binance_Websocket import Tickers as Binance_Orderbook
+from Blankly.exchanges.IExchange_Websocket import IExchangeWebsocket
 
 
-class OrderbookManger:
+class OrderbookManger(IExchangeWebsocket):
     def __init__(self, default_exchange, default_currency):
         """
         Create a new orderbook manager
@@ -63,12 +66,27 @@ class OrderbookManger:
             # Store this object
             self.__websockets['coinbase_pro'][currency_id] = websocket
             self.__websockets_callbacks['coinbase_pro'][currency_id] = callback
-            # TODO call to level 3 orderbook should be done here
             self.__orderbooks['coinbase_pro'][currency_id] = {
                 "buy": {},
                 "sell": {}
             }
             return websocket
+        elif exchange_name == "binance":
+            if currency_id is None:
+                currency_id = self.__default_currency
+
+            specific_currency_id = Blankly.utils.to_exchange_coin_id(currency_id, "binance").lower()
+            websocket = Binance_Orderbook(specific_currency_id, "depth")
+            websocket.append_callback(self.binance_update)
+
+            self.__websockets['binance'][currency_id] = websocket
+            self.__websockets_callbacks['binance'][currency_id] = callback
+            # TODO need an API object to get the depth snapshot
+            self.__orderbooks['binance'][currency_id] = {
+                "buy": {},
+                "sell": {}
+            }
+
         else:
             print(exchange_name + " ticker not supported, skipping creation")
 
@@ -112,31 +130,10 @@ class OrderbookManger:
         self.__orderbooks['coinbase_pro'][update['product_id']][side] = book
         self.__websockets_callbacks['coinbase_pro'][update['product_id']](book)
 
-
     def binance_update(self, update):
+        print("update:")
+        print(update)
         pass
-
-    def append_direct_callback(self, callback_object, override_currency_id=None, override_exchange=None):
-        """
-        This is a bit different than above. This will give the direct feed of the websocket instead of a sorted book.
-        Generally the callback object should be "self" and the callback_name should only be filled if you want to
-        override the default "price_event()" function call.
-        This can be very useful in working with multiple tickers, but not necessary on a simple bot.
-
-        Args:
-            callback_object: Reference for the callback function. The price_event(self, tick)
-                function would be passed in as just self.price_event -- no parenthesis or arguments, just the reference
-            override_currency_id: Ticker id, such as "BTC-USD" or exchange equivalents.
-            override_exchange: Forces the manager to use a different supported exchange.
-        """
-        if override_currency_id is None:
-            override_currency_id = self.__default_currency
-
-        if override_exchange is None:
-            override_exchange = self.__default_exchange
-
-        if override_exchange == "coinbase_pro":
-            self.__websockets['coinbase_pro'][override_currency_id].append_callback(callback_object)
 
     def append_orderbook_callback(self, callback_object, override_currency_id=None, override_exchange=None):
         """
@@ -171,11 +168,36 @@ class OrderbookManger:
             exchange = override_exchange
         else:
             exchange = self.__default_exchange
+
+        if exchange == "binance":
+            currency_id = Blankly.utils.to_exchange_coin_id(currency_id, "binance")
         return currency_id, exchange
 
     """
     Websocket functions
     """
+    def append_callback(self, callback_object, override_currency_id=None, override_exchange=None):
+        """
+        This is a bit different than above. This will give the direct feed of the websocket instead of a sorted book.
+        Generally the callback object should be "self" and the callback_name should only be filled if you want to
+        override the default "price_event()" function call.
+        This can be very useful in working with multiple tickers, but not necessary on a simple bot.
+
+        Args:
+            callback_object: Reference for the callback function. The price_event(self, tick)
+                function would be passed in as just self.price_event -- no parenthesis or arguments, just the reference
+            override_currency_id: Ticker id, such as "BTC-USD" or exchange equivalents.
+            override_exchange: Forces the manager to use a different supported exchange.
+        """
+        if override_currency_id is None:
+            override_currency_id = self.__default_currency
+
+        if override_exchange is None:
+            override_exchange = self.__default_exchange
+
+        if override_exchange == "coinbase_pro":
+            self.__websockets['coinbase_pro'][override_currency_id].append_callback(callback_object)
+
     def is_websocket_open(self, override_currency=None, override_exchange=None):
         """
         Check if the websocket attached to a currency is open
@@ -216,13 +238,13 @@ class OrderbookManger:
         if self.__default_exchange == "coinbase_pro":
             return self.__websockets[exchange][currency_id].get_time_feed()
 
-    def get_ticker_feed(self, override_currency=None, override_exchange=None):
+    def get_feed(self, override_currency=None, override_exchange=None):
         """
         Get the full ticker array. This can be extremely large.
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
         if self.__default_exchange == "coinbase_pro":
-            return self.__websockets[exchange][currency_id].get_ticker_feed()
+            return self.__websockets[exchange][currency_id].get_feed()
 
     def get_response(self, override_currency=None, override_exchange=None):
         """

@@ -22,7 +22,7 @@ import json
 import ssl
 import time
 import traceback
-from Blankly.exchanges.IExchange_Ticker import IExchangeTicker
+from Blankly.exchanges.IExchange_Websocket import IExchangeWebsocket
 import collections
 
 from websocket import create_connection
@@ -48,7 +48,7 @@ def create_ticker_connection(id, url):
     return ws
 
 
-class Tickers(IExchangeTicker):
+class Tickers(IExchangeWebsocket):
     def __init__(self, currency_id, log=None, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
         """
         Create and initialize the ticker
@@ -181,7 +181,7 @@ class Tickers(IExchangeTicker):
 
     """ Parallel with time feed """
     """ Required in manager """
-    def get_ticker_feed(self):
+    def get_feed(self):
         return list(self.__ticker_feed)
 
     """ Required in manager """

@@ -23,7 +23,7 @@ import time
 import traceback
 import Blankly
 import collections
-from Blankly.exchanges.IExchange_Orderbook import IExchangeOrderbook
+from Blankly.exchanges.IExchange_Websocket import IExchangeWebsocket
 
 from websocket import create_connection
 
@@ -43,7 +43,7 @@ def create_websocket_connection(id, url):
     return ws
 
 
-class OrderBook(IExchangeOrderbook):
+class OrderBook(IExchangeWebsocket):
     def __init__(self, currency_id, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
         """
         Create and initialize the orderbook connection
@@ -64,7 +64,7 @@ class OrderBook(IExchangeOrderbook):
         # Load preferences and create the buffers
         self.__preferences = Blankly.utils.load_user_preferences()
         buffer_size = self.__preferences["settings"]["websocket_buffer_size"]
-        self.__ticker_feed = collections.deque(maxlen=buffer_size)
+        self.__orderbook_feed = collections.deque(maxlen=buffer_size)
         self.__time_feed = collections.deque(maxlen=buffer_size)
 
         # Create the snapshot load
@@ -169,7 +169,7 @@ class OrderBook(IExchangeOrderbook):
 
     """ Parallel with time feed """
     """ Required in manager """
-    def get_orderbook_feed(self):
+    def get_feed(self):
         return list(self.__orderbook_feed)
 
     """ Required in manager """

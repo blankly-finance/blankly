@@ -18,10 +18,10 @@
 import Blankly.utils.utils
 
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ticker
-from Blankly.exchanges.Binance.Binance_Tickers import Tickers as Binance_Ticker
+from Blankly.exchanges.Binance.Binance_Websocket import Tickers as Binance_Ticker
+from Blankly.exchanges.IExchange_Websocket import IExchangeWebsocket
 
-
-class TickerManager:
+class TickerManager(IExchangeWebsocket):
     def __init__(self, default_exchange, default_currency):
         """
         Create a new manager.
@@ -190,13 +190,13 @@ class TickerManager:
         # if self.__default_exchange == "coinbase_pro":
         return self.__tickers[exchange][currency_id].get_time_feed()
 
-    def get_ticker_feed(self, override_currency=None, override_exchange=None):
+    def get_feed(self, override_currency=None, override_exchange=None):
         """
         Get the full ticker array. This can be extremely large.
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
         # if self.__default_exchange == "coinbase_pro":
-        return self.__tickers[exchange][currency_id].get_ticker_feed()
+        return self.__tickers[exchange][currency_id].get_feed()
 
     def get_response(self, override_currency=None, override_exchange=None):
         """

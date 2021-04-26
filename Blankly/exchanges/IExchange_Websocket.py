@@ -1,5 +1,5 @@
 """
-    Interface for websocket objects.
+    Interface for ticker objects.
     Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@
 import abc
 
 
-class IExchangeOrderbook(abc.ABC):
+class IExchangeWebsocket(abc.ABC):
     """
     Each of these functions are required to be implemented for interaction with the ticker manager class.
     """
@@ -44,7 +44,7 @@ class IExchangeOrderbook(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_orderbook_feed(self):
+    def get_feed(self):
         pass
 
     @abc.abstractmethod
@@ -56,5 +56,5 @@ class IExchangeOrderbook(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def restart_websocket(self):
+    def restart_ticker(self):
         pass

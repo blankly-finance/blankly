@@ -17,7 +17,7 @@
 """
 
 import websocket
-from Blankly.exchanges.IExchange_Ticker import IExchangeTicker
+from Blankly.exchanges.IExchange_Websocket import IExchangeWebsocket
 import Blankly.exchanges.Binance.websocket_utils as websocket_utils
 import collections
 import json
@@ -26,7 +26,7 @@ import threading
 import traceback
 
 
-class Tickers(IExchangeTicker):
+class Tickers(IExchangeWebsocket):
     def __init__(self, symbol, stream, log=None, WEBSOCKET_URL="wss://stream.binance.com:9443/ws"):
         """
         Create and initialize the ticker
@@ -196,7 +196,7 @@ class Tickers(IExchangeTicker):
 
     """ Parallel with time feed """
     """ Required in manager """
-    def get_ticker_feed(self):
+    def get_feed(self):
         return list(self.__ticker_feed)
 
     """ Required in manager """

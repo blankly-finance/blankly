@@ -201,16 +201,16 @@ The comments offer a decent amount of description for the behavior, but here is 
 | Exchange     | REST Support | Ticker Websocket | Order Book | Interface |
 | ------------ | ------------ | ---------------- | ---------- | --------- |
 | Coinbase Pro | 🟢            | 🟢                | 🟢          | 🟢         |
-| Binance      | 🟡            | 🟡                | 🔴          | 🟡         |
+| Binance      | 🟢            | 🟢                | 🟡          | 🟡         |
 | Kraken       | 🔴            | 🔴                | 🔴          | 🔴         |
 
-🟢 = full and working
+🟢 = working
 
 🟡 = in development, some features are working
 
 🔴 = planned but not yet in development
 
-* Interface calls take ~300 microseconds extra to homogenize the exchange data.
+* Interface calls take ~300 µs extra to homogenize the exchange data.
 
 
 
