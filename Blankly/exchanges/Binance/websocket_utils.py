@@ -16,13 +16,15 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from Blankly.exchanges.Binance.Binance_Tickers import Tickers
+import time
 
 
-def create_ticker_websocket(currency_pair, log=None):
-    return Tickers()
+def switch_type(stream):
+    if stream == "trade":
+        return trade
 
 
-class WebsocketAbstraction:
-    def __init__(self, subscription_feed, callback, log=None):
-        pass
+def trade(message):
+    return str(message["E"]) + "," + str(time.time()) + "," + message["e"] + "," + message["s"] + "," + \
+           str(message["t"]) + "," + message["p"] + "," + message["q"] + "," + str(message["b"]) + "," + \
+           str(message["a"]) + "," + str(message["T"]) + "," + str(message["m"]) + "\n"

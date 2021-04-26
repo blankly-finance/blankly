@@ -18,24 +18,27 @@
 
 import websocket
 from Blankly.exchanges.IExchange_Ticker import IExchangeTicker
+import Blankly.exchanges.Binance.websocket_utils as websocket_utils
 import collections
 import json
 import Blankly
 import threading
-import time
 import traceback
 
 
 class Tickers(IExchangeTicker):
-    def __init__(self, currency_id, log=None, WEBSOCKET_URL="wss://stream.binance.com:9443/ws"):
+    def __init__(self, symbol, stream, log=None, WEBSOCKET_URL="wss://stream.binance.com:9443/ws"):
         """
         Create and initialize the ticker
         Args:
-            currency_id: Currency to initialize on such as "BTC-USD"
+            symbol: Currency to initialize on such as "btcusdt"
+            stream: Stream to use, such as "depth" or "trade"
             log: Fill this with a path to a log file that should be created
             WEBSOCKET_URL: Default websocket URL feed.
         """
-        self.__id = currency_id.lower()
+        self.__id = symbol
+        self.__stream = stream
+        self.__message_callback = websocket_utils.switch_type(stream)
 
         # Initialize log file
         if log is not None:
@@ -74,7 +77,7 @@ class Tickers(IExchangeTicker):
         Restart websocket if it was asked to stop.
         """
         if self.ws is None:
-            self.ws = websocket.WebSocketApp("wss://stream.binance.com:9443/ws",
+            self.ws = websocket.WebSocketApp(self.URL,
                                              on_open=self.on_open,
                                              on_message=self.on_message,
                                              on_error=self.on_error,
@@ -138,10 +141,8 @@ class Tickers(IExchangeTicker):
                 if self.__message_count % 100 == 0:
                     self.__file.close()
                     self.__file = open(self.__filePath, 'a')
-                line = str(message["E"]) + "," + str(time.time()) + "," + message["e"] + "," + message[
-                    "s"] + "," + str(message["t"]) + "," + message["p"] + "," + message[
-                        "q"] + "," + str(message["b"]) + "," + str(message[
-                            "a"]) + "," + str(message["T"]) + "," + str(message["m"]) + "\n"
+                line = self.__message_callback(message)
+                print(line)
                 self.__file.write(line)
         except KeyError:
             try:
@@ -162,7 +163,7 @@ class Tickers(IExchangeTicker):
         {
             "method": "SUBSCRIBE",
             "params": [
-                \"""" + self.__id + """@trade"
+                \"""" + self.__id + "@" + self.__stream + """\"
             ],
             "id": 1
         }
@@ -207,7 +208,7 @@ class Tickers(IExchangeTicker):
         if self.__connected:
             self.ws.close()
         else:
-            print("Websocket for " + self.__id + " is already closed")
+            print("Websocket for " + self.__id + '@' + self.__stream + " is already closed")
 
     """ Required in manager """
     def restart_ticker(self):

@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import Blankly.utils.utils as utils
+import Blankly.utils.utils
 
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ticker
 from Blankly.exchanges.Binance.Binance_Tickers import Tickers as Binance_Ticker
@@ -69,8 +69,8 @@ class TickerManager:
             if currency_id is None:
                 currency_id = self.__default_currency
 
-            currency_id = utils.to_exchange_coin_id(currency_id, "binance")
-            ticker = Binance_Ticker(currency_id, log=log)
+            currency_id = Blankly.utils.to_exchange_coin_id(currency_id, "binance").lower()
+            ticker = Binance_Ticker(currency_id, "trade", log=log)
             ticker.append_callback(callback)
             self.__tickers['binance'][currency_id] = ticker
             return ticker
@@ -93,7 +93,7 @@ class TickerManager:
             exchange = self.__default_exchange
 
         if exchange == "binance":
-            currency_id = utils.to_exchange_coin_id(currency_id, "binance")
+            currency_id = Blankly.utils.to_exchange_coin_id(currency_id, "binance")
         return currency_id, exchange
 
     def get_default_exchange_name(self):
