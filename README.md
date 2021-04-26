@@ -201,7 +201,7 @@ The comments offer a decent amount of description for the behavior, but here is 
 | Exchange     | REST Support | Ticker Websocket | Order Book | Interface |
 | ------------ | ------------ | ---------------- | ---------- | --------- |
 | Coinbase Pro | 🟢            | 🟢                | 🟢          | 🟢         |
-| Binance      | 🟢            | 🟢                | 🟡          | 🟡         |
+| Binance      | 🟢            | 🟢                | 🟢          | 🟡         |
 | Kraken       | 🔴            | 🔴                | 🔴          | 🔴         |
 
 🟢 = working

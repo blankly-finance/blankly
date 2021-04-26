@@ -184,6 +184,6 @@ class OrderBook(IExchangeWebsocket):
             print("Websocket for " + self.__id + " is already closed")
 
     """ Required in manager """
-    def restart_websocket(self):
+    def restart_ticker(self):
         self.start_websocket()
 
