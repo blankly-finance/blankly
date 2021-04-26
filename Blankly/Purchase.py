@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import Blankly.utils
+import Blankly.utils.utils
 import Blankly.Constants
 
 

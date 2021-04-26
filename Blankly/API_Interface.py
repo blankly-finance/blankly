@@ -19,7 +19,7 @@
 import time
 import warnings
 import pandas as pd
-import Blankly.utils
+import Blankly.utils.utils as utils
 from Blankly.Purchase import Purchase
 
 
@@ -29,7 +29,7 @@ class APIInterface:
         self.__calls = authenticated_API
         self.__ticker_manager = None
         # Reload user preferences here
-        self.__user_preferences = Blankly.utils.load_user_preferences()
+        self.__user_preferences = utils.load_user_preferences()
         self.__paper_trading = self.__user_preferences["settings"]["paper_trade"]
         # TODO, improve creation of its own properties
         self.__exchange_properties = None
@@ -267,7 +267,7 @@ class APIInterface:
         Coinbase Pro: get_account
         Binance: get_account["balances"]
         """
-        currency = Blankly.utils.get_base_currency(currency)
+        currency = utils.get_base_currency(currency)
         needed = [["currency", str],
                   ["available", float],
                   ["hold", float]]
@@ -485,7 +485,7 @@ class APIInterface:
                 'product_id': product_id,
                 'type': 'market'
             }
-            modified_product_id = Blankly.utils.to_exchange_coin_id(product_id, "binance")
+            modified_product_id = utils.to_exchange_coin_id(product_id, "binance")
             # The interface here will be the query of order status from this object, because orders are dynamic
             # creatures
             response = self.__calls.order_market(symbol=modified_product_id, side=side, quoteOrderQty=funds)
@@ -576,7 +576,7 @@ class APIInterface:
                 'product_id': product_id,
                 'type': 'limit'
             }
-            modified_product_id = Blankly.utils.to_exchange_coin_id(product_id, 'binance')
+            modified_product_id = utils.to_exchange_coin_id(product_id, 'binance')
             response = self.__calls.order_limit(symbol=modified_product_id, side=side, price=price, quantity=size,
                                                 kwargs=kwargs)
             return Purchase(order,
@@ -749,7 +749,7 @@ class APIInterface:
             ]
             """
             if product_id is not None:
-                product_id = Blankly.utils.to_exchange_coin_id(product_id, "binance")
+                product_id = utils.to_exchange_coin_id(product_id, "binance")
                 orders = self.__calls.get_open_orders(symbol=product_id)
             else:
                 orders = self.__calls.get_open_orders()
@@ -882,8 +882,8 @@ class APIInterface:
             while need > 300:
                 # Close is always 300 points ahead
                 window_close = window_open + 300 * granularity
-                open_iso = Blankly.utils.ISO8601_from_epoch(window_open)
-                close_iso = Blankly.utils.ISO8601_from_epoch(window_close)
+                open_iso = utils.ISO8601_from_epoch(window_open)
+                close_iso = utils.ISO8601_from_epoch(window_close)
                 history = history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso,
                                                                             granularity)
 
@@ -892,8 +892,8 @@ class APIInterface:
                 time.sleep(1)
 
             # Fill the remainder
-            open_iso = Blankly.utils.ISO8601_from_epoch(window_open)
-            close_iso = Blankly.utils.ISO8601_from_epoch(epoch_stop)
+            open_iso = utils.ISO8601_from_epoch(window_open)
+            close_iso = utils.ISO8601_from_epoch(epoch_stop)
             history_block = history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso,
                                                                               granularity)
             return pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
@@ -930,7 +930,7 @@ class APIInterface:
             history = []
 
             # Convert coin id to binance coin
-            product_id = Blankly.utils.to_exchange_coin_id(product_id, 'binance')
+            product_id = utils.to_exchange_coin_id(product_id, 'binance')
             while need > 1000:
                 # Close is always 300 points ahead
                 window_close = window_open + 1000 * granularity
@@ -1080,7 +1080,7 @@ class APIInterface:
             },
             """
 
-            converted_symbol = Blankly.utils.to_exchange_coin_id(product_id, 'binance')
+            converted_symbol = utils.to_exchange_coin_id(product_id, 'binance')
             current_price = None
             symbol_data = self.__calls.get_exchange_info()["symbols"]
             for i in symbol_data:

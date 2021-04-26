@@ -172,3 +172,37 @@ def get_base_currency(blankly_coin_id):
 def get_quote_currency(blankly_coin_id):
     # Gets the USD of the BTC-USD
     return blankly_coin_id.split('-')[1]
+
+
+def time_interval_to_seconds(interval_string):
+    pass
+
+
+def scheduler(time):
+    """
+    Wrapper for functions that run at a set interval
+    Args:
+        time: int of delay between calls in seconds, or a str which is one of
+
+    """
+    if isinstance(time, str):
+        lookup_dict = {
+            "1m": 60,
+            "3m": 180,
+            "5m": 300,
+            "15m": 900,
+            "30m": 1800,
+            "1h": 3600,
+            "2h": 7200,
+            "4h": 14400,
+            21600: "6h",
+            28800: "8h",
+            43200: "12h",
+            86400: "1d",
+            259200: "3d",
+            604800: "1w",
+            2592000: "1M"
+        }
+        pass
+    elif isinstance(time, int):
+        pass
