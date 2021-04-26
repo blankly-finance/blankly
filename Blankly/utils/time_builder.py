@@ -62,11 +62,13 @@ def time_interval_to_seconds(interval_string):
     Extract the number of seconds in an interval string
     """
     # Extract intervals
-    magnitude = int(interval_string[:-1])
+    try:
+        magnitude = int(interval_string[:-1])
+    except ValueError:
+        raise ValueError("Invalid time interval definition.")
     unit = interval_string[-1]
 
     # Switch units
-    base_unit = None
     if unit == "s":
         base_unit = build_second()
     elif unit == "m":
@@ -87,6 +89,8 @@ def time_interval_to_seconds(interval_string):
         base_unit = build_century()
     elif unit == "l":
         base_unit = build_millennium()
+    else:
+        raise ValueError("Invalid time interval definition.")
 
     # Scale by the magnitude
     return base_unit * magnitude

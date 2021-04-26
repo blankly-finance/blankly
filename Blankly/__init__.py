@@ -25,4 +25,5 @@ from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Direct_Coinba
 from Blankly.exchanges.ticker_manager import TickerManager as TickerManager
 from Blankly.exchanges.orderbook_manager import OrderbookManger as OrderbookManager
 import Blankly.utils.utils as utils
-from Blankly.utils.utils import scheduler
+from Blankly.utils.scheduler import Scheduler
+
