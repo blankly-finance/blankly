@@ -205,4 +205,4 @@ def threading_wait(func, interval):
     """
     while True:
         time.sleep(interval)
-        func()
+        func(func)
