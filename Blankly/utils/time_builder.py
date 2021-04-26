@@ -55,3 +55,38 @@ def build_century():
 
 def build_millennium():
     return build_century() * 10
+
+
+def time_interval_to_seconds(interval_string):
+    """
+    Extract the number of seconds in an interval string
+    """
+    # Extract intervals
+    magnitude = int(interval_string[:-1])
+    unit = interval_string[-1]
+
+    # Switch units
+    base_unit = None
+    if unit == "s":
+        base_unit = build_second()
+    elif unit == "m":
+        base_unit = build_minute()
+    elif unit == "h":
+        base_unit = build_hour()
+    elif unit == "d":
+        base_unit = build_day()
+    elif unit == "w":
+        base_unit = build_week()
+    elif unit == "M":
+        base_unit = build_month()
+    elif unit == "y":
+        base_unit = build_year()
+    elif unit == "D":
+        base_unit = build_decade()
+    elif unit == "c":
+        base_unit = build_century()
+    elif unit == "l":
+        base_unit = build_millennium()
+
+    # Scale by the magnitude
+    return base_unit * magnitude

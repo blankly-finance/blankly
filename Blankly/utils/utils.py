@@ -21,7 +21,10 @@ import dateutil.parser as DP
 import json
 import numpy
 import warnings
-import time_builder
+import Blankly.utils.time_builder as TB
+import threading
+import functools
+import time
 
 from sklearn.linear_model import LinearRegression
 
@@ -175,40 +178,31 @@ def get_quote_currency(blankly_coin_id):
     return blankly_coin_id.split('-')[1]
 
 
-def __time_interval_to_seconds(interval_string):
-    """
-    Extract the number of seconds in an interval string
-    """
-    # Extract intervals
-    magnitude = int(interval_string[:-1])
-    unit = interval_string[-1]
-
-    # Switch units
-    base_unit = None
-    if unit == "m":
-        base_unit = time_builder.build_minute()
-    elif unit == "h":
-        base_unit = time_builder.build_hour()
-    elif unit == "d":
-        base_unit = time_builder.build_day()
-    elif unit == "w":
-        base_unit = time_builder.build_week()
-    elif unit == "M":
-        base_unit = time_builder.build_month()
-
-    # Scale by the magnitude
-    return base_unit * magnitude
-
-
-def scheduler(time):
+def scheduler(interval):
     """
     Wrapper for functions that run at a set interval
     Args:
-        time: int of delay between calls in seconds, or a string that takes units m, h, d w, M (minute, hour, day, week,
-        month) and any magnitude - such as "4m" or "6h"
+        interval: int of delay between calls in seconds, or a string that takes units s, m, h, d w, M, y (second,
+        minute, hour, day, week, month, year) after a magnitude. Examples: "4s", "6h", "10d":
     """
-    if isinstance(time, str):
-        time = __time_interval_to_seconds(time)
-    elif isinstance(time, int):
+    if isinstance(interval, str):
+        interval = TB.time_interval_to_seconds(interval)
+    elif isinstance(interval, int):
         pass
 
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper():
+            thread = threading.Thread(target=threading_wait, args=(func, interval,))
+            thread.start()
+        wrapper()
+    return decorator
+
+
+def threading_wait(func, interval):
+    """
+    This function is used with the scheduler decorator
+    """
+    while True:
+        time.sleep(interval)
+        func()
