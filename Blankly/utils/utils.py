@@ -62,8 +62,7 @@ default_settings = {
         "account_update_time": 5000,
         "paper_trade": True,
         "binance_tld": "us",
-        "orderbook_buffer_size": 100000,
-        "ticker_buffer_size": 10000
+        "websocket_buffer_size": 100000,
     }
 }
 

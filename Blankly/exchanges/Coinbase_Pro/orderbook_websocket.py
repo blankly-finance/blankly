@@ -63,8 +63,9 @@ class OrderBook(IExchangeOrderbook):
 
         # Load preferences and create the buffers
         self.__preferences = Blankly.utils.load_user_preferences()
-        self.__orderbook_feed = collections.deque(maxlen=self.__preferences["settings"]["orderbook_buffer_size"])
-        self.__time_feed = collections.deque(maxlen=self.__preferences["settings"]["orderbook_buffer_size"])
+        buffer_size = self.__preferences["settings"]["websocket_buffer_size"]
+        self.__ticker_feed = collections.deque(maxlen=buffer_size)
+        self.__time_feed = collections.deque(maxlen=buffer_size)
 
         # Create the snapshot load
         self.__snapshot = None

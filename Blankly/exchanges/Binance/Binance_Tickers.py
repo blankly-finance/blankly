@@ -66,8 +66,9 @@ class Tickers(IExchangeTicker):
 
         # Reload preferences
         self.__preferences = Blankly.utils.load_user_preferences()
-        self.__ticker_feed = collections.deque(maxlen=self.__preferences["settings"]["ticker_buffer_size"])
-        self.__time_feed = collections.deque(maxlen=self.__preferences["settings"]["ticker_buffer_size"])
+        buffer_size = self.__preferences["settings"]["websocket_buffer_size"]
+        self.__ticker_feed = collections.deque(maxlen=buffer_size)
+        self.__time_feed = collections.deque(maxlen=buffer_size)
 
         # Start the websocket
         self.start_websocket()
@@ -142,7 +143,6 @@ class Tickers(IExchangeTicker):
                     self.__file.close()
                     self.__file = open(self.__filePath, 'a')
                 line = self.__message_callback(message)
-                print(line)
                 self.__file.write(line)
         except KeyError:
             try:
