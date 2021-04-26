@@ -21,6 +21,7 @@ import dateutil.parser as DP
 import json
 import numpy
 import warnings
+import time_builder
 
 from sklearn.linear_model import LinearRegression
 
@@ -174,35 +175,40 @@ def get_quote_currency(blankly_coin_id):
     return blankly_coin_id.split('-')[1]
 
 
-def time_interval_to_seconds(interval_string):
-    pass
+def __time_interval_to_seconds(interval_string):
+    """
+    Extract the number of seconds in an interval string
+    """
+    # Extract intervals
+    magnitude = int(interval_string[:-1])
+    unit = interval_string[-1]
+
+    # Switch units
+    base_unit = None
+    if unit == "m":
+        base_unit = time_builder.build_minute()
+    elif unit == "h":
+        base_unit = time_builder.build_hour()
+    elif unit == "d":
+        base_unit = time_builder.build_day()
+    elif unit == "w":
+        base_unit = time_builder.build_week()
+    elif unit == "M":
+        base_unit = time_builder.build_month()
+
+    # Scale by the magnitude
+    return base_unit * magnitude
 
 
 def scheduler(time):
     """
     Wrapper for functions that run at a set interval
     Args:
-        time: int of delay between calls in seconds, or a str which is one of
-
+        time: int of delay between calls in seconds, or a string that takes units m, h, d w, M (minute, hour, day, week,
+        month) and any magnitude - such as "4m" or "6h"
     """
     if isinstance(time, str):
-        lookup_dict = {
-            "1m": 60,
-            "3m": 180,
-            "5m": 300,
-            "15m": 900,
-            "30m": 1800,
-            "1h": 3600,
-            "2h": 7200,
-            "4h": 14400,
-            21600: "6h",
-            28800: "8h",
-            43200: "12h",
-            86400: "1d",
-            259200: "3d",
-            604800: "1w",
-            2592000: "1M"
-        }
-        pass
+        time = __time_interval_to_seconds(time)
     elif isinstance(time, int):
         pass
+
