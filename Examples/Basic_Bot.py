@@ -56,7 +56,7 @@ if __name__ == "__main__":
     """
 
     # This creates an authenticated exchange. Now we can append models.
-    portfolio = Blankly.Coinbase_Pro()
+    portfolio = Blankly.Coinbase_Pro()  # You could also use Blankly.Binance()
     # Imagine this:
     #   Coinbase Pro <-- Choosing to assign this bot to this exchange
     #   Kraken

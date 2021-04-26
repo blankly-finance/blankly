@@ -34,11 +34,11 @@ class Scheduler:
         if isinstance(interval, str):
             interval = time_interval_to_seconds(interval)
 
-        self.thread = threading.Thread(target=self.threading_wait, args=(function, interval,))
-        self.thread.start()
+        self.__thread = threading.Thread(target=self.__threading_wait, args=(function, interval,))
+        self.__thread.start()
 
         # Stop flag
-        self.stop = False
+        self.__stop = False
 
         # This can be used for a statically typed, single-process bot decorator.
         # Leaving this because it probably will be used soon
@@ -51,7 +51,7 @@ class Scheduler:
         #     wrapper()
         # return decorator
 
-    def threading_wait(self, func, interval):
+    def __threading_wait(self, func, interval):
         """
         This function is used with the scheduler decorator
         """
@@ -59,12 +59,12 @@ class Scheduler:
             time.sleep(interval)
             # The downside of this is that it keeps the thread running while waiting to stop
             # It's dependent on delay if its more efficient to just check more
-            if self.stop:
+            if self.__stop:
                 break
             try:
                 func()
             except Exception:
                 traceback.print_exc()
 
-    def kill_scheduler(self):
-        self.stop = True
+    def stop_scheduler(self):
+        self.__stop = True

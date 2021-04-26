@@ -126,8 +126,10 @@ class Tickers(IExchangeTicker):
         self.__message_count += 1
         message = json.loads(message)
         try:
-            self.__time_feed.append(message['E'])
-            self.__ticker_feed.append(message)
+            self.__most_recent_time = message['E']
+            self.__time_feed.append(self.__most_recent_time)
+            self.__most_recent_tick = message
+            self.__ticker_feed.append(self.__most_recent_tick)
             # Run callbacks on message
             for i in self.__callbacks:
                 i(message)
