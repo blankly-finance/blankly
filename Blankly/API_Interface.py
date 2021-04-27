@@ -134,6 +134,9 @@ class APIInterface:
         """
         return self.__calls
 
+    def get_exchange_type(self):
+        return self.__exchange_name
+
     def get_products(self):
         needed = [["currency_id", str],
                   ["base_currency", str],
@@ -406,7 +409,7 @@ class APIInterface:
         needed = [
             ["product_id", str],
             ["id", str],
-            ["created_at", int],
+            ["created_at", float],
             ["price", float],
             ["size", float],
             ["status", str],
@@ -482,6 +485,7 @@ class APIInterface:
             response = self.__calls.order_market(symbol=modified_product_id, side=side, quoteOrderQty=funds)
             response = self.__rename_to(renames, response)
             response = self.__isolate_specific(needed, response)
+            response["transactTime"] = response["transactTime"]/1000
         return Purchase(order, response, self)
 
     def limit_order(self, product_id, side, price, size, **kwargs) -> Purchase:

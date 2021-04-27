@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from Blankly.API_Interface import APIInterface
 
 
 class Purchase:
@@ -22,6 +23,7 @@ class Purchase:
     (Buying or selling (string), amount in currency (BTC/XLM), ticker object (so we can get time and value),
     limit if there is one)
     """
+    Interface: APIInterface
 
     def __init__(self, order, response, interface):
         """
@@ -58,33 +60,87 @@ class Purchase:
             "type": "MARKET",
             "side": "SELL"
         }
+
+        Guaranteed:
+        needed = [
+            ["product_id", str],
+            ["id", str],
+            ["created_at", float],
+            ["price", float],
+            ["size", float],
+            ["status", str],
+            ["time_in_force", str],
+            ["type", str],
+            ["side", str]
+        ]
         """
         self.Interface = interface
-        self.__exchange = self.Interface.__exchange_name
+        self.__exchange = self.Interface.get_exchange_type()
         self.__order = order
         self.__response = response
         self.__homogenized_result = None
 
-    def get_response(self):
+    def get_response(self) -> dict:
+        """
+        Get the original but parsed response from the exchange.
+        """
         return self.__response
 
-    def get_purchase_time(self):
-        return self.__purchaseTime
+    def get_id(self) -> str:
+        """
+        Get the exchange-set order ID.
+        """
+        return self.__response["id"]
 
-    def get_type(self):
-        return self.__type
+    def get_purchase_time(self) -> float:
+        """
+        Get when the purchase was created at. This may be set at slightly different points within an
+        exchange's matching engine.
+        """
+        return self.__response["created_at"]
 
-    """
-    When these orders are used the amount of currency changes throughout the lifetime by the fee rate each time
-    """
-    def get_quantity_exchanged(self):
-        return self.__amountCurrency
+    def get_price(self) -> float:
+        """
+        Get the price that the order was set at. For limits this will be user-specified, for markets this will
+        be market price.
+        """
+        return self.__response["price"]
 
-    def get_side(self):
-        return self.__buyOrSell
+    def get_quantity(self) -> float:
+        """
+        Get the quantity of order, Ex: .004 bitcoin
+        """
+        return self.__response["size"]
 
-    def get_id(self):
-        return self.__purchase_id
+    def get_status(self, full=False) -> dict:
+        """
+        Calls the exchange with the order id of this purchase and returns the homogenized output
+        Args:
+            full: Set this to True to receive the all the order details. Default is False, which returns just the status
+            field as (example) {"status:" "NEW"}
+        """
+        if full:
+            return self.Interface.get_order(self.__order["product_id"], self.get_id())
+        else:
+            return {"status": self.Interface.get_order(self.__order["product_id"], self.get_id())["status"]}
+
+    def get_time_in_force(self) -> str:
+        """
+        Get the exchange's set time_in_force value.
+        """
+        return self.__response["time_in_force"]
+
+    def get_type(self) -> str:
+        """
+        Get order type, such as market/limit/stop.
+        """
+        return self.__response["type"]
+
+    def get_side(self) -> str:
+        """
+        Get the order side such as buy/sell as a str.
+        """
+        return self.__response["side"]
 
     """ This is something that should be implemented in the future """
     # """ Returns true if the buy order can be sold at a profit or the sell order didn't loose money """
