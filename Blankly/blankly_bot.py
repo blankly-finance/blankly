@@ -18,19 +18,25 @@
 
 from multiprocessing import Process, Manager
 import Blankly
-import abc
 import copy
 import warnings
 
 from Blankly.exchanges.orderbook_manager import OrderbookManger
 from Blankly.exchanges.ticker_manager import TickerManager
 from Blankly.API_Interface import APIInterface
+from Blankly.exchanges.IExchange_Websocket import IExchangeWebsocket
 
 
-class BlanklyBot(abc.ABC):
+class BlanklyBot():
+    currency_pair: str
+    user_preferences: dict
+    exchange_type: str
+    initial_state: dict
+    # Define the given types for the user
     Orderbook_Manager: OrderbookManger
     Ticker_Manager: TickerManager
     Interface: APIInterface
+    Default_Ticker: IExchangeWebsocket
 
     def __init__(self):
         """
@@ -38,21 +44,20 @@ class BlanklyBot(abc.ABC):
         """
         # If the start is called again, this will make sure multiple processes don't start
         self.__state = {}
-        self.initial_state = None
-        self.exchange_type = ""
         self.coin = ""
+        self.exchange_type = ""
+        self.initial_state = {}
         self.user_preferences = {}
-        self.coin_id = ""
-        self.default_ticker = None
+        self.currency_pair = ""
         self.direct_calls = None
         self.process = Process(target=self.setup_process)
 
-    def setup(self, exchange_type, coin_id, user_preferences, initial_state, interface):
+    def setup(self, exchange_type, currency_pair, user_preferences, initial_state, interface):
         """
         This function is populated by the exchange.
         Args:
             exchange_type (str): Type of exchange i.e "binance" or "coinbase_pro"
-            coin_id: Identifier for the coin market, i.e "BTC-USD"
+            currency_pair: Identifier for the coin market, i.e "BTC-USD"
             user_preferences: Dictionary with the defined preferences
             initial_state: Information about the account the model is defaulted to running on
             interface: Object for consistent trading on the supported exchanges
@@ -67,7 +72,7 @@ class BlanklyBot(abc.ABC):
         #  to be the case however to keep things static
         self.Interface = copy.deepcopy(interface)
         # Coin id is the currency and which market its on
-        self.coin_id = coin_id
+        self.currency_pair = currency_pair
         self.direct_calls = interface.get_calls()
 
     def is_running(self):
@@ -90,9 +95,9 @@ class BlanklyBot(abc.ABC):
         """
         Create any objects that need to be process-specific in the other process
         """
-        self.Ticker_Manager = Blankly.TickerManager(self.exchange_type, self.coin_id)
-        self.Orderbook_Manager = Blankly.OrderbookManager(self.exchange_type, self.coin_id)
-        self.default_ticker = self.Ticker_Manager.create_ticker(self.price_event)
+        self.Ticker_Manager = Blankly.TickerManager(self.exchange_type, self.currency_pair)
+        self.Orderbook_Manager = Blankly.OrderbookManager(self.exchange_type, self.currency_pair)
+        self.Default_Ticker = self.Ticker_Manager.create_ticker(self.price_event)
         self.Interface.append_ticker_manager(self.Ticker_Manager)
         self.main(args)
 
@@ -119,7 +124,6 @@ class BlanklyBot(abc.ABC):
         """
         self.__state.pop(key)
 
-    @abc.abstractmethod
     def main(self, args):
         warnings.warn("No user-created main function to run, stopping...")
 

@@ -58,7 +58,9 @@ class Exchange(IExchange):
                 # Start all models
                 if not self.models[coin_iterator]["model"].is_running():
                     self.models[coin_iterator]["model"].run(self.models[coin_iterator]["args"])
-                    time.sleep(2)
+                    # There is some delay. Optimally the bots should be started in a different thread so this doesn't
+                    # block the main
+                    time.sleep(.1)
                 else:
                     print("Ignoring the model on " + coin_iterator)
             return "Started all models"

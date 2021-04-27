@@ -134,7 +134,7 @@ class APIInterface:
         """
         return self.__calls
 
-    def get_products(self, product_id=None):
+    def get_products(self):
         needed = [["currency_id", str],
                   ["base_currency", str],
                   ["quote_currency", str],
@@ -392,7 +392,7 @@ class APIInterface:
                 })
             return filled_dict_list
 
-    def market_order(self, product_id: str, side: str, funds: float, **kwargs: object) -> Purchase:
+    def market_order(self, product_id, side, funds, **kwargs) -> Purchase:
         """
         Used for buying or selling market orders
         Args:
@@ -403,6 +403,17 @@ class APIInterface:
         """
         order = None
         response = None
+        needed = [
+            ["product_id", str],
+            ["id", str],
+            ["created_at", int],
+            ["price", float],
+            ["size", float],
+            ["status", str],
+            ["time_in_force", str],
+            ["type", str],
+            ["side", str]
+        ]
         if self.__exchange_name == "coinbase_pro":
             """
             {
@@ -430,6 +441,8 @@ class APIInterface:
                 'type': 'market'
             }
             response = self.__calls.place_market_order(product_id, side, funds, kwargs=kwargs)
+            response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
+            response = self.__isolate_specific(needed, response)
         elif self.__exchange_name == "binance":
             """
             Response RESULT:
@@ -437,17 +450,17 @@ class APIInterface:
             .. code-block:: python
 
             {
-                "symbol": "BTCUSDT",
-                "orderId": 28,
+                "symbol": "BTCUSDT",        <-- Similar
+                "orderId": 28,      <-- Similar
                 "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
-                "transactTime": 1507725176595,
-                "price": "0.00000000",
-                "origQty": "10.00000000",
+                "transactTime": 1507725176595,      <-- Similar
+                "price": "0.00000000",      <-- Similar
+                "origQty": "10.00000000",       <-- Similar
                 "executedQty": "10.00000000",
-                "status": "FILLED",
-                "timeInForce": "GTC",
-                "type": "MARKET",
-                "side": "SELL"
+                "status": "FILLED",     <-- Similar
+                "timeInForce": "GTC",       <-- Similar
+                "type": "MARKET",       <-- Similar
+                "side": "SELL"      <-- Similar
             }
             """
             order = {
@@ -456,15 +469,22 @@ class APIInterface:
                 'product_id': product_id,
                 'type': 'market'
             }
+            renames = [
+                ["symbol", "product_id"],
+                ["orderId", "id"],
+                ["transactTime", "created_at"],
+                ["origQty", "size"],
+                ["timeInForce", "time_in_force"],
+            ]
             modified_product_id = utils.to_exchange_coin_id(product_id, "binance")
             # The interface here will be the query of order status from this object, because orders are dynamic
             # creatures
             response = self.__calls.order_market(symbol=modified_product_id, side=side, quoteOrderQty=funds)
-        return Purchase(order,
-                        response,
-                        self)
+            response = self.__rename_to(renames, response)
+            response = self.__isolate_specific(needed, response)
+        return Purchase(order, response, self)
 
-    def limit_order(self, product_id, side, price, size, **kwargs):
+    def limit_order(self, product_id, side, price, size, **kwargs) -> Purchase:
         """
         Used for buying or selling limit orders
         Args:
@@ -474,6 +494,19 @@ class APIInterface:
             size: amount of currency (like BTC) for the limit to be valued
             kwargs: specific arguments that may be used by each exchange, (if exchange is known)
         """
+        order = None
+        response = None
+        needed = [
+            ["product_id", str],
+            ["id", str],
+            ["created_at", int],
+            ["price", float],
+            ["size", float],
+            ["status", str],
+            ["time_in_force", str],
+            ["type", str],
+            ["side", str]
+        ]
         if self.__exchange_name == "coinbase_pro":
             """
             {
@@ -502,10 +535,8 @@ class APIInterface:
                 'type': 'limit'
             }
             response = self.__calls.place_limit_order(product_id, side, price, size, kwargs=kwargs)
-            return Purchase(order,
-                            response,
-                            self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"),
-                            self.__exchange_properties)
+            response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
+            response = self.__isolate_specific(needed, response)
         elif self.__exchange_name == "binance":
             """Send in a new limit order
 
@@ -549,56 +580,66 @@ class APIInterface:
             modified_product_id = utils.to_exchange_coin_id(product_id, 'binance')
             response = self.__calls.order_limit(symbol=modified_product_id, side=side, price=price, quantity=size,
                                                 kwargs=kwargs)
-            return Purchase(order,
-                            response,
-                            self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"),
-                            self.__exchange_properties)
+            renames = [
+                ["symbol", "product_id"],
+                ["orderId", "id"],
+                ["transactTime", "created_at"],
+                ["origQty", "size"],
+                ["timeInForce", "time_in_force"],
+            ]
+            response = self.__rename_to(renames, response)
+            response = self.__isolate_specific(needed, response)
+        return Purchase(order, response, self)
 
-    def stop_order(self, product_id, side, price, size, **kwargs):
-        """
-        Used for placing stop orders
-        Args:
-            product_id: currency to buy
-            side: buy/sell
-            price: price to set limit order
-            size: amount of currency (like BTC) for the limit to be valued
-            kwargs: specific arguments that may be used by each exchange, (if exchange is known)
-        """
-        if self.__exchange_name == "coinbase_pro":
-            """
-            {
-                "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
-                "price": "0.10000000",
-                "size": "0.01000000",
-                "product_id": "BTC-USD",
-                "side": "buy",
-                "stp": "dc",
-                "type": "limit",
-                "time_in_force": "GTC",
-                "post_only": false,
-                "created_at": "2016-12-08T20:02:28.53864Z",
-                "fill_fees": "0.0000000000000000",
-                "filled_size": "0.00000000",
-                "executed_value": "0.0000000000000000",
-                "status": "pending",
-                "settled": false
-            }
-            """
-            order = {
-                'size': size,
-                'side': side,
-                'product_id': product_id,
-                'type': 'stop'
-            }
-            self.__calls.placeOrder(product_id, side, price, size)
-            response = self.__calls.place_market_order(product_id, side, price, size, kwargs=kwargs)
-            return Purchase(order,
-                            response,
-                            self.__ticker_manager.get_ticker(product_id,
-                                                             override_default_exchange_name="coinbase_pro"),
-                            self.__exchange_properties)
+    """ 
+    ATM it doesn't seem like the Binance library supports stop orders. 
+    We need to add this when we implement our own.
+    """
+    # def stop_order(self, product_id, side, price, size, **kwargs):
+    #     """
+    #     Used for placing stop orders
+    #     Args:
+    #         product_id: currency to buy
+    #         side: buy/sell
+    #         price: price to set limit order
+    #         size: amount of currency (like BTC) for the limit to be valued
+    #         kwargs: specific arguments that may be used by each exchange, (if exchange is known)
+    #     """
+    #     if self.__exchange_name == "coinbase_pro":
+    #         """
+    #         {
+    #             "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
+    #             "price": "0.10000000",
+    #             "size": "0.01000000",
+    #             "product_id": "BTC-USD",
+    #             "side": "buy",
+    #             "stp": "dc",
+    #             "type": "limit",
+    #             "time_in_force": "GTC",
+    #             "post_only": false,
+    #             "created_at": "2016-12-08T20:02:28.53864Z",
+    #             "fill_fees": "0.0000000000000000",
+    #             "filled_size": "0.00000000",
+    #             "executed_value": "0.0000000000000000",
+    #             "status": "pending",
+    #             "settled": false
+    #         }
+    #         """
+    #         order = {
+    #             'size': size,
+    #             'side': side,
+    #             'product_id': product_id,
+    #             'type': 'stop'
+    #         }
+    #         self.__calls.placeOrder(product_id, side, price, size)
+    #         response = self.__calls.place_market_order(product_id, side, price, size, kwargs=kwargs)
+    #         return Purchase(order,
+    #                         response,
+    #                         self.__ticker_manager.get_ticker(product_id,
+    #                                                          override_default_exchange_name="coinbase_pro"),
+    #                         self.__exchange_properties)
 
-    def cancel_order(self, currency_id, order_id):
+    def cancel_order(self, currency_id, order_id) -> dict:
         if self.__exchange_name == "coinbase_pro":
             """
             Returns:
@@ -645,7 +686,15 @@ class APIInterface:
             :raises: BinanceRequestException, BinanceAPIException
 
             """
-            return self.__calls.cancel_order(symbol=currency_id, orderID=order_id)["origClientOrderId"]
+            renames = [
+                ["orderId", "id"]
+            ]
+            needed = [
+                ["id", str]
+            ]
+            response = self.__calls.cancel_order(symbol=currency_id, orderId=order_id)
+            response = self.__rename_to(renames, response)
+            return self.__isolate_specific(needed, response)
 
     def get_open_orders(self, product_id=None, **kwargs):
         """
@@ -657,7 +706,7 @@ class APIInterface:
             ["size", float],
             ["type", str],
             ["side", str],
-            ["open", bool]
+            ["status", str]
         ]
         if self.__exchange_name == "coinbase_pro":
             """
@@ -734,7 +783,15 @@ class APIInterface:
 
             return orders
 
-    def get_order(self, order_id):
+    def get_order(self, currency_id, order_id) -> dict:
+        needed = [
+            ["id", str],
+            ["price", float],
+            ["size", float],
+            ["type", str],
+            ["side", str],
+            ["status", str]
+        ]
         if self.__exchange_name == "coinbase_pro":
             """
             {
@@ -755,7 +812,43 @@ class APIInterface:
                 "type": "limit"
             }
             """
-            return self.__calls.get_order(order_id)
+            response = self.__calls.get_order(order_id)
+            return self.__isolate_specific(needed, response)
+        elif self.__exchange_name == "binance":
+            """
+            :param symbol: required
+            :type symbol: str
+            :param orderId: The unique order id
+            :type orderId: int
+            :param origClientOrderId: optional
+            :type origClientOrderId: str
+            :param recvWindow: the number of milliseconds the request is valid for
+            :type recvWindow: int
+            
+            {
+                "symbol": "LTCBTC",
+                "orderId": 1,
+                "clientOrderId": "myOrder1",
+                "price": "0.1",
+                "origQty": "1.0",
+                "executedQty": "0.0",
+                "status": "NEW",
+                "timeInForce": "GTC",
+                "type": "LIMIT",
+                "side": "BUY",
+                "stopPrice": "0.0",
+                "icebergQty": "0.0",
+                "time": 1499827319559
+            }
+            """
+            renames = [
+                ["orderId", "id"],
+                ["origQty", "size"],
+                ["isWorking", "status"]
+            ]
+            response = self.__calls.get_order(symbol=currency_id, orderId=int(order_id))
+            response = self.__rename_to(renames, response)
+            return self.__isolate_specific(needed, response)
 
     """
     Coinbase Pro: get_fees
