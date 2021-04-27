@@ -15,15 +15,12 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from Blankly.API_Interface import APIInterface
-
 
 class Purchase:
     """
     (Buying or selling (string), amount in currency (BTC/XLM), ticker object (so we can get time and value),
     limit if there is one)
     """
-    Interface: APIInterface
 
     def __init__(self, order, response, interface):
         """
