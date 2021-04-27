@@ -20,7 +20,7 @@ import time
 import warnings
 import pandas as pd
 import Blankly.utils.utils as utils
-from Blankly.Purchase import Purchase
+from Blankly.utils.Purchase import Purchase
 
 
 class APIInterface:
@@ -401,6 +401,8 @@ class APIInterface:
             funds: desired amount of quote currency to use
             kwargs: specific arguments that may be used by each exchange, if exchange is known
         """
+        order = None
+        response = None
         if self.__exchange_name == "coinbase_pro":
             """
             {
@@ -428,39 +430,8 @@ class APIInterface:
                 'type': 'market'
             }
             response = self.__calls.place_market_order(product_id, side, funds, kwargs=kwargs)
-            return Purchase(order,
-                            response,
-                            self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="coinbase_pro"),
-                            self.__exchange_properties)
         elif self.__exchange_name == "binance":
             """
-            Send in a new market order
-
-            :param symbol: required
-            :type symbol: str
-            :param side: required
-            :type side: str
-            :param quantity: required
-            :type quantity: decimal
-            :param quoteOrderQty: amount the user wants to spend (when buying) or receive (when selling)
-                of the quote asset
-            :type quoteOrderQty: decimal
-            :param newClientOrderId: A unique id for the order. Automatically generated if not sent.
-            :type newClientOrderId: str
-            :param newOrderRespType: Set the response JSON. ACK, RESULT, or FULL; default: RESULT.
-            :type newOrderRespType: str
-            :param recvWindow: the number of milliseconds the request is valid for
-            :type recvWindow: int
-
-            :returns: API response
-
-            See order endpoint for full response options
-
-            :raises: BinanceRequestException, BinanceAPIException, BinanceOrderException, 
-            BinanceOrderMinAmountException, BinanceOrderMinPriceException, BinanceOrderMinTotalException, 
-            BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
-
-
             Response RESULT:
 
             .. code-block:: python
@@ -489,10 +460,9 @@ class APIInterface:
             # The interface here will be the query of order status from this object, because orders are dynamic
             # creatures
             response = self.__calls.order_market(symbol=modified_product_id, side=side, quoteOrderQty=funds)
-            return Purchase(order,
-                            response,
-                            self.__ticker_manager.get_ticker(product_id, override_default_exchange_name="binance"),
-                            self.__exchange_properties)
+        return Purchase(order,
+                        response,
+                        self)
 
     def limit_order(self, product_id, side, price, size, **kwargs):
         """
