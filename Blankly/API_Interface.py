@@ -392,7 +392,7 @@ class APIInterface:
                 })
             return filled_dict_list
 
-    def market_order(self, product_id, side, funds, **kwargs):
+    def market_order(self, product_id: str, side: str, funds: float, **kwargs: object) -> Purchase:
         """
         Used for buying or selling market orders
         Args:

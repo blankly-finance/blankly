@@ -16,9 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import Blankly.utils.utils
-import Blankly.Constants
-
 
 class Purchase:
     """
@@ -64,22 +61,23 @@ class Purchase:
         """
         self.Interface = interface
         self.__exchange = self.Interface.__exchange_name
-        self.__side = order["side"]
-        # Assigned below if there is an ApiCall attached
+        self.__order = order
         self.__response = response
+        self.__homogenized_result = None
 
-        try:
-            self.__limit = order["price"]
-        except Exception as e:
-            self.__limit = None
+    def get_response(self):
+        return self.__response
 
     def get_purchase_time(self):
         return self.__purchaseTime
 
+    def get_type(self):
+        return self.__type
+
     """
     When these orders are used the amount of currency changes throughout the lifetime by the fee rate each time
     """
-    def get_amount_currency_exchanged(self):
+    def get_quantity_exchanged(self):
         return self.__amountCurrency
 
     def get_side(self):
@@ -88,52 +86,53 @@ class Purchase:
     def get_id(self):
         return self.__purchase_id
 
-    """ Returns true if the buy order can be sold at a profit or the sell order didn't loose money """
-    def is_profitable(self, show=False):
-        if self.__buyOrSell == "buy":
-            if self.is_profitable_buy() < float(self.__ticker.get_most_recent_tick()["price"]):
-                if show:
-                    print(True)
-                return True
-            else:
-                if show:
-                    print(False)
-                return False
-        else:
-            if self.is_profitable_buy() > float(self.__ticker.get_most_recent_tick()["price"]):
-                if show:
-                    print(True)
-                return True
-            else:
-                if show:
-                    print(False)
-                return False
-
-    def get_fee(self, show=False):
-        fee = (self.__valueAtTime * self.__amountCurrency) * Blankly.Constants.PRETEND_FEE_RATE
-        if show:
-            print(fee)
-        return fee
-
-    """ 
-    Returns the price that a BUY needs to reach to be profitable
-    Ths can be used to set limit orders
-    """
-    def is_profitable_buy(self, show=False):
-        # price = self.__valueAtTime/(1 - Constants.PRETEND_FEE_RATE)
-        # This one didn't work for the USD amount modified
-        # price = self.__valueAtTime/(1 - (2 * Constants.PRETEND_FEE_RATE) + (Constants.PRETEND_FEE_RATE * Constants.PRETEND_FEE_RATE))
-        maker_fee_rate = self.__exchange_properties['maker_fee_rate']
-        price = ((maker_fee_rate + 1) * (self.__valueAtTime) / (1 - maker_fee_rate))
-        if show:
-            print(price)
-        return price
-
-    """ 
-    This allows this to be checked if this buy became profitable 
-    """
-    def is_profitable_sell(self, show=False):
-        self.__profitable = float((self.__ticker.get_most_recent_tick()["price"])) > self.is_profitable_buy()
-        if show:
-            print(self.__profitable)
-        return self.__profitable
+    """ This is something that should be implemented in the future """
+    # """ Returns true if the buy order can be sold at a profit or the sell order didn't loose money """
+    # def is_profitable(self, show=False):
+    #     if self.__buyOrSell == "buy":
+    #         if self.is_profitable_buy() < float(self.__ticker.get_most_recent_tick()["price"]):
+    #             if show:
+    #                 print(True)
+    #             return True
+    #         else:
+    #             if show:
+    #                 print(False)
+    #             return False
+    #     else:
+    #         if self.is_profitable_buy() > float(self.__ticker.get_most_recent_tick()["price"]):
+    #             if show:
+    #                 print(True)
+    #             return True
+    #         else:
+    #             if show:
+    #                 print(False)
+    #             return False
+    #
+    # def get_fee(self, show=False):
+    #     fee = (self.__valueAtTime * self.__amountCurrency) * Blankly.Constants.PRETEND_FEE_RATE
+    #     if show:
+    #         print(fee)
+    #     return fee
+    #
+    # """
+    # Returns the price that a BUY needs to reach to be profitable
+    # Ths can be used to set limit orders
+    # """
+    # def is_profitable_buy(self, show=False):
+    #     # price = self.__valueAtTime/(1 - Constants.PRETEND_FEE_RATE)
+    #     # This one didn't work for the USD amount modified
+    #     # price = self.__valueAtTime/(1 - (2 * Constants.PRETEND_FEE_RATE) + (Constants.PRETEND_FEE_RATE * Constants.PRETEND_FEE_RATE))
+    #     maker_fee_rate = self.__exchange_properties['maker_fee_rate']
+    #     price = ((maker_fee_rate + 1) * (self.__valueAtTime) / (1 - maker_fee_rate))
+    #     if show:
+    #         print(price)
+    #     return price
+    #
+    # """
+    # This allows this to be checked if this buy became profitable
+    # """
+    # def is_profitable_sell(self, show=False):
+    #     self.__profitable = float((self.__ticker.get_most_recent_tick()["price"])) > self.is_profitable_buy()
+    #     if show:
+    #         print(self.__profitable)
+    #     return self.__profitable
