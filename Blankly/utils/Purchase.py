@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+
 class Purchase:
     """
     (Buying or selling (string), amount in currency (BTC/XLM), ticker object (so we can get time and value),

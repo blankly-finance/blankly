@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from multiprocessing import Process, Manager
+from multiprocessing import Process, Queue
 import Blankly
 import copy
 import warnings
@@ -26,8 +26,10 @@ from Blankly.exchanges.ticker_manager import TickerManager
 from Blankly.API_Interface import APIInterface
 from Blankly.exchanges.IExchange_Websocket import IExchangeWebsocket
 
+import threading
 
-class BlanklyBot():
+
+class BlanklyBot:
     currency_pair: str
     user_preferences: dict
     exchange_type: str
@@ -50,6 +52,8 @@ class BlanklyBot():
         self.user_preferences = {}
         self.currency_pair = ""
         self.direct_calls = None
+        self.__queue = Queue()
+        self.__queue_thread = threading.Thread(target=self.manage_queue)
         self.process = Process(target=self.setup_process)
 
     def setup(self, exchange_type, currency_pair, user_preferences, initial_state, interface):
@@ -64,7 +68,7 @@ class BlanklyBot():
         """
         # Shared variables with the processing a manager
         self.initial_state = initial_state
-        self.__state = Manager().dict({})
+        # self.__state = Manager().dict({})
         self.exchange_type = exchange_type
         self.user_preferences = user_preferences
         # TODO. This copy is a bad solution. It generally means that there will be a ticker object used on each process.
@@ -87,14 +91,16 @@ class BlanklyBot():
         Called when the user starts the model. This is what begins and manages the process.
         """
         # Start the setup process and then call the main
-        p = Process(target=self.setup_process, args=(args,))
+        p = Process(target=self.setup_process, args=(args, self.__queue))
         self.process = p
         self.process.start()
+        self.__queue_thread.start()
 
-    def setup_process(self, args):
+    def setup_process(self, args, q):
         """
         Create any objects that need to be process-specific in the other process
         """
+        self.__q = q
         self.Ticker_Manager = Blankly.TickerManager(self.exchange_type, self.currency_pair)
         self.Orderbook_Manager = Blankly.OrderbookManager(self.exchange_type, self.currency_pair)
         self.Default_Ticker = self.Ticker_Manager.create_ticker(self.price_event)
@@ -105,7 +111,17 @@ class BlanklyBot():
     State getters and setters for external understanding of the operation
     """
     def get_state(self):
-        return self.__state.copy()
+        self.put_state(self.__state)
+        return self.__state
+
+    def put_state(self, state):
+        self.__q.put(state)
+
+    def pull_state(self):
+        return self.__queue.get()
+
+    def manage_queue(self):
+        while True:
 
     def update_state(self, key, value):
         """

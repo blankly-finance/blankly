@@ -30,7 +30,10 @@ class TickerManager(IExchangeWebsocket):
             default_currency: Add a default currency for the manager to favor
         """
         self.__default_exchange = default_exchange
+        if default_exchange == "binance":
+            default_currency = Blankly.utils.to_exchange_coin_id(default_currency, "binance").lower()
         self.__default_currency = default_currency
+
         self.__tickers = {}
         self.__tickers[default_exchange] = {}
 

@@ -318,7 +318,8 @@ class APIInterface:
                     "currency": "USD"
                 }
                 """
-                return self.__calls.get_account(account_id)
+                response = self.__calls.get_account(account_id)
+                return self.__isolate_specific(needed, response)
         elif self.__exchange_name == "binance":
             # TODO this should really use the get_asset_balance() function from binance.
             """
