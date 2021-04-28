@@ -75,7 +75,7 @@ class Exchange(IExchange):
         Args:
             currency: Currency that the selected model is running on.
         """
-        return (self.get_model(currency)).pull_state()
+        return (self.get_model(currency)).get_state()
 
     def get_full_state(self, currency):
         """
