@@ -301,3 +301,16 @@ class OrderbookManger(IExchangeWebsocket):
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
         # if self.__default_exchange == "coinbase_pro":
         self.__websockets[exchange][currency_id].restart_ticker()
+
+    def close_all_websockets(self):
+        """
+        Iterate through orderbooks and make sure they're closed
+        """
+        self.__recursive_close(self.__websockets)
+
+    def __recursive_close(self, d):
+        for k, v in d.items():
+            if isinstance(v, dict):
+                self.__recursive_close(v)
+            else:
+                d[k].close_websocket()
