@@ -4,19 +4,17 @@ import Blankly
 
 
 class Bot(Blankly.BlanklyBot):
-    def __init__(self):
-        super().__init__()
-
     def main(self, args):
         """
         Main function to write any general analysis or bot management logic
         """
+        # Create a demo ticker object. The price event function will run at every tick
+        self.Ticker_Manager.create_ticker(callback=self.price_event)
 
         # Add a heartbeat example to report to GUI or main
         self.update_state("Heartbeat", 0)
 
-        # Dataframe price history (commented because it takes time to run)
-        # print(self.Interface.get_product_history(self.coin_id, 1611029486, 1616123507, 10000))
+        # This will work on any supported exchange
         print("Interface call: " + str(self.Interface.get_fees()))
 
         # You can also bypass the interface and make calls directly to the exchange:
@@ -27,24 +25,18 @@ class Bot(Blankly.BlanklyBot):
             print("Chosen exchange doesn't have that function")
 
         while True:
-            # This demonstrates a way to change the state. The default script just reports the state on this currency.
+            # This demonstrates a way to change the state. This is just reporting to the main.
             self.update_state("Heartbeat", self.get_state()["Heartbeat"] + 1)
             time.sleep(1)
 
     def price_event(self, tick):
         """
-        Is called on price event updates by the ticker
+        This is called on price update events from the ticker feeds
         """
         # Example of updating the price state for the GUI
         self.update_state("Price", tick["price"])
         # Show these new ticks to the console
         print("New price tick at: " + tick["price"])
-
-    def orderbook_event(self, tick):
-        """
-        Similar to the price_event function, this is called by orderbook updates
-        """
-        pass
 
 
 if __name__ == "__main__":

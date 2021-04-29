@@ -36,7 +36,6 @@ class BlanklyBot:
     Orderbook_Manager: OrderbookManger
     Ticker_Manager: TickerManager
     Interface: APIInterface
-    Default_Ticker: IExchangeWebsocket
 
     def __init__(self):
         """
@@ -97,7 +96,7 @@ class BlanklyBot:
         """
         self.Ticker_Manager = Blankly.TickerManager(self.exchange_type, self.currency_pair)
         self.Orderbook_Manager = Blankly.OrderbookManager(self.exchange_type, self.currency_pair)
-        self.Default_Ticker = self.Ticker_Manager.create_ticker(self.price_event)
+
         self.Interface.append_ticker_manager(self.Ticker_Manager)
         self.main(args)
 
