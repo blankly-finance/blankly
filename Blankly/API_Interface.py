@@ -40,6 +40,12 @@ class APIInterface:
     def __init_exchange__(self):
         if self.__exchange_name == "coinbase_pro":
             fees = self.__calls.get_fees()
+            try:
+                if fees['message'] == "Invalid API Key":
+                    raise ValueError("Invalid API Key - are you trying to use your normal exchange keys "
+                                     "while in sandbox mode?")
+            except KeyError:
+                pass
             self.__exchange_properties = {
                 "maker_fee_rate": fees['maker_fee_rate'],
                 "taker_fee_rate": fees['taker_fee_rate']

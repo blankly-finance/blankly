@@ -25,12 +25,6 @@ import warnings
 from sklearn.linear_model import LinearRegression
 
 
-# def printJSON(jsonObject):
-#     """
-#     Json pretty printer for show arguments
-#     """
-#     print(pretty_print_JSON(jsonObject))
-
 # Recursively check if the user has all the preferences, inform when defaults are missing
 def __compare_dicts(default_settings, user_settings):
     for k, v in default_settings.items():
@@ -38,29 +32,28 @@ def __compare_dicts(default_settings, user_settings):
             if k in user_settings:
                 __compare_dicts(v, user_settings[k])
             else:
-                if not repress_preferences_warning:
-                    warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
-                                     "\""
-                    warnings.warn(warning_string)
+                warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
+                                 "\""
+                warnings.warn(warning_string)
                 user_settings[k] = v
         else:
             if k in user_settings:
                 continue
             else:
-                if not repress_preferences_warning:
-                    warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
-                                     "\""
-                    warnings.warn(warning_string)
+                warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
+                                 "\""
+                warnings.warn(warning_string)
                 user_settings[k] = v
     return user_settings
 
 
-repress_preferences_warning = False
+settings_cache = None
 
 default_settings = {
     "settings": {
         "account_update_time": 5000,
         "paper_trade": True,
+        "use_sandbox": False,
         "binance_tld": "us",
         "websocket_buffer_size": 100000,
     }
@@ -68,20 +61,23 @@ default_settings = {
 
 
 def load_user_preferences(override_path=None):
-    try:
-        if override_path is None:
-            f = open("Settings.json", )
-            preferences = json.load(f)
-        else:
-            f = open(override_path, )
-            preferences = json.load(f)
-    except FileNotFoundError as e:
-        raise FileNotFoundError("Make sure a Settings.json file is placed in the same folder as the project "
-                                "working directory!")
-    preferences = __compare_dicts(default_settings, preferences)
-    global repress_preferences_warning
-    repress_preferences_warning = True
-    return preferences
+    global settings_cache
+    if settings_cache is None:
+        try:
+            if override_path is None:
+                f = open("Settings.json", )
+                preferences = json.load(f)
+            else:
+                f = open(override_path, )
+                preferences = json.load(f)
+        except FileNotFoundError as e:
+            raise FileNotFoundError("Make sure a Settings.json file is placed in the same folder as the project "
+                                    "working directory!")
+        preferences = __compare_dicts(default_settings, preferences)
+        settings_cache = preferences
+        return preferences
+    else:
+        return settings_cache
 
 
 def pretty_print_JSON(json_object):

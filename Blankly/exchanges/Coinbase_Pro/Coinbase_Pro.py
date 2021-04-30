@@ -18,13 +18,22 @@
 
 from Blankly.exchanges.exchange import Exchange
 import Blankly.auth_constructor
+from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
+import Blankly.utils.utils as utils
 
 
 class Coinbase_Pro(Exchange):
     def __init__(self, portfolio_name=None, auth_path="Keys.json"):
         # Load the auth from the keys file
-        self.__calls, defined_name = Blankly.auth_constructor.load_auth_coinbase_pro(auth_path, portfolio_name)
+        auth, defined_name = Blankly.auth_constructor.load_auth_coinbase_pro(auth_path, portfolio_name)
         # self.__calls = API(auth[0], auth[1], auth[2])
+
+        preferences = utils.load_user_preferences()
+        if preferences["settings"]["use_sandbox"]:
+            self.__calls = Coinbase_Pro_API(auth[0], auth[1], auth[2],
+                                            API_URL="https://api-public.sandbox.pro.coinbase.com/")
+        else:
+            self.__calls = Coinbase_Pro_API(auth[0], auth[1], auth[2])
 
         # Create the authenticated object
         Exchange.__init__(self, "coinbase_pro", defined_name)

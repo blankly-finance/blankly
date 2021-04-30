@@ -18,7 +18,6 @@
 
 import json
 import warnings
-from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
 
 
 def load_json(keys_file):
@@ -38,7 +37,7 @@ def load_auth_coinbase_pro(keys_file, name):
     else:
         portfolio = exchange_keys[name]
     # TODO, add this new auth creation to the binance method
-    return Coinbase_Pro_API(portfolio["API_KEY"], portfolio["API_SECRET"], portfolio["API_PASS"]), name
+    return [portfolio["API_KEY"], portfolio["API_SECRET"], portfolio["API_PASS"]], name
 
 
 def load_auth_binance(keys_file, name):
