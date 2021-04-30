@@ -20,6 +20,7 @@ import time
 import warnings
 import pandas as pd
 import Blankly.utils.utils as utils
+from Blankly.utils.exceptions import InvalidOrder
 from Blankly.utils.Purchase import Purchase
 
 
@@ -450,7 +451,12 @@ class APIInterface:
                 'product_id': product_id,
                 'type': 'market'
             }
-            response = self.__calls.place_market_order(product_id, side, funds, kwargs=kwargs)
+            response = self.__calls.place_market_order(product_id, side, funds=funds)
+            try:
+                response = response["message"]
+                raise InvalidOrder("Invalid Order: " + response)
+            except KeyError:
+                pass
             response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
             response = self.__isolate_specific(needed, response)
         elif self.__exchange_name == "binance":
