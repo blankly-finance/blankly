@@ -92,6 +92,17 @@ class Exchange(IExchange):
             "model": self.get_model_state(currency)
         }
 
+    def write_value(self, currency, key, value):
+        """
+        Write a key/value pair to a bot attached to a particular currency pair
+
+        Args:
+            currency: Change state on bot attached to this currency
+            key: Key to assign a value to
+            value: Value to assign to the key
+        """
+        self.get_model(currency).update_state(key, value)
+
     def append_model(self, model, coin_id, args=None):
         """
         Append the models to the exchange, these can be run
