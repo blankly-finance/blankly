@@ -551,7 +551,7 @@ class APIInterface:
                 'product_id': product_id,
                 'type': 'limit'
             }
-            response = self.__calls.place_limit_order(product_id, side, price, size, kwargs=kwargs)
+            response = self.__calls.place_limit_order(product_id, side, price, size=size)
             response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
             response = self.__isolate_specific(needed, response)
         elif self.__exchange_name == "binance":
