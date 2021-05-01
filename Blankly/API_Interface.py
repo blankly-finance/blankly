@@ -274,10 +274,16 @@ class APIInterface:
     def get_account(self, currency=None, account_id=None):
         """
         Get all currencies in an account, or sort by currency/account_id
+        Args:
+            currency: (Optional) Filter by particular currency
+            account_id: (Optional) Filter by a particular account_id
+
+            These arguments are mutually exclusive
         Coinbase Pro: get_account
         Binance: get_account["balances"]
         """
-        currency = utils.get_base_currency(currency)
+        if currency is not None:
+            currency = utils.get_base_currency(currency)
         needed = [["currency", str],
                   ["available", float],
                   ["hold", float]]
@@ -552,6 +558,12 @@ class APIInterface:
                 'type': 'limit'
             }
             response = self.__calls.place_limit_order(product_id, side, price, size=size)
+            try:
+                response = response["message"]
+                raise InvalidOrder("Invalid Order: " + response)
+            except KeyError:
+                pass
+
             response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
             response = self.__isolate_specific(needed, response)
         elif self.__exchange_name == "binance":
@@ -751,9 +763,12 @@ class APIInterface:
             ]
             """
             if product_id is None:
-                orders = list(self.__calls.get_orders(kwargs=kwargs))
+                orders = list(self.__calls.get_orders())
             else:
                 orders = list(self.__calls.get_orders(product_id, kwargs=kwargs))
+
+            if orders[0] == 'message':
+                raise InvalidOrder("Invalid Order: " + str(orders))
 
             for i in range(len(orders)):
                 orders[i] = self.__isolate_specific(needed, orders[i])

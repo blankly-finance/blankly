@@ -710,7 +710,7 @@ class API:
             params['product_id'] = product_id
         if status is not None:
             params['status'] = status
-        return self._send_paginated_message('/orders', params=params)
+        return self._send_paginated_message('orders', params=params)
 
     """ Full interface support (untested) """
     def get_order(self, order_id):
