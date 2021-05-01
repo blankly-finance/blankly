@@ -956,6 +956,23 @@ class API:
         """
         return requests.get(self.__api_url + 'coinbase-accounts', auth=self.__auth).json()
 
+    def get_product_ticker(self, product_id):
+        """ Get recent market data for a product
+        Use of this is discouraged, websocket feeds should be used instead for high speed polling.
+
+        Returns:
+            {
+                "trade_id": 4729088,
+                "price": "333.99",
+                "size": "0.193",
+                "bid": "333.98",
+                "ask": "333.99",
+                "volume": "5957.11914015",
+                "time": "2015-11-14T20:46:03.511254Z"
+            }
+        """
+        return requests.get(self.__api_url + 'products/' + product_id + '/ticker', auth=self.__auth).json()
+
 
 
 

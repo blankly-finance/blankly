@@ -1222,3 +1222,26 @@ class APIInterface:
                 "min_price": min_price,
                 "max_price": max_price,
             }
+
+    def get_price(self, currency_pair) -> float:
+        """
+        Returns just the price of a currency pair.
+        """
+        if self.__exchange_name == "coinbase_pro":
+            """
+            {
+                'trade_id': 28976297, 
+                'price': '57579.72', 
+                'size': '0.00017367', 
+                'time': '2021-05-01T17:01:32.717482Z', 
+                'bid': '57579.72', 
+                'ask': '57579.74', 
+                'volume': '31137.51184419'
+            }
+            """
+            response = self.__calls.get_product_ticker(currency_pair)
+            return float(response['price'])
+        elif self.__exchange_name == "binance":
+            currency_pair = utils.to_exchange_coin_id(currency_pair, "binance")
+            response = self.__calls.get_symbol_ticker(symbol=currency_pair)
+            return float(response['price'])
