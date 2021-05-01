@@ -180,7 +180,7 @@ class APIInterface:
                 # Rename needed
                 products[i]["currency_id"] = products[i].pop("id")
                 # Isolate unimportant
-                return self.__isolate_specific(needed, products[i])
+                products[i] = self.__isolate_specific(needed, products[i])
             return products
         elif self.__exchange_name == "binance":
             """
