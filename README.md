@@ -6,7 +6,7 @@
 
 
 
-Check out our [website](http://blankly.net).
+Check out our [website](http://blankly.finance).
 
 ## Features
 
@@ -14,7 +14,7 @@ Check out our [website](http://blankly.net).
 
 - Ticker websocket support
 
-- Order book websocket support **
+- Order book websocket support
 
 - Fully multiprocessed bots with flexible arguments.
 
@@ -23,8 +23,6 @@ Check out our [website](http://blankly.net).
 - Support for multiple portfolios on multiple exchanges, all independently
 
 - Multi-process communication
-
-- Profit management **
 
 - Long term and high resolution historical data downloads as pandas dataframes
 
@@ -38,6 +36,14 @@ Check out our [website](http://blankly.net).
 
 - Customizable circular buffer websocket feeds
 
+- Support for coinbase pro's sandbox mode
+
+- Run scheduled functions natively
+
+- Logs for websocket feeds
+
+- Status management for purchases
+
 - Interface that allows calls to each supported exchange to be identical:
 
   > Buy example for Coinbase Pro and Binance:
@@ -48,7 +54,7 @@ Check out our [website](http://blankly.net).
   > self.Interface.market_order(.01, "buy", "BTC-USD")
   > ```
   >
-  > Binance: **
+  > Binance:
   >
   > ```python
   > self.Interface.market_order(.01, "buy", "BTC-USD")
@@ -137,7 +143,7 @@ The comments offer a decent amount of description for the behavior, but here is 
 
    - ```python
      # Add it to run as the coinbase_pro bitcoin model
-     exchange.append_model(bot, "BTC")
+     exchange.append_model(bot, "BTC-USD")
      # Imagine this:
      #   Coinbase Pro:
      #       Bitcoin
@@ -177,8 +183,8 @@ The comments offer a decent amount of description for the behavior, but here is 
      # Now other processes can be created or just continue with this one.
      while True:
         # Print the state every 2 seconds
-        state = exchange.get_full_state("GRT")
-        Blankly.Utils.pretty_print_JSON(state)
+        state = exchange.get_full_state("BTC-USD")
+        Blankly.utils.pretty_print_JSON(state)
         time.sleep(1)
      ```
 
@@ -206,39 +212,14 @@ The comments offer a decent amount of description for the behavior, but here is 
 
 🟢 = working
 
-🟡 = in development, some features are working
+🟡 = in development, some or most features are working
 
 🔴 = planned but not yet in development
 
 * Interface calls take ~300 µs extra to homogenize the exchange data.
 
-
-
-## A start on the command documentation:
-
-| **Command**     | Arguments                      | Description                                                  | Coinbase Pro |
-| --------------- | ------------------------------ | ------------------------------------------------------------ | ------------ |
-| **Market Buy**  | `amount, "buy", "Coin-ID"`     | Creates a market buy of the specified currency of the specified amount | ✅            |
-| **Market Sell** | `amount, "sell", "Coin-ID"`    | Creates a market sell of the specified currency of the specified amount | ✅            |
-| **Limit Buy**   | `size, price, "buy", Coin-ID`  | Creates a limit buy of the specified currency at the specified price and amount | ✅            |
-| **Limit Sell**  | `size, price, "sell", Coin-ID` | Creates a limit sell of the specified currency at the specified price and amount | ✅            |
-
-## Ticker Support
-
-| Exchange         | Type      | Default Callback    |
-| ---------------- | --------- | ------------------- |
-| **Coinbase Pro** | Websocket | `price_event(tick)` |
-
-### Declaration
-
-```python
-self.Interface.create_ticker(self, Coin_ID)
-```
-
-When created in a class, this will callback the `price_event(tick)` function.
-
-## Multiprocessing Feature
-Blankly is designed to allow running models independently, each on their own process. This allows the ability to run intensive tasks, such as training a neural network independently of all the other models on different processor cores, while being able to report and read status from each process.
+## Docs
+https://edove.gitbook.io/blankly/
 
 ## Bugs
 
