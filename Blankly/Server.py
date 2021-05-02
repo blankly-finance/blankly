@@ -52,7 +52,7 @@ class TradeInterface(object):
             self.__exchanges.append(Coinbase_Pro(exchange_name))
             return exchange_name
         else:
-            Exception("Exchange settings not found")
+            raise ValueError("Exchange settings not found")
 
     """ External State """
 
