@@ -19,7 +19,6 @@
 from Blankly.exchanges.exchange import Exchange
 import Blankly.auth_constructor
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
-import Blankly.utils.utils as utils
 
 
 class Coinbase_Pro(Exchange):

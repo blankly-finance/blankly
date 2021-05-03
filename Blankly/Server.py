@@ -17,15 +17,20 @@
 """
 
 from __future__ import print_function
+
+import Blankly
 from calc import calc as real_calc
 import sys
 import zerorpc
-from Blankly.exchanges.Coinbase_Pro import Coinbase_Pro
-import json
 
 
 # Tickers shouldn't be accessed from this class. Interfaces will not have access to them
 class TradeInterface:
+    def __init__(self):
+        self.__auth_path = None
+        self.__preferences_path = None
+        self.__exchanges = []
+
     def calc(self, text):
         """ Very basic connectivity test, given a string compute the output """
         try:
@@ -37,25 +42,23 @@ class TradeInterface:
         """echo any text """
         return text
 
-    def init(self, auth_path):
+    def init(self, auth_path, preferences_path):
         # Called from the dashboard
+        self.__exchanges = []
         self.__auth_path = auth_path
+        self.__preferences_path = preferences_path
 
-
-        try:
-            with open('./Settings.json', 'r') as f:
-                self.__user_preferences = json.load(f)
-        # Must've been run in this folder
-        except FileNotFoundError as e:
-            with open('../../Tradingbot/Settings.json', 'r') as f:
-                self.__user_preferences = json.load(f)
-
-    def add_exchange(self, exchange_name, exchange_type, auth):
+    def create_portfolio(self, exchange_type, portfolio_name):
         if exchange_type == "coinbase_pro":
-            self.__exchanges.append(Coinbase_Pro(exchange_name))
-            return exchange_name
+            self.__exchanges.append(Blankly.Coinbase_Pro(portfolio_name=portfolio_name,
+                                                         auth_path=self.__auth_path,
+                                                         preferences_path=self.__preferences_path))
+        elif exchange_type == "binance":
+            self.__exchanges.append(Blankly.Binance(portfolio_name=portfolio_name,
+                                                    auth_path=self.__auth_path,
+                                                    preferences_path=self.__preferences_path))
         else:
-            raise ValueError("Exchange settings not found")
+            raise ValueError("Exchange not found or unsupported")
 
     """ External State """
     def get_exchange_state(self, name):
@@ -72,15 +75,15 @@ class TradeInterface:
             if self.__exchanges[i].get_name() == name:
                 return [self.__exchanges[i].__get_portfolio_state(), name]
 
-    def run_model(self, name, currency=None):
+    def run_model(self, name, currency_pair=None):
         for i in range(len(self.__exchanges)):
             if self.__exchanges[i].get_name() == name:
-                return [self.__exchanges[i].start_models(currency), name]
+                self.__exchanges[i].start_models(currency_pair)
 
-    def assign_model(self, exchange_name, model_name, currency, args=None):
+    def assign_model(self, portfolio_name, currency_pair, model_name, args=None):
         for i in range(len(self.__exchanges)):
-            if self.__exchanges[i].get_name() == exchange_name:
-                return [self.__exchanges[i].append_model(currency, args, model_name), exchange_name]
+            if self.__exchanges[i].get_name() == portfolio_name:
+                self.__exchanges[i].append_model(model_name, currency_pair, args)
 
     """
     Three indicators at the top of the GUI - JSON with only 3 keys

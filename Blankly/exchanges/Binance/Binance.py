@@ -26,11 +26,11 @@ import warnings
 
 
 class Binance(Exchange):
-    def __init__(self, portfolio_name=None, auth_path="Keys.json"):
+    def __init__(self, portfolio_name=None, auth_path="Keys.json", preferences_path=None):
         # Load the auth from the keys file
         auth, defined_name = Blankly.auth_constructor.load_auth_binance(auth_path, portfolio_name)
 
-        Exchange.__init__(self, "binance", defined_name)
+        Exchange.__init__(self, "binance", defined_name, preferences_path)
 
         preferences = utils.load_user_preferences()
         if preferences["settings"]["use_sandbox"]:
