@@ -23,10 +23,11 @@ import zerorpc
 from Blankly.exchanges.Coinbase_Pro import Coinbase_Pro
 import json
 
+
 # Tickers shouldn't be accessed from this class. Interfaces will not have access to them
-class TradeInterface(object):
+class TradeInterface:
     def calc(self, text):
-        """based on the input text, return the int result"""
+        """ Very basic connectivity test, given a string compute the output """
         try:
             return real_calc(text)
         except Exception as e:
@@ -36,9 +37,11 @@ class TradeInterface(object):
         """echo any text """
         return text
 
-    def init(self):
-        self.__exchanges = []
+    def init(self, auth_path):
         # Called from the dashboard
+        self.__auth_path = auth_path
+
+
         try:
             with open('./Settings.json', 'r') as f:
                 self.__user_preferences = json.load(f)
@@ -55,7 +58,6 @@ class TradeInterface(object):
             raise ValueError("Exchange settings not found")
 
     """ External State """
-
     def get_exchange_state(self, name):
         for i in range(len(self.__exchanges)):
             if self.__exchanges[i].get_name() == name:
@@ -65,7 +67,6 @@ class TradeInterface(object):
     Internal State, this has all the currencies. This is mainly used for an initial definition of which currencies
     are being used, get model state is what will matter for the reporting into these blocks
     """
-
     def get_portfolio_state(self, name):
         for i in range(len(self.__exchanges)):
             if self.__exchanges[i].get_name() == name:
@@ -84,7 +85,6 @@ class TradeInterface(object):
     """
     Three indicators at the top of the GUI - JSON with only 3 keys
     """
-
     def update_indicators(self, name):
         for i in range(len(self.__exchanges)):
             if self.__exchanges[i].get_name() == name:
