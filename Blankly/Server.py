@@ -33,10 +33,7 @@ class TradeInterface:
 
     def calc(self, text):
         """ Very basic connectivity test, given a string compute the output """
-        try:
-            return real_calc(text)
-        except Exception as e:
-            return 0.0
+        return real_calc(text)
 
     def echo(self, text):
         """echo any text """

@@ -21,10 +21,15 @@ import time
 
 def switch_type(stream):
     if stream == "trade":
-        return trade
+        return trade, trade_interface
 
 
 def trade(message):
     return str(message["E"]) + "," + str(time.time()) + "," + message["e"] + "," + message["s"] + "," + \
            str(message["t"]) + "," + message["p"] + "," + message["q"] + "," + str(message["b"]) + "," + \
            str(message["a"]) + "," + str(message["T"]) + "," + str(message["m"]) + "\n"
+
+
+def trade_interface(message):
+    # TODO add trade interface abstraction here
+    return message

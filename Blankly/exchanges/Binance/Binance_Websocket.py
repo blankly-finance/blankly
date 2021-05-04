@@ -38,7 +38,7 @@ class Tickers(IExchangeWebsocket):
         """
         self.__id = symbol
         self.__stream = stream
-        self.__message_callback = websocket_utils.switch_type(stream)
+        self.__logging_callback, self.__interface_callback = websocket_utils.switch_type(stream)
 
         # Initialize log file
         if log is not None:
@@ -134,14 +134,15 @@ class Tickers(IExchangeWebsocket):
             self.__most_recent_tick = message
             self.__ticker_feed.append(self.__most_recent_tick)
             # Run callbacks on message
+            interface_message = self.__interface_callback(message)
             for i in self.__callbacks:
-                i(message)
+                i(interface_message)
 
             if self.__log:
                 if self.__message_count % 100 == 0:
                     self.__file.close()
                     self.__file = open(self.__filePath, 'a')
-                line = self.__message_callback(message)
+                line = self.__logging_callback(message)
                 self.__file.write(line)
         except KeyError:
             try:
