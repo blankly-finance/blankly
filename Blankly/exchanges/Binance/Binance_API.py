@@ -48,7 +48,7 @@ def hmac_encode(message: str, secret_key: str) -> str:
 
 
 class API:
-    def __init__(self, API_KEY, API_SECRET, API_URL='https://testnet.binance.vision'):
+    def __init__(self, API_KEY, API_SECRET, API_URL='https://api.binance.us'):
         self.api_key = API_KEY
         self.secret_key = API_SECRET
         self.__auth = BinanceExchangeAuth(API_KEY)
