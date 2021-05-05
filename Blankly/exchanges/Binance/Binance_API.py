@@ -58,7 +58,8 @@ class API:
     def _init_session(self):
         session = requests.session()
         session.headers.update({'Accept': 'application/json',
-                                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36',
+                                'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) '
+                                              'Chrome/56.0.2924.87 Safari/537.36',
                                 'X-MBX-APIKEY': self.api_key.encode('utf-8')})
         return session
 
@@ -82,310 +83,316 @@ class API:
         response = getattr(self.session, method)(url, params=params, data=data)
         return response.json()
 
-    ## wallet endpoints ###
+    """
+    Wallet Endpoints
+    """
     def system_status(self):
         endpoint = '/wapi/v3/systemStatus.html'
-        SIGNED = False
-        return self._send_request('get', self.__api_url + endpoint, SIGNED)
+        signed = False
+        return self._send_request('get', self.__api_url + endpoint, signed)
 
     def all_coins(self):
         endpoint = "/sapi/v1/capital/config/getall"
-        SIGNED = True
-        return self._send_request('get', self.__api_url + endpoint, SIGNED)
+        signed = True
+        return self._send_request('get', self.__api_url + endpoint, signed)
 
     def account_snapshot(self, type):
         endpoint = "/sapi/v1/accountSnapshot"
         params = OrderedDict()
         params["type"] = type
-        SIGNED = True
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params)
+        signed = True
+        return self._send_request('get', self.__api_url + endpoint, signed, params)
 
     def disable_fast_withdraw(self):
         endpoint = "/sapi/v1/account/disableFastWithdrawSwitch"
-        SIGNED = True
-        return self._send_request('post', self.__api_url + endpoint, SIGNED)
+        signed = True
+        return self._send_request('post', self.__api_url + endpoint, signed)
 
     def enable_fast_withdraw(self):
         endpoint = "/sapi/v1/account/enableFastWithdrawSwitch"
-        SIGNED = True
-        return self._send_request('post', self.__api_url + endpoint, SIGNED)
+        signed = True
+        return self._send_request('post', self.__api_url + endpoint, signed)
 
     def withdraw(self, asset, address, amount, **optional_params):
         endpoint = '/wapi/v3/withdraw.html'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params["asset"] = asset
         params["address"] = address
         params["amount"] = amount
         params.update(optional_params)
-        return self._send_request('post', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('post', self.__api_url + endpoint, signed, params=params)
 
     def account_info(self):
         endpoint = '/api/v3/account'
-        SIGNED = True
-        return self._send_request('get', self.__api_url + endpoint, SIGNED)
+        signed = True
+        return self._send_request('get', self.__api_url + endpoint, signed)
 
     def withdraw_history(self, **optional_params):
         endpoint = '/wapi/v3/depositHistory.html'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def deposit_address(self, **optional_params):
         endpoint = '/wapi/v3/depositAddress.html'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def account_status(self):
         endpoint = '/wapi/v3/accountStatus.html'
-        SIGNED = True
-        return self._send_request('get', self.__api_url + endpoint, SIGNED)
+        signed = True
+        return self._send_request('get', self.__api_url + endpoint, signed)
 
     def trading_status(self):
         endpoint = '/wapi/v3/apiTradingStatus.html'
-        SIGNED = True
-        return self._send_request('get', self.__api_url + endpoint, SIGNED)
+        signed = True
+        return self._send_request('get', self.__api_url + endpoint, signed)
 
     def dust_log(self):
         endpoint = '/wapi/v3/userAssetDribbletLog.html'
-        SIGNED = True
-        return self._send_request('get', self.__api_url + endpoint, SIGNED)
+        signed = True
+        return self._send_request('get', self.__api_url + endpoint, signed)
 
     def dust_transfer(self):
         endpoint = '/sapi/v1/asset/dust'
-        SIGNED = True
-        return self._send_request('post', self.__api_url + endpoint, SIGNED)
+        signed = True
+        return self._send_request('post', self.__api_url + endpoint, signed)
 
     def dividend_record(self, **optional_params):
         endpoint = '/sapi/v1/asset/assetDividend'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def asset_detail(self, **optional_params):
         endpoint = '/sapi/v1/asset/assetDetail'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED)
+        return self._send_request('get', self.__api_url + endpoint, signed)
 
     def trade_fee(self, **optional_params):
         endpoint = '/wapi/v3/tradeFee.html'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED)
+        return self._send_request('get', self.__api_url + endpoint, signed)
 
     def universal_transfer(self, type, asset, amount):
         endpoint = '/wapi/v3/withdraw.html'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params["type"] = type
         params["asset"] = asset
         params["amount"] = amount
-        return self._send_request('post', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('post', self.__api_url + endpoint, signed, params=params)
 
     def query_universal_transfer(self, type, **optional_params):
         endpoint = '/sapi/v1/asset/transfer'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params["type"] = type
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
-    ## market data endpoints #######
+    """
+    Market Data Endpoints
+    """
     def test_connectivity(self):
         endpoint = '/api/v3/ping'
-        SIGNED = False
-        return self._send_request('get', self.__api_url + endpoint, SIGNED)
+        signed = False
+        return self._send_request('get', self.__api_url + endpoint, signed)
 
     def check_server_time(self):
         endpoint = '/api/v3/time'
-        SIGNED = False
-        return self._send_request('get', self.__api_url + endpoint, SIGNED)
+        signed = False
+        return self._send_request('get', self.__api_url + endpoint, signed)
 
     def exchange_information(self, symbol):
         endpoint = '/api/v3/exchangeInfo'
-        SIGNED = False
-        return self._send_request('get', self.__api_url + endpoint, SIGNED)
+        signed = False
+        return self._send_request('get', self.__api_url + endpoint, signed)
 
     def order_book(self, symbol):
         endpoint = '/api/v3/depth'
-        SIGNED = False
+        signed = False
         params = OrderedDict()
         params["symbol"] = symbol
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def recent_trades_list(self, symbol):
         endpoint = '/api/v3/trades'
-        SIGNED = False
+        signed = False
         params = OrderedDict()
         params["symbol"] = symbol
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def old_trade_lookup(self, symbol, **optional_params):
         endpoint = '/api/v3/historicalTrades'
-        SIGNED = False
+        signed = False
         params = OrderedDict()
         params["symbol"] = symbol
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def compressed_trades_list(self, symbol, **optional_params):
         endpoint = '/api/v3/aggTrades'
-        SIGNED = False
+        signed = False
         params = OrderedDict()
         params["symbol"] = symbol
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def klines(self, symbol, interval, **optional_params):
         endpoint = '/api/v3/klines'
-        SIGNED = False
+        signed = False
         params = OrderedDict()
         params["symbol"] = symbol
         params["interval"] = interval
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def current_average_price(self, symbol):
         endpoint = '/api/v3/ticker/24hr'
-        SIGNED = False
+        signed = False
         params = OrderedDict()
         params["symbol"] = symbol
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def ticker_price_change_statistics(self, **optional_params):
         endpoint = '/api/v3/ticker/24hr'
-        SIGNED = False
+        signed = False
         params = OrderedDict()
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def symbol_price_ticker(self, **optional_params):
         endpoint = '/api/v3/ticker/price'
-        SIGNED = False
+        signed = False
         params = OrderedDict()
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def symbol_orderbook_ticker(self, **optional_params):
         endpoint = '/api/v3/ticker/bookTicker'
-        SIGNED = False
+        signed = False
         params = OrderedDict()
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
-    ## spot account/trade endpoints #######
+    """
+    spot account/trade endpoints
+    """
     def test_new_order(self, symbol, side, type, **optional_params):
         endpoint = '/api/v3/order/test'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params["symbol"] = symbol
         params["side"] = side
         params["type"] = type
         params.update(optional_params)
-        return self._send_request('post', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('post', self.__api_url + endpoint, signed, params=params)
 
     def new_order(self, symbol, side, type, **optional_params):
         endpoint = '/api/v3/order'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params["symbol"] = symbol
         params["side"] = side
         params["type"] = type
         params.update(optional_params)
-        return self._send_request('post', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('post', self.__api_url + endpoint, signed, params=params)
 
     def cancel_order(self, symbol, **optional_params):
         endpoint = '/api/v3/order'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params["symbol"] = symbol
         params.update(optional_params)
-        return self._send_request('delete', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('delete', self.__api_url + endpoint, signed, params=params)
 
     def cancel_all_open_orders(self, symbol):
         endpoint = 'api/v3/openOrders'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params["symbol"] = symbol
-        return self._send_request('delete', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('delete', self.__api_url + endpoint, signed, params=params)
 
     def query_order(self, symbol):
         endpoint = '/api/v3/order'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params["symbol"] = symbol
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def current_open_orders(self, **optional_params):
         endpoint = '/api/v3/openOrders'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def all_orders(self, symbol, **optional_params):
         endpoint = '/api/v3/allOrders'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params["symbol"] = symbol
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
-    def new_oco(self, symbol, side, quantity, price, stopPrice, **optional_params):
+    def new_oco(self, symbol, side, quantity, price, stop_price, **optional_params):
         endpoint = '/api/v3/order/oco'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params["symbol"] = symbol
         params["side"] = side
         params["quantity"] = quantity
         params["price"] = price
-        params["stopPrice"] = stopPrice
+        params["stopPrice"] = stop_price
         params.update(optional_params)
-        return self._send_request('post', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('post', self.__api_url + endpoint, signed, params=params)
 
     def cancel_oco(self, symbol, **optional_params):
         endpoint = '/api/v3/orderList'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params["symbol"] = symbol
         params.update(optional_params)
-        return self._send_request('delete', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('delete', self.__api_url + endpoint, signed, params=params)
 
     def query_oco(self, **optional_params):
         endpoint = '/api/v3/orderList'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def query_all_oco(self, **optional_params):
         endpoint = '/api/v3/allOrderList'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
 
     def query_open_oco(self):
         endpoint = '/api/v3/openOrderList'
-        SIGNED = True
-        return self._send_request('get', self.__api_url + endpoint, SIGNED)
+        signed = True
+        return self._send_request('get', self.__api_url + endpoint, signed)
 
     def account_information(self):
         endpoint = '/api/v3/account'
-        SIGNED = True
-        return self._send_request('get', self.__api_url + endpoint, SIGNED)
+        signed = True
+        return self._send_request('get', self.__api_url + endpoint, signed)
 
     def account_trade_list(self, symbol,  **optional_params):
         endpoint = '/api/v3/myTrades'
-        SIGNED = True
+        signed = True
         params = OrderedDict()
         params["symbol"] = symbol
         params.update(optional_params)
-        return self._send_request('get', self.__api_url + endpoint, SIGNED, params=params)
+        return self._send_request('get', self.__api_url + endpoint, signed, params=params)
