@@ -15,17 +15,12 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import base64
 import hashlib
 import hmac
 import requests
 import time
-import warnings
-import json
 from urllib.parse import urlencode
-import typing
 from requests.auth import AuthBase
-import binance
 from collections import OrderedDict
 
 

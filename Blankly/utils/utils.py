@@ -167,3 +167,68 @@ def get_base_currency(blankly_coin_id):
 def get_quote_currency(blankly_coin_id):
     # Gets the USD of the BTC-USD
     return blankly_coin_id.split('-')[1]
+
+
+def rename_to(keys_array, renaming_dictionary):
+    """
+    Args:
+        keys_array: A two dimensional array that contains information on which keys are changed:
+            keys_array = [
+                ["key1", "new name"],
+                ["id", "user_id"],
+                ["frankie", "gerald"],
+            ]
+        renaming_dictionary: Dictionary to perform the renaming on
+    """
+    renaming_dictionary["exchange_specific"] = {}
+    for i in keys_array:
+        try:
+            # Check if it has the new name
+            error_test = renaming_dictionary[i[1]]
+            # If we're here this key has already been defined, push it to the specific
+            renaming_dictionary["exchange_specific"][i[1]] = renaming_dictionary.pop(i[1])
+        except KeyError:
+            pass
+        renaming_dictionary[i[1]] = renaming_dictionary.pop(i[0])
+    return renaming_dictionary
+
+
+# Non-recursive check
+def isolate_specific(needed, compare_dictionary):
+    """
+    This is the parsing algorithm used to homogenize the dictionaries
+    """
+    # Create a column vector for the keys
+    column = [column[0] for column in needed]
+    # Create an area to hold the specific data
+    exchange_specific = {}
+    required = False
+    for k, v in compare_dictionary.items():
+        # Check if the value is one of the keys
+        for index, val in enumerate(column):
+            required = False
+            # If it is, there is a state value for it
+            if k == val:
+                # Push type to value
+                compare_dictionary[k] = needed[index][1](v)
+                required = True
+                break
+        # Must not be found
+        # Append non-necessary to the exchange specific dict
+        # There has to be a way to do this without raising a flag value
+        if not required:
+            exchange_specific[k] = compare_dictionary[k]
+
+    # If there exists the exchange specific dict in the compare dictionary
+    # This is done because after renaming, if there are naming conflicts they will already have been pushed here,
+    # generally the "else" should always be what runs.
+    if "exchange_specific" not in compare_dictionary:
+        # If there isn't, just add it directly
+        compare_dictionary["exchange_specific"] = exchange_specific
+    else:
+        # If there is, pull them together
+        compare_dictionary["exchange_specific"] = {**compare_dictionary["exchange_specific"], **exchange_specific}
+    # Pull the specific keys out
+    for k, v in exchange_specific.items():
+        del compare_dictionary[k]
+    return compare_dictionary

@@ -65,71 +65,6 @@ class APIInterface:
                 base_assets.append(i["baseAsset"])
             self.__available_currencies = base_assets
 
-    @staticmethod
-    def __rename_to(keys_array, renaming_dictionary):
-        """
-        Args:
-            keys_array: A two dimensional array that contains information on which keys are changed:
-                keys_array = [
-                    ["key1", "new name"],
-                    ["id", "user_id"],
-                    ["frankie", "gerald"],
-                ]
-            renaming_dictionary: Dictionary to perform the renaming on
-        """
-        renaming_dictionary["exchange_specific"] = {}
-        for i in keys_array:
-            try:
-                # Check if it has the new name
-                error_test = renaming_dictionary[i[1]]
-                # If we're here this key has already been defined, push it to the specific
-                renaming_dictionary["exchange_specific"][i[1]] = renaming_dictionary.pop(i[1])
-            except KeyError:
-                pass
-            renaming_dictionary[i[1]] = renaming_dictionary.pop(i[0])
-        return renaming_dictionary
-
-    # Non-recursive check
-    @staticmethod
-    def __isolate_specific(needed, compare_dictionary):
-        """
-        This is the parsing algorithm used to homogenize the dictionaries
-        """
-        # Create a column vector for the keys
-        column = [column[0] for column in needed]
-        # Create an area to hold the specific data
-        exchange_specific = {}
-        required = False
-        for k, v in compare_dictionary.items():
-            # Check if the value is one of the keys
-            for index, val in enumerate(column):
-                required = False
-                # If it is, there is a state value for it
-                if k == val:
-                    # Push type to value
-                    compare_dictionary[k] = needed[index][1](v)
-                    required = True
-                    break
-            # Must not be found
-            # Append non-necessary to the exchange specific dict
-            # There has to be a way to do this without raising a flag value
-            if not required:
-                exchange_specific[k] = compare_dictionary[k]
-
-        # If there exists the exchange specific dict in the compare dictionary
-        # This is done because after renaming, if there are naming conflicts they will already have been pushed here,
-        # generally the "else" should always be what runs.
-        if "exchange_specific" not in compare_dictionary:
-            # If there isn't, just add it directly
-            compare_dictionary["exchange_specific"] = exchange_specific
-        else:
-            # If there is, pull them together
-            compare_dictionary["exchange_specific"] = {**compare_dictionary["exchange_specific"], **exchange_specific}
-        # Pull the specific keys out
-        for k, v in exchange_specific.items():
-            del compare_dictionary[k]
-        return compare_dictionary
-
     def append_ticker_manager(self, ticker_manager):
         self.__ticker_manager = ticker_manager
 
@@ -180,7 +115,7 @@ class APIInterface:
                 # Rename needed
                 products[i]["currency_id"] = products[i].pop("id")
                 # Isolate unimportant
-                products[i] = self.__isolate_specific(needed, products[i])
+                products[i] = utils.isolate_specific(needed, products[i])
             return products
         elif self.__exchange_name == "binance":
             """
@@ -268,7 +203,7 @@ class APIInterface:
                 products[i]["base_max_size"] = max_qty
                 products[i]["base_increment"] = base_increment
                 # Isolate keys unimportant for the interface's functionality
-                return self.__isolate_specific(needed, products[i])
+                return utils.isolate_specific(needed, products[i])
             return products
 
     def get_account(self, currency=None, account_id=None):
@@ -315,11 +250,11 @@ class APIInterface:
                 else:
                     for i in accounts:
                         if i["currency"] == currency:
-                            parsed_value = self.__isolate_specific(needed, i)
+                            parsed_value = utils.isolate_specific(needed, i)
                             return parsed_value
                     warnings.warn("Currency not found")
                 for i in range(len(accounts)):
-                    accounts[i] = self.__isolate_specific(needed, accounts[i])
+                    accounts[i] = utils.isolate_specific(needed, accounts[i])
                 return accounts
             else:
                 """
@@ -332,7 +267,7 @@ class APIInterface:
                 }
                 """
                 response = self.__calls.get_account(account_id)
-                return self.__isolate_specific(needed, response)
+                return utils.isolate_specific(needed, response)
         elif self.__exchange_name == "binance":
             # TODO this should really use the get_asset_balance() function from binance.
             """
@@ -373,8 +308,8 @@ class APIInterface:
                 if currency in self.__available_currencies:
                     for i in range(len(accounts)):
                         if accounts[i]["asset"] == currency:
-                            accounts = self.__rename_to(renames, accounts)
-                            parsed_value = self.__isolate_specific(needed, accounts[i])
+                            accounts = utils.rename_to(renames, accounts)
+                            parsed_value = utils.isolate_specific(needed, accounts[i])
                             return parsed_value
                     return {
                         "currency": currency,
@@ -395,8 +330,8 @@ class APIInterface:
                     # If the current available currency matches one from binance
                     if val == i:
                         # Do the normal thing above and append
-                        accounts = self.__rename_to(renames, accounts)
-                        accounts[index] = self.__isolate_specific(needed, accounts[index])
+                        accounts = utils.rename_to(renames, accounts)
+                        accounts[index] = utils.isolate_specific(needed, accounts[index])
                         filled_dict_list.append({
                             accounts[index]
                         })
@@ -464,7 +399,7 @@ class APIInterface:
             except KeyError:
                 pass
             response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
-            response = self.__isolate_specific(needed, response)
+            response = utils.isolate_specific(needed, response)
         elif self.__exchange_name == "binance":
             """
             Response RESULT:
@@ -502,8 +437,8 @@ class APIInterface:
             # The interface here will be the query of order status from this object, because orders are dynamic
             # creatures
             response = self.__calls.order_market(symbol=modified_product_id, side=side, quoteOrderQty=funds)
-            response = self.__rename_to(renames, response)
-            response = self.__isolate_specific(needed, response)
+            response = utils.rename_to(renames, response)
+            response = utils.isolate_specific(needed, response)
             response["transactTime"] = response["transactTime"]/1000
         return Purchase(order, response, self)
 
@@ -565,7 +500,7 @@ class APIInterface:
                 pass
 
             response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
-            response = self.__isolate_specific(needed, response)
+            response = utils.isolate_specific(needed, response)
         elif self.__exchange_name == "binance":
             """Send in a new limit order
 
@@ -616,8 +551,8 @@ class APIInterface:
                 ["origQty", "size"],
                 ["timeInForce", "time_in_force"],
             ]
-            response = self.__rename_to(renames, response)
-            response = self.__isolate_specific(needed, response)
+            response = utils.rename_to(renames, response)
+            response = utils.isolate_specific(needed, response)
         return Purchase(order, response, self)
 
     """ 
@@ -722,8 +657,8 @@ class APIInterface:
                 ["id", str]
             ]
             response = self.__calls.cancel_order(symbol=currency_id, orderId=order_id)
-            response = self.__rename_to(renames, response)
-            return self.__isolate_specific(needed, response)
+            response = utils.rename_to(renames, response)
+            return utils.isolate_specific(needed, response)
 
     def get_open_orders(self, product_id=None, **kwargs):
         """
@@ -771,7 +706,7 @@ class APIInterface:
                 raise InvalidOrder("Invalid Order: " + str(orders))
 
             for i in range(len(orders)):
-                orders[i] = self.__isolate_specific(needed, orders[i])
+                orders[i] = utils.isolate_specific(needed, orders[i])
 
             return orders
         elif self.__exchange_name == "binance":
@@ -810,8 +745,8 @@ class APIInterface:
                 ["isWorking", "status"]
             ]
             for i in range(len(orders)):
-                orders[i] = self.__rename_to(renames, orders[i])
-                orders[i] = self.__isolate_specific(needed, orders[i])
+                orders[i] = utils.rename_to(renames, orders[i])
+                orders[i] = utils.isolate_specific(needed, orders[i])
 
             return orders
 
@@ -845,7 +780,7 @@ class APIInterface:
             }
             """
             response = self.__calls.get_order(order_id)
-            return self.__isolate_specific(needed, response)
+            return utils.isolate_specific(needed, response)
         elif self.__exchange_name == "binance":
             """
             :param symbol: required
@@ -879,8 +814,8 @@ class APIInterface:
                 ["isWorking", "status"]
             ]
             response = self.__calls.get_order(symbol=currency_id, orderId=int(order_id))
-            response = self.__rename_to(renames, response)
-            return self.__isolate_specific(needed, response)
+            response = utils.rename_to(renames, response)
+            return utils.isolate_specific(needed, response)
 
     """
     Coinbase Pro: get_fees
@@ -900,7 +835,7 @@ class APIInterface:
             }
             """
             fees = self.__calls.get_fees()
-            return self.__isolate_specific(needed, fees)
+            return utils.isolate_specific(needed, fees)
         elif self.__exchange_name == "binance":
             """
             {
@@ -936,7 +871,7 @@ class APIInterface:
             account['maker_fee_rate'] = account.pop('makerCommission')/100
             account['taker_fee_rate'] = account.pop('takerCommission')/100
             # Isolate
-            return self.__isolate_specific(needed, account)
+            return utils.isolate_specific(needed, account)
 
     """
     Coinbase Pro: get_account_history
@@ -1105,12 +1040,12 @@ class APIInterface:
             if products is None:
                 raise ValueError("Specified market not found")
 
-            products = self.__rename_to(renames, products)
+            products = utils.rename_to(renames, products)
             products["min_price"] = 0
             # These don't really exist on this exchange
             products["max_price"] = -1
             products["max_orders"] = -1
-            return self.__isolate_specific(needed, products)
+            return utils.isolate_specific(needed, products)
         elif self.__exchange_name == "binance":
             """
             Optimally we'll just remove the filter section and make the returns accurate

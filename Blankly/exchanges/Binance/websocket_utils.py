@@ -17,7 +17,7 @@
 """
 
 import time
-
+import Blankly.utils.utils as utils
 
 def switch_type(stream):
     if stream == "trade":
@@ -31,5 +31,52 @@ def trade(message):
 
 
 def trade_interface(message):
-    # TODO add trade interface abstraction here
-    return message
+    """
+    Homogenizing with coinbase's return:
+    {'type': 'ticker', 'sequence': 24587251151, 'product_id': 'BTC-USD', 'price': '56178.52', 'open_24h': '56881.78',
+    'volume_24h': '17606.23228984', 'low_24h': '55288', 'high_24h': '58400', 'volume_30d': '506611.70878868',
+    'best_bid': '56171.12', 'best_ask': '56178.53', 'side': 'sell', 'time': 1620331254.43236, 'trade_id': 165659167,
+    'last_size': '0.04'}
+
+    Response from trade streams
+    {
+        'e': 'trade',  # Event Type
+        'E': 1619149864634,  # Event time
+        's': 'BTCUSDT', # Symbol
+        't': 787178035,  # Trade ID
+        'p': '50322.05000000',  # Price
+        'q': '0.00577200',  # Quantity
+        'b': 5644954701,  # Buyer order id
+        'a': 5644954632,  # Seller order id
+        'T': 1619149864634,  # Trade time
+        'm': False,  # Is the buyer the market maker?
+        'M': True  # Ignore
+    }
+
+    Similar ticks with coinbase pro
+    {
+        'type': 'ticker',
+        'product_id': 'BTC-USD',
+        'price': '50141.55',
+        'time': 1619286924.397969,
+        'trade_id': 160775277,
+    }
+    """
+    renames = [
+        ["e", "type"],
+        ["s", "product_id"],
+        ["p", "price"],
+        ["T", "time"],
+        ["t", "trade_id"],
+    ]
+    message = utils.rename_to(renames, message)
+    needed = [
+        ["type", str],
+        ["product_id", str],
+        ["price", float],
+        ["time", int],
+        ["trade_id", int]
+    ]
+    print(message)
+    return utils.isolate_specific(needed, message)
+

@@ -97,31 +97,6 @@ class Tickers(IExchangeWebsocket):
 
     def read_websocket(self):
         # Main thread to sit here and run
-        """
-        Response from trade streams
-        {
-            'e': 'trade',  # Event Type
-            'E': 1619149864634,  # Event time
-            's': 'BTCUSDT', # Symbol
-            't': 787178035,  # Trade ID
-            'p': '50322.05000000',  # Price
-            'q': '0.00577200',  # Quantity
-            'b': 5644954701,  # Buyer order id
-            'a': 5644954632,  # Seller order id
-            'T': 1619149864634,  # Trade time
-            'm': False,  # Is the buyer the market maker?
-            'M': True  # Ignore
-        }
-
-        Similar ticks with coinbase pro
-        {
-            'type': 'ticker',
-            'product_id': 'BTC-USD',
-            'price': '50141.55',
-            'time': 1619286924.397969,
-            'trade_id': 160775277,
-        }
-        """
         self.ws.run_forever()
         # This repeats the close behavior just in case something happens
 
