@@ -23,6 +23,22 @@ import Blankly.utils.utils as utils
 def switch_type(stream):
     if stream == "trade":
         return trade, trade_interface
+    elif stream == "depth":
+        return depth, depth_interface
+    else:
+        return no_callback, no_callback
+
+
+def no_callback(message):
+    return message
+
+
+def depth(message):
+    return message
+
+
+def depth_interface(message):
+    return message
 
 
 def trade(message):

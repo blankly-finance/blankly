@@ -58,6 +58,9 @@ class API:
                                 'X-MBX-APIKEY': self.api_key.encode('utf-8')})
         return session
 
+    # TODO implement a static download for the orderbook:
+    #  https://api.binance.com/api/v3/depth?symbol=BNBBTC&limit=1000
+
     def _send_request(self, method, url, signed, params=None, data=None):
         if not params:
             params = OrderedDict()

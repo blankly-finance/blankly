@@ -94,7 +94,8 @@ def read_auth_cache(exchange, name=None):
     global auth_cache
     if exchange in auth_cache:
         if name is None:
-            return list(auth_cache[exchange])[0]
+            first_key = list(auth_cache[exchange])[0]
+            return auth_cache[exchange][first_key]
         else:
             return auth_cache[exchange][name]
     else:

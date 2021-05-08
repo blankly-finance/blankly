@@ -36,6 +36,8 @@ class Coinbase_Pro(Exchange):
             # Create the authenticated object
             self.__calls = Coinbase_Pro_API(auth[0], auth[1], auth[2])
 
+        Blankly.auth_constructor.write_auth_cache("coinbase_pro", defined_name, self.__calls)
+
         self.construct_interface(self.__calls)
 
     """

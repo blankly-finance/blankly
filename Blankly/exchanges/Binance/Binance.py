@@ -40,6 +40,8 @@ class Binance(Exchange):
         self.__calls = Client(api_key=auth[0], api_secret=auth[1],
                               tld=self.get_preferences()["settings"]["binance_tld"])
 
+        Blankly.auth_constructor.write_auth_cache("binance", defined_name, self.__calls)
+
         # Create the authenticated object
         self.Interface = Interface("binance", self.__calls)
 

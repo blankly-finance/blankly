@@ -16,11 +16,32 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import Blankly.utils.utils
+import Blankly.auth_constructor
+import requests
 
 from Blankly.exchanges.Coinbase_Pro.orderbook_websocket import OrderBook as Coinbase_Pro_Orderbook
 from Blankly.exchanges.Binance.Binance_Websocket import Tickers as Binance_Orderbook
 
 from Blankly.exchanges.websocket_manager import WebsocketManager
+
+
+def binance_snapshot(symbol, limit):
+    # TODO this should be using the REST set that Arun puts in
+    params = {
+        "symbol": symbol,
+        "limit": limit
+    }
+    response = requests.get("https://api.binance.com/api/v3/depth", params=params).json()
+    buys_response = response['bids']
+    sells_response = response['asks']
+    buys = {}
+    sells = {}
+    for i in buys_response:
+        buys[float(i[0])] = float(i[1])
+    for i in sells_response:
+        sells[float(i[0])] = float(i[1])
+
+    return buys, sells
 
 
 class OrderbookManger(WebsocketManager):
@@ -79,6 +100,7 @@ class OrderbookManger(WebsocketManager):
             if currency_id is None:
                 currency_id = self.__default_currency
 
+            # Lower the keys to subscribe
             specific_currency_id = Blankly.utils.to_exchange_coin_id(currency_id, "binance").lower()
             websocket = Binance_Orderbook(specific_currency_id, "depth")
             websocket.append_callback(self.binance_update)
@@ -87,10 +109,11 @@ class OrderbookManger(WebsocketManager):
             specific_currency_id = specific_currency_id.upper()
             self.__websockets['binance'][specific_currency_id] = websocket
             self.__websockets_callbacks['binance'][specific_currency_id] = callback
-            # TODO need an API object to get the depth snapshot
+
+            buys, sells = binance_snapshot(specific_currency_id, 1000)
             self.__orderbooks['binance'][specific_currency_id] = {
-                "buy": {},
-                "sell": {}
+                "buy": buys,
+                "sell": sells
             }
 
         else:
@@ -189,4 +212,3 @@ class OrderbookManger(WebsocketManager):
 
         # if override_exchange == "coinbase_pro":
         self.__websockets_callbacks[override_exchange][override_currency_id] = callback_object
-
