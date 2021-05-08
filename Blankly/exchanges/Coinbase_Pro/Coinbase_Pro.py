@@ -25,7 +25,7 @@ class Coinbase_Pro(Exchange):
     def __init__(self, portfolio_name=None, auth_path="Keys.json", preferences_path=None):
         # Load the auth from the keys file
         auth, defined_name = Blankly.auth_constructor.load_auth_coinbase_pro(auth_path, portfolio_name)
-        # self.__calls = API(auth[0], auth[1], auth[2])
+
         # Giving the preferences path as none allows us to create a default
         Exchange.__init__(self, "coinbase_pro", defined_name, preferences_path)
 

@@ -19,6 +19,7 @@
 import time
 import Blankly.utils.utils as utils
 
+
 def switch_type(stream):
     if stream == "trade":
         return trade, trade_interface
@@ -77,6 +78,5 @@ def trade_interface(message):
         ["time", int],
         ["trade_id", int]
     ]
-    print(message)
     return utils.isolate_specific(needed, message)
 

@@ -29,25 +29,34 @@ def load_json(keys_file):
                                 "directory!")
 
 
+auth_cache = {}
+
+
 def load_auth_coinbase_pro(keys_file, name):
-    auth_object = load_json(keys_file)
-    exchange_keys = auth_object["coinbase_pro"]
-    if name is None:
-        name, portfolio = __determine_first_key(exchange_keys)
-    else:
-        portfolio = exchange_keys[name]
-    # TODO, add this new auth creation to the binance method
+    exchange_type = "coinbase_pro"
+    name, portfolio = __load_auth(keys_file, name, exchange_type)
+
     return [portfolio["API_KEY"], portfolio["API_SECRET"], portfolio["API_PASS"]], name
 
 
 def load_auth_binance(keys_file, name):
+    exchange_type = "binance"
+    name, portfolio = __load_auth(keys_file, name, exchange_type)
+
+    return [portfolio["API_KEY"], portfolio["API_SECRET"]], name
+
+
+def __load_auth(keys_file, name, exchange_type):
     auth_object = load_json(keys_file)
-    exchange_keys = auth_object["binance"]
+    exchange_keys = auth_object[exchange_type]
     if name is None:
         name, portfolio = __determine_first_key(exchange_keys)
     else:
         portfolio = exchange_keys[name]
-    return [portfolio["API_KEY"], portfolio["API_SECRET"]], name
+
+    if exchange_type not in auth_cache:
+        auth_cache[exchange_type] = {}
+    return name, portfolio
 
 
 def __determine_first_key(exchange_keys):
@@ -59,3 +68,34 @@ def __determine_first_key(exchange_keys):
     portfolio = exchange_keys[first_key]
     name = first_key
     return name, portfolio
+
+
+def write_auth_cache(exchange, name, auth):
+    """
+    Write an authenticated object into the global authentication cache. This can be used by other pieces of code
+    in the module to pull from exchanges at points they need the API
+
+    Args:
+        exchange: (str) Exchange name ex: "coinbase_pro" or "binance"
+        name: (str) Portfolio name ex: "my cool portfolio"
+        auth: (obj) Authenticated object to store & recover.
+    """
+    global auth_cache
+    if exchange not in auth_cache:
+        auth_cache[exchange] = {}
+
+    auth_cache[exchange][name] = auth
+
+
+def read_auth_cache(exchange, name=None):
+    """
+    Pull an authenticated object on an exchange. This can be used for API calls anywhere in the code.
+    """
+    global auth_cache
+    if exchange in auth_cache:
+        if name is None:
+            return list(auth_cache[exchange])[0]
+        else:
+            return auth_cache[exchange][name]
+    else:
+        raise KeyError("Request exchange invalid or does not exist")

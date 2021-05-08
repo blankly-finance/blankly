@@ -228,6 +228,8 @@ def isolate_specific(needed, compare_dictionary):
     else:
         # If there is, pull them together
         compare_dictionary["exchange_specific"] = {**compare_dictionary["exchange_specific"], **exchange_specific}
+
+        # The tag could be in the exchange_specific tag, meaning the actual tag will get deleted later, pull it out
         if "exchange_specific" in exchange_specific:
             del exchange_specific["exchange_specific"]
     # Pull the specific keys out
