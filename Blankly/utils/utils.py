@@ -228,6 +228,8 @@ def isolate_specific(needed, compare_dictionary):
     else:
         # If there is, pull them together
         compare_dictionary["exchange_specific"] = {**compare_dictionary["exchange_specific"], **exchange_specific}
+        if "exchange_specific" in exchange_specific:
+            del exchange_specific["exchange_specific"]
     # Pull the specific keys out
     for k, v in exchange_specific.items():
         del compare_dictionary[k]
