@@ -55,17 +55,19 @@ class Scheduler:
         """
         This function is used with the scheduler decorator
         """
+        base_time = time.time()
         while True:
             if self.__stop:
                 break
             try:
                 func()
+                base_time = base_time + interval
             except Exception:
                 traceback.print_exc()
 
             # The downside of this is that it keeps the thread running while waiting to stop
             # It's dependent on delay if its more efficient to just check more
-            time.sleep(interval)
+            time.sleep(base_time - time.time())
 
     def stop_scheduler(self):
         self.__stop = True

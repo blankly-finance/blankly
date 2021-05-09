@@ -21,6 +21,8 @@ import Constants
 """
 -------Deprecated-------
 """
+
+
 class ProfitManager:
     def __init__(self, currencyType, ticker, exchanges=None, show=False):
         if exchanges is None:
@@ -40,10 +42,9 @@ class ProfitManager:
     """ This will fire when the attached ticker receives a new price update """
 
     def priceEvent(self, tick):
-        print("Tick")
         price = float(tick["price"])
         for i in range(len(self.__exchanges)):
-            if (self.__exchanges[i].getIfSold() is True):
+            if self.__exchanges[i].getIfSold() is True:
                 # If this one is sold, just forget about it
                 # TODO move this remove to the sell areas. This isn't done yet because it isn't nailed down
                 del self.__exchanges[i]
@@ -65,7 +66,8 @@ class ProfitManager:
             # Now check if the price has dropped from the sell min to almost loosing profit
             """ 
             This way of making sure it has to go past a minimum allows it to keep rising past 
-                                                        to emergency sell it has to be less than profitable, then less than the minimum sellable price minus half of that difference. This puts a buffer in that ensures slight price deviations won't mean it gets sold 
+            to emergency sell it has to be less than profitable, then less than the minimum sellable price minus half 
+            of that difference. This puts a buffer in that ensures slight price deviations won't mean it gets sold 
             """
             if self.__exchanges[i].getIfPastSellMin() and (profitableSellPrice < price < (
                     (profitableSellPrice + (profitableSellPrice * Constants.SELL_MIN)) - (
@@ -74,9 +76,7 @@ class ProfitManager:
                 print("Emergency selling self: " + str(self.__exchanges[i].get_purchase_id()))
                 print("Now have: " + str(LocalAccount.account["USD"]) + " USD")
                 print("and: " + str(LocalAccount.account["BTC-USD"]) + " BTC")
-            elif (profitableSellPrice < price < ((profitableSellPrice + (profitableSellPrice * Constants.SELL_MIN)) - ((
-                                                                                                                               profitableSellPrice + (
-                                                                                                                               profitableSellPrice * Constants.SELL_MIN)) - profitableSellPrice) / 2)) and (
+            elif (profitableSellPrice < price < ((profitableSellPrice + (profitableSellPrice * Constants.SELL_MIN)) - ((profitableSellPrice + (profitableSellPrice * Constants.SELL_MIN)) - profitableSellPrice) / 2)) and (
             not self.__exchanges[i].getIfPastSellMin()):
                 # Sell even if it hasn't gone very high and the price is looking down
                 if self.__utils.get_price_derivative(self.__ticker, Constants.EMERGENCY_SELL_SAMPLE) < 0:
