@@ -67,7 +67,10 @@ class Scheduler:
 
             # The downside of this is that it keeps the thread running while waiting to stop
             # It's dependent on delay if its more efficient to just check more
-            time.sleep(base_time - time.time())
+            offset = base_time - time.time()
+            if offset < 0:
+                offset = 0
+            time.sleep(offset)
 
     def stop_scheduler(self):
         self.__stop = True

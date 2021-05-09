@@ -26,4 +26,5 @@ from Blankly.exchanges.ticker_manager import TickerManager as TickerManager
 from Blankly.exchanges.orderbook_manager import OrderbookManger as OrderbookManager
 import Blankly.utils.utils as utils
 from Blankly.utils.scheduler import Scheduler
+import Blankly.analysis as analysis
 
