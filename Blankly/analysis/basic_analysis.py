@@ -38,6 +38,10 @@ def moving_average_set(data, depth) -> list:
         ma_list.insert(0, mean(data[needed_lists: needed_lists + depth]))
         needed_lists -= 1
 
+    difference = len(data) - len(ma_list)
+    while difference > 0:
+        ma_list.insert(0, data[difference-1])
+        difference = len(data) - len(ma_list)
     return ma_list
 
 

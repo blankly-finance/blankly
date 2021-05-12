@@ -65,3 +65,6 @@ class Binance(Exchange):
         """
         # TODO Populate this with useful information
         return self.Interface.get_fees()
+
+    def get_direct_calls(self) -> Client:
+        return self.__calls

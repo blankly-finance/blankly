@@ -926,6 +926,7 @@ class APIInterface:
             close_iso = utils.ISO8601_from_epoch(epoch_stop)
             history_block = history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso,
                                                                               granularity)
+            history_block.sort(key=lambda x: x[0])
             return pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 
         elif self.__exchange_name == "binance":

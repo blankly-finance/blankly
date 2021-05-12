@@ -19,9 +19,10 @@ import Blankly
 from Blankly.exchanges.IExchange import IExchange
 from Blankly.API_Interface import APIInterface as Interface
 import time
+import abc
 
 
-class Exchange(IExchange):
+class Exchange(IExchange, abc.ABC):
 
     def __init__(self, exchange_type, exchange_name, preferences_path):
         self.__name = exchange_name  # my_cool_portfolio
@@ -43,6 +44,12 @@ class Exchange(IExchange):
 
     def construct_interface(self, calls):
         self.Interface = Interface(self.__type, calls)
+
+    def get_interface(self) -> Interface:
+        """
+        Get the the authenticated interface for the object. This will provide authenticated API calls.
+        """
+        return self.Interface
 
     def start_models(self, coin_id=None):
         """
@@ -120,4 +127,8 @@ class Exchange(IExchange):
                     self.Interface)
 
     def get_currency_state(self, currency):
+        pass
+
+    @abc.abstractmethod
+    def get_direct_calls(self):
         pass
