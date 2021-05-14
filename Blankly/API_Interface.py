@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import secrets
 import time
 import warnings
 import pandas as pd
@@ -392,13 +392,31 @@ class APIInterface:
                 'product_id': product_id,
                 'type': 'market'
             }
-            response = self.__calls.place_market_order(product_id, side, funds=funds)
-            try:
-                response = response["message"]
+            if not self.__paper_trading:
+                response = self.__calls.place_market_order(product_id, side, funds=funds)
+                response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
+            else:
+                print("paper trading")
+                price = self.get_price(product_id)
+                # Create coinbase pro-like id
+                coinbase_pro_id = secrets.token_hex(nbytes=16)
+                coinbase_pro_id = coinbase_pro_id[:8] + '-' + coinbase_pro_id[8:]
+                coinbase_pro_id = coinbase_pro_id[:13] + '-' + coinbase_pro_id[13:]
+                coinbase_pro_id = coinbase_pro_id[:18] + '-' + coinbase_pro_id[18:]
+                coinbase_pro_id = coinbase_pro_id[:23] + '-' + coinbase_pro_id[23:]
+                response = {
+                    "product_id": coinbase_pro_id,
+                    "id": 1,
+                    "created_at": time.time(),
+                    "price": price,
+                    "size": float(funds)/price,
+                    "status": "done",
+                    "time_in_force": "GTC",
+                    "type": "market",
+                    "side": side
+                }
+            if "message" in response:
                 raise InvalidOrder("Invalid Order: " + response)
-            except KeyError:
-                pass
-            response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
             response = utils.isolate_specific(needed, response)
         elif self.__exchange_name == "binance":
             """
