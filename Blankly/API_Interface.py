@@ -32,6 +32,7 @@ class APIInterface:
         # Reload user preferences here
         self.__user_preferences = utils.load_user_preferences()
         self.__paper_trading = self.__user_preferences["settings"]["paper_trade"]
+        self.__paper_trade_orders = []
         # TODO, improve creation of its own properties
         self.__exchange_properties = None
         # Some exchanges like binance will not return a value of 0.00 if there is no balance
@@ -359,31 +360,28 @@ class APIInterface:
             ["product_id", str],
             ["id", str],
             ["created_at", float],
-            ["price", float],
-            ["size", float],
+            ["funds", float],
             ["status", str],
-            ["time_in_force", str],
             ["type", str],
             ["side", str]
         ]
         if self.__exchange_name == "coinbase_pro":
             """
             {
-                "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
-                "price": "0.10000000",
-                "size": "0.01000000",
-                "product_id": "BTC-USD",
-                "side": "buy",
-                "stp": "dc",
-                "type": "limit",
-                "time_in_force": "GTC",
-                "post_only": false,
-                "created_at": "2016-12-08T20:02:28.53864Z",
-                "fill_fees": "0.0000000000000000",
-                "filled_size": "0.00000000",
-                "executed_value": "0.0000000000000000",
-                "status": "pending",
-                "settled": false
+                'id': '8d3a6ea5-8d6d-4486-9c98-b266bae9a67c', 
+                'product_id': 'BTC-USD', 
+                'side': 'buy', 
+                'stp': 'dc', 
+                'funds': '39.92015968', 
+                'specified_funds': '40', 
+                'type': 'market', 
+                'post_only': False, 
+                'created_at': 1621015423.292914, 
+                'fill_fees': '0', 
+                'filled_size': '0', 
+                'executed_value': '0', 
+                'status': 'pending', 
+                'settled': False
             }
             """
             order = {
@@ -395,9 +393,16 @@ class APIInterface:
             if not self.__paper_trading:
                 response = self.__calls.place_market_order(product_id, side, funds=funds)
                 response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
+                print("actual response:")
+                print(response)
+                print("---------")
             else:
                 print("paper trading")
+                creation_time = time.time()
                 price = self.get_price(product_id)
+                min_funds = self.get_market_limits(product_id)
+                if funds < min_funds:
+                    raise InvalidOrder("Funds must be higher than: " + str(min_funds))
                 # Create coinbase pro-like id
                 coinbase_pro_id = secrets.token_hex(nbytes=16)
                 coinbase_pro_id = coinbase_pro_id[:8] + '-' + coinbase_pro_id[8:]
@@ -405,16 +410,32 @@ class APIInterface:
                 coinbase_pro_id = coinbase_pro_id[:18] + '-' + coinbase_pro_id[18:]
                 coinbase_pro_id = coinbase_pro_id[:23] + '-' + coinbase_pro_id[23:]
                 response = {
-                    "product_id": coinbase_pro_id,
-                    "id": 1,
+                    "id": coinbase_pro_id,
+                    "product_id": product_id,
                     "created_at": time.time(),
-                    "price": price,
-                    "size": float(funds)/price,
-                    "status": "done",
-                    "time_in_force": "GTC",
+                    "side": side,
+                    "funds": funds-funds*(self.__exchange_properties["maker_fee_rate"]),
+                    "specified_funds": funds,
                     "type": "market",
-                    "side": side
+                    "status": "pending",
                 }
+                self.__paper_trade_orders.append({
+                    'id': coinbase_pro_id,
+                    'side': side,
+                    'type': 'market',
+                    'status': 'done',
+                    'product_id': product_id,
+                    'funds': funds-funds*(self.__exchange_properties["maker_fee_rate"]),
+                    'specified_funds': funds,
+                    'post_only': False,
+                    'created_at': creation_time,
+                    'done_at': time.time(),
+                    'done_reason': 'filled',
+                    'fill_fees': funds*(self.__exchange_properties["maker_fee_rate"]),
+                    'filled_size': funds-funds*(self.__exchange_properties["maker_fee_rate"])/price,
+                    'executed_value': funds-funds*(self.__exchange_properties["maker_fee_rate"]),
+                    'settled': True
+                })
             if "message" in response:
                 raise InvalidOrder("Invalid Order: " + response)
             response = utils.isolate_specific(needed, response)
@@ -715,18 +736,26 @@ class APIInterface:
                 }
             ]
             """
-            if product_id is None:
-                orders = list(self.__calls.get_orders())
+            if not self.__paper_trading:
+                if product_id is None:
+                    orders = list(self.__calls.get_orders())
+                else:
+                    orders = list(self.__calls.get_orders(product_id, kwargs=kwargs))
+
+                if orders[0] == 'message':
+                    raise InvalidOrder("Invalid Order: " + str(orders))
+
+                for i in range(len(orders)):
+                    orders[i] = utils.isolate_specific(needed, orders[i])
+
+                return orders
             else:
-                orders = list(self.__calls.get_orders(product_id, kwargs=kwargs))
+                open_orders = []
+                for i in self.__paper_trade_orders:
+                    if i["status"] == "open":
+                        open_orders.append(i)
 
-            if orders[0] == 'message':
-                raise InvalidOrder("Invalid Order: " + str(orders))
-
-            for i in range(len(orders)):
-                orders[i] = utils.isolate_specific(needed, orders[i])
-
-            return orders
+                return open_orders
         elif self.__exchange_name == "binance":
             """
             [
@@ -795,6 +824,25 @@ class APIInterface:
                 "stp": "dc",
                 "time_in_force": "GTC",
                 "type": "limit"
+            }
+            This is the response for a market order
+            {
+                'id': '8d3a6ea5-8d6d-4486-9c98-b266bae9a67c', 
+                'side': 'buy', 
+                'type': 'market', 
+                'status': 'done',
+                'product_id': 'BTC-USD',
+                'profile_id': '4107a8cc-9fee-4ed4-b609-d87011675ed5',
+                'funds': '39.9201596800000000', 
+                'specified_funds': '40.0000000000000000',
+                'post_only': False, 
+                'created_at': '2021-05-14T18:03:43.292914Z',
+                'done_at': '2021-05-14T18:03:43.297Z', 
+                'done_reason': 'filled',
+                'fill_fees': '0.0798400768200000', 
+                'filled_size': '0.00078825',
+                'executed_value': '39.9200384100000000', 
+                'settled': True
             }
             """
             response = self.__calls.get_order(order_id)
