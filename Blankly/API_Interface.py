@@ -392,6 +392,8 @@ class APIInterface:
             }
             if not self.__paper_trading:
                 response = self.__calls.place_market_order(product_id, side, funds=funds)
+                if "message" in response:
+                    raise InvalidOrder("Invalid Order: " + response["message"])
                 response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
                 print("actual response:")
                 print(response)
@@ -400,9 +402,9 @@ class APIInterface:
                 print("paper trading")
                 creation_time = time.time()
                 price = self.get_price(product_id)
-                min_funds = self.get_market_limits(product_id)
+                min_funds = float(self.get_market_limits(product_id)["exchange_specific"]["min_market_funds"])
                 if funds < min_funds:
-                    raise InvalidOrder("Funds must be higher than: " + str(min_funds))
+                    raise InvalidOrder("Invalid Order: funds is too small: " + str(min_funds))
                 # Create coinbase pro-like id
                 coinbase_pro_id = secrets.token_hex(nbytes=16)
                 coinbase_pro_id = coinbase_pro_id[:8] + '-' + coinbase_pro_id[8:]
@@ -414,7 +416,7 @@ class APIInterface:
                     "product_id": product_id,
                     "created_at": time.time(),
                     "side": side,
-                    "funds": funds-funds*(self.__exchange_properties["maker_fee_rate"]),
+                    "funds": funds-funds*float((self.__exchange_properties["maker_fee_rate"])),
                     "specified_funds": funds,
                     "type": "market",
                     "status": "pending",
@@ -425,19 +427,17 @@ class APIInterface:
                     'type': 'market',
                     'status': 'done',
                     'product_id': product_id,
-                    'funds': funds-funds*(self.__exchange_properties["maker_fee_rate"]),
+                    'funds': funds-funds*float((self.__exchange_properties["maker_fee_rate"])),
                     'specified_funds': funds,
                     'post_only': False,
                     'created_at': creation_time,
                     'done_at': time.time(),
                     'done_reason': 'filled',
-                    'fill_fees': funds*(self.__exchange_properties["maker_fee_rate"]),
-                    'filled_size': funds-funds*(self.__exchange_properties["maker_fee_rate"])/price,
-                    'executed_value': funds-funds*(self.__exchange_properties["maker_fee_rate"]),
+                    'fill_fees': funds*float((self.__exchange_properties["maker_fee_rate"])),
+                    'filled_size': funds-funds*float((self.__exchange_properties["maker_fee_rate"]))/price,
+                    'executed_value': funds-funds*float((self.__exchange_properties["maker_fee_rate"])),
                     'settled': True
                 })
-            if "message" in response:
-                raise InvalidOrder("Invalid Order: " + response)
             response = utils.isolate_specific(needed, response)
         elif self.__exchange_name == "binance":
             """
@@ -800,11 +800,13 @@ class APIInterface:
     def get_order(self, currency_id, order_id) -> dict:
         needed = [
             ["id", str],
+            ["product_id", str],
             ["price", float],
             ["size", float],
             ["type", str],
             ["side", str],
-            ["status", str]
+            ["status", str],
+            ["funds", float]
         ]
         if self.__exchange_name == "coinbase_pro":
             """
@@ -845,8 +847,14 @@ class APIInterface:
                 'settled': True
             }
             """
-            response = self.__calls.get_order(order_id)
-            return utils.isolate_specific(needed, response)
+            if not self.__paper_trading:
+                response = self.__calls.get_order(order_id)
+                return utils.isolate_specific(needed, response)
+            else:
+                for i in self.__paper_trade_orders:
+                    if i["id"] == order_id:
+                        return i
+
         elif self.__exchange_name == "binance":
             """
             :param symbol: required
