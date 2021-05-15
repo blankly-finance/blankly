@@ -1,0 +1,9 @@
+{
+  "settings": {
+    "account_update_time": 5000,
+    "paper_trade": false,
+    "use_sandbox": true,
+    "binance_tld": "us",
+    "websocket_buffer_size": 10000
+  }
+}
