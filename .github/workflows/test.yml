@@ -30,13 +30,13 @@ jobs:
 
     - name: Inject Keys
       run: |
+        CBP_API_KEY = ${{ secrets.CBP_API_KEY }}
+        CBP_API_SECRET = ${{ secrets.CBP_API_SECRET }}
+        CBP_API_PASS = ${{ secrets.CBP_API_PASS }}
+
         keys_file = $(eval "echo \"$(cat ./Blankly/utils/tests/keys_template.json)\"")
         echo $keys_file >> ./Keys.json
       shell: bash
-      with:
-        CBP_API_KEY: ${{ secrets.CBP_API_KEY }}
-        CBP_API_SECRET: ${{ secrets.CBP_API_SECRET }}
-        CBP_API_PASS: ${{ secrets.CBP_API_PASS }}
 
 
     - name: Run test file
