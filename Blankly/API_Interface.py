@@ -345,14 +345,13 @@ class APIInterface:
                 })
             return filled_dict_list
 
-    def market_order(self, product_id, side, funds, **kwargs) -> MarketOrder:
+    def market_order(self, product_id, side, funds) -> MarketOrder:
         """
         Used for buying or selling market orders
         Args:
             product_id: currency to buy
             side: buy/sell
             funds: desired amount of quote currency to use
-            kwargs: specific arguments that may be used by each exchange, if exchange is known
         """
         order = None
         response = None
@@ -396,35 +395,36 @@ class APIInterface:
                     raise InvalidOrder("Invalid Order: " + response["message"])
                 response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
             else:
-                print("paper trading")
+                print("Paper trading...")
                 creation_time = time.time()
                 price = self.get_price(product_id)
                 min_funds = float(self.get_market_limits(product_id)["exchange_specific"]["min_market_funds"])
                 if funds < min_funds:
-                    raise InvalidOrder("Invalid Order: funds is too small: " + str(min_funds))
+                    raise InvalidOrder("Invalid Order: funds is too small. Minimum is: " + str(min_funds))
                 # Create coinbase pro-like id
                 coinbase_pro_id = secrets.token_hex(nbytes=16)
                 coinbase_pro_id = coinbase_pro_id[:8] + '-' + coinbase_pro_id[8:]
                 coinbase_pro_id = coinbase_pro_id[:13] + '-' + coinbase_pro_id[13:]
                 coinbase_pro_id = coinbase_pro_id[:18] + '-' + coinbase_pro_id[18:]
                 coinbase_pro_id = coinbase_pro_id[:23] + '-' + coinbase_pro_id[23:]
-                self.__paper_trade_orders.append({
-                    'id': coinbase_pro_id,
-                    'side': side,
+                response = {
+                    'id': str(coinbase_pro_id),
+                    'side': str(side),
                     'type': 'market',
                     'status': 'done',
-                    'product_id': product_id,
-                    'funds': funds-funds*float((self.__exchange_properties["maker_fee_rate"])),
-                    'specified_funds': funds,
-                    'post_only': False,
-                    'created_at': creation_time,
-                    'done_at': time.time(),
+                    'product_id': str(product_id),
+                    'funds': str(funds-funds*float((self.__exchange_properties["maker_fee_rate"]))),
+                    'specified_funds': str(funds),
+                    'post_only': 'false',
+                    'created_at': str(creation_time),
+                    'done_at': str(time.time()),
                     'done_reason': 'filled',
-                    'fill_fees': funds*float((self.__exchange_properties["maker_fee_rate"])),
-                    'filled_size': funds-funds*float((self.__exchange_properties["maker_fee_rate"]))/price,
-                    'executed_value': funds-funds*float((self.__exchange_properties["maker_fee_rate"])),
-                    'settled': True
-                })
+                    'fill_fees': str(funds*float((self.__exchange_properties["maker_fee_rate"]))),
+                    'filled_size': str(funds-funds*float((self.__exchange_properties["maker_fee_rate"]))/price),
+                    'executed_value': str(funds-funds*float((self.__exchange_properties["maker_fee_rate"]))),
+                    'settled': 'true'
+                }
+                self.__paper_trade_orders.append(response)
             response = utils.isolate_specific(needed, response)
         elif self.__exchange_name == "binance":
             """
@@ -483,7 +483,7 @@ class APIInterface:
         needed = [
             ["product_id", str],
             ["id", str],
-            ["created_at", int],
+            ["created_at", float],
             ["price", float],
             ["size", float],
             ["status", str],
@@ -518,14 +518,43 @@ class APIInterface:
                 'product_id': product_id,
                 'type': 'limit'
             }
-            response = self.__calls.place_limit_order(product_id, side, price, size=size)
-            try:
-                response = response["message"]
-                raise InvalidOrder("Invalid Order: " + response)
-            except KeyError:
-                pass
+            if not self.__paper_trading:
+                response = self.__calls.place_limit_order(product_id, side, price, size=size)
+                if "message" in response:
+                    raise InvalidOrder("Invalid Order: " + response["message"])
+                response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
+            else:
+                print("Paper trading...")
+                creation_time = time.time()
+                price = self.get_price(product_id)
+                min_base = float(self.get_market_limits(product_id)["base_min_size"])
+                if size < min_base:
+                    raise InvalidOrder("Invalid Order: Order quantity is too small. Minimum is: " + str(min_base))
+                # Create coinbase pro-like id
+                coinbase_pro_id = secrets.token_hex(nbytes=16)
+                coinbase_pro_id = coinbase_pro_id[:8] + '-' + coinbase_pro_id[8:]
+                coinbase_pro_id = coinbase_pro_id[:13] + '-' + coinbase_pro_id[13:]
+                coinbase_pro_id = coinbase_pro_id[:18] + '-' + coinbase_pro_id[18:]
+                coinbase_pro_id = coinbase_pro_id[:23] + '-' + coinbase_pro_id[23:]
+                response = {
+                    'id': str(coinbase_pro_id),
+                    'price': str(price),
+                    'size': str(size),
+                    'product_id': str(product_id),
+                    'side': str(side),
+                    'stp': 'dc',
+                    'type': 'limit',
+                    "time_in_force": "GTC",
+                    'post_only': 'false',
+                    'created_at': str(creation_time),
+                    "fill_fees": "0.0000000000000000",
+                    "filled_size": "0.00000000",
+                    "executed_value": "0.0000000000000000",
+                    'status': 'pending',
+                    'settled': 'true'
+                }
+                self.__paper_trade_orders.append(response)
 
-            response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
             response = utils.isolate_specific(needed, response)
         elif self.__exchange_name == "binance":
             """Send in a new limit order
@@ -729,6 +758,8 @@ class APIInterface:
                 else:
                     orders = list(self.__calls.get_orders(product_id, kwargs=kwargs))
 
+                if len(orders) == 0:
+                    return []
                 if orders[0] == 'message':
                     raise InvalidOrder("Invalid Order: " + str(orders))
 

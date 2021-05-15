@@ -98,8 +98,6 @@ class BlanklyBot:
         """
         self.Ticker_Manager = Blankly.TickerManager(self.exchange_type, self.currency_pair)
         self.Orderbook_Manager = Blankly.OrderbookManager(self.exchange_type, self.currency_pair)
-
-        self.Interface.append_ticker_manager(self.Ticker_Manager)
         self.main(args)
 
     """
