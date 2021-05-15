@@ -1,0 +1,8 @@
+numpy
+sklearn
+scikit-learn
+zerorpc
+requests
+websocket-client
+pandas
+python-binance
