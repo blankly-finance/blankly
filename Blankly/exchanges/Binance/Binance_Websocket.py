@@ -38,7 +38,7 @@ class Tickers(IExchangeWebsocket):
         """
         self.__id = symbol
         self.__stream = stream
-        self.__logging_callback, self.__interface_callback = websocket_utils.switch_type(stream)
+        self.__logging_callback, self.__interface_callback, log_message = websocket_utils.switch_type(stream)
 
         # Initialize log file
         if log is not None:
@@ -46,9 +46,7 @@ class Tickers(IExchangeWebsocket):
             self.__filePath = log
             try:
                 self.__file = open(log, 'x+')
-                self.__file.write(
-                    "event_time,system_time,event_type,symbol,trade_id,price,quantity,buyer_order_id,seller_order_id,"
-                    "trade_time,buyer_is_maker\n")
+                self.__file.write(log_message)
             except FileExistsError:
                 self.__file = open(log, 'a')
         else:
@@ -109,16 +107,16 @@ class Tickers(IExchangeWebsocket):
             self.__most_recent_tick = message
             self.__ticker_feed.append(self.__most_recent_tick)
             # Run callbacks on message
-            interface_message = self.__interface_callback(message)
-            for i in self.__callbacks:
-                i(interface_message)
-
             if self.__log:
                 if self.__message_count % 100 == 0:
                     self.__file.close()
                     self.__file = open(self.__filePath, 'a')
                 line = self.__logging_callback(message)
                 self.__file.write(line)
+
+            interface_message = self.__interface_callback(message)
+            for i in self.__callbacks:
+                i(interface_message)
         except KeyError:
             try:
                 if message['result'] is None:

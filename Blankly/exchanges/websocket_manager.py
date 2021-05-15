@@ -157,8 +157,6 @@ class WebsocketManager(IExchangeWebsocket):
         Get the most recent tick received
         """
         currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
-        # if self.__default_exchange == "coinbase_pro":
         # TODO fix the returned value below, really this needs a class like in Binance that can create a callback to
         #  allow a pointer to be subbed in for whichever exchange/currency/websocket type is overridden
-        # to allow
         return self.__websockets[exchange][currency_id].get_most_recent_tick()
