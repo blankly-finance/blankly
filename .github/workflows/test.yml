@@ -28,9 +28,9 @@ jobs:
         cp ./Blankly/utils/tests/Settings.json .
     - shell: bash
       env: bash
-        CBP_API_KEY: ${{secrets.CBP_API_KEY}}
-        CBP_API_SECRET: ${{secrets.CBP_API_SECRET}}
-        CBP_API_PASS: ${{secrets.CBP_API_PASS}}
+        CBP_API_KEY: ${{ secrets.CBP_API_KEY }}
+        CBP_API_SECRET: ${{ secrets.CBP_API_SECRET }}
+        CBP_API_PASS: ${{ secrets.CBP_API_PASS }}
       run: |
         keys_file = $(eval "echo \"$(cat ./Blankly/utils/tests/keys_template.json)\"")
         echo $keys_file >> ./Keys.json

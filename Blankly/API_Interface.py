@@ -29,7 +29,6 @@ class APIInterface:
     def __init__(self, exchange_name, authenticated_API):
         self.__exchange_name = exchange_name
         self.__calls = authenticated_API
-        self.__ticker_manager = None
         # Reload user preferences here
         self.__user_preferences = utils.load_user_preferences()
         self.__paper_trading = self.__user_preferences["settings"]["paper_trade"]
@@ -67,8 +66,8 @@ class APIInterface:
                 base_assets.append(i["baseAsset"])
             self.__available_currencies = base_assets
 
-    def append_ticker_manager(self, ticker_manager):
-        self.__ticker_manager = ticker_manager
+    def __override_paper_trading(self, value):
+        self.__paper_trading = bool(value)
 
     def get_calls(self):
         """
