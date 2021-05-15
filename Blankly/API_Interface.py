@@ -18,6 +18,7 @@
 import time
 import warnings
 import pandas as pd
+import threading
 import Blankly.utils.utils as utils
 import Blankly.utils.paper_trading.utils as paper_trade
 from Blankly.utils.exceptions import InvalidOrder
@@ -38,6 +39,30 @@ class APIInterface:
         # Some exchanges like binance will not return a value of 0.00 if there is no balance
         self.__available_currencies = {}
         self.__init_exchange__()
+
+    def start_paper_trade_watchdog(self):
+        if self.__paper_trading:
+            # TODO, this process could use variable update time/websocket usage, poll time and a variety of settings
+            #  to create a robust trading system
+            self.__thread = threading.Thread(target=self.__paper_trade_watchdog())
+            self.__thread.start()
+        else:
+            warnings.warn("Paper trading is not enabled - skipping start")
+
+    def __paper_trade_watchdog(self):
+        """
+        Internal order watching system
+        """
+        time.sleep(10)
+        used_currencies = []
+        for i in self.__paper_trade_orders:
+            if i["product_id"] not in used_currencies:
+                used_currencies.append(i['product_id'])
+        prices = {}
+
+        for i in used_currencies:
+            prices[i] = self.get_price(i)
+            time.sleep(.2)
 
     def __init_exchange__(self):
         if self.__exchange_name == "coinbase_pro":
