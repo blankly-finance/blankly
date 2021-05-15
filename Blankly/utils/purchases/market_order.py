@@ -1,5 +1,5 @@
 """
-    Class to manage a purchase lifecycle - a way to determine individual information about each buy and sell
+    Class to manage a market order lifecycle - a way to determine individual information about each buy and sell
     Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
@@ -15,9 +15,10 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from Blankly.utils.purchases.order import Order
 
 
-class Purchase:
+class MarketOrder(Order):
     """
     (Buying or selling (string), amount in currency (BTC/XLM), ticker object (so we can get time and value),
     limit if there is one)
@@ -27,47 +28,32 @@ class Purchase:
         """
         Coinbase Response:
         {
-            "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
-            "price": "0.10000000",
-            "size": "0.01000000",
-            "product_id": "BTC-USD",
-            "side": "buy",
-            "stp": "dc",
-            "type": "limit",
-            "time_in_force": "GTC",
-            "post_only": false,
-            "created_at": "2016-12-08T20:02:28.53864Z",
-            "fill_fees": "0.0000000000000000",
-            "filled_size": "0.00000000",
-            "executed_value": "0.0000000000000000",
-            "status": "pending",
-            "settled": false
+            'id': '5955cd5d-a78c-4c47-9741-1f7f20ac7f95',
+            'product_id': 'BTC-USD',
+            'side': 'buy',
+            'stp': 'dc',
+            'funds': '10.97804391',
+            'specified_funds': '11',
+            'type': 'market',
+            'post_only': False,
+            'created_at': 1621039946.320796,
+            'fill_fees': '0',
+            'filled_size': '0',
+            'executed_value': '0',
+            'status': 'pending',
+            'settled': False
         }
 
         Binance Response:
-        {
-            "symbol": "BTCUSDT",
-            "orderId": 28,
-            "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
-            "transactTime": 1507725176595,
-            "price": "0.00000000",
-            "origQty": "10.00000000",
-            "executedQty": "10.00000000",
-            "status": "FILLED",
-            "timeInForce": "GTC",
-            "type": "MARKET",
-            "side": "SELL"
-        }
+        TODO add this
 
         Guaranteed:
         needed = [
             ["product_id", str],
             ["id", str],
             ["created_at", float],
-            ["price", float],
-            ["size", float],
+            ["funds", float],
             ["status", str],
-            ["time_in_force", str],
             ["type", str],
             ["side", str]
         ]
@@ -77,68 +63,13 @@ class Purchase:
         self.__order = order
         self.__response = response
         self.__homogenized_result = None
+        super().__init__(self.__response, self.__order, self.Interface)
 
-    def get_response(self) -> dict:
+    def get_funds(self) -> float:
         """
-        Get the original but parsed response from the exchange.
+        Get the funds exchanged in a market order. This will include fees.
         """
-        return self.__response
-
-    def get_id(self) -> str:
-        """
-        Get the exchange-set order ID.
-        """
-        return self.__response["id"]
-
-    def get_purchase_time(self) -> float:
-        """
-        Get when the purchase was created at. This may be set at slightly different points within an
-        exchange's matching engine.
-        """
-        return self.__response["created_at"]
-
-    def get_price(self) -> float:
-        """
-        Get the price that the order was set at. For limits this will be user-specified, for markets this will
-        be market price.
-        """
-        return self.__response["price"]
-
-    def get_quantity(self) -> float:
-        """
-        Get the quantity of order, Ex: .004 bitcoin
-        """
-        return self.__response["size"]
-
-    def get_status(self, full=False) -> dict:
-        """
-        Calls the exchange with the order id of this purchase and returns the homogenized output
-        Args:
-            full: Set this to True to receive the all the order details. Default is False, which returns just the status
-            field as (example) {"status:" "NEW"}
-        """
-        if full:
-            return self.Interface.get_order(self.__order["product_id"], self.get_id())
-        else:
-            return {"status": self.Interface.get_order(self.__order["product_id"], self.get_id())["status"]}
-
-    def get_time_in_force(self) -> str:
-        """
-        Get the exchange's set time_in_force value.
-        """
-        return self.__response["time_in_force"]
-
-    def get_type(self) -> str:
-        """
-        Get order type, such as market/limit/stop.
-        """
-        return self.__response["type"]
-
-    def get_side(self) -> str:
-        """
-        Get the order side such as buy/sell as a str.
-        """
-        return self.__response["side"]
+        return self.__response["funds"]
 
     """ This is something that should be implemented in the future """
     # """ Returns true if the buy order can be sold at a profit or the sell order didn't loose money """

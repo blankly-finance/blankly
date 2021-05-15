@@ -21,7 +21,8 @@ import warnings
 import pandas as pd
 import Blankly.utils.utils as utils
 from Blankly.utils.exceptions import InvalidOrder
-from Blankly.utils.Purchase import Purchase
+from Blankly.utils.purchases.limit_order import LimitOrder
+from Blankly.utils.purchases.market_order import MarketOrder
 
 
 class APIInterface:
@@ -345,7 +346,7 @@ class APIInterface:
                 })
             return filled_dict_list
 
-    def market_order(self, product_id, side, funds, **kwargs) -> Purchase:
+    def market_order(self, product_id, side, funds, **kwargs) -> MarketOrder:
         """
         Used for buying or selling market orders
         Args:
@@ -395,9 +396,6 @@ class APIInterface:
                 if "message" in response:
                     raise InvalidOrder("Invalid Order: " + response["message"])
                 response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
-                print("actual response:")
-                print(response)
-                print("---------")
             else:
                 print("paper trading")
                 creation_time = time.time()
@@ -411,16 +409,6 @@ class APIInterface:
                 coinbase_pro_id = coinbase_pro_id[:13] + '-' + coinbase_pro_id[13:]
                 coinbase_pro_id = coinbase_pro_id[:18] + '-' + coinbase_pro_id[18:]
                 coinbase_pro_id = coinbase_pro_id[:23] + '-' + coinbase_pro_id[23:]
-                response = {
-                    "id": coinbase_pro_id,
-                    "product_id": product_id,
-                    "created_at": time.time(),
-                    "side": side,
-                    "funds": funds-funds*float((self.__exchange_properties["maker_fee_rate"])),
-                    "specified_funds": funds,
-                    "type": "market",
-                    "status": "pending",
-                }
                 self.__paper_trade_orders.append({
                     'id': coinbase_pro_id,
                     'side': side,
@@ -479,9 +467,9 @@ class APIInterface:
             response = utils.rename_to(renames, response)
             response = utils.isolate_specific(needed, response)
             response["transactTime"] = response["transactTime"]/1000
-        return Purchase(order, response, self)
+        return MarketOrder(order, response, self)
 
-    def limit_order(self, product_id, side, price, size, **kwargs) -> Purchase:
+    def limit_order(self, product_id, side, price, size, **kwargs) -> LimitOrder:
         """
         Used for buying or selling limit orders
         Args:
@@ -592,7 +580,7 @@ class APIInterface:
             ]
             response = utils.rename_to(renames, response)
             response = utils.isolate_specific(needed, response)
-        return Purchase(order, response, self)
+        return LimitOrder(order, response, self)
 
     """ 
     ATM it doesn't seem like the Binance library supports stop orders. 
