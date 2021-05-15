@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import Blankly.local_account.LocalAccount as Local_Account
+import Blankly.utils.paper_trading.local_account.LocalAccount as Local_Account
 import Blankly.Constants as Constants
 
 

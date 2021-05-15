@@ -15,11 +15,11 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import secrets
 import time
 import warnings
 import pandas as pd
 import Blankly.utils.utils as utils
+import Blankly.utils.paper_trading.utils as paper_trade
 from Blankly.utils.exceptions import InvalidOrder
 from Blankly.utils.purchases.limit_order import LimitOrder
 from Blankly.utils.purchases.market_order import MarketOrder
@@ -402,11 +402,7 @@ class APIInterface:
                 if funds < min_funds:
                     raise InvalidOrder("Invalid Order: funds is too small. Minimum is: " + str(min_funds))
                 # Create coinbase pro-like id
-                coinbase_pro_id = secrets.token_hex(nbytes=16)
-                coinbase_pro_id = coinbase_pro_id[:8] + '-' + coinbase_pro_id[8:]
-                coinbase_pro_id = coinbase_pro_id[:13] + '-' + coinbase_pro_id[13:]
-                coinbase_pro_id = coinbase_pro_id[:18] + '-' + coinbase_pro_id[18:]
-                coinbase_pro_id = coinbase_pro_id[:23] + '-' + coinbase_pro_id[23:]
+                coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
                 response = {
                     'id': str(coinbase_pro_id),
                     'side': str(side),
@@ -526,16 +522,11 @@ class APIInterface:
             else:
                 print("Paper trading...")
                 creation_time = time.time()
-                price = self.get_price(product_id)
                 min_base = float(self.get_market_limits(product_id)["base_min_size"])
                 if size < min_base:
                     raise InvalidOrder("Invalid Order: Order quantity is too small. Minimum is: " + str(min_base))
                 # Create coinbase pro-like id
-                coinbase_pro_id = secrets.token_hex(nbytes=16)
-                coinbase_pro_id = coinbase_pro_id[:8] + '-' + coinbase_pro_id[8:]
-                coinbase_pro_id = coinbase_pro_id[:13] + '-' + coinbase_pro_id[13:]
-                coinbase_pro_id = coinbase_pro_id[:18] + '-' + coinbase_pro_id[18:]
-                coinbase_pro_id = coinbase_pro_id[:23] + '-' + coinbase_pro_id[23:]
+                coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
                 response = {
                     'id': str(coinbase_pro_id),
                     'price': str(price),
