@@ -1,4 +1,5 @@
 class Order():
+    """Order Type"""
     def __init__(self, order_type, side, size, price=None):
         if order_type not in ['market', 'limit']:
             raise ValueError("Order types can only be of type ['market', 'limit'], but was given: {}".format(order_type))
