@@ -1,6 +1,6 @@
 import Blankly
 
-class Strategy(Blankly.Bot):
+class Strategy(Blankly.BlanklyBot):
     def main(self, args):
         self.ticker = self.Ticker_manager.get_ticker()
         self.orderbook = self.Orderbook_manager.get_ticker()
