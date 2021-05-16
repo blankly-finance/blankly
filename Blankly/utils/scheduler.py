@@ -23,7 +23,7 @@ import traceback
 
 
 class Scheduler:
-    def __init__(self, function, interval):
+    def __init__(self, function, interval, **kwargs):
         """
         Wrapper for functions that run at a set interval
         Args:
@@ -37,7 +37,7 @@ class Scheduler:
         # Stop flag
         self.__stop = False
 
-        self.__thread = threading.Thread(target=self.__threading_wait, args=(function, interval,))
+        self.__thread = threading.Thread(target=self.__threading_wait, args=(function, interval, kwargs))
         self.__thread.start()
 
         # This can be used for a statically typed, single-process bot decorator.
@@ -51,7 +51,7 @@ class Scheduler:
         #     wrapper()
         # return decorator
 
-    def __threading_wait(self, func, interval):
+    def __threading_wait(self, func, interval, kwargs):
         """
         This function is used with the scheduler decorator
         """
@@ -60,7 +60,10 @@ class Scheduler:
             if self.__stop:
                 break
             try:
-                func()
+                if kwargs == {}:
+                    func()
+                else:
+                    func(kwargs)
                 base_time = base_time + interval
             except Exception:
                 traceback.print_exc()
