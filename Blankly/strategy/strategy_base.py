@@ -3,6 +3,9 @@ from Blankly.utils.time_builder import time_interval_to_seconds
 
 
 class Strategy(Blankly.BlanklyBot):
+    def __init__(self):
+        self.price_funcs = []
+        self.order_funcs = []
     def main(self, args):
         pass
 
