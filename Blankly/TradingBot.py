@@ -19,8 +19,6 @@
 import utils
 import time
 from Server import TradeInterface as TI
-from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API
-from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro import Coinbase_Pro
 
 
 """ Define secret keys """
