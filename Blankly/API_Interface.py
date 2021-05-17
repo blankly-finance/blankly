@@ -21,6 +21,7 @@ import pandas as pd
 import threading
 import Blankly.utils.utils as utils
 import Blankly.utils.paper_trading.utils as paper_trade
+import Blankly.utils.paper_trading.local_account.trade_local as trade_local
 from Blankly.utils.exceptions import InvalidOrder
 from Blankly.utils.purchases.limit_order import LimitOrder
 from Blankly.utils.purchases.market_order import MarketOrder
@@ -44,6 +45,17 @@ class APIInterface:
         if self.__paper_trading:
             # TODO, this process could use variable update time/websocket usage, poll time and a variety of settings
             #  to create a robust trading system
+            accounts = self.get_account()
+            value_pairs = {}
+
+            # Iterate & pair
+            for i in accounts:
+                value_pairs[i['currency']] = i['available']
+
+            # Initialize the local account
+            trade_local.init_local_account(value_pairs)
+
+            # Create the watchdog for the
             self.__thread = threading.Thread(target=self.__paper_trade_watchdog())
             self.__thread.start()
         else:
@@ -64,12 +76,61 @@ class APIInterface:
             prices[i] = self.get_price(i)
             time.sleep(.2)
 
+        for i in self.__paper_trade_orders:
+            """
+            {
+                "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
+                "price": "0.10000000",
+                "size": "0.01000000",
+                "product_id": "BTC-USD",
+                "side": "buy",
+                "stp": "dc",
+                "type": "limit",
+                "time_in_force": "GTC",
+                "post_only": false,
+                "created_at": "2016-12-08T20:02:28.53864Z",
+                "fill_fees": "0.0000000000000000",
+                "filled_size": "0.00000000",
+                "executed_value": "0.0000000000000000",
+                "status": "pending",
+                "settled": false
+            }
+            """
+            if i['type'] == 'limit':
+                current_price = prices[i['product_id']]
+
+                if i['side'] == 'buy':
+                    if i['price'] > current_price:
+                        order = self.__evaluate_paper_trade(i, current_price)
+
+                elif i['side'] == 'sell':
+                    if i['price'] < prices[i['product_id']]:
+                        order = self.__evaluate_paper_trade(i, current_price)
+
+    def __evaluate_paper_trade(self, order, current_price):
+        """
+        This calculates fees & evaluates accurate value
+        Args:
+            order (dict): Order dictionary to derive the order attributes
+            current_price (float): The current price of the currency pair the limit order was created on
+        """
+        funds = order['size'] * current_price
+        executed_value = funds - funds * float((self.__exchange_properties["maker_fee_rate"]))
+        fill_fees = funds * float((self.__exchange_properties["maker_fee_rate"]))
+        fill_size = order['size'] - order['size'] * float((self.__exchange_properties["maker_fee_rate"]))
+
+        order['executed_value'] = str(executed_value)
+        order['fill_fees'] = str(fill_fees)
+        order['filled_size'] = str(fill_size)
+
+        return order
+
     def __init_exchange__(self):
         if self.__exchange_name == "coinbase_pro":
             fees = self.__calls.get_fees()
             try:
                 if fees['message'] == "Invalid API Key":
-                    raise ValueError("Invalid API Key - are you trying to use your normal exchange keys "
+                    raise LookupError("Invalid API Key - are you trying to use your normal exchange keys "
                                      "while in sandbox mode?")
             except KeyError:
                 pass
@@ -343,7 +404,7 @@ class APIInterface:
                         "hold": 0.0
                     }
                 else:
-                    raise ValueError("Currency not found")
+                    raise LookupError("Currency not found")
 
             # If binance returned something relevant, scan and add that to the array. If not just default to nothing
             owned_assets = [column[0] for column in accounts]
@@ -1147,7 +1208,7 @@ class APIInterface:
                     products = i
 
             if products is None:
-                raise ValueError("Specified market not found")
+                raise LookupError("Specified market not found")
 
             products = utils.rename_to(renames, products)
             products["min_price"] = 0
@@ -1228,7 +1289,7 @@ class APIInterface:
                     current_price = float(self.__calls.get_avg_price(symbol=converted_symbol)['price'])
                     break
             if current_price is None:
-                raise ValueError("Specified market not found")
+                raise LookupError("Specified market not found")
 
             filters = symbol_data["filters"]
             hard_min_price = float(filters[0]["minPrice"])
