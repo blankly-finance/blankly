@@ -19,9 +19,10 @@ import Blankly.utils.paper_trading.local_account.local_account as local_account
 import Blankly.utils.utils as utils
 
 
-def trade_local(currency_pair, side, base_delta, quote_delta):
+def trade_local(currency_pair, side, base_delta, quote_delta) -> None:
     """
     Trade on the local & static account
+
     Args:
         currency_pair (string): Pair such as 'BTC-USD'
         side (string): Purchase side such as 'buy' or 'sell' (currently unused but required)
@@ -47,7 +48,7 @@ def trade_local(currency_pair, side, base_delta, quote_delta):
         raise KeyError("Quote currency specified not found in local account")
 
 
-def init_local_account(currencies):
+def init_local_account(currencies) -> None:
     """
     Create the local account to paper trade with.
 
@@ -55,3 +56,32 @@ def init_local_account(currencies):
         currencies: (dict) with key/value pairs such as {'BTC': 2.3, 'USD': 4352, 'XLM': 32}
     """
     local_account.account = currencies
+
+
+def test_trade(currency_pair, side, qty, quote_price) -> bool:
+    """
+    Test a paper trade to see if you have the funds
+
+    Args:
+        currency_pair (string): Pair such as 'BTC-USD'
+        side (string): Purchase side such as 'buy' or 'sell' (currently unused but required)
+        qty (float): Amount to buy of the base currency ex: (2.3 BTC of BTC-USD)
+        quote_price (float): Price of the base currency in the currency pair - (1 BTC is valued at 40,245 in BTC-USD)
+    """
+    if side == 'buy':
+        quote = utils.get_quote_currency(currency_pair)
+        current_funds = local_account.account[quote]
+        purchase_funds = quote_price * qty
+
+        # If you have more funds than the purchase requires then return true
+        return current_funds > purchase_funds
+
+    elif side == 'sell':
+        base = utils.get_base_currency(currency_pair)
+        current_base = local_account.account[base]
+
+        # If you have more base than the sell requires then return true
+        return current_base > qty
+
+    else:
+        raise LookupError("Invalid purchase side")
