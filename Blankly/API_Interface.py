@@ -42,8 +42,8 @@ class APIInterface:
         self.__init_exchange__()
 
         if self.__paper_trading:
-            # Write in the accounts to our local account
-            accounts = self.get_account()
+            # Write in the accounts to our local account. This involves getting the values directly from the exchange
+            accounts = self.get_account(override_paper_trading=True)
             value_pairs = {}
 
             # Iterate & pair
@@ -313,68 +313,71 @@ class APIInterface:
                 return utils.isolate_specific(needed, products[i])
             return products
 
-    def get_account(self, currency=None, account_id=None):
+    def get_account(self, currency=None, override_paper_trading=False):
         """
         Get all currencies in an account, or sort by currency/account_id
         Args:
-            currency: (Optional) Filter by particular currency
-            account_id: (Optional) Filter by a particular account_id
+            currency (Optional): Filter by particular currency
+            override_paper_trading (Optional bool): If paper trading is enabled, setting this to true will get the
+             actual account values
 
             These arguments are mutually exclusive
         Coinbase Pro: get_account
         Binance: get_account["balances"]
         """
+        # Use an internal value because we don't want to modify the class's value - which could create issues
+        internal_paper_trade = self.__paper_trading
+        if override_paper_trading:
+            internal_paper_trade = False
+
         if currency is not None:
             currency = utils.get_base_currency(currency)
+
         needed = [["currency", str],
                   ["available", float],
                   ["hold", float]]
-        if currency is not None and account_id is not None:
-            warnings.warn("One of \"account_id\" or \"currency\" must be empty. Defaulting to \"account_id\".")
-            currency = None
+
         if self.__exchange_name == "coinbase_pro":
-            if account_id is None:
-                """
-                [
-                    {
-                        "id": "71452118-efc7-4cc4-8780-a5e22d4baa53",
-                        "currency": "BTC",
-                        "balance": "0.0000000000000000",
-                        "available": "0.0000000000000000",
-                        "hold": "0.0000000000000000",
-                        "profile_id": "75da88c5-05bf-4f54-bc85-5c775bd68254"
-                    },
-                    {
-                        ...
-                    }
-                ]
-                """
-                accounts = self.__calls.get_accounts()
-                # We have to sort through it if the accounts are none
-                if currency is None:
-                    # If this is also none we just return raw, which we do later
-                    pass
-                else:
-                    for i in accounts:
-                        if i["currency"] == currency:
-                            parsed_value = utils.isolate_specific(needed, i)
-                            return parsed_value
-                    warnings.warn("Currency not found")
-                for i in range(len(accounts)):
-                    accounts[i] = utils.isolate_specific(needed, accounts[i])
-                return accounts
-            else:
-                """
+            """
+            [
                 {
-                    "id": "a1b2c3d4",
-                    "balance": "1.100",
-                    "holds": "0.100",
-                    "available": "1.00",
-                    "currency": "USD"
+                    "id": "71452118-efc7-4cc4-8780-a5e22d4baa53",
+                    "currency": "BTC",
+                    "balance": "0.0000000000000000",
+                    "available": "0.0000000000000000",
+                    "hold": "0.0000000000000000",
+                    "profile_id": "75da88c5-05bf-4f54-bc85-5c775bd68254"
+                },
+                {
+                    ...
                 }
-                """
-                response = self.__calls.get_account(account_id)
-                return utils.isolate_specific(needed, response)
+            ]
+            """
+            if not internal_paper_trade:
+                accounts = self.__calls.get_accounts()
+            else:
+                local_account = trade_local.get_accounts()
+                accounts = []
+                for key, value in local_account.items():
+                    accounts.append({
+                        'currency': key,
+                        'balance': value,
+                        'available': value,
+                        'hold': 0
+                    })
+            # We have to sort through it if the accounts are none
+            if currency is None:
+                # If this is also none we just return raw, which we do later
+                pass
+            else:
+                for i in accounts:
+                    if i["currency"] == currency:
+                        parsed_value = utils.isolate_specific(needed, i)
+                        return parsed_value
+                warnings.warn("Currency not found")
+            for i in range(len(accounts)):
+                accounts[i] = utils.isolate_specific(needed, accounts[i])
+            return accounts
         elif self.__exchange_name == "binance":
             # TODO this should really use the get_asset_balance() function from binance.
             """
@@ -405,9 +408,6 @@ class APIInterface:
                 ["free", "available"],
                 ["locked", "hold"],
             ]
-            if account_id is not None:
-                warnings.warn("account_id parameter is not supported on binance, use currency instead. This parameter"
-                              "will be removed soon.")
 
             accounts = self.__calls.get_account()["balances"]
             # Isolate for currency, warn if not found or default to just returning a parsed version
@@ -655,7 +655,7 @@ class APIInterface:
                     "filled_size": "0.00000000",
                     "executed_value": "0.0000000000000000",
                     'status': 'pending',
-                    'settled': 'true'
+                    'settled': 'false'
                 }
                 self.__paper_trade_orders.append(response)
 
@@ -769,7 +769,23 @@ class APIInterface:
                 list: Containing the order_id of cancelled order. Example::
                 [ "c5ab5eae-76be-480e-8961-00792dc7e138" ]
             """
-            return {"order_id": self.__calls.cancel_order(order_id)[0]}
+            if not self.__paper_trading:
+                return {"order_id": self.__calls.cancel_order(order_id)[0]}
+            else:
+                """
+                This block could potentially work for both exchanges
+                """
+                order_index = None
+                for i in range(len(self.__paper_trade_orders)):
+                    index = self.__paper_trade_orders[i]
+                    if index['status'] == 'pending' and index['id'] == order_id:
+                        order_index = i
+
+                if order_index is not None:
+                    id = self.__paper_trade_orders[order_index]['id']
+                    del self.__paper_trade_orders[order_index]
+                    return {"order_id": id}
+
         elif self.__exchange_name == "binance":
             """Cancel an active order. Either orderId or origClientOrderId must be sent.
 

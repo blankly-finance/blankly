@@ -85,3 +85,10 @@ def test_trade(currency_pair, side, qty, quote_price) -> bool:
 
     else:
         raise LookupError("Invalid purchase side")
+
+
+def get_accounts() -> dict:
+    """
+    Get the paper trading local account
+    """
+    return local_account.account
