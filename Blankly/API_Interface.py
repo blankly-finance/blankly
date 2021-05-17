@@ -76,8 +76,10 @@ class APIInterface:
             prices[i] = self.get_price(i)
             time.sleep(.2)
 
-        for i in self.__paper_trade_orders:
+        for i in range(len(self.__paper_trade_orders)):
+            index = self.__paper_trade_orders[i]
             """
+            Coinbase pro example
             {
                 "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
                 "price": "0.10000000",
@@ -96,16 +98,27 @@ class APIInterface:
                 "settled": false
             }
             """
-            if i['type'] == 'limit':
-                current_price = prices[i['product_id']]
+            if index['type'] == 'limit':
+                current_price = prices[index['product_id']]
 
-                if i['side'] == 'buy':
-                    if i['price'] > current_price:
-                        order = self.__evaluate_paper_trade(i, current_price)
+                if index['side'] == 'buy':
+                    if index['price'] > current_price:
+                        order, funds = self.__evaluate_paper_trade(index, current_price)
+                        trade_local.trade_local(currency_pair=index['product_id'],
+                                                side='buy',
+                                                base_delta=float(order['filled_size']),  # Gain filled size after fees
+                                                quote_delta=funds * -1)  # Loose the original fund amount
 
-                elif i['side'] == 'sell':
-                    if i['price'] < prices[i['product_id']]:
-                        order = self.__evaluate_paper_trade(i, current_price)
+                        self.__paper_trade_orders[i] = order
+                elif index['side'] == 'sell':
+                    if index['price'] < prices[index['product_id']]:
+                        order, funds = self.__evaluate_paper_trade(index, current_price)
+                        trade_local.trade_local(currency_pair=index['product_id'],
+                                                side='sell',
+                                                base_delta=float(index['size'] * - 1),  # Loose size before any fees
+                                                quote_delta=index['executed_value'])  # Gain executed value after fees
+
+                        self.__paper_trade_orders[i] = order
 
     def __evaluate_paper_trade(self, order, current_price):
         """
@@ -123,7 +136,7 @@ class APIInterface:
         order['fill_fees'] = str(fill_fees)
         order['filled_size'] = str(fill_size)
 
-        return order
+        return order, funds
 
     def __init_exchange__(self):
         if self.__exchange_name == "coinbase_pro":
