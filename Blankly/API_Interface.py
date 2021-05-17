@@ -21,6 +21,7 @@ import pandas as pd
 import threading
 import Blankly.utils.utils as utils
 import Blankly.utils.paper_trading.utils as paper_trade
+import Blankly.utils.paper_trading.local_account.trade_local as trade_local
 from Blankly.utils.exceptions import InvalidOrder
 from Blankly.utils.purchases.limit_order import LimitOrder
 from Blankly.utils.purchases.market_order import MarketOrder
@@ -40,10 +41,24 @@ class APIInterface:
         self.__available_currencies = {}
         self.__init_exchange__()
 
+        if self.__paper_trading:
+            # Write in the accounts to our local account. This involves getting the values directly from the exchange
+            accounts = self.get_account(override_paper_trading=True)
+            value_pairs = {}
+
+            # Iterate & pair
+            for i in accounts:
+                value_pairs[i['currency']] = i['available']
+
+            # Initialize the local account
+            trade_local.init_local_account(value_pairs)
+
     def start_paper_trade_watchdog(self):
         if self.__paper_trading:
             # TODO, this process could use variable update time/websocket usage, poll time and a variety of settings
             #  to create a robust trading system
+
+            # Create the watchdog for watching limit orders
             self.__thread = threading.Thread(target=self.__paper_trade_watchdog())
             self.__thread.start()
         else:
@@ -64,12 +79,78 @@ class APIInterface:
             prices[i] = self.get_price(i)
             time.sleep(.2)
 
+        for i in range(len(self.__paper_trade_orders)):
+            index = self.__paper_trade_orders[i]
+            """
+            Coinbase pro example
+            {
+                "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
+                "price": "0.10000000",
+                "size": "0.01000000",
+                "product_id": "BTC-USD",
+                "side": "buy",
+                "stp": "dc",
+                "type": "limit",
+                "time_in_force": "GTC",
+                "post_only": false,
+                "created_at": "2016-12-08T20:02:28.53864Z",
+                "fill_fees": "0.0000000000000000",
+                "filled_size": "0.00000000",
+                "executed_value": "0.0000000000000000",
+                "status": "pending",
+                "settled": false
+            }
+            """
+            if index['type'] == 'limit' and index['status'] == 'pending':
+                current_price = prices[index['product_id']]
+
+                if index['side'] == 'buy':
+                    if index['price'] > current_price:
+                        order, funds = self.__evaluate_paper_trade(index, current_price)
+                        trade_local.trade_local(currency_pair=index['product_id'],
+                                                side='buy',
+                                                base_delta=float(order['filled_size']),  # Gain filled size after fees
+                                                quote_delta=funds * -1)  # Loose the original fund amount
+                        order['status'] = 'done'
+                        order['settled'] = 'true'
+
+                        self.__paper_trade_orders[i] = order
+                elif index['side'] == 'sell':
+                    if index['price'] < prices[index['product_id']]:
+                        order, funds = self.__evaluate_paper_trade(index, current_price)
+                        trade_local.trade_local(currency_pair=index['product_id'],
+                                                side='sell',
+                                                base_delta=float(index['size'] * - 1),  # Loose size before any fees
+                                                quote_delta=index['executed_value'])  # Gain executed value after fees
+                        order['status'] = 'done'
+                        order['settled'] = 'true'
+
+                        self.__paper_trade_orders[i] = order
+
+    def __evaluate_paper_trade(self, order, current_price):
+        """
+        This calculates fees & evaluates accurate value
+        Args:
+            order (dict): Order dictionary to derive the order attributes
+            current_price (float): The current price of the currency pair the limit order was created on
+        """
+        funds = order['size'] * current_price
+        executed_value = funds - funds * float((self.__exchange_properties["maker_fee_rate"]))
+        fill_fees = funds * float((self.__exchange_properties["maker_fee_rate"]))
+        fill_size = order['size'] - order['size'] * float((self.__exchange_properties["maker_fee_rate"]))
+
+        order['executed_value'] = str(executed_value)
+        order['fill_fees'] = str(fill_fees)
+        order['filled_size'] = str(fill_size)
+
+        return order, funds
+
     def __init_exchange__(self):
         if self.__exchange_name == "coinbase_pro":
             fees = self.__calls.get_fees()
             try:
                 if fees['message'] == "Invalid API Key":
-                    raise ValueError("Invalid API Key - are you trying to use your normal exchange keys "
+                    raise LookupError("Invalid API Key - are you trying to use your normal exchange keys "
                                      "while in sandbox mode?")
             except KeyError:
                 pass
@@ -232,68 +313,71 @@ class APIInterface:
                 return utils.isolate_specific(needed, products[i])
             return products
 
-    def get_account(self, currency=None, account_id=None):
+    def get_account(self, currency=None, override_paper_trading=False):
         """
         Get all currencies in an account, or sort by currency/account_id
         Args:
-            currency: (Optional) Filter by particular currency
-            account_id: (Optional) Filter by a particular account_id
+            currency (Optional): Filter by particular currency
+            override_paper_trading (Optional bool): If paper trading is enabled, setting this to true will get the
+             actual account values
 
             These arguments are mutually exclusive
         Coinbase Pro: get_account
         Binance: get_account["balances"]
         """
+        # Use an internal value because we don't want to modify the class's value - which could create issues
+        internal_paper_trade = self.__paper_trading
+        if override_paper_trading:
+            internal_paper_trade = False
+
         if currency is not None:
             currency = utils.get_base_currency(currency)
+
         needed = [["currency", str],
                   ["available", float],
                   ["hold", float]]
-        if currency is not None and account_id is not None:
-            warnings.warn("One of \"account_id\" or \"currency\" must be empty. Defaulting to \"account_id\".")
-            currency = None
+
         if self.__exchange_name == "coinbase_pro":
-            if account_id is None:
-                """
-                [
-                    {
-                        "id": "71452118-efc7-4cc4-8780-a5e22d4baa53",
-                        "currency": "BTC",
-                        "balance": "0.0000000000000000",
-                        "available": "0.0000000000000000",
-                        "hold": "0.0000000000000000",
-                        "profile_id": "75da88c5-05bf-4f54-bc85-5c775bd68254"
-                    },
-                    {
-                        ...
-                    }
-                ]
-                """
-                accounts = self.__calls.get_accounts()
-                # We have to sort through it if the accounts are none
-                if currency is None:
-                    # If this is also none we just return raw, which we do later
-                    pass
-                else:
-                    for i in accounts:
-                        if i["currency"] == currency:
-                            parsed_value = utils.isolate_specific(needed, i)
-                            return parsed_value
-                    warnings.warn("Currency not found")
-                for i in range(len(accounts)):
-                    accounts[i] = utils.isolate_specific(needed, accounts[i])
-                return accounts
-            else:
-                """
+            """
+            [
                 {
-                    "id": "a1b2c3d4",
-                    "balance": "1.100",
-                    "holds": "0.100",
-                    "available": "1.00",
-                    "currency": "USD"
+                    "id": "71452118-efc7-4cc4-8780-a5e22d4baa53",
+                    "currency": "BTC",
+                    "balance": "0.0000000000000000",
+                    "available": "0.0000000000000000",
+                    "hold": "0.0000000000000000",
+                    "profile_id": "75da88c5-05bf-4f54-bc85-5c775bd68254"
+                },
+                {
+                    ...
                 }
-                """
-                response = self.__calls.get_account(account_id)
-                return utils.isolate_specific(needed, response)
+            ]
+            """
+            if not internal_paper_trade:
+                accounts = self.__calls.get_accounts()
+            else:
+                local_account = trade_local.get_accounts()
+                accounts = []
+                for key, value in local_account.items():
+                    accounts.append({
+                        'currency': key,
+                        'balance': value,
+                        'available': value,
+                        'hold': 0
+                    })
+            # We have to sort through it if the accounts are none
+            if currency is None:
+                # If this is also none we just return raw, which we do later
+                pass
+            else:
+                for i in accounts:
+                    if i["currency"] == currency:
+                        parsed_value = utils.isolate_specific(needed, i)
+                        return parsed_value
+                warnings.warn("Currency not found")
+            for i in range(len(accounts)):
+                accounts[i] = utils.isolate_specific(needed, accounts[i])
+            return accounts
         elif self.__exchange_name == "binance":
             # TODO this should really use the get_asset_balance() function from binance.
             """
@@ -324,9 +408,6 @@ class APIInterface:
                 ["free", "available"],
                 ["locked", "hold"],
             ]
-            if account_id is not None:
-                warnings.warn("account_id parameter is not supported on binance, use currency instead. This parameter"
-                              "will be removed soon.")
 
             accounts = self.__calls.get_account()["balances"]
             # Isolate for currency, warn if not found or default to just returning a parsed version
@@ -343,7 +424,7 @@ class APIInterface:
                         "hold": 0.0
                     }
                 else:
-                    raise ValueError("Currency not found")
+                    raise LookupError("Currency not found")
 
             # If binance returned something relevant, scan and add that to the array. If not just default to nothing
             owned_assets = [column[0] for column in accounts]
@@ -426,6 +507,9 @@ class APIInterface:
                 min_funds = float(self.get_market_limits(product_id)["exchange_specific"]["min_market_funds"])
                 if funds < min_funds:
                     raise InvalidOrder("Invalid Order: funds is too small. Minimum is: " + str(min_funds))
+
+                if not trade_local.test_trade(product_id, side, funds/price, price):
+                    raise InvalidOrder("Invalid Order: Insufficient funds")
                 # Create coinbase pro-like id
                 coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
                 response = {
@@ -550,6 +634,10 @@ class APIInterface:
                 min_base = float(self.get_market_limits(product_id)["base_min_size"])
                 if size < min_base:
                     raise InvalidOrder("Invalid Order: Order quantity is too small. Minimum is: " + str(min_base))
+
+                if not trade_local.test_trade(product_id, side, size, price):
+                    raise InvalidOrder("Invalid Order: Insufficient funds")
+
                 # Create coinbase pro-like id
                 coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
                 response = {
@@ -567,7 +655,7 @@ class APIInterface:
                     "filled_size": "0.00000000",
                     "executed_value": "0.0000000000000000",
                     'status': 'pending',
-                    'settled': 'true'
+                    'settled': 'false'
                 }
                 self.__paper_trade_orders.append(response)
 
@@ -681,7 +769,23 @@ class APIInterface:
                 list: Containing the order_id of cancelled order. Example::
                 [ "c5ab5eae-76be-480e-8961-00792dc7e138" ]
             """
-            return {"order_id": self.__calls.cancel_order(order_id)[0]}
+            if not self.__paper_trading:
+                return {"order_id": self.__calls.cancel_order(order_id)[0]}
+            else:
+                """
+                This block could potentially work for both exchanges
+                """
+                order_index = None
+                for i in range(len(self.__paper_trade_orders)):
+                    index = self.__paper_trade_orders[i]
+                    if index['status'] == 'pending' and index['id'] == order_id:
+                        order_index = i
+
+                if order_index is not None:
+                    id = self.__paper_trade_orders[order_index]['id']
+                    del self.__paper_trade_orders[order_index]
+                    return {"order_id": id}
+
         elif self.__exchange_name == "binance":
             """Cancel an active order. Either orderId or origClientOrderId must be sent.
 
@@ -1147,7 +1251,7 @@ class APIInterface:
                     products = i
 
             if products is None:
-                raise ValueError("Specified market not found")
+                raise LookupError("Specified market not found")
 
             products = utils.rename_to(renames, products)
             products["min_price"] = 0
@@ -1228,7 +1332,7 @@ class APIInterface:
                     current_price = float(self.__calls.get_avg_price(symbol=converted_symbol)['price'])
                     break
             if current_price is None:
-                raise ValueError("Specified market not found")
+                raise LookupError("Specified market not found")
 
             filters = symbol_data["filters"]
             hard_min_price = float(filters[0]["minPrice"])

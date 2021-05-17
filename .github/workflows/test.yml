@@ -1,44 +1,46 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Blankly Module Tests
+# Avoiding these tests currently because they mess with clone history.
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python 3.7
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r ./Blankly/utils/tests/requirements.txt
-        cp ./Blankly/utils/tests/tests.py .
-        cp ./Blankly/utils/tests/Settings.json .
-
-    - name: Inject Keys
-      run: |
-        CBP_API_KEY=${{ secrets.CBP_API_KEY }}
-        CBP_API_SECRET=${{ secrets.CBP_API_SECRET }}
-        CBP_API_PASS=${{ secrets.CBP_API_PASS }}
-
-        keys_file=$(eval "echo \"$(cat ./Blankly/utils/tests/keys_template.json)\"")
-        echo $keys_file >> ./Keys.json
-      shell: bash
-
-
-    - name: Run test file
-      run: |
-        python ./tests.py
+#name: Blankly Module Tests
+#
+#on:
+#  push:
+#    branches: [ main ]
+#  pull_request:
+#    branches: [ main ]
+#
+#jobs:
+#  build:
+#
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#    - uses: actions/checkout@v2
+#    - name: Set up Python 3.7
+#      uses: actions/setup-python@v2
+#      with:
+#        python-version: 3.7
+#
+#    - name: Install dependencies
+#      run: |
+#        python -m pip install --upgrade pip
+#        pip install -r ./Blankly/utils/tests/requirements.txt
+#        cp ./Blankly/utils/tests/tests.py .
+#        cp ./Blankly/utils/tests/Settings.json .
+#
+#    - name: Inject Keys
+#      run: |
+#        CBP_API_KEY=${{ secrets.CBP_API_KEY }}
+#        CBP_API_SECRET=${{ secrets.CBP_API_SECRET }}
+#        CBP_API_PASS=${{ secrets.CBP_API_PASS }}
+#
+#        keys_file=$(eval "echo \"$(cat ./Blankly/utils/tests/keys_template.json)\"")
+#        echo $keys_file >> ./Keys.json
+#      shell: bash
+#
+#
+#    - name: Run test file
+#      run: |
+#        python ./tests.py
