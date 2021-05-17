@@ -41,10 +41,8 @@ class APIInterface:
         self.__available_currencies = {}
         self.__init_exchange__()
 
-    def start_paper_trade_watchdog(self):
         if self.__paper_trading:
-            # TODO, this process could use variable update time/websocket usage, poll time and a variety of settings
-            #  to create a robust trading system
+            # Write in the accounts to our local account
             accounts = self.get_account()
             value_pairs = {}
 
@@ -55,7 +53,12 @@ class APIInterface:
             # Initialize the local account
             trade_local.init_local_account(value_pairs)
 
-            # Create the watchdog for the
+    def start_paper_trade_watchdog(self):
+        if self.__paper_trading:
+            # TODO, this process could use variable update time/websocket usage, poll time and a variety of settings
+            #  to create a robust trading system
+
+            # Create the watchdog for watching limit orders
             self.__thread = threading.Thread(target=self.__paper_trade_watchdog())
             self.__thread.start()
         else:
@@ -98,7 +101,7 @@ class APIInterface:
                 "settled": false
             }
             """
-            if index['type'] == 'limit':
+            if index['type'] == 'limit' and index['status'] == 'pending':
                 current_price = prices[index['product_id']]
 
                 if index['side'] == 'buy':
@@ -108,6 +111,8 @@ class APIInterface:
                                                 side='buy',
                                                 base_delta=float(order['filled_size']),  # Gain filled size after fees
                                                 quote_delta=funds * -1)  # Loose the original fund amount
+                        order['status'] = 'done'
+                        order['settled'] = 'true'
 
                         self.__paper_trade_orders[i] = order
                 elif index['side'] == 'sell':
@@ -117,6 +122,8 @@ class APIInterface:
                                                 side='sell',
                                                 base_delta=float(index['size'] * - 1),  # Loose size before any fees
                                                 quote_delta=index['executed_value'])  # Gain executed value after fees
+                        order['status'] = 'done'
+                        order['settled'] = 'true'
 
                         self.__paper_trade_orders[i] = order
 
@@ -500,6 +507,9 @@ class APIInterface:
                 min_funds = float(self.get_market_limits(product_id)["exchange_specific"]["min_market_funds"])
                 if funds < min_funds:
                     raise InvalidOrder("Invalid Order: funds is too small. Minimum is: " + str(min_funds))
+
+                if not trade_local.test_trade(product_id, side, funds/price, price):
+                    raise InvalidOrder("Invalid Order: Insufficient funds")
                 # Create coinbase pro-like id
                 coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
                 response = {
@@ -624,6 +634,10 @@ class APIInterface:
                 min_base = float(self.get_market_limits(product_id)["base_min_size"])
                 if size < min_base:
                     raise InvalidOrder("Invalid Order: Order quantity is too small. Minimum is: " + str(min_base))
+
+                if not trade_local.test_trade(product_id, side, size, price):
+                    raise InvalidOrder("Invalid Order: Insufficient funds")
+
                 # Create coinbase pro-like id
                 coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
                 response = {

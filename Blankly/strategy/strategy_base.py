@@ -32,7 +32,7 @@ class Strategy(Blankly.BlanklyBot):
         Args:
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
         """
-        self.Orderbook_Manager.append_callback(self.orderbook_event(callback))
+        self.Orderbook_Manager.append_callback(self._orderbook_event)
 
     def _price_event_rest(self, callback):
         price = self.Interface.get_price(self.currency_pair)
