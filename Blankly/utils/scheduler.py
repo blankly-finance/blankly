@@ -63,10 +63,10 @@ class Scheduler:
                 if kwargs == {}:
                     func()
                 else:
-                    func(kwargs)
-                base_time = base_time + interval
+                    func(**kwargs)
             except Exception:
                 traceback.print_exc()
+            base_time = base_time + interval
 
             # The downside of this is that it keeps the thread running while waiting to stop
             # It's dependent on delay if its more efficient to just check more
