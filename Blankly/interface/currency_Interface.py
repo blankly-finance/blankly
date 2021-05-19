@@ -15,6 +15,8 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
+
 import time
 import warnings
 import pandas as pd
@@ -27,7 +29,7 @@ from Blankly.utils.purchases.limit_order import LimitOrder
 from Blankly.utils.purchases.market_order import MarketOrder
 
 
-class APIInterface:
+class CurrencyInterface:
     def __init__(self, exchange_name, authenticated_API):
         self.__exchange_name = exchange_name
         self.__calls = authenticated_API
@@ -57,7 +59,6 @@ class APIInterface:
         if self.__paper_trading:
             # TODO, this process could use variable update time/websocket usage, poll time and a variety of settings
             #  to create a robust trading system
-
             # Create the watchdog for watching limit orders
             self.__thread = threading.Thread(target=self.__paper_trade_watchdog())
             self.__thread.start()
