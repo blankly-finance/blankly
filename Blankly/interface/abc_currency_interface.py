@@ -41,29 +41,13 @@ class ICurrencyInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def __paper_trade_watchdog(self):
+    def override_paper_trading(self, value):
         """
-        Internal order watching system
-        """
-        pass
-
-    @abc.abstractmethod
-    def __evaluate_paper_trade(self, order, current_price):
-        """
-        This calculates fees & evaluates accurate value
+        Force a paper trading value & override settings
         Args:
-            order (dict): Order dictionary to derive the order attributes
-            current_price (float): The current price of the currency pair the limit order was created on
+            value (bool): Set paper trading to be on or off (true or false)
         """
         pass
-
-    @abc.abstractmethod
-    def __init_exchange__(self):
-        pass
-
-    @abc.abstractmethod
-    def __override_paper_trading(self, value):
-        self.__paper_trading = bool(value)
 
     @abc.abstractmethod
     def get_calls(self):

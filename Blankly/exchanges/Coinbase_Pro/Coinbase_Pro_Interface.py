@@ -34,8 +34,8 @@ class CoinbaseProInterface(CurrencyInterface):
     def __init__(self, exchange_name, authenticated_API):
         super().__init__(exchange_name, authenticated_API)
 
-    def __init_exchange__(self):
-        fees = self.__calls.get_fees()
+    def init_exchange(self):
+        fees = self.calls.get_fees()
         try:
             if fees['message'] == "Invalid API Key":
                 raise LookupError("Invalid API Key - are you trying to use your normal exchange keys "
@@ -72,7 +72,7 @@ class CoinbaseProInterface(CurrencyInterface):
             },
         ]
         """
-        products = self.__calls.get_products()
+        products = self.calls.get_products()
         for i in range(len(products)):
             # Rename needed
             products[i]["currency_id"] = products[i].pop("id")
@@ -111,7 +111,7 @@ class CoinbaseProInterface(CurrencyInterface):
         ]
         """
         if not internal_paper_trade:
-            accounts = self.__calls.get_accounts()
+            accounts = self.calls.get_accounts()
         else:
             local_account = trade_local.get_accounts()
             accounts = []
@@ -169,8 +169,8 @@ class CoinbaseProInterface(CurrencyInterface):
             'product_id': product_id,
             'type': 'market'
         }
-        if not self.__paper_trading:
-            response = self.__calls.place_market_order(product_id, side, funds=funds)
+        if not self.paper_trading:
+            response = self.calls.place_market_order(product_id, side, funds=funds)
             if "message" in response:
                 raise InvalidOrder("Invalid Order: " + response["message"])
             response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
@@ -203,7 +203,7 @@ class CoinbaseProInterface(CurrencyInterface):
                 'executed_value': str(funds - funds * float((self.__exchange_properties["maker_fee_rate"]))),
                 'settled': 'true'
             }
-            self.__paper_trade_orders.append(response)
+            self.paper_trade_orders.append(response)
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
@@ -244,8 +244,8 @@ class CoinbaseProInterface(CurrencyInterface):
             'product_id': product_id,
             'type': 'limit'
         }
-        if not self.__paper_trading:
-            response = self.__calls.place_limit_order(product_id, side, price, size=size)
+        if not self.paper_trading:
+            response = self.calls.place_limit_order(product_id, side, price, size=size)
             if "message" in response:
                 raise InvalidOrder("Invalid Order: " + response["message"])
             response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
@@ -278,7 +278,7 @@ class CoinbaseProInterface(CurrencyInterface):
                 'status': 'pending',
                 'settled': 'false'
             }
-            self.__paper_trade_orders.append(response)
+            self.paper_trade_orders.append(response)
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
 
@@ -288,21 +288,21 @@ class CoinbaseProInterface(CurrencyInterface):
             dict: Containing the order_id of cancelled order. Example::
             { "order_id": "c5ab5eae-76be-480e-8961-00792dc7e138" }
         """
-        if not self.__paper_trading:
-            return {"order_id": self.__calls.cancel_order(order_id)[0]}
+        if not self.paper_trading:
+            return {"order_id": self.calls.cancel_order(order_id)[0]}
         else:
             """
             This block could potentially work for both exchanges
             """
             order_index = None
-            for i in range(len(self.__paper_trade_orders)):
-                index = self.__paper_trade_orders[i]
+            for i in range(len(self.paper_trade_orders)):
+                index = self.paper_trade_orders[i]
                 if index['status'] == 'pending' and index['id'] == order_id:
                     order_index = i
 
             if order_index is not None:
-                id = self.__paper_trade_orders[order_index]['id']
-                del self.__paper_trade_orders[order_index]
+                id = self.paper_trade_orders[order_index]['id']
+                del self.paper_trade_orders[order_index]
                 return {"order_id": id}
 
     def get_open_orders(self, product_id=None):
@@ -334,11 +334,11 @@ class CoinbaseProInterface(CurrencyInterface):
             }
         ]
         """
-        if not self.__paper_trading:
+        if not self.paper_trading:
             if product_id is None:
-                orders = list(self.__calls.get_orders())
+                orders = list(self.calls.get_orders())
             else:
-                orders = list(self.__calls.get_orders(product_id=product_id))
+                orders = list(self.calls.get_orders(product_id=product_id))
 
             if len(orders) == 0:
                 return []
@@ -351,7 +351,7 @@ class CoinbaseProInterface(CurrencyInterface):
             return orders
         else:
             open_orders = []
-            for i in self.__paper_trade_orders:
+            for i in self.paper_trade_orders:
                 if i["status"] == "open":
                     open_orders.append(i)
 
@@ -397,11 +397,11 @@ class CoinbaseProInterface(CurrencyInterface):
             'settled': True
         }
         """
-        if not self.__paper_trading:
-            response = self.__calls.get_order(order_id)
+        if not self.paper_trading:
+            response = self.calls.get_order(order_id)
             return utils.isolate_specific(needed, response)
         else:
-            for i in self.__paper_trade_orders:
+            for i in self.paper_trade_orders:
                 if i["id"] == order_id:
                     return i
 
@@ -419,7 +419,7 @@ class CoinbaseProInterface(CurrencyInterface):
             'usd_volume': '37.69'
         }
         """
-        fees = self.__calls.get_fees()
+        fees = self.calls.get_fees()
         return utils.isolate_specific(needed, fees)
 
     """
@@ -459,8 +459,8 @@ class CoinbaseProInterface(CurrencyInterface):
             window_close = window_open + 300 * granularity
             open_iso = utils.ISO8601_from_epoch(window_open)
             close_iso = utils.ISO8601_from_epoch(window_close)
-            history = history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso,
-                                                                        granularity)
+            history = history + self.calls.get_product_historic_rates(product_id, open_iso, close_iso,
+                                                                      granularity)
 
             window_open = window_close
             need -= 300
@@ -469,8 +469,8 @@ class CoinbaseProInterface(CurrencyInterface):
         # Fill the remainder
         open_iso = utils.ISO8601_from_epoch(window_open)
         close_iso = utils.ISO8601_from_epoch(epoch_stop)
-        history_block = history + self.__calls.get_product_historic_rates(product_id, open_iso, close_iso,
-                                                                          granularity)
+        history_block = history + self.calls.get_product_historic_rates(product_id, open_iso, close_iso,
+                                                                        granularity)
         history_block.sort(key=lambda x: x[0])
         return pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 
@@ -509,7 +509,7 @@ class CoinbaseProInterface(CurrencyInterface):
                 ...
             ]
             """
-        response = self.__calls.get_products()
+        response = self.calls.get_products()
         products = None
         for i in response:
             if i["id"] == product_id:
@@ -540,5 +540,5 @@ class CoinbaseProInterface(CurrencyInterface):
             'volume': '31137.51184419'
         }
         """
-        response = self.__calls.get_product_ticker(currency_pair)
+        response = self.calls.get_product_ticker(currency_pair)
         return float(response['price'])

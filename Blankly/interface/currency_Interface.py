@@ -23,21 +23,21 @@ import threading
 import Blankly.utils.utils as utils
 import Blankly.utils.paper_trading.local_account.trade_local as trade_local
 from Blankly.interface.abc_currency_interface import ICurrencyInterface
+import abc
 
-
-class CurrencyInterface(ICurrencyInterface):
+class CurrencyInterface(ICurrencyInterface, abc.ABC):
     def __init__(self, exchange_name, authenticated_API):
-        self.__exchange_name = exchange_name
-        self.__calls = authenticated_API
+        self.exchange_name = exchange_name
+        self.calls = authenticated_API
         # Reload user preferences here
-        self.__user_preferences = utils.load_user_preferences()
-        self.__paper_trading = self.__user_preferences["settings"]["paper_trade"]
-        self.__paper_trade_orders = []
+        self.user_preferences = utils.load_user_preferences()
+        self.paper_trading = self.user_preferences["settings"]["paper_trade"]
+        self.paper_trade_orders = []
         # TODO, improve creation of its own properties
-        self.__exchange_properties = None
+        self.exchange_properties = None
         # Some exchanges like binance will not return a value of 0.00 if there is no balance
-        self.__available_currencies = {}
-        self.__init_exchange__()
+        self.available_currencies = {}
+        self.init_exchange()
 
         self.needed = {
             '__init_exchange__': [
@@ -116,7 +116,7 @@ class CurrencyInterface(ICurrencyInterface):
             ]
         }
 
-        if self.__paper_trading:
+        if self.paper_trading:
             # Write in the accounts to our local account. This involves getting the values directly from the exchange
             accounts = self.get_account(override_paper_trading=True)
             value_pairs = {}
@@ -128,9 +128,16 @@ class CurrencyInterface(ICurrencyInterface):
             # Initialize the local account
             trade_local.init_local_account(value_pairs)
 
+    @abc.abstractmethod
+    def init_exchange(self):
+        """
+        Create the properties for the exchange.
+        """
+        pass
+
     """ Needs to be overridden here """
     def start_paper_trade_watchdog(self):
-        if self.__paper_trading:
+        if self.paper_trading:
             # TODO, this process could use variable update time/websocket usage, poll time and a variety of settings
             #  to create a robust trading system
             # Create the watchdog for watching limit orders
@@ -146,7 +153,7 @@ class CurrencyInterface(ICurrencyInterface):
         """
         time.sleep(10)
         used_currencies = []
-        for i in self.__paper_trade_orders:
+        for i in self.paper_trade_orders:
             if i["product_id"] not in used_currencies:
                 used_currencies.append(i['product_id'])
         prices = {}
@@ -155,8 +162,8 @@ class CurrencyInterface(ICurrencyInterface):
             prices[i] = self.get_price(i)
             time.sleep(.2)
 
-        for i in range(len(self.__paper_trade_orders)):
-            index = self.__paper_trade_orders[i]
+        for i in range(len(self.paper_trade_orders)):
+            index = self.paper_trade_orders[i]
             """
             Coinbase pro example
             {
@@ -182,7 +189,7 @@ class CurrencyInterface(ICurrencyInterface):
 
                 if index['side'] == 'buy':
                     if index['price'] > current_price:
-                        order, funds = self.__evaluate_paper_trade(index, current_price)
+                        order, funds = self.evaluate_paper_trade(index, current_price)
                         trade_local.trade_local(currency_pair=index['product_id'],
                                                 side='buy',
                                                 base_delta=float(order['filled_size']),  # Gain filled size after fees
@@ -190,10 +197,10 @@ class CurrencyInterface(ICurrencyInterface):
                         order['status'] = 'done'
                         order['settled'] = 'true'
 
-                        self.__paper_trade_orders[i] = order
+                        self.paper_trade_orders[i] = order
                 elif index['side'] == 'sell':
                     if index['price'] < prices[index['product_id']]:
-                        order, funds = self.__evaluate_paper_trade(index, current_price)
+                        order, funds = self.evaluate_paper_trade(index, current_price)
                         trade_local.trade_local(currency_pair=index['product_id'],
                                                 side='sell',
                                                 base_delta=float(index['size'] * - 1),  # Loose size before any fees
@@ -201,10 +208,10 @@ class CurrencyInterface(ICurrencyInterface):
                         order['status'] = 'done'
                         order['settled'] = 'true'
 
-                        self.__paper_trade_orders[i] = order
+                        self.paper_trade_orders[i] = order
 
     """ Needs to be overridden here """
-    def __evaluate_paper_trade(self, order, current_price):
+    def evaluate_paper_trade(self, order, current_price):
         """
         This calculates fees & evaluates accurate value
         Args:
@@ -212,9 +219,9 @@ class CurrencyInterface(ICurrencyInterface):
             current_price (float): The current price of the currency pair the limit order was created on
         """
         funds = order['size'] * current_price
-        executed_value = funds - funds * float((self.__exchange_properties["maker_fee_rate"]))
-        fill_fees = funds * float((self.__exchange_properties["maker_fee_rate"]))
-        fill_size = order['size'] - order['size'] * float((self.__exchange_properties["maker_fee_rate"]))
+        executed_value = funds - funds * float((self.exchange_properties["maker_fee_rate"]))
+        fill_fees = funds * float((self.exchange_properties["maker_fee_rate"]))
+        fill_size = order['size'] - order['size'] * float((self.exchange_properties["maker_fee_rate"]))
 
         order['executed_value'] = str(executed_value)
         order['fill_fees'] = str(fill_fees)
@@ -223,8 +230,8 @@ class CurrencyInterface(ICurrencyInterface):
         return order, funds
 
     """ Needs to be overridden here """
-    def __override_paper_trading(self, value):
-        self.__paper_trading = bool(value)
+    def override_paper_trading(self, value):
+        self.paper_trading = bool(value)
 
     """ Needs to be overridden here """
     def get_calls(self):
@@ -233,11 +240,11 @@ class CurrencyInterface(ICurrencyInterface):
              The exchange's direct calls object. A Blankly Bot class should have immediate access to this by
              default
         """
-        return self.__calls
+        return self.calls
 
     """ Needs to be overridden here """
     def get_exchange_type(self):
-        return self.__exchange_name
+        return self.exchange_name
 
     def get_account(self, currency=None, override_paper_trading=False):
         """
@@ -251,7 +258,7 @@ class CurrencyInterface(ICurrencyInterface):
         Binance: get_account["balances"]
         """
         # Use an internal value because we don't want to modify the class's value - which could create issues
-        internal_paper_trade = self.__paper_trading
+        internal_paper_trade = self.paper_trading
         if override_paper_trading:
             internal_paper_trade = False
 
