@@ -180,17 +180,15 @@ def rename_to(keys_array, renaming_dictionary):
             ]
         renaming_dictionary: Dictionary to perform the renaming on
     """
-    renaming_dictionary["exchange_specific"] = {}
+    mutated_dictionary = {}
+    mutated_dictionary["exchange_specific"] = {}
     for i in keys_array:
-        try:
-            # Check if it has the new name
-            error_test = renaming_dictionary[i[1]]
+        if i[1] in renaming_dictionary:
             # If we're here this key has already been defined, push it to the specific
-            renaming_dictionary["exchange_specific"][i[1]] = renaming_dictionary.pop(i[1])
-        except KeyError:
-            pass
-        renaming_dictionary[i[1]] = renaming_dictionary.pop(i[0])
-    return renaming_dictionary
+            mutated_dictionary["exchange_specific"][i[1]] = renaming_dictionary[i[1]]
+            # Then continue with adding the key that we were going to add anyway
+        mutated_dictionary[i[1]] = renaming_dictionary[(i[0])]
+    return mutated_dictionary
 
 
 # Non-recursive check
@@ -198,12 +196,19 @@ def isolate_specific(needed, compare_dictionary):
     """
     This is the parsing algorithm used to homogenize the dictionaries
     """
-    # Create a column vector for the keys
-    column = [column[0] for column in needed]
+    # Make a copy of the dictionary so we don't modify it if you loop over
+    compare_dictionary = dict(compare_dictionary)
+    # Create a row vector for the keys
+    column = [column[0] for column in needed]    # ex: ['currency', 'available', 'hold']
     # Create an area to hold the specific data
-    exchange_specific = {}
-    required = False
+    if 'exchange_specific' in compare_dictionary:
+        exchange_specific = compare_dictionary['exchange_specific']
+        del compare_dictionary['exchange_specific']
+    else:
+        exchange_specific = {}
+
     for k, v in compare_dictionary.items():
+        required = False
         # Check if the value is one of the keys
         for index, val in enumerate(column):
             required = False
@@ -220,21 +225,10 @@ def isolate_specific(needed, compare_dictionary):
             exchange_specific[k] = compare_dictionary[k]
 
     # If there exists the exchange specific dict in the compare dictionary
-    # This is done because after renaming, if there are naming conflicts they will already have been pushed here,
-    # generally the "else" should always be what runs.
-    if "exchange_specific" not in compare_dictionary:
-        # If there isn't, just add it directly
-        compare_dictionary["exchange_specific"] = exchange_specific
-    else:
-        # If there is, pull them together
-        compare_dictionary["exchange_specific"] = {**compare_dictionary["exchange_specific"], **exchange_specific}
+    # This is done because after renaming, if there are naming conflicts they will already have been pushed here
+    # Because we pulled out the naming conflicts dictionary we just just write this directly
+    compare_dictionary["exchange_specific"] = exchange_specific
 
-        # The tag could be in the exchange_specific tag, meaning the actual tag will get deleted later, pull it out
-        if "exchange_specific" in exchange_specific:
-            del exchange_specific["exchange_specific"]
-    # Pull the specific keys out
-    for k, v in exchange_specific.items():
-        del compare_dictionary[k]
     return compare_dictionary
 
 

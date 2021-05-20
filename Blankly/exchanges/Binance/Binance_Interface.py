@@ -17,7 +17,11 @@
 """
 import time
 import warnings
+
+import binance.exceptions
 import pandas as pd
+
+import Blankly.utils.exceptions as exceptions
 import Blankly.utils.utils as utils
 from Blankly.utils.purchases.limit_order import LimitOrder
 from Blankly.utils.purchases.market_order import MarketOrder
@@ -33,8 +37,8 @@ class BinanceInterface(CurrencyInterface):
             fees = self.calls.get_fees()
             try:
                 if fees['message'] == "Invalid API Key":
-                    raise LookupError("Invalid API Key - are you trying to use your normal exchange keys "
-                                      "while in sandbox mode?")
+                    raise exceptions.APIException("Invalid API Key - are you trying to use your normal "
+                                                  "exchange keys while in sandbox mode?")
             except KeyError:
                 pass
             self.__exchange_properties = {
@@ -42,7 +46,11 @@ class BinanceInterface(CurrencyInterface):
                 "taker_fee_rate": fees['taker_fee_rate']
             }
         if self.exchange_name == "binance":
-            account = self.calls.get_account()
+            try:
+                account = self.calls.get_account()
+            except binance.exceptions.BinanceAPIException:
+                raise exceptions.APIException("Invalid API Key, IP, or permissions for action - are you trying "
+                                              "to use your normal exchange keys while in sandbox mode?")
             self.__exchange_properties = {
                 "maker_fee_rate": account['makerCommission'] / 100,
                 "taker_fee_rate": account['takerCommission'] / 100,
@@ -50,10 +58,18 @@ class BinanceInterface(CurrencyInterface):
                 "seller_fee_rate": account['sellerCommission'] / 100,
             }
             symbols = self.calls.get_exchange_info()["symbols"]
-            base_assets = []
+            assets = []
             for i in symbols:
-                base_assets.append(i["baseAsset"])
-            self.__available_currencies = base_assets
+                assets.append(i["baseAsset"])
+                assets.append(i["quoteAsset"])
+
+            # Because these come down as trading pairs we have to filter for duplicates
+            filtered_base_assets = []
+            for i in assets:
+                # TODO replace this with a lambda function using the filter method
+                if i not in filtered_base_assets:
+                    filtered_base_assets.append(i)
+            self.__available_currencies = filtered_base_assets
 
     def get_products(self):
         needed = [["currency_id", str],
@@ -194,7 +210,8 @@ class BinanceInterface(CurrencyInterface):
         Coinbase Pro: get_account
         Binance: get_account["balances"]
         """
-        currency, internal_paper_trade = super().get_account(currency=currency, override_paper_trading=override_paper_trading)
+        currency, internal_paper_trade = super().get_account(currency=currency,
+                                                             override_paper_trading=override_paper_trading)
 
         needed = self.needed['get_account']
 
@@ -229,14 +246,18 @@ class BinanceInterface(CurrencyInterface):
         ]
 
         accounts = self.calls.get_account()["balances"]
+
         # Isolate for currency, warn if not found or default to just returning a parsed version
         if currency is not None:
             if currency in self.__available_currencies:
                 for i in range(len(accounts)):
+                    # If it was in the accounts return we can just isolate & parse
                     if accounts[i]["asset"] == currency:
-                        accounts = utils.rename_to(renames, accounts)
-                        parsed_value = utils.isolate_specific(needed, accounts[i])
+                        accounts = utils.rename_to(renames, accounts[i])
+                        parsed_value = utils.isolate_specific(needed, accounts)
                         return parsed_value
+                # If not just return a default 0 value. This is safe because we already checked if the currency
+                #  was valid
                 return {
                     "currency": currency,
                     "available": 0.0,
@@ -245,29 +266,32 @@ class BinanceInterface(CurrencyInterface):
             else:
                 raise LookupError("Currency not found")
 
-        # If binance returned something relevant, scan and add that to the array. If not just default to nothing
-        owned_assets = [column[0] for column in accounts]
+        # Binance only returns things you own, so extract those - scan and add that to the array.
+        # We can fill it to a balance of zero later
+        owned_assets = []
+        for i in accounts:
+            owned_assets.append(i['asset'])
         # Fill this list for return
         filled_dict_list = []
         # Iterate through
         for i in self.__available_currencies:
             # Iterate through everything binance returned
-            for index, val in enumerate(owned_assets):
+            found = False
+            for index, val in enumerate(accounts):
                 # If the current available currency matches one from binance
-                if val == i:
+                if val['asset'] == i:
                     # Do the normal thing above and append
-                    accounts = utils.rename_to(renames, accounts)
-                    accounts[index] = utils.isolate_specific(needed, accounts[index])
-                    filled_dict_list.append({
-                        accounts[index]
-                    })
-                    continue
+                    mutated = utils.rename_to(renames, val)
+                    mutated = utils.isolate_specific(needed, mutated)
+                    filled_dict_list.append(mutated)
+                    found = True
             # If it wasn't found just default here
-            filled_dict_list.append({
-                "currency": i,
-                "available": 0.0,
-                "hold": 0.0
-            })
+            if not found:
+                filled_dict_list.append({
+                    "currency": i,
+                    "available": 0.0,
+                    "hold": 0.0
+                })
         return filled_dict_list
 
     def market_order(self, product_id, side, funds) -> MarketOrder:
@@ -328,7 +352,6 @@ class BinanceInterface(CurrencyInterface):
             side: buy/sell
             price: price to set limit order
             size: amount of currency (like BTC) for the limit to be valued
-            kwargs: specific arguments that may be used by each exchange, (if exchange is known)
         """
         needed = self.needed['limit_order']
         """Send in a new limit order
