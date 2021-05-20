@@ -17,7 +17,10 @@
 """
 import Blankly
 from Blankly.exchanges.IExchange import IExchange
-from Blankly.API_Interface import APIInterface as Interface
+from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Interface import CoinbaseProInterface
+from Blankly.exchanges.Binance.Binance_Interface import BinanceInterface
+
+from Blankly.interface.abc_currency_interface import ICurrencyInterface
 import time
 import abc
 
@@ -43,9 +46,12 @@ class Exchange(IExchange, abc.ABC):
         return self.preferences
 
     def construct_interface(self, calls):
-        self.Interface = Interface(self.__type, calls)
+        if self.__type == "coinbase_pro":
+            self.Interface = CoinbaseProInterface(self.__type, calls)
+        elif self.__type == "binance":
+            self.Interface = BinanceInterface(self.__type, calls)
 
-    def get_interface(self) -> Interface:
+    def get_interface(self) -> ICurrencyInterface:  # Use this for autofill
         """
         Get the the authenticated interface for the object. This will provide authenticated API calls.
         """

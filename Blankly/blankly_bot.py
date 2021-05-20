@@ -23,7 +23,7 @@ import warnings
 
 from Blankly.exchanges.orderbook_manager import OrderbookManger
 from Blankly.exchanges.ticker_manager import TickerManager
-from Blankly.API_Interface import APIInterface
+from Blankly.interface.abc_currency_interface import ICurrencyInterface
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
 from binance.client import Client as Binance_API
 
@@ -36,7 +36,7 @@ class BlanklyBot:
     # Define the given types for the user
     Orderbook_Manager: OrderbookManger
     Ticker_Manager: TickerManager
-    Interface: APIInterface
+    Interface: ICurrencyInterface
     coinbase_pro_direct: Coinbase_Pro_API
     binance_direct: Binance_API
 

@@ -18,7 +18,7 @@
 
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro import Coinbase_Pro as Coinbase_Pro
 from Blankly.exchanges.Binance.Binance import Binance as Binance
-from Blankly.API_Interface import APIInterface as Interface
+from Blankly.interface.currency_Interface import CurrencyInterface as Interface
 from Blankly.blankly_bot import BlanklyBot
 
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Direct_Coinbase_Pro_API
