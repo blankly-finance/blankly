@@ -16,3 +16,7 @@
 
 class InvalidOrder(Exception):
     pass
+
+
+class APIException(Exception):
+    pass

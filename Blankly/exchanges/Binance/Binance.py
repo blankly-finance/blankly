@@ -15,13 +15,13 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import binance.exceptions
 
 from Blankly.exchanges.exchange import Exchange
 import Blankly.auth_constructor
 import Blankly.utils.utils as utils
 
 from binance.client import Client
-import warnings
 
 
 class Binance(Exchange):
@@ -33,11 +33,12 @@ class Binance(Exchange):
 
         preferences = utils.load_user_preferences()
         if preferences["settings"]["use_sandbox"]:
-            warnings.warn("Binance sandbox authentication not yet supported")
+            self.__calls = Client(api_key=auth[0], api_secret=auth[1],
+                                  tld=self.get_preferences()["settings"]["binance_tld"],
+                                  testnet=True)
         else:
-            pass
-        self.__calls = Client(api_key=auth[0], api_secret=auth[1],
-                              tld=self.get_preferences()["settings"]["binance_tld"])
+            self.__calls = Client(api_key=auth[0], api_secret=auth[1],
+                                  tld=self.get_preferences()["settings"]["binance_tld"])
 
         Blankly.auth_constructor.write_auth_cache("binance", defined_name, self.__calls)
 
