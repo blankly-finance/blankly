@@ -28,7 +28,7 @@ class BinanceInterface(CurrencyInterface):
     def __init__(self, exchange_name, authenticated_API):
         super().__init__(exchange_name, authenticated_API)
 
-    def init_exchange__(self):
+    def init_exchange(self):
         if self.exchange_name == "coinbase_pro":
             fees = self.calls.get_fees()
             try:
@@ -564,6 +564,9 @@ class BinanceInterface(CurrencyInterface):
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
         """
         epoch_start, epoch_stop = super().get_product_history(product_id, epoch_start, epoch_stop, granularity)
+
+        epoch_start = int(epoch_start)
+        epoch_stop = int(epoch_stop)
 
         accepted_grans = [60, 180, 300, 900, 1800, 3600, 7200, 14400,
                           21600, 28800, 43200, 86400, 259200, 604800, 2592000]
