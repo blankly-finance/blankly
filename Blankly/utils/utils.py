@@ -236,3 +236,14 @@ def isolate_specific(needed, compare_dictionary):
     for k, v in exchange_specific.items():
         del compare_dictionary[k]
     return compare_dictionary
+
+
+def convert_epochs(epoch):
+    """
+    If an epoch time is very long it means that it includes decimals - generally milliseconds. We like the decimal
+    format because its unambiguous
+    """
+    # Hope nobody is fixing this on Friday, June 11, 2128 at 8:53:20 AM (GMT)
+    while epoch > 5000000000:
+        epoch = epoch / 10
+    return epoch
