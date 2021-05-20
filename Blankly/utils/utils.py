@@ -52,8 +52,8 @@ settings_cache = None
 default_settings = {
     "settings": {
         "account_update_time": 5000,
-        "paper_trade": True,
-        "use_sandbox": False,
+        "paper_trade": False,
+        "use_sandbox": True,
         "binance_tld": "us",
         "websocket_buffer_size": 100000,
     }
@@ -70,7 +70,7 @@ def load_user_preferences(override_path=None):
             else:
                 f = open(override_path, )
                 preferences = json.load(f)
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             raise FileNotFoundError("Make sure a Settings.json file is placed in the same folder as the project "
                                     "working directory!")
         preferences = __compare_dicts(default_settings, preferences)
@@ -197,7 +197,7 @@ def isolate_specific(needed, compare_dictionary):
     This is the parsing algorithm used to homogenize the dictionaries
     """
     # Make a copy of the dictionary so we don't modify it if you loop over
-    compare_dictionary = dict(compare_dictionary)
+    compare_dictionary = {**compare_dictionary}
     # Create a row vector for the keys
     column = [column[0] for column in needed]    # ex: ['currency', 'available', 'hold']
     # Create an area to hold the specific data
