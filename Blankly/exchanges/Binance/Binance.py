@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import binance.exceptions
+
 
 from Blankly.exchanges.exchange import Exchange
 import Blankly.auth_constructor
@@ -32,7 +32,7 @@ class Binance(Exchange):
         Exchange.__init__(self, "binance", defined_name, preferences_path)
 
         preferences = utils.load_user_preferences()
-        if preferences["settings"]["use_sandbox"]:
+        if preferences["settings"]["use_sandbox"] or preferences["settings"]["paper_trade"]:
             self.__calls = Client(api_key=auth[0], api_secret=auth[1],
                                   tld=self.get_preferences()["settings"]["binance_tld"],
                                   testnet=True)
