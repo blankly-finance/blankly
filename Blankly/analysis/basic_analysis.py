@@ -10,7 +10,7 @@ def calculate_ema(data, window=50, smoothing=2) -> list:
 
 def calculate_rsi(data, window=14):
     delta = pd.Series(data).diff()
-    days_up, days_down = delta.copy(), delta.copy()
+    days_up, days_down = delta.copy()
     days_up[days_up < 0] = 0
     days_down[days_down > 0] = 0
 
@@ -18,6 +18,12 @@ def calculate_rsi(data, window=14):
     roll_down = pd.rolling_mean(days_down, window).abs()
 
     return (roll_up / roll_down).tolist()
+
+
+def average_recent(data, window=None) -> float:
+    if window is None:
+        return mean(data)
+    return mean(data[-window:])
 
 
 def calculate_sma(data, window=50, offset=False) -> list:
