@@ -20,10 +20,12 @@
 import time
 import warnings
 import pandas as pd
+
 import Blankly.utils.utils as utils
 import Blankly.utils.paper_trading.utils as paper_trade
 import Blankly.utils.paper_trading.local_account.trade_local as trade_local
 from Blankly.utils.exceptions import InvalidOrder
+from Blankly.utils.exceptions import APIException
 from Blankly.utils.purchases.limit_order import LimitOrder
 from Blankly.utils.purchases.market_order import MarketOrder
 
@@ -541,4 +543,6 @@ class CoinbaseProInterface(CurrencyInterface):
         }
         """
         response = self.calls.get_product_ticker(currency_pair)
+        if 'message' in response:
+            raise APIException("Error: " + response['message'])
         return float(response['price'])
