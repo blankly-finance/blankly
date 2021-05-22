@@ -24,9 +24,6 @@ def calculate_rsi(data, period=14, round_rsi=True):
 
     return np.round(rsi, 2).tolist() if round_rsi else rsi.tolist()
 
-import pandas as pd
-import numpy as np
-
 def calculate_stochastic_rsi(data, period=14, smoothK=3, smoothD=3):
     """ Calculates Stochoastic RSI Courteous of @lukazbinden
     :param ohlc:
