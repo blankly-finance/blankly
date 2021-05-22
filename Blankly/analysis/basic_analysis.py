@@ -10,7 +10,8 @@ def calculate_ema(data, window=50, smoothing=2) -> list:
 
 def calculate_rsi(data, window=14):
     delta = pd.Series(data).diff()
-    days_up, days_down = delta.copy()
+    copy = delta.copy()
+    days_up, days_down = copy, copy
     days_up[days_up < 0] = 0
     days_down[days_down > 0] = 0
 
