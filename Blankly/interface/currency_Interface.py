@@ -25,6 +25,7 @@ import Blankly.utils.paper_trading.local_account.trade_local as trade_local
 from Blankly.interface.abc_currency_interface import ICurrencyInterface
 import abc
 
+
 class CurrencyInterface(ICurrencyInterface, abc.ABC):
     def __init__(self, exchange_name, authenticated_API):
         self.exchange_name = exchange_name

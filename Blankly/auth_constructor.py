@@ -76,9 +76,9 @@ def write_auth_cache(exchange, name, auth):
     in the module to pull from exchanges at points they need the API
 
     Args:
-        exchange: (str) Exchange name ex: "coinbase_pro" or "binance"
-        name: (str) Portfolio name ex: "my cool portfolio"
-        auth: (obj) Authenticated object to store & recover.
+        exchange (str): Exchange name ex: "coinbase_pro" or "binance"
+        name (str): Portfolio name ex: "my cool portfolio"
+        auth (obj): Authenticated object to store & recover.
     """
     global auth_cache
     if exchange not in auth_cache:

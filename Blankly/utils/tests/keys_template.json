@@ -1,9 +1,0 @@
-{
-    \"coinbase_pro\": {
-        \"Sandbox Portfolio\": {
-            \"API_KEY\": \"${CBP_API_KEY}\",
-            \"API_SECRET\": \"${CBP_API_SECRET}\",
-            \"API_PASS\": \"${CBP_API_PASS}\"
-        }
-    }
-}
