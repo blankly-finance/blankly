@@ -8,17 +8,43 @@ def calculate_ema(data, window=50, smoothing=2) -> list:
     return ema.tolist()
 
 
-def calculate_rsi(data, window=14):
+def calculate_rsi(data, period=14, round_rsi=True):
+    """ Implements RSI Indicator, Courteous of Trading View and @lukazbinden"""
     delta = pd.Series(data).diff()
-    copy = delta.copy()
-    days_up, days_down = copy, copy
-    days_up[days_up < 0] = 0
-    days_down[days_down > 0] = 0
+    up = delta.copy()
+    up[up < 0] = 0
+    up = pd.Series.ewm(up, alpha=1/period).mean()
 
-    roll_up = pd.rolling_mean(days_up, window)
-    roll_down = pd.rolling_mean(days_down, window).abs()
+    down = delta.copy()
+    down[down > 0] = 0
+    down *= -1
+    down = pd.Series.ewm(down, alpha=1/period).mean()
 
-    return (roll_up / roll_down).tolist()
+    rsi = np.where(up == 0, 0, np.where(down == 0, 100, 100 - (100 / (1 + up / down))))
+
+    return np.round(rsi, 2).tolist() if round_rsi else rsi.tolist()
+
+import pandas as pd
+import numpy as np
+
+def calculate_stochastic_rsi(data, period=14, smoothK=3, smoothD=3):
+    """ Calculates Stochoastic RSI Courteous of @lukazbinden
+    :param ohlc:
+    :param period:
+    :param smoothK:
+    :param smoothD:
+    :return:
+    """
+    # Calculate RSI
+    rsi = calculate_rsi(data, period=period, round_rsi=False)
+
+    # Calculate StochRSI
+    rsi = pd.Series(rsi)
+    stochrsi  = (rsi - rsi.rolling(period).min()) / (rsi.rolling(period).max() - rsi.rolling(period).min())
+    stochrsi_K = stochrsi.rolling(smoothK).mean()
+    stochrsi_D = stochrsi_K.rolling(smoothD).mean()
+
+    return round(rsi, 2).tolist(), round(stochrsi_K * 100, 2).tolist(), round(stochrsi_D * 100, 2).tolist()
 
 
 def average_recent(data, window=None) -> float:
