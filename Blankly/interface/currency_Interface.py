@@ -234,6 +234,9 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
     def override_paper_trading(self, value):
         self.paper_trading = bool(value)
 
+    def get_paper_trading_status(self):
+        return self.paper_trading
+
     """ Needs to be overridden here """
     def get_calls(self):
         """
