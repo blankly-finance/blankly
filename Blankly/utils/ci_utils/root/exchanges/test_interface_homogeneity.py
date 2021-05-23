@@ -117,3 +117,4 @@ class InterfaceHomogeneity(unittest.TestCase):
             # self.Coinbase_Pro_Interface.market_order('BTC-USD', 'buy', 20)
         else:
             print("Either binance or coinbase pro not in paper trading mode. Is one in sandbox?")
+
