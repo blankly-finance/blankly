@@ -78,7 +78,6 @@ class CoinbaseProInterface(CurrencyInterface):
         for i in range(len(products)):
             # Rename needed
             products[i]["currency_id"] = products[i].pop("id")
-            # Isolate unimportant
             products[i] = utils.isolate_specific(needed, products[i])
         return products
 

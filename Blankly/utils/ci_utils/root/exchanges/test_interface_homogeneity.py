@@ -38,17 +38,36 @@ def compare_dictionaries(dict1, dict2) -> bool:
     del dict1["exchange_specific"]
     del dict2["exchange_specific"]
 
+    valid_keys = []
+
     for key, value in dict1.items():
         # Check to make sure that key is in the other dictionary
         if key in dict2:
             # Now are they the same type
             if not isinstance(dict2[key], type(value)):
                 # Issue detected
+                print("Type of key " + dict1[key] + " in dict1 is " + str(type(dict1[key])) +
+                      ", but is " + str(type(dict2[key])) + " in dict2.")
                 return False
+            else:
+                valid_keys.append(key)
         else:
             # Issue detected
+            print(key + " found in dict1 but not in " + str(dict2))
             return False
-    return True
+
+    # Delete these keys so we can check for differences
+    for i in valid_keys:
+        del dict1[i]
+        del dict2[i]
+
+    if dict1 == {} and dict2 == {}:
+        return True
+    else:
+        print("Differing keys:")
+        print(dict1)
+        print(dict2)
+        return False
 
 
 class InterfaceHomogeneity(unittest.TestCase):
