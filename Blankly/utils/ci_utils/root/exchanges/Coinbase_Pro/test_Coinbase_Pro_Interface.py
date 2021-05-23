@@ -28,3 +28,8 @@ class CoinbaseInterface(unittest.TestCase):
     def test_get_exchange_type(self):
         coinbase_pro = self.Coinbase_Pro_Interface.get_exchange_type()
         self.assertEqual(coinbase_pro, "coinbase_pro")
+
+    def test_market_order(self):
+        cbp_status = self.Coinbase_Pro_Interface.get_paper_trading_status()
+
+        self.assertTrue(cbp_status)
