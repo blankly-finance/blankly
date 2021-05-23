@@ -1,4 +1,4 @@
-![Blankly_Github_Logo](./Images/Blankly_Github_Logo.svg)
+![Blankly_Github_Logo](https://blankly.finance/remote_hosting/logo-dark.svg)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=security_rating)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=alert_status)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)

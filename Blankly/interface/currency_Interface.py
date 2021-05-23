@@ -25,6 +25,7 @@ import Blankly.utils.paper_trading.local_account.trade_local as trade_local
 from Blankly.interface.abc_currency_interface import ICurrencyInterface
 import abc
 
+
 class CurrencyInterface(ICurrencyInterface, abc.ABC):
     def __init__(self, exchange_name, authenticated_API):
         self.exchange_name = exchange_name
@@ -232,6 +233,9 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
     """ Needs to be overridden here """
     def override_paper_trading(self, value):
         self.paper_trading = bool(value)
+
+    def get_paper_trading_status(self):
+        return self.paper_trading
 
     """ Needs to be overridden here """
     def get_calls(self):

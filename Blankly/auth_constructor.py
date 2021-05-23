@@ -23,7 +23,9 @@ import warnings
 def load_json(keys_file):
     try:
         f = open(keys_file)
-        return json.load(f)
+        contents = json.load(f)
+        f.close()
+        return contents
     except FileNotFoundError:
         raise FileNotFoundError("Make sure a Keys.json file is placed in the same folder as the project working "
                                 "directory!")
@@ -76,9 +78,9 @@ def write_auth_cache(exchange, name, auth):
     in the module to pull from exchanges at points they need the API
 
     Args:
-        exchange: (str) Exchange name ex: "coinbase_pro" or "binance"
-        name: (str) Portfolio name ex: "my cool portfolio"
-        auth: (obj) Authenticated object to store & recover.
+        exchange (str): Exchange name ex: "coinbase_pro" or "binance"
+        name (str): Portfolio name ex: "my cool portfolio"
+        auth (obj): Authenticated object to store & recover.
     """
     global auth_cache
     if exchange not in auth_cache:

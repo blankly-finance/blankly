@@ -67,9 +67,11 @@ def load_user_preferences(override_path=None):
             if override_path is None:
                 f = open("Settings.json", )
                 preferences = json.load(f)
+                f.close()
             else:
                 f = open(override_path, )
                 preferences = json.load(f)
+                f.close()
         except FileNotFoundError:
             raise FileNotFoundError("Make sure a Settings.json file is placed in the same folder as the project "
                                     "working directory!")
@@ -223,6 +225,10 @@ def isolate_specific(needed, compare_dictionary):
         # There has to be a way to do this without raising a flag value
         if not required:
             exchange_specific[k] = compare_dictionary[k]
+
+    # Now we need to remove the keys that we appended to exchange_specific
+    for k, v in exchange_specific.items():
+        del compare_dictionary[k]
 
     # If there exists the exchange specific dict in the compare dictionary
     # This is done because after renaming, if there are naming conflicts they will already have been pushed here

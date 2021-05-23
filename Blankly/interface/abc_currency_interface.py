@@ -50,6 +50,15 @@ class ICurrencyInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def get_paper_trading_status(self):
+        """
+        Retrieve the paper trading status of the interface class
+        Returns:
+            bool: Paper trading is enabled/disabled
+        """
+        pass
+
+    @abc.abstractmethod
     def get_calls(self):
         """
         Get the direct & authenticated exchange object

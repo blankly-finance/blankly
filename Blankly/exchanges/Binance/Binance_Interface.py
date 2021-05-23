@@ -78,125 +78,93 @@ class BinanceInterface(CurrencyInterface):
                   ["base_min_size", float],
                   ["base_max_size", float],
                   ["base_increment", float]]
-        if self.exchange_name == "coinbase_pro":
-            """
-            [
-                {
-                    "id": "BTC-USD",
-                    "base_currency": "BTC",
-                    "quote_currency": "USD",
-                    "base_min_size": "0.0001",
-                    "base_max_size": "280",
-                    "quote_increment": "0.01",
-                    "base_increment": "0.00000001",
-                    "display_name": "BTC/USD",
-                    "min_market_funds": "5",
-                    "max_market_funds": "1000000",
-                    "margin_enabled": False,
-                    "post_only": False,
-                    "limit_only": False,
-                    "cancel_only": False,
-                    "trading_disabled": False,
-                    "status": "online",
-                    "status_message": "",
-                },
-            ]
-            """
-            products = self.calls.get_products()
-            for i in range(len(products)):
-                # Rename needed
-                products[i]["currency_id"] = products[i].pop("id")
-                # Isolate unimportant
-                products[i] = utils.isolate_specific(needed, products[i])
-            return products
-        elif self.exchange_name == "binance":
-            """
-            This is a section of the symbols array
-            [
-                {
-                    "symbol": "BTCUSD",
-                    "status": "TRADING",
-                    "baseAsset": "BTC",
-                    "baseAssetPrecision": 8,
-                    "quoteAsset": "USD",
-                    "quotePrecision": 4,
-                    "quoteAssetPrecision": 4,
-                    "baseCommissionPrecision": 8,
-                    "quoteCommissionPrecision": 2,
-                    "orderTypes": [
-                        "LIMIT",
-                        "LIMIT_MAKER",
-                        "MARKET",
-                        "STOP_LOSS_LIMIT",
-                        "TAKE_PROFIT_LIMIT",
-                    ],
-                    "icebergAllowed": True,
-                    "ocoAllowed": True,
-                    "quoteOrderQtyMarketAllowed": True,
-                    "isSpotTradingAllowed": True,
-                    "isMarginTradingAllowed": False,
-                    "filters": [
-                        {
-                            "filterType": "PRICE_FILTER",
-                            "minPrice": "0.0100",
-                            "maxPrice": "100000.0000",
-                            "tickSize": "0.0100",
-                        },
-                        {
-                            "filterType": "PERCENT_PRICE",
-                            "multiplierUp": "5",
-                            "multiplierDown": "0.2",
-                            "avgPriceMins": 5,
-                        },
-                        {
-                            "filterType": "LOT_SIZE",
-                            "minQty": "0.00000100",
-                            "maxQty": "9000.00000000",
-                            "stepSize": "0.00000100",
-                        },
-                        {
-                            "filterType": "MIN_NOTIONAL",
-                            "minNotional": "10.0000",
-                            "applyToMarket": True,
-                            "avgPriceMins": 5,
-                        },
-                        {"filterType": "ICEBERG_PARTS", "limit": 10},
-                        {
-                            "filterType": "MARKET_LOT_SIZE",
-                            "minQty": "0.00000000",
-                            "maxQty": "3200.00000000",
-                            "stepSize": "0.00000000",
-                        },
-                        {"filterType": "MAX_NUM_ORDERS", "maxNumOrders": 200},
-                        {"filterType": "MAX_NUM_ALGO_ORDERS", "maxNumAlgoOrders": 5},
-                    ],
-                    "permissions": ["SPOT"],
-                },
-            ]
-            """
-            products = self.calls.get_exchange_info()["symbols"]
-            for i in range(len(products)):
-                # Rename needed
-                products[i]["currency_id"] = products[i]["baseAsset"] + "-" + products[i]["quoteAsset"]
-                products[i]["base_currency"] = products[i].pop("baseAsset")
-                products[i]["quote_currency"] = products[i].pop("quoteAsset")
-                filters = products[i]["filters"]
-                # Iterate to find the next few
-                min_qty = None
-                max_qty = None
-                base_increment = None
-                for filters_array in filters:
-                    if filters_array["filterType"] == "LOT_SIZE":
-                        min_qty = filters_array["minQty"]
-                        max_qty = filters_array["maxQty"]
-                        base_increment = filters_array["stepSize"]
-                        break
-                products[i]["base_min_size"] = min_qty
-                products[i]["base_max_size"] = max_qty
-                products[i]["base_increment"] = base_increment
-                # Isolate keys unimportant for the interface's functionality
-                return utils.isolate_specific(needed, products[i])
-            return products
+        """
+        This is a section of the symbols array
+        [
+            {
+                "symbol": "BTCUSD",
+                "status": "TRADING",
+                "baseAsset": "BTC",
+                "baseAssetPrecision": 8,
+                "quoteAsset": "USD",
+                "quotePrecision": 4,
+                "quoteAssetPrecision": 4,
+                "baseCommissionPrecision": 8,
+                "quoteCommissionPrecision": 2,
+                "orderTypes": [
+                    "LIMIT",
+                    "LIMIT_MAKER",
+                    "MARKET",
+                    "STOP_LOSS_LIMIT",
+                    "TAKE_PROFIT_LIMIT",
+                ],
+                "icebergAllowed": True,
+                "ocoAllowed": True,
+                "quoteOrderQtyMarketAllowed": True,
+                "isSpotTradingAllowed": True,
+                "isMarginTradingAllowed": False,
+                "filters": [
+                    {
+                        "filterType": "PRICE_FILTER",
+                        "minPrice": "0.0100",
+                        "maxPrice": "100000.0000",
+                        "tickSize": "0.0100",
+                    },
+                    {
+                        "filterType": "PERCENT_PRICE",
+                        "multiplierUp": "5",
+                        "multiplierDown": "0.2",
+                        "avgPriceMins": 5,
+                    },
+                    {
+                        "filterType": "LOT_SIZE",
+                        "minQty": "0.00000100",
+                        "maxQty": "9000.00000000",
+                        "stepSize": "0.00000100",
+                    },
+                    {
+                        "filterType": "MIN_NOTIONAL",
+                        "minNotional": "10.0000",
+                        "applyToMarket": True,
+                        "avgPriceMins": 5,
+                    },
+                    {"filterType": "ICEBERG_PARTS", "limit": 10},
+                    {
+                        "filterType": "MARKET_LOT_SIZE",
+                        "minQty": "0.00000000",
+                        "maxQty": "3200.00000000",
+                        "stepSize": "0.00000000",
+                    },
+                    {"filterType": "MAX_NUM_ORDERS", "maxNumOrders": 200},
+                    {"filterType": "MAX_NUM_ALGO_ORDERS", "maxNumAlgoOrders": 5},
+                ],
+                "permissions": ["SPOT"],
+            },
+        ]
+        """
+        products = self.calls.get_exchange_info()["symbols"]
+        for i in range(len(products)):
+            # Rename needed
+            products[i]["currency_id"] = products[i]["baseAsset"] + "-" + products[i]["quoteAsset"]
+            products[i]["base_currency"] = products[i].pop("baseAsset")
+            products[i]["quote_currency"] = products[i].pop("quoteAsset")
+            filters = products[i]["filters"]
+            # Iterate to find the next few
+            min_qty = None
+            max_qty = None
+            base_increment = None
+            for filters_array in filters:
+                if filters_array["filterType"] == "LOT_SIZE":
+                    min_qty = filters_array["minQty"]
+                    max_qty = filters_array["maxQty"]
+                    base_increment = filters_array["stepSize"]
+                    break
+            products[i]["base_min_size"] = min_qty
+            products[i]["base_max_size"] = max_qty
+            products[i]["base_increment"] = base_increment
+            # Isolate keys unimportant for the interface's functionality
+            products[i] = utils.isolate_specific(needed, products[i])
+        return products
 
     def get_account(self, currency=None, override_paper_trading=False):
         """
