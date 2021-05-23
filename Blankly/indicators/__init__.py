@@ -1,2 +1,2 @@
-from Blankly.indicators.basic_indicators import *
-from Blankly.indicators.basic_functions import *
+from Blankly.indicators.indicators import *
+from Blankly.indicators.utils import *
