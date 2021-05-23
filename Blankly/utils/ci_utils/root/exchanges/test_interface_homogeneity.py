@@ -84,24 +84,36 @@ class InterfaceHomogeneity(unittest.TestCase):
         cbp_products = self.Coinbase_Pro_Interface.get_products()
         binance_products = self.Binance_Interface.get_products()
 
+        # TODO this could compare every key against every other key
         self.assertTrue(compare_dictionaries(cbp_products[0], binance_products[0]))
 
-    # def test_get_account(self):
-    #     cbp_products = self.Coinbase_Pro_Interface.get_products()
-    #     binance_products = self.Binance_Interface.get_products()
-    #
-    #     self.assertTrue(compare_dictionaries(cbp_products, binance_products))
-    #
-    # def test_market_order(self):
-    #     binance_status = self.Binance_Interface.get_paper_trading_status()
-    #     coinbase_pro_status = self.Binance_Interface.get_paper_trading_status()
-    #
-    #     self.assertTrue(binance_status)
-    #     self.assertTrue(coinbase_pro_status)
-    #
-    #     if binance_status and coinbase_pro_status:
-    #         pass
-    #         # self.Binance_Interface.market_order('BTC-USD', 'buy', 20)
-    #         # self.Coinbase_Pro_Interface.market_order('BTC-USD', 'buy', 20)
-    #     else:
-    #         print("Either binance or coinbase pro not in paper trading mode. Is one in sandbox?")
+    def test_get_account(self):
+        cbp_products = self.Coinbase_Pro_Interface.get_products()
+        binance_products = self.Binance_Interface.get_products()
+
+        # TODO this could compare every key against every other key
+        self.assertTrue(compare_dictionaries(cbp_products[0], binance_products[0]))
+
+    def test_market_order(self):
+        binance_status = self.Binance_Interface.get_paper_trading_status()
+        coinbase_pro_status = self.Binance_Interface.get_paper_trading_status()
+
+        self.assertTrue(binance_status)
+        self.assertTrue(coinbase_pro_status)
+
+        if binance_status and coinbase_pro_status:
+            pass
+            # buy = self.Binance_Interface.market_order('BTC-USD', 'buy', 20)
+            # sell = self.Binance_Interface.market_order('BTC-USD', 'sell', 20)
+            #
+            # self.assertEqual(buy.get_type(), 'market')
+            # self.assertLess(buy.get_funds(), 20)
+            #
+            # self.assertEqual(buy.get_side(), 'buy')
+            #
+            # # Finally, check that the responses are homogenized
+            # self.assertTrue(compare_dictionaries(buy.get_response(), sell.get_response()))
+
+            # self.Coinbase_Pro_Interface.market_order('BTC-USD', 'buy', 20)
+        else:
+            print("Either binance or coinbase pro not in paper trading mode. Is one in sandbox?")

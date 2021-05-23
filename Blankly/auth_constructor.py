@@ -23,7 +23,9 @@ import warnings
 def load_json(keys_file):
     try:
         f = open(keys_file)
-        return json.load(f)
+        contents = json.load(f)
+        f.close()
+        return contents
     except FileNotFoundError:
         raise FileNotFoundError("Make sure a Keys.json file is placed in the same folder as the project working "
                                 "directory!")
