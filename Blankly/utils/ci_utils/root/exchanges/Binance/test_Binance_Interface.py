@@ -17,6 +17,7 @@
 """
 import Blankly
 import unittest
+from Blankly.utils.utils import compare_dictionaries
 
 
 class BinanceInterface(unittest.TestCase):
@@ -28,8 +29,3 @@ class BinanceInterface(unittest.TestCase):
     def test_get_exchange_type(self):
         binance = self.Binance_Interface.get_exchange_type()
         self.assertEqual(binance, "binance")
-
-    def test_market_order(self):
-        cbp_status = self.Binance_Interface.get_paper_trading_status()
-
-        self.assertTrue(cbp_status)

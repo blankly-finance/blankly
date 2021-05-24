@@ -32,7 +32,8 @@ setup(
         'requests',
         'websocket-client',
         'pandas',
-        'python-binance'
+        'python-binance',
+        'tulipy'
     ],
     classifiers=[
         # Possible: "3 - Alpha", "4 - Beta" or "5 - Production/Stable"

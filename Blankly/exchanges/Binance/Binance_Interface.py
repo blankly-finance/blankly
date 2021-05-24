@@ -33,43 +33,30 @@ class BinanceInterface(CurrencyInterface):
         super().__init__(exchange_name, authenticated_API)
 
     def init_exchange(self):
-        if self.exchange_name == "coinbase_pro":
-            fees = self.calls.get_fees()
-            try:
-                if fees['message'] == "Invalid API Key":
-                    raise exceptions.APIException("Invalid API Key - are you trying to use your normal "
-                                                  "exchange keys while in sandbox mode?")
-            except KeyError:
-                pass
-            self.__exchange_properties = {
-                "maker_fee_rate": fees['maker_fee_rate'],
-                "taker_fee_rate": fees['taker_fee_rate']
-            }
-        if self.exchange_name == "binance":
-            try:
-                account = self.calls.get_account()
-            except binance.exceptions.BinanceAPIException:
-                raise exceptions.APIException("Invalid API Key, IP, or permissions for action - are you trying "
-                                              "to use your normal exchange keys while in sandbox mode?")
-            self.__exchange_properties = {
-                "maker_fee_rate": account['makerCommission'] / 100,
-                "taker_fee_rate": account['takerCommission'] / 100,
-                "buyer_fee_rate": account['buyerCommission'] / 100,  # I'm not sure of the case when these are nonzero
-                "seller_fee_rate": account['sellerCommission'] / 100,
-            }
-            symbols = self.calls.get_exchange_info()["symbols"]
-            assets = []
-            for i in symbols:
-                assets.append(i["baseAsset"])
-                assets.append(i["quoteAsset"])
+        try:
+            account = self.calls.get_account()
+        except binance.exceptions.BinanceAPIException:
+            raise exceptions.APIException("Invalid API Key, IP, or permissions for action - are you trying "
+                                          "to use your normal exchange keys while in sandbox mode?")
+        self.__exchange_properties = {
+            "maker_fee_rate": account['makerCommission'] / 100,
+            "taker_fee_rate": account['takerCommission'] / 100,
+            "buyer_fee_rate": account['buyerCommission'] / 100,  # I'm not sure of the case when these are nonzero
+            "seller_fee_rate": account['sellerCommission'] / 100,
+        }
+        symbols = self.calls.get_exchange_info()["symbols"]
+        assets = []
+        for i in symbols:
+            assets.append(i["baseAsset"])
+            assets.append(i["quoteAsset"])
 
-            # Because these come down as trading pairs we have to filter for duplicates
-            filtered_base_assets = []
-            for i in assets:
-                # TODO replace this with a lambda function using the filter method
-                if i not in filtered_base_assets:
-                    filtered_base_assets.append(i)
-            self.__available_currencies = filtered_base_assets
+        # Because these come down as trading pairs we have to filter for duplicates
+        filtered_base_assets = []
+        for i in assets:
+            # TODO replace this with a lambda function using the filter method
+            if i not in filtered_base_assets:
+                filtered_base_assets.append(i)
+        self.__available_currencies = filtered_base_assets
 
     def get_products(self):
         needed = [["currency_id", str],
