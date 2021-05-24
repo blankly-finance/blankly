@@ -51,7 +51,7 @@ class Exchange(IExchange, abc.ABC):
         elif self.__type == "binance":
             self.Interface = BinanceInterface(self.__type, calls)
 
-    def get_interface(self) -> ICurrencyInterface:  # Use this for autofill
+    def get_interface(self) -> ICurrencyInterface:
         """
         Get the the authenticated interface for the object. This will provide authenticated API calls.
         """

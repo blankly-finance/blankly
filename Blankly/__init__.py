@@ -18,6 +18,7 @@
 
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro import Coinbase_Pro as Coinbase_Pro
 from Blankly.exchanges.Binance.Binance import Binance as Binance
+from Blankly.exchanges.Paper_Trade.Paper_Trade import PaperTrade
 from Blankly.interface.currency_Interface import CurrencyInterface as Interface
 from Blankly.blankly_bot import BlanklyBot
 

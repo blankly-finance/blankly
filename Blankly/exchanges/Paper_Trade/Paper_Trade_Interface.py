@@ -195,7 +195,6 @@ class PaperTradeInterface(CurrencyInterface):
             'product_id': product_id,
             'type': 'market'
         }
-        print("Paper trading...")
         creation_time = time.time()
         price = self.get_price(product_id)
         min_funds = float(self.get_market_limits(product_id)["exchange_specific"]["min_market_funds"])
@@ -235,7 +234,6 @@ class PaperTradeInterface(CurrencyInterface):
             side: buy/sell
             price: price to set limit order
             size: amount of currency (like BTC) for the limit to be valued
-            kwargs: specific arguments that may be used by each exchange, (if exchange is known)
         """
         needed = self.needed['limit_order']
         """
@@ -264,41 +262,34 @@ class PaperTradeInterface(CurrencyInterface):
             'product_id': product_id,
             'type': 'limit'
         }
-        if not self.paper_trading:
-            response = self.calls.place_limit_order(product_id, side, price, size=size)
-            if "message" in response:
-                raise InvalidOrder("Invalid Order: " + response["message"])
-            response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
-        else:
-            print("Paper trading...")
-            creation_time = time.time()
-            min_base = float(self.get_market_limits(product_id)["base_min_size"])
-            if size < min_base:
-                raise InvalidOrder("Invalid Order: Order quantity is too small. Minimum is: " + str(min_base))
+        creation_time = time.time()
+        min_base = float(self.get_market_limits(product_id)["base_min_size"])
+        if size < min_base:
+            raise InvalidOrder("Invalid Order: Order quantity is too small. Minimum is: " + str(min_base))
 
-            if not trade_local.test_trade(product_id, side, size, price):
-                raise InvalidOrder("Invalid Order: Insufficient funds")
+        if not trade_local.test_trade(product_id, side, size, price):
+            raise InvalidOrder("Invalid Order: Insufficient funds")
 
-            # Create coinbase pro-like id
-            coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
-            response = {
-                'id': str(coinbase_pro_id),
-                'price': str(price),
-                'size': str(size),
-                'product_id': str(product_id),
-                'side': str(side),
-                'stp': 'dc',
-                'type': 'limit',
-                "time_in_force": "GTC",
-                'post_only': 'false',
-                'created_at': str(creation_time),
-                "fill_fees": "0.0000000000000000",
-                "filled_size": "0.00000000",
-                "executed_value": "0.0000000000000000",
-                'status': 'pending',
-                'settled': 'false'
-            }
-            self.paper_trade_orders.append(response)
+        # Create coinbase pro-like id
+        coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
+        response = {
+            'id': str(coinbase_pro_id),
+            'price': str(price),
+            'size': str(size),
+            'product_id': str(product_id),
+            'side': str(side),
+            'stp': 'dc',
+            'type': 'limit',
+            "time_in_force": "GTC",
+            'post_only': 'false',
+            'created_at': str(creation_time),
+            "fill_fees": "0.0000000000000000",
+            "filled_size": "0.00000000",
+            "executed_value": "0.0000000000000000",
+            'status': 'pending',
+            'settled': 'false'
+        }
+        self.paper_trade_orders.append(response)
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
 
