@@ -66,12 +66,9 @@ Check out our [website](http://blankly.finance).
 
 ## Coming Features
 
-- Paper trading system
 - Backtesting (`bot.backtest(time_frame)`)
 - Deployment (`> Blankly push bot/*`)
-- Online GUI and hosting
-- C++ acceleration for technical analysis
-- Bot can request to authenticate on other user-added exchanges and portfolios
+- Online hosting
 
 # Quick Start
 
@@ -208,9 +205,9 @@ The comments offer a decent amount of description for the behavior, but here is 
 
 | Exchange     | REST Support | Ticker Websocket | Order Book | Interface |
 | ------------ | ------------ | ---------------- | ---------- | --------- |
-| Coinbase Pro | 🟢            | 🟢                | 🟢          | 🟢         |
-| Binance      | 🟢            | 🟢                | 🟢          | 🟡         |
-| Kraken       | 🔴            | 🔴                | 🔴          | 🔴         |
+| Coinbase Pro | 🟢           | 🟢               | 🟢        | 🟢        |
+| Binance      | 🟢           | 🟢               | 🟢        | 🟡        |
+| Alpaca       | 🟡           | 🔴               | 🔴        | 🟡        |
 
 🟢 = working
 
