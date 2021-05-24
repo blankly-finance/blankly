@@ -52,7 +52,6 @@ settings_cache = None
 default_settings = {
     "settings": {
         "account_update_time": 5000,
-        "paper_trade": False,
         "use_sandbox": True,
         "binance_tld": "us",
         "websocket_buffer_size": 100000,

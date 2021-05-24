@@ -22,8 +22,6 @@ import warnings
 import pandas as pd
 
 import Blankly.utils.utils as utils
-import Blankly.utils.paper_trading.utils as paper_trade
-import Blankly.utils.paper_trading.local_account.trade_local as trade_local
 from Blankly.utils.exceptions import InvalidOrder
 from Blankly.utils.exceptions import APIException
 from Blankly.utils.purchases.limit_order import LimitOrder
@@ -81,19 +79,17 @@ class CoinbaseProInterface(CurrencyInterface):
             products[i] = utils.isolate_specific(needed, products[i])
         return products
 
-    def get_account(self, currency=None, override_paper_trading=False):
+    def get_account(self, currency=None):
         """
         Get all currencies in an account, or sort by currency/account_id
         Args:
             currency (Optional): Filter by particular currency
-            override_paper_trading (Optional bool): If paper trading is enabled, setting this to true will get the
-             actual account values
 
             These arguments are mutually exclusive
         Coinbase Pro: get_account
         Binance: get_account["balances"]
         """
-        currency, internal_paper_trade = super().get_account(currency=currency, override_paper_trading=override_paper_trading)
+        currency = super().get_account(currency=currency)
 
         needed = self.needed['get_account']
         """
@@ -111,28 +107,14 @@ class CoinbaseProInterface(CurrencyInterface):
             }
         ]
         """
-        if not internal_paper_trade:
-            accounts = self.calls.get_accounts()
-        else:
-            local_account = trade_local.get_accounts()
-            accounts = []
-            for key, value in local_account.items():
-                accounts.append({
-                    'currency': key,
-                    'balance': value,
-                    'available': value,
-                    'hold': 0
-                })
+        accounts = self.calls.get_accounts()
         # We have to sort through it if the accounts are none
-        if currency is None:
-            # If this is also none we just return raw, which we do later
-            pass
-        else:
+        if currency is not None:
             for i in accounts:
                 if i["currency"] == currency:
                     parsed_value = utils.isolate_specific(needed, i)
                     return parsed_value
-            warnings.warn("Currency not found")
+            raise ValueError("Currency not found")
         for i in range(len(accounts)):
             accounts[i] = utils.isolate_specific(needed, accounts[i])
         return accounts
@@ -170,41 +152,10 @@ class CoinbaseProInterface(CurrencyInterface):
             'product_id': product_id,
             'type': 'market'
         }
-        if not self.paper_trading:
-            response = self.calls.place_market_order(product_id, side, funds=funds)
-            if "message" in response:
-                raise InvalidOrder("Invalid Order: " + response["message"])
-            response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
-        else:
-            print("Paper trading...")
-            creation_time = time.time()
-            price = self.get_price(product_id)
-            min_funds = float(self.get_market_limits(product_id)["exchange_specific"]["min_market_funds"])
-            if funds < min_funds:
-                raise InvalidOrder("Invalid Order: funds is too small. Minimum is: " + str(min_funds))
-
-            if not trade_local.test_trade(product_id, side, funds / price, price):
-                raise InvalidOrder("Invalid Order: Insufficient funds")
-            # Create coinbase pro-like id
-            coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
-            response = {
-                'id': str(coinbase_pro_id),
-                'side': str(side),
-                'type': 'market',
-                'status': 'done',
-                'product_id': str(product_id),
-                'funds': str(funds - funds * float((self.__exchange_properties["maker_fee_rate"]))),
-                'specified_funds': str(funds),
-                'post_only': 'false',
-                'created_at': str(creation_time),
-                'done_at': str(time.time()),
-                'done_reason': 'filled',
-                'fill_fees': str(funds * float((self.__exchange_properties["maker_fee_rate"]))),
-                'filled_size': str(funds - funds * float((self.__exchange_properties["maker_fee_rate"])) / price),
-                'executed_value': str(funds - funds * float((self.__exchange_properties["maker_fee_rate"]))),
-                'settled': 'true'
-            }
-            self.paper_trade_orders.append(response)
+        response = self.calls.place_market_order(product_id, side, funds=funds)
+        if "message" in response:
+            raise InvalidOrder("Invalid Order: " + response["message"])
+        response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
@@ -216,7 +167,6 @@ class CoinbaseProInterface(CurrencyInterface):
             side: buy/sell
             price: price to set limit order
             size: amount of currency (like BTC) for the limit to be valued
-            kwargs: specific arguments that may be used by each exchange, (if exchange is known)
         """
         needed = self.needed['limit_order']
         """
@@ -245,41 +195,10 @@ class CoinbaseProInterface(CurrencyInterface):
             'product_id': product_id,
             'type': 'limit'
         }
-        if not self.paper_trading:
-            response = self.calls.place_limit_order(product_id, side, price, size=size)
-            if "message" in response:
-                raise InvalidOrder("Invalid Order: " + response["message"])
-            response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
-        else:
-            print("Paper trading...")
-            creation_time = time.time()
-            min_base = float(self.get_market_limits(product_id)["base_min_size"])
-            if size < min_base:
-                raise InvalidOrder("Invalid Order: Order quantity is too small. Minimum is: " + str(min_base))
-
-            if not trade_local.test_trade(product_id, side, size, price):
-                raise InvalidOrder("Invalid Order: Insufficient funds")
-
-            # Create coinbase pro-like id
-            coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
-            response = {
-                'id': str(coinbase_pro_id),
-                'price': str(price),
-                'size': str(size),
-                'product_id': str(product_id),
-                'side': str(side),
-                'stp': 'dc',
-                'type': 'limit',
-                "time_in_force": "GTC",
-                'post_only': 'false',
-                'created_at': str(creation_time),
-                "fill_fees": "0.0000000000000000",
-                "filled_size": "0.00000000",
-                "executed_value": "0.0000000000000000",
-                'status': 'pending',
-                'settled': 'false'
-            }
-            self.paper_trade_orders.append(response)
+        response = self.calls.place_limit_order(product_id, side, price, size=size)
+        if "message" in response:
+            raise InvalidOrder("Invalid Order: " + response["message"])
+        response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
 
@@ -289,22 +208,7 @@ class CoinbaseProInterface(CurrencyInterface):
             dict: Containing the order_id of cancelled order. Example::
             { "order_id": "c5ab5eae-76be-480e-8961-00792dc7e138" }
         """
-        if not self.paper_trading:
-            return {"order_id": self.calls.cancel_order(order_id)[0]}
-        else:
-            """
-            This block could potentially work for both exchanges
-            """
-            order_index = None
-            for i in range(len(self.paper_trade_orders)):
-                index = self.paper_trade_orders[i]
-                if index['status'] == 'pending' and index['id'] == order_id:
-                    order_index = i
-
-            if order_index is not None:
-                id = self.paper_trade_orders[order_index]['id']
-                del self.paper_trade_orders[order_index]
-                return {"order_id": id}
+        return {"order_id": self.calls.cancel_order(order_id)[0]}
 
     def get_open_orders(self, product_id=None):
         """
@@ -335,28 +239,20 @@ class CoinbaseProInterface(CurrencyInterface):
             }
         ]
         """
-        if not self.paper_trading:
-            if product_id is None:
-                orders = list(self.calls.get_orders())
-            else:
-                orders = list(self.calls.get_orders(product_id=product_id))
-
-            if len(orders) == 0:
-                return []
-            if orders[0] == 'message':
-                raise InvalidOrder("Invalid Order: " + str(orders))
-
-            for i in range(len(orders)):
-                orders[i] = utils.isolate_specific(needed, orders[i])
-
-            return orders
+        if product_id is None:
+            orders = list(self.calls.get_orders())
         else:
-            open_orders = []
-            for i in self.paper_trade_orders:
-                if i["status"] == "open":
-                    open_orders.append(i)
+            orders = list(self.calls.get_orders(product_id=product_id))
 
-            return open_orders
+        if len(orders) == 0:
+            return []
+        if orders[0] == 'message':
+            raise InvalidOrder("Invalid Order: " + str(orders))
+
+        for i in range(len(orders)):
+            orders[i] = utils.isolate_specific(needed, orders[i])
+
+        return orders
 
     def get_order(self, currency_id, order_id) -> dict:
         needed = self.needed['get_order']
@@ -398,13 +294,8 @@ class CoinbaseProInterface(CurrencyInterface):
             'settled': True
         }
         """
-        if not self.paper_trading:
-            response = self.calls.get_order(order_id)
-            return utils.isolate_specific(needed, response)
-        else:
-            for i in self.paper_trade_orders:
-                if i["id"] == order_id:
-                    return i
+        response = self.calls.get_order(order_id)
+        return utils.isolate_specific(needed, response)
 
     """
     Coinbase Pro: get_fees

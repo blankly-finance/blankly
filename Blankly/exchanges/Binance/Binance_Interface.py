@@ -153,20 +153,17 @@ class BinanceInterface(CurrencyInterface):
             products[i] = utils.isolate_specific(needed, products[i])
         return products
 
-    def get_account(self, currency=None, override_paper_trading=False):
+    def get_account(self, currency=None):
         """
         Get all currencies in an account, or sort by currency/account_id
         Args:
             currency (Optional): Filter by particular currency
-            override_paper_trading (Optional bool): If paper trading is enabled, setting this to true will get the
-             actual account values
 
             These arguments are mutually exclusive
         Coinbase Pro: get_account
         Binance: get_account["balances"]
         """
-        currency, internal_paper_trade = super().get_account(currency=currency,
-                                                             override_paper_trading=override_paper_trading)
+        currency = super().get_account(currency=currency)
 
         needed = self.needed['get_account']
 

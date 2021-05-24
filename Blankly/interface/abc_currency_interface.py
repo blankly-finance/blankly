@@ -34,31 +34,6 @@ class ICurrencyInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def start_paper_trade_watchdog(self):
-        """
-        Start the internal order watching loop
-        """
-        pass
-
-    @abc.abstractmethod
-    def override_paper_trading(self, value):
-        """
-        Force a paper trading value & override settings
-        Args:
-            value (bool): Set paper trading to be on or off (true or false)
-        """
-        pass
-
-    @abc.abstractmethod
-    def get_paper_trading_status(self):
-        """
-        Retrieve the paper trading status of the interface class
-        Returns:
-            bool: Paper trading is enabled/disabled
-        """
-        pass
-
-    @abc.abstractmethod
     def get_calls(self):
         """
         Get the direct & authenticated exchange object
@@ -92,13 +67,11 @@ class ICurrencyInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_account(self, currency=None, override_paper_trading=False):
+    def get_account(self, currency=None):
         """
         Get all currencies in an account, or sort by currency/account_id
         Args:
             currency (Optional): Filter by particular currency
-            override_paper_trading (Optional bool): If paper trading is enabled, setting this to true will get the
-             actual account values
 
             These arguments are mutually exclusive
 
