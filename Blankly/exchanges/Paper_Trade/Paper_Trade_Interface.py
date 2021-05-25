@@ -20,6 +20,7 @@
 from Blankly.interface.currency_Interface import CurrencyInterface
 
 from Blankly.utils.exceptions import InvalidOrder
+from Blankly.utils.exceptions import APIException
 
 import Blankly.utils.paper_trading.local_account.trade_local as trade_local
 import Blankly.utils.paper_trading.utils as paper_trade
@@ -141,7 +142,6 @@ class PaperTradeInterface(CurrencyInterface):
 
                         self.paper_trade_orders[i] = order
 
-    """ Needs to be overridden here """
     def evaluate_paper_trade(self, order, current_price):
         """
         This calculates fees & evaluates accurate value
@@ -210,7 +210,9 @@ class PaperTradeInterface(CurrencyInterface):
         if funds < min_funds:
             raise InvalidOrder("Invalid Order: funds is too small. Minimum is: " + str(min_funds))
 
-        if not trade_local.test_trade(product_id, side, funds / price, price):
+        qty = funds / price
+
+        if not trade_local.test_trade(product_id, side, qty , price):
             raise InvalidOrder("Invalid Order: Insufficient funds")
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
@@ -231,8 +233,21 @@ class PaperTradeInterface(CurrencyInterface):
             'executed_value': str(funds - funds * float((self.__exchange_properties["maker_fee_rate"]))),
             'settled': 'true'
         }
-        self.paper_trade_orders.append(response)
         response = utils.isolate_specific(needed, response)
+        self.paper_trade_orders.append(response)
+        if side == "buy":
+            trade_local.trade_local(currency_pair=product_id,
+                                    side=side,
+                                    base_delta=qty - qty * float((self.__exchange_properties["maker_fee_rate"])),
+                                    # Gain filled size after fees
+                                    quote_delta=funds * -1)  # Loose the original fund amount
+        elif side == "sell":
+            trade_local.trade_local(currency_pair=product_id,
+                                    side=side,
+                                    base_delta=float(qty - 1),  # Loose size before any fees
+                                    quote_delta=funds - funds * float((self.__exchange_properties["maker_fee_rate"])))  # Gain executed value after fees
+        else:
+            raise APIException("Invalid trade side: " + str(side))
         return MarketOrder(order, response, self)
 
     def limit_order(self, product_id, side, price, size) -> LimitOrder:
@@ -298,8 +313,8 @@ class PaperTradeInterface(CurrencyInterface):
             'status': 'pending',
             'settled': 'false'
         }
-        self.paper_trade_orders.append(response)
         response = utils.isolate_specific(needed, response)
+        self.paper_trade_orders.append(response)
         return LimitOrder(order, response, self)
 
     def cancel_order(self, currency_id, order_id) -> dict:

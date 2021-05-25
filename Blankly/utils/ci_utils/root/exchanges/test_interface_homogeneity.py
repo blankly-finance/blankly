@@ -23,35 +23,56 @@ import time
 from Blankly.utils.purchases.market_order import MarketOrder
 
 
+def compare_responses(response_list):
+    """
+    Compare a set of responses against the others. This supports a large set of interfaces
+    """
+    for i in range(len(response_list)-1):
+        if not compare_dictionaries(response_list[i], response_list[i+1]):
+            print("Failed checking index " + str(i+1) + " against index " + str(i))
+            return False
+    return True
+
+
 class InterfaceHomogeneity(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
+        cls.Interfaces = []
+
         cls.Coinbase_Pro = Blankly.Coinbase_Pro(portfolio_name="Sandbox Portfolio")
         cls.Coinbase_Pro_Interface = cls.Coinbase_Pro.get_interface()
+        cls.Interfaces.append(cls.Coinbase_Pro_Interface)
 
         cls.Binance = Blankly.Binance(portfolio_name="Spot Test Key")
         cls.Binance_Interface = cls.Binance.get_interface()
+        cls.Interfaces.append(cls.Binance_Interface)
+
+        cls.Paper_Trade = Blankly.PaperTrade(cls.Binance.get_interface())
+        cls.Paper_Trade_Interface = cls.Paper_Trade.get_interface()
+        cls.Interfaces.append(cls.Paper_Trade_Interface)
 
     def test_get_products(self):
-        cbp_products = self.Coinbase_Pro_Interface.get_products()
-        binance_products = self.Binance_Interface.get_products()
+        responses = []
+        for i in range(len(self.Interfaces)):
+            responses[i] = self.Interfaces[i].get_products()[0]
 
-        # TODO this could compare every key against every other key
-        self.assertTrue(compare_dictionaries(cbp_products[0], binance_products[0]))
+        self.assertTrue(responses)
 
     def test_get_account(self):
-        cbp_products = self.Coinbase_Pro_Interface.get_products()
-        binance_products = self.Binance_Interface.get_products()
+        responses = []
+        for i in range(len(self.Interfaces)):
+            responses[i] = self.Interfaces[i].get_account()[0]
 
-        # TODO this could compare every key against every other key
-        self.assertTrue(compare_dictionaries(cbp_products[0], binance_products[0]))
+        self.assertTrue(responses)
 
     def check_market_order(self, order1: MarketOrder, side, funds):
         """
         Test if a market order passes these checks.
         Args:
-            order1: The market order to test - has to be type MarketOrder
+            order1 (dict): The market order to test - has to be type MarketOrder
+            side (str): Market side (buy/sell)
+            funds (float): Amount of money used in purchase (pre-fees)
         """
         self.assertEqual(order1.get_side(), side)
         self.assertLess(order1.get_funds(), funds)
