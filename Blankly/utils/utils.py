@@ -181,16 +181,18 @@ def rename_to(keys_array, renaming_dictionary):
             ]
         renaming_dictionary: Dictionary to perform the renaming on
     """
-    mutated_dictionary = {}
-    mutated_dictionary["exchange_specific"] = {}
+    mutated_dictionary = {**renaming_dictionary}
+    if "exchange_specific" not in mutated_dictionary:
+        mutated_dictionary["exchange_specific"] = {}
+
     for i in keys_array:
         if i[1] in renaming_dictionary:
             # If we're here this key has already been defined, push it to the specific
             mutated_dictionary["exchange_specific"][i[1]] = renaming_dictionary[i[1]]
             # Then continue with adding the key that we were going to add anyway
         mutated_dictionary[i[1]] = renaming_dictionary[(i[0])]
+        del mutated_dictionary[i[0]]
     return mutated_dictionary
-
 
 # Non-recursive check
 def isolate_specific(needed, compare_dictionary):

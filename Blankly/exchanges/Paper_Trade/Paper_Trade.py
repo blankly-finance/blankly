@@ -17,6 +17,7 @@
 """
 
 from Blankly.exchanges.exchange import Exchange
+from Blankly.exchanges.Paper_Trade.Paper_Trade_Interface import PaperTradeInterface
 
 
 class PaperTrade(Exchange):
@@ -24,7 +25,7 @@ class PaperTrade(Exchange):
         # Giving the preferences path as none allows us to create a default
         Exchange.__init__(self, "paper_trade", "", None)
 
-        self.Interface = authenticated_interface
+        self.Interface = PaperTradeInterface(authenticated_interface)
 
     """
     Builds information about the currency on this exchange by making particular API calls

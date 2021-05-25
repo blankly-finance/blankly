@@ -38,8 +38,10 @@ class PaperTradeInterface(CurrencyInterface):
     def __init__(self, derived_interface):
         self.paper_trade_orders = []
 
+        super().__init__("paper_trade", derived_interface)
+
         # Write in the accounts to our local account. This involves getting the values directly from the exchange
-        accounts = self.get_account()
+        accounts = self.calls.get_account()
         value_pairs = {}
 
         # Iterate & pair
@@ -49,10 +51,10 @@ class PaperTradeInterface(CurrencyInterface):
         self.get_products_cache = None
         self.get_fees_cache = None
 
+        self.__exchange_properties = None
+
         # Initialize the local account
         trade_local.init_local_account(value_pairs)
-
-        super().__init__("paper_trade", derived_interface)
 
     def init_exchange(self):
         fees = self.calls.get_fees()
@@ -188,6 +190,7 @@ class PaperTradeInterface(CurrencyInterface):
         return accounts
 
     def market_order(self, product_id, side, funds) -> MarketOrder:
+        print("Paper Trading...")
         needed = self.needed['market_order']
         order = {
             'funds': funds,
@@ -197,7 +200,13 @@ class PaperTradeInterface(CurrencyInterface):
         }
         creation_time = time.time()
         price = self.get_price(product_id)
-        min_funds = float(self.get_market_limits(product_id)["exchange_specific"]["min_market_funds"])
+
+        market_limits = self.get_market_limits(product_id)
+        if "min_market_funds" in market_limits['exchange_specific']:
+            min_funds = float(market_limits["exchange_specific"]["min_market_funds"])
+        else:
+            min_funds = float(market_limits["base_min_size"]) * price
+
         if funds < min_funds:
             raise InvalidOrder("Invalid Order: funds is too small. Minimum is: " + str(min_funds))
 
@@ -323,6 +332,8 @@ class PaperTradeInterface(CurrencyInterface):
 
     def get_fees(self):
         # TODO this needs to check if backtesting is enabled, only return cache then
+        if self.get_fees_cache is None:
+            self.get_fees_cache = self.calls.get_fees()
         return self.get_fees_cache
 
     def get_product_history(self, product_id, epoch_start, epoch_stop, granularity):

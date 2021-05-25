@@ -381,14 +381,14 @@ class CoinbaseProInterface(CurrencyInterface):
         list: List of available currency pairs. Example::
             [
                 {
-                    "id": "BTC-USD",
+                    "id": "BTC-USD",  <-- Needed
                     "display_name": "BTC/USD",
-                    "base_currency": "BTC",
-                    "quote_currency": "USD",
-                    "base_increment": "0.00000001",
-                    "quote_increment": "0.01000000",
-                    "base_min_size": "0.00100000",
-                    "base_max_size": "280.00000000",
+                    "base_currency": "BTC", <-- Needed
+                    "quote_currency": "USD",  <-- Needed
+                    "base_increment": "0.00000001",  <-- Needed
+                    "quote_increment": "0.01000000",  <-- Needed
+                    "base_min_size": "0.00100000",  <-- Needed
+                    "base_max_size": "280.00000000",  <-- Needed
                     "min_market_funds": "5",
                     "max_market_funds": "1000000",
                     "status": "online",

@@ -4,7 +4,7 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=alert_status)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
 ## What is it?
 
-​	Blankly is an elegant python library for interacting with many different crypto exchanges on multiple portfolios in a consistent way. Blankly offers a powerful feature-set, optimized for speed and ease of use.
+​	Blankly is an elegant python library for interacting with many crypto exchanges on multiple portfolios in a consistent way. Blankly offers a powerful feature-set, optimized for speed and ease of use.
 
 
 
@@ -38,7 +38,9 @@ Check out our [website](http://blankly.finance).
 
 - Customizable circular buffer websocket feeds
 
-- Support for coinbase pro's sandbox mode
+- Support for coinbase pro & binance sandbox modes
+
+- Instant paper trade wrapper for supported exchanges
 
 - Run scheduled functions natively
 
