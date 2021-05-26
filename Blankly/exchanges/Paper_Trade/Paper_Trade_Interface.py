@@ -54,11 +54,16 @@ class PaperTradeInterface(CurrencyInterface):
 
         self.__exchange_properties = None
 
+        self.backtesting = False
+
         # Initialize the local account
         trade_local.init_local_account(value_pairs)
 
     def init_exchange(self):
-        fees = self.calls.get_fees()
+        try:
+            fees = self.calls.get_fees()
+        except AttributeError:
+            raise AttributeError("Are you passing a non-interface object into the paper trade constructor?")
         # Fees cache
         self.get_fees_cache = fees
 
@@ -159,6 +164,12 @@ class PaperTradeInterface(CurrencyInterface):
         order['filled_size'] = str(fill_size)
 
         return order, funds
+
+    def setup_backtesting(self):
+        self.backtesting = True
+
+    def is_backtesting(self):
+        return self.backtesting
 
     def get_products(self):
         # TODO this needs to check if backtesting is enabled, only return cache then

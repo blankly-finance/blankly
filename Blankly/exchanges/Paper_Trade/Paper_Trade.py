@@ -18,6 +18,7 @@
 
 from Blankly.exchanges.exchange import Exchange
 from Blankly.exchanges.Paper_Trade.Paper_Trade_Interface import PaperTradeInterface
+import pandas as pd
 
 
 class PaperTrade(Exchange):
@@ -44,6 +45,26 @@ class PaperTrade(Exchange):
         """
         # TODO Populate this with useful information
         return self.Interface.get_fees()
+
+    def backtest(self,
+                 price_data,
+                 asset_id,
+                 price_event=None,
+                 orderbook_event=None,
+                 news_data=None):
+        if isinstance(price_data, str):
+            col_list = ["price"]
+            prices = pd.read_csv(price_data, usecols=col_list).price.tolist()
+        elif isinstance(price_data, list):
+            prices = price_data
+        else:
+            raise TypeError("Price data is not of type str path or list")
+
+        # Convert interface to backtesting
+        self.get_interface().setup_backtesting()
+
+        for i in prices:
+            price_event(i, asset_id)
 
     def get_direct_calls(self):
         return None
