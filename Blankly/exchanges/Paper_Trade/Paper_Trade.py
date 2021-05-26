@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import pandas
 
 from Blankly.exchanges.exchange import Exchange
 from Blankly.exchanges.Paper_Trade.Paper_Trade_Interface import PaperTradeInterface
@@ -50,18 +51,17 @@ class PaperTrade(Exchange):
                  price_data,
                  asset_id,
                  price_event=None,
-                 orderbook_event=None,
-                 news_data=None):
+                 use_event='close',
+                 ):
         if isinstance(price_data, str):
-            col_list = ["price"]
-            prices = pd.read_csv(price_data, usecols=col_list).price.tolist()
-        elif isinstance(price_data, list):
+            prices = pd.read_csv(price_data)
+        elif isinstance(price_data, pandas.DataFrame):
             prices = price_data
         else:
             raise TypeError("Price data is not of type str path or list")
 
         # Convert interface to backtesting
-        self.get_interface().setup_backtesting()
+        self.get_interface()
 
         for i in prices:
             price_event(i, asset_id)
