@@ -21,7 +21,7 @@ import Blankly.utils.utils as utils
 from Blankly.interface.abc_currency_interface import ICurrencyInterface
 import abc
 
-
+# TODO: need to add a cancel all orders function
 class CurrencyInterface(ICurrencyInterface, abc.ABC):
     def __init__(self, exchange_name, authenticated_API):
         self.exchange_name = exchange_name
