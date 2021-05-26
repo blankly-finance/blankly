@@ -18,6 +18,8 @@
 
 
 from Blankly.interface.currency_Interface import CurrencyInterface
+from Blankly.exchanges.Paper_Trade.backtesting_wrapper import BacktestingWrapper
+
 
 from Blankly.utils.exceptions import InvalidOrder
 from Blankly.utils.exceptions import APIException
@@ -35,7 +37,7 @@ import time
 import threading
 
 
-class PaperTradeInterface(CurrencyInterface):
+class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
     def __init__(self, derived_interface):
         self.paper_trade_orders = []
 
@@ -51,10 +53,9 @@ class PaperTradeInterface(CurrencyInterface):
 
         self.get_products_cache = None
         self.get_fees_cache = None
+        self.get_market_limits_cache = None
 
         self.__exchange_properties = None
-
-        self.backtesting = False
 
         # Initialize the local account
         trade_local.init_local_account(value_pairs)
@@ -64,11 +65,6 @@ class PaperTradeInterface(CurrencyInterface):
             fees = self.calls.get_fees()
         except AttributeError:
             raise AttributeError("Are you passing a non-interface object into the paper trade constructor?")
-        # Fees cache
-        self.get_fees_cache = fees
-
-        # Products cache
-        self.get_products_cache = self.calls.get_products()
 
         self.__exchange_properties = {
             "maker_fee_rate": fees['maker_fee_rate'],
@@ -88,7 +84,14 @@ class PaperTradeInterface(CurrencyInterface):
         """
         Internal order watching system
         """
-        time.sleep(10)
+        while True:
+            time.sleep(10)
+            self.evaluate_limits()
+
+    def evaluate_limits(self):
+        """
+        When this is run it checks the local paper trade orders to see if any need to go through
+        """
         used_currencies = []
         for i in self.paper_trade_orders:
             if i["product_id"] not in used_currencies:
@@ -165,16 +168,6 @@ class PaperTradeInterface(CurrencyInterface):
 
         return order, funds
 
-    def setup_backtesting(self):
-        self.backtesting = True
-
-    def is_backtesting(self):
-        return self.backtesting
-
-    def get_products(self):
-        # TODO this needs to check if backtesting is enabled, only return cache then
-        return self.get_products_cache
-
     def get_account(self, currency=None):
         needed = self.needed['get_account']
 
@@ -209,7 +202,7 @@ class PaperTradeInterface(CurrencyInterface):
             'product_id': product_id,
             'type': 'market'
         }
-        creation_time = time.time()
+        creation_time = self.time()
         price = self.get_price(product_id)
 
         market_limits = self.get_market_limits(product_id)
@@ -237,7 +230,7 @@ class PaperTradeInterface(CurrencyInterface):
             'specified_funds': str(funds),
             'post_only': 'false',
             'created_at': str(creation_time),
-            'done_at': str(time.time()),
+            'done_at': str(self.time()),
             'done_reason': 'filled',
             'fill_fees': str(funds * float((self.__exchange_properties["maker_fee_rate"]))),
             'filled_size': str(funds - funds * float((self.__exchange_properties["maker_fee_rate"])) / price),
@@ -251,12 +244,15 @@ class PaperTradeInterface(CurrencyInterface):
                                     side=side,
                                     base_delta=qty - qty * float((self.__exchange_properties["maker_fee_rate"])),
                                     # Gain filled size after fees
-                                    quote_delta=funds * -1)  # Loose the original fund amount
+                                    quote_delta=funds * -1  # Loose the original fund amount
+                                    )
         elif side == "sell":
             trade_local.trade_local(currency_pair=product_id,
                                     side=side,
                                     base_delta=float(qty - 1),  # Loose size before any fees
-                                    quote_delta=funds - funds * float((self.__exchange_properties["maker_fee_rate"])))  # Gain executed value after fees
+                                    quote_delta=funds - funds * float((self.__exchange_properties["maker_fee_rate"]))
+                                    # Gain executed value after fees
+                                    )
         else:
             raise APIException("Invalid trade side: " + str(side))
         return MarketOrder(order, response, self)
@@ -297,7 +293,7 @@ class PaperTradeInterface(CurrencyInterface):
             'product_id': product_id,
             'type': 'limit'
         }
-        creation_time = time.time()
+        creation_time = self.time()
         min_base = float(self.get_market_limits(product_id)["base_min_size"])
         if size < min_base:
             raise InvalidOrder("Invalid Order: Order quantity is too small. Minimum is: " + str(min_base))
@@ -356,20 +352,38 @@ class PaperTradeInterface(CurrencyInterface):
             if i["id"] == order_id:
                 return i
 
+    def get_products(self):
+        if self.backtesting:
+            if self.get_products_cache is None:
+                self.get_products_cache = self.calls.get_products()
+            return self.get_products_cache
+        else:
+            return self.calls.get_products()
+
     def get_fees(self):
-        # TODO this needs to check if backtesting is enabled, only return cache then
-        if self.get_fees_cache is None:
-            self.get_fees_cache = self.calls.get_fees()
-        return self.get_fees_cache
+        if self.backtesting:
+            if self.get_fees_cache is None:
+                self.get_fees_cache = self.calls.get_fees()
+            return self.get_fees_cache
+        else:
+            return self.calls.get_fees()
 
     def get_product_history(self, product_id, epoch_start, epoch_stop, granularity):
-        # TODO this needs to check if backtesting is enabled, ony raise an error then
-        return self.calls.get_product_history(product_id, epoch_start, epoch_stop, granularity)
-        # raise APIException("Download product history inside a backtest")
+        if self.backtesting:
+            raise APIException("Cannot download product history during a backtest")
+        else:
+            return self.calls.get_product_history(product_id, epoch_start, epoch_stop, granularity)
 
     def get_market_limits(self, product_id):
-        # TODO this needs to check if backtesting is enabled, ony raise an error then
-        return self.calls.get_market_limits(product_id)
+        if self.backtesting:
+            if self.get_market_limits_cache is None:
+                self.get_market_limits_cache = self.calls.get_market_limits(product_id)
+            return self.get_market_limits_cache
+        else:
+            return self.calls.get_market_limits(product_id)
 
     def get_price(self, currency_pair) -> float:
-        return self.calls.get_price(currency_pair)
+        if self.backtesting:
+            return self.get_backtesting_price(currency_pair)
+        else:
+            return self.calls.get_price(currency_pair)
