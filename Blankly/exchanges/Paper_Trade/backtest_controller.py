@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from Blankly.exchanges.Paper_Trade.Paper_Trade_Interface import PaperTradeInterface
-import time
 
 """
 This is a format draft for multi-equity backtesting
@@ -56,11 +55,4 @@ class BackTestController:
         self.backtesting = True
 
 
-
         self.backtesting = False
-
-    def time(self):
-        if self.backtesting:
-            return self.current_time
-        else:
-            return time.time()
