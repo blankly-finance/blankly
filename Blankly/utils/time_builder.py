@@ -57,16 +57,18 @@ def build_millennium():
     return build_century() * 10
 
 
-def time_interval_to_seconds(interval_string):
+def time_interval_to_seconds(interval) -> float:
     """
     Extract the number of seconds in an interval string
     """
+    if isinstance(interval, float) or isinstance(interval, int):
+        return float(interval)
     # Extract intervals
     try:
-        magnitude = int(interval_string[:-1])
+        magnitude = int(interval[:-1])
     except ValueError:
         raise ValueError("Invalid time interval definition.")
-    unit = interval_string[-1]
+    unit = interval[-1]
 
     # Switch units
     if unit == "s":
@@ -93,4 +95,4 @@ def time_interval_to_seconds(interval_string):
         raise ValueError("Invalid time interval definition.")
 
     # Scale by the magnitude
-    return base_unit * magnitude
+    return float(base_unit * magnitude)

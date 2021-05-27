@@ -21,23 +21,31 @@ import time
 class BacktestingWrapper:
     def __init__(self):
         self.backtesting = False
-        self.time = None
-        self.prices = {}
+        self.frame = {
+            'prices': {},
+            'time': 0
+        }
 
     def set_backtesting(self, status: bool):
         self.backtesting = status
 
-    def push_time(self, new_time):
-        self.time = new_time
+    def receive_time(self, new_time):
+        self.frame['time'] = new_time
 
-    def push_price(self, asset_id, new_price):
-        self.prices[asset_id] = new_price
+    def receive_price(self, asset_id, new_price):
+        self.frame['prices'][asset_id] = new_price
 
+    """
+    Override functions for manipulating backtesting
+    """
     def get_backtesting_price(self, asset_id):
-        return self.prices[asset_id]
+        try:
+            return self.frame['prices'][asset_id]
+        except KeyError:
+            raise KeyError("Price not found in recent frame")
 
     def time(self):
         if self.backtesting:
-            return self.time
+            return self.frame['time']
         else:
             return time.time()

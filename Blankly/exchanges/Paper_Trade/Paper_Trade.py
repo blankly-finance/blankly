@@ -17,8 +17,11 @@
 """
 import pandas
 
+from Blankly.utils.time_builder import time_interval_to_seconds
 from Blankly.exchanges.exchange import Exchange
 from Blankly.exchanges.Paper_Trade.Paper_Trade_Interface import PaperTradeInterface
+from Blankly.exchanges.Paper_Trade.backtest_controller import BackTestController
+
 import pandas as pd
 
 
@@ -51,20 +54,27 @@ class PaperTrade(Exchange):
                  price_data,
                  asset_id,
                  price_event=None,
-                 use_event='close',
+                 interval='15m'
                  ):
         if isinstance(price_data, str):
             prices = pd.read_csv(price_data)
+            prices = {asset_id: prices}
         elif isinstance(price_data, pandas.DataFrame):
+            prices = price_data
+            prices = {asset_id: prices}
+        elif isinstance(price_data, dict):
             prices = price_data
         else:
             raise TypeError("Price data is not of type str path or list")
 
-        # Convert interface to backtesting
-        self.get_interface()
+        # Create arrays of price events along with their interval
+        price_events = [[price_event, asset_id, time_interval_to_seconds(interval)]]
 
-        for i in prices:
-            price_event(i, asset_id)
+        # Create a new controller
+        controller = BackTestController(self.get_interface(), prices, price_events)
+
+        # Run the controller
+        return controller.run()
 
     def get_direct_calls(self):
         return None
