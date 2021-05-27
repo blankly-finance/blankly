@@ -74,7 +74,7 @@ class BackTestController:
                 'function': self.price_events[i][0],
                 'asset_id': self.price_events[i][1],
                 'interval': self.price_events[i][2],
-                'next_run': self.current_time
+                'next_run': self.initial_time
             }
 
     def run(self):
@@ -95,22 +95,23 @@ class BackTestController:
                 self.paper_trade_interface.receive_time(self.current_time)
 
                 for function_dict in self.price_events:
-                    if function_dict['next_run'] >= self.current_time:
+                    while function_dict['next_run'] <= self.current_time:
+                        local_time = function_dict['next_run']
                         # This is the actual callback to the user space
                         function_dict['function'](self.paper_trade_interface.get_price(function_dict['asset_id']),
                                                   function_dict['asset_id'])
 
                         # Delay the next run until after the interval
-                        function_dict['next_run'] = function_dict['next_run'] + function_dict['interval']
+                        function_dict['next_run'] += function_dict['interval']
 
-                available_dict = {}
-                # Grab the account status
-                account_status = self.paper_trade_interface.get_account()
-                for i in account_status:
-                    available_dict[i['currency']] = i['available']
-                # Make sure to add the time key in
-                available_dict['time'] = self.current_time - self.initial_time
-                price_data.append(available_dict)
+                        available_dict = {}
+                        # Grab the account status
+                        account_status = self.paper_trade_interface.get_account()
+                        for i in account_status:
+                            available_dict[i['currency']] = i['available']
+                        # Make sure to add the time key in
+                        available_dict['time'] = local_time - self.initial_time
+                        price_data.append(available_dict)
         except Exception:
             traceback.print_exc()
 
@@ -121,10 +122,12 @@ class BackTestController:
         color = Category10_10.__iter__()
         for column in cycle_status:
             if column != 'time':
-                p.line(cycle_status['time'].tolist(), cycle_status[column].tolist(),
+                p.step(cycle_status['time'].tolist(), cycle_status[column].tolist(),
                        line_width=2,
                        color=next(color),
-                       legend_label=column)
+                       legend_label=column,
+                       mode="before"
+                       )
 
         # Format graph
         p.legend.location = "top_left"

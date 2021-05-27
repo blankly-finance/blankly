@@ -42,6 +42,14 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
     def __init__(self, derived_interface):
         self.paper_trade_orders = []
 
+        self.get_products_cache = None
+        self.get_fees_cache = None
+        self.get_market_limits_cache = None
+
+        self.__exchange_properties = None
+
+        self.__run_watchdog = True
+
         CurrencyInterface.__init__(self, "paper_trade", derived_interface)
         BacktestingWrapper.__init__(self)
 
@@ -52,14 +60,6 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
         # Iterate & pair
         for i in accounts:
             value_pairs[i['currency']] = i['available']
-
-        self.get_products_cache = None
-        self.get_fees_cache = None
-        self.get_market_limits_cache = None
-
-        self.__exchange_properties = None
-
-        self.__run_watchdog = True
 
         # Initialize the local account
         trade_local.init_local_account(value_pairs)
@@ -206,7 +206,8 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
         return accounts
 
     def market_order(self, product_id, side, funds) -> MarketOrder:
-        print("Paper Trading...")
+        if not self.backtesting:
+            print("Paper Trading...")
         needed = self.needed['market_order']
         order = {
             'funds': funds,
