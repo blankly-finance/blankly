@@ -4,7 +4,10 @@ import numpy as np
 def cagr(start_value, end_value, years):
     return (end_value / start_value) ** (1 / years)
 
-def sortino(returns, days=255, risk_free_rate=None):
+def cum_returns(start_value, end_value):
+    return (start_value - end_value) / start_value
+
+def sortino(returns, days=252, risk_free_rate=None):
     returns = pd.Series(returns)
     if risk_free_rate:
         mean = returns.mean() * days - risk_free_rate
@@ -13,7 +16,7 @@ def sortino(returns, days=255, risk_free_rate=None):
     std_neg = returns[returns < 0].std() * np.sqrt(days)
     return mean / std_neg
 
-def sharpe(returns, days=255, risk_free_rate=None):
+def sharpe(returns, days=252, risk_free_rate=None):
     returns = pd.Series(returns)
     if risk_free_rate:
         mean = returns.mean() * days - risk_free_rate
@@ -22,15 +25,15 @@ def sharpe(returns, days=255, risk_free_rate=None):
     std = returns.std() * np.sqrt(days)
     return mean / std
 
-def calmar(returns, days=255):
+def calmar(returns, days=252):
     return_series = pd.Series(returns)
     return return_series.mean() * days / abs(max_drawdown(return_series))
 
-def volatility(returns):
-    return np.std(returns)
+def volatility(returns, days=None):
+    return np.std(returns) * np.sqrt(days) if days else np.std(returns)
 
-def variance(returns):
-    return np.var(returns)
+def variance(returns, days=None):
+    return np.var(returns) * np.sqrt(days) if days else np.var(returns)
 
 def beta(returns, market_base_returns):
     m = np.matrix([returns, market_base_returns])
