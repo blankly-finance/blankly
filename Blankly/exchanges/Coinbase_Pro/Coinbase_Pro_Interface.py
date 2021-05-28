@@ -202,6 +202,60 @@ class CoinbaseProInterface(CurrencyInterface):
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
 
+    def stop_limit(self, product_id, side, stop_price, limit_price, size, stop='loss'):
+        """
+        Used for placing stop orders
+        Args:
+            product_id (str): currency to buy
+            side (str): buy/sell
+            stop_price (float): Price to trigger the stop order at
+            limit_price (float): Price to set the stop limit
+            size (float): Amount of base currency to buy: (1.3 BTC)
+            stop (str) (optional): Stop type of "loss" or "entry"
+
+        {
+            'id': '3a98a5c6-05a0-4e46-b8e4-3f27358fe27d',
+            'price': '29500',
+            'size': '0.01',
+            'product_id':
+            'BTC-USD',
+            'side': 'buy',
+            'stp': 'dc',
+            'type': 'limit',
+            'time_in_force':
+            'GTC',
+            'post_only': False,
+            'created_at': '2021-05-28T19:24:52.010449Z',
+            'stop': 'loss',
+            'stop_price': '30000',
+            'fill_fees': '0',
+            'filled_size': '0',
+            'executed_value': '0',
+            'status': 'pending',
+            'settled': False
+        }
+        """
+        order = {
+            'product_id': product_id,
+            'side': side,
+            'type': 'stop',
+            'stop': stop,
+            'stop_price': stop_price,
+            'size': size,
+            'price': limit_price
+        }
+        response = self.calls.place_order(product_id=product_id,
+                                          order_type='limit',
+                                          side=side,
+                                          stop=stop,  # loss
+                                          stop_price=stop_price,
+                                          size=size,
+                                          price=limit_price
+                                          )
+        return Purchase(order,
+                        response,
+                        self.__exchange_properties)
+
     def cancel_order(self, currency_id, order_id) -> dict:
         """
         Returns:

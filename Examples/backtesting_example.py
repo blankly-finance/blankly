@@ -3,7 +3,7 @@ import time
 
 
 def price_event(price, product_id):
-    paper_trade_interface.market_order(product_id, 'buy', 100)
+    paper_trade_interface.market_order(product_id, 'buy', 10)
 
 
 if __name__ == "__main__":

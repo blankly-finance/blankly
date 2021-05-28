@@ -21,6 +21,7 @@ import Blankly.utils.utils as utils
 from Blankly.interface.abc_currency_interface import ICurrencyInterface
 import abc
 
+
 # TODO: need to add a cancel all orders function
 class CurrencyInterface(ICurrencyInterface, abc.ABC):
     def __init__(self, exchange_name, authenticated_API):
@@ -149,60 +150,3 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
 
     def get_product_history(self, product_id, epoch_start, epoch_stop, granularity):
         return utils.convert_epochs(epoch_start), utils.convert_epochs(epoch_stop)
-
-    """ 
-    ATM it doesn't seem like the Binance library supports stop orders. 
-    We need to add this when we implement our own.
-    
-    Leave the code here in this interface class because it may be used in any given inherited class
-    """
-    # def stop_order(self, product_id, side, price, size, **kwargs):
-    #     """
-    #     Used for placing stop orders
-    #     Args:
-    #         product_id: currency to buy
-    #         side: buy/sell
-    #         price: price to set limit order
-    #         size: amount of currency (like BTC) for the limit to be valued
-    #         kwargs: specific arguments that may be used by each exchange, (if exchange is known)
-    #     """
-    #     if self.__exchange_name == "coinbase_pro":
-    #         """
-    #         {
-    #             "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
-    #             "price": "0.10000000",
-    #             "size": "0.01000000",
-    #             "product_id": "BTC-USD",
-    #             "side": "buy",
-    #             "stp": "dc",
-    #             "type": "limit",
-    #             "time_in_force": "GTC",
-    #             "post_only": false,
-    #             "created_at": "2016-12-08T20:02:28.53864Z",
-    #             "fill_fees": "0.0000000000000000",
-    #             "filled_size": "0.00000000",
-    #             "executed_value": "0.0000000000000000",
-    #             "status": "pending",
-    #             "settled": false
-    #         }
-    #         """
-    #         order = {
-    #             'size': size,
-    #             'side': side,
-    #             'product_id': product_id,
-    #             'type': 'stop'
-    #         }
-    #         self.__calls.placeOrder(product_id, side, price, size)
-    #         response = self.__calls.place_market_order(product_id, side, price, size, kwargs=kwargs)
-    #         return Purchase(order,
-    #                         response,
-    #                         self.__ticker_manager.get_ticker(product_id,
-    #                                                          override_default_exchange_name="coinbase_pro"),
-    #                         self.__exchange_properties)
-    """
-    Coinbase Pro: get_account_history
-    Binance: 
-        get_deposit_history
-        get_withdraw_history
-        
-    """
