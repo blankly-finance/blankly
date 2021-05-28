@@ -74,6 +74,19 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
                 ["type", str],
                 ["side", str]
             ],
+            'stop_limit': [
+                ["product_id", str],
+                ["id", str],
+                ["created_at", float],
+                ["stop_price", float],
+                ["limit_price", float],
+                ["stop", str],
+                ["size", float],
+                ["status", str],
+                ["time_in_force", str],
+                ["type", str],
+                ["side", str]
+            ],
             'cancel_order': [
                 ['order_id', str]
             ],

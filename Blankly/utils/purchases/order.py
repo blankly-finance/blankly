@@ -60,6 +60,12 @@ class Order:
         """
         return self.__response["id"]
 
+    def get_product_id(self):
+        """
+        Get the asset id of the exchange
+        """
+        return self.__response["product_id"]
+
     def get_purchase_time(self) -> float:
         """
         Get when the purchase was created at. This may be set at slightly different points within an

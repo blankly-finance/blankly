@@ -18,7 +18,7 @@
 from Blankly.utils.purchases.order import Order
 
 
-class MarketOrder(Order):
+class StopLimit(Order):
     """
     (Buying or selling (string), amount in currency (BTC/XLM), ticker object (so we can get time and value),
     limit if there is one)
@@ -31,8 +31,7 @@ class MarketOrder(Order):
             'id': '3a98a5c6-05a0-4e46-b8e4-3f27358fe27d',
             'price': '29500',
             'size': '0.01',
-            'product_id':
-            'BTC-USD',
+            'product_id': 'BTC-USD',
             'side': 'buy',
             'stp': 'dc',
             'type': 'limit',
@@ -53,14 +52,18 @@ class MarketOrder(Order):
 
         Guaranteed:
         needed = [
-            ["product_id", str],
-            ["id", str],
-            ["created_at", float],
-            ["funds", float],
-            ["status", str],
-            ["type", str],
-            ["side", str]
-        ]
+                ["product_id", str],
+                ["id", str],  <-- Handled by order
+                ["created_at", float],  <-- Handled by order
+                ["stop_price", float],
+                ["limit_price", float],
+                ["stop", str],
+                ["size", float],
+                ["status", str],  <-- Handled by order
+                ["time_in_force", str],  <-- Handled by order
+                ["type", str],  <-- Handled by order
+                ["side", str]  <-- Handled by order
+        ],
         """
         self.Interface = interface
         self.__exchange = self.Interface.get_exchange_type()
@@ -69,8 +72,26 @@ class MarketOrder(Order):
         self.__homogenized_result = None
         super().__init__(self.__response, self.__order, self.Interface)
 
-    def get_funds(self) -> float:
+    def get_stop_price(self) -> float:
         """
-        Get the funds exchanged in a market order. This will include fees.
+        Get the trigger price of the stop order
         """
-        return self.__response["funds"]
+        return self.__response["stop_price"]
+
+    def get_limit_price(self) -> float:
+        """
+        Get the price that the limit is set at after triggering the stop
+        """
+        return self.__response["limit_price"]
+
+    def get_stop_type(self) -> str:
+        """
+        Get if the stop type is "loss" or "entry"
+        """
+        return self.__response["stop"]
+
+    def get_size(self) -> float:
+        """
+        Get the amount of base currency set in the triggered stop limit order
+        """
+        return self.__response["size"]

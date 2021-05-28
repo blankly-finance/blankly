@@ -26,6 +26,8 @@ from Blankly.utils.exceptions import InvalidOrder
 from Blankly.utils.exceptions import APIException
 from Blankly.utils.purchases.limit_order import LimitOrder
 from Blankly.utils.purchases.market_order import MarketOrder
+from Blankly.utils.purchases.stop_limit import StopLimit
+
 
 from Blankly.interface.currency_Interface import CurrencyInterface
 
@@ -202,7 +204,7 @@ class CoinbaseProInterface(CurrencyInterface):
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
 
-    def stop_limit(self, product_id, side, stop_price, limit_price, size, stop='loss'):
+    def stop_limit(self, product_id, side, stop_price, limit_price, size, stop='loss') -> StopLimit:
         """
         Used for placing stop orders
         Args:
@@ -252,9 +254,8 @@ class CoinbaseProInterface(CurrencyInterface):
                                           size=size,
                                           price=limit_price
                                           )
-        return Purchase(order,
-                        response,
-                        self.__exchange_properties)
+        response['limit_price'] = response.pop('price')
+        return StopLimit(order, response, self)
 
     def cancel_order(self, currency_id, order_id) -> dict:
         """
