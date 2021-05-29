@@ -45,8 +45,13 @@ def get_blank_settings():
         'interval_enabled': {  # Choose between passing in a price dictionary or a
             # linear list with internally modified time
             'enabled': True  # True will mean interval, which means price data should be lists
-        }
+        },
+        'Use_Price': 'close',
+        'Assume_Linear_Prices': False,
+        'GUI_Output': True,
+        'Show_Tickers_With_Zero_Delta': False,
     }
+
 
 class BackTestController:
     def __init__(self, paper_trade_interface: PaperTradeInterface, prices: dict, price_events=None):

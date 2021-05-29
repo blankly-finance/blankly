@@ -96,7 +96,8 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
                 ["size", float],
                 ["type", str],
                 ["side", str],
-                ["status", str]
+                ["status", str],
+                ["product_id", str]
             ],
             'get_order': [
                 ["id", str],
