@@ -115,7 +115,6 @@ class Strategy:
 
         # Append each of the events the class defines into the backtest
         for i in self.Schedulers:
-            i = i  # type: Blankly.Scheduler
             kwargs = i.get_kwargs()
             backtesting_exchange.append_backtest_price_event(callback=i.get_callback(),
                                                              asset_id=kwargs['currency_pair'],
