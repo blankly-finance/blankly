@@ -204,6 +204,12 @@ class CoinbaseProInterface(CurrencyInterface):
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
 
+    """
+    Stop limit isn't added to the abstract class because the binance version is barely supported.
+    
+    If you want to use this function you can, just do interface.stop_limit(args) if you're using a coinbase pro 
+    interface
+    """
     def stop_limit(self, product_id, side, stop_price, limit_price, size, stop='loss') -> StopLimit:
         """
         Used for placing stop orders

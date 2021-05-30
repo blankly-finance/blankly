@@ -40,6 +40,10 @@ class Scheduler:
         self.__thread = threading.Thread(target=self.__threading_wait, args=(function, interval, kwargs))
         self.__thread.start()
 
+        self.__interval = interval
+        self.__kwargs = kwargs
+        self.__callback = function
+
         # This can be used for a statically typed, single-process bot decorator.
         # Leaving this because it probably will be used soon
 
@@ -50,6 +54,30 @@ class Scheduler:
         #         thread.start()
         #     wrapper()
         # return decorator
+
+    def get_interval(self):
+        """
+        Get the seconds between each scheduler run
+        """
+        return self.__interval
+
+    def get_kwargs(self):
+        """
+        Get the custom function argument dictionary
+        """
+        return self.__kwargs
+
+    def stop_scheduler(self):
+        """
+        Halt the scheduler loop
+        """
+        self.__stop = True
+
+    def get_callback(self):
+        """
+        Get the callback function that the scheduler is running on
+        """
+        return self.__callback
 
     def __threading_wait(self, func, interval, kwargs):
         """
@@ -74,6 +102,3 @@ class Scheduler:
             if offset < 0:
                 offset = 0
             time.sleep(offset)
-
-    def stop_scheduler(self):
-        self.__stop = True
