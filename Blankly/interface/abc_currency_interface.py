@@ -20,6 +20,7 @@
 import abc
 from Blankly.utils.purchases.limit_order import LimitOrder
 from Blankly.utils.purchases.market_order import MarketOrder
+import pandas
 
 
 class ICurrencyInterface(abc.ABC):
@@ -152,7 +153,7 @@ class ICurrencyInterface(abc.ABC):
     """
 
     @abc.abstractmethod
-    def get_product_history(self, product_id, epoch_start, epoch_stop, granularity):
+    def get_product_history(self, product_id, epoch_start, epoch_stop, granularity) -> pandas.DataFrame:
         """
         Returns the product history from an exchange
         Args:

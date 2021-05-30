@@ -2,6 +2,8 @@
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=security_rating)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=alert_status)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
+[![Downloads](https://pepy.tech/badge/blankly/month)](https://pepy.tech/project/blankly)
+
 ## What is it?
 
 ​	Blankly is an elegant python library for interacting with many crypto exchanges on multiple portfolios in a consistent way. Blankly offers a powerful feature-set, optimized for speed and ease of use.

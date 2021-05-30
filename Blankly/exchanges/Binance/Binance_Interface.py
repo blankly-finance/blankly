@@ -22,6 +22,7 @@ import binance.exceptions
 import pandas as pd
 
 import Blankly.utils.exceptions as exceptions
+import Blankly.utils.utils
 import Blankly.utils.utils as utils
 from Blankly.utils.purchases.limit_order import LimitOrder
 from Blankly.utils.purchases.market_order import MarketOrder
@@ -423,19 +424,27 @@ class BinanceInterface(CurrencyInterface):
             }
         ]
         """
-        if product_id is not None:
-            product_id = utils.to_exchange_coin_id(product_id, "binance")
-            orders = self.calls.get_open_orders()
-        else:
-            orders = self.calls.get_open_orders()
         renames = [
             ["orderId", "id"],
             ["origQty", "size"],
-            ["isWorking", "status"]
+            ["isWorking", "status"],
+            ["symbol", "product_id"]
         ]
+
+        if product_id is not None:
+            product_id = utils.to_exchange_coin_id(product_id, "binance")
+            orders = self.calls.get_open_orders(symbol=product_id)
+            orders = utils.rename_to(renames, orders)
+            orders = utils.isolate_specific(needed, orders)
+            orders['product_id'] = utils.to_blankly_coin_id(orders['product_id'], 'binance', quote_currency=None)
+            return orders
+        else:
+            orders = self.calls.get_open_orders()
+
         for i in range(len(orders)):
             orders[i] = utils.rename_to(renames, orders[i])
             orders[i] = utils.isolate_specific(needed, orders[i])
+            orders[i]['product_id'] = utils.to_blankly_coin_id(orders[i]['product_id'], 'binance', quote_currency=None)
 
         return orders
 

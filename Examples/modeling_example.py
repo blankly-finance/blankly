@@ -19,10 +19,10 @@ if __name__ == "__main__":
     # Create X-axis
     x = range(len(history['close']))
     # Plot 100 day moving average
-    p.line(x, Blankly.analysis.calculate_sma(history["close"], 100, offset=True), line_width=2, line_color='pink',
+    p.line(x, Blankly.indicators.sma(history["close"], 100), line_width=2, line_color='pink',
            legend_label="100d SMA")
     # Plot 50 day moving average
-    p.line(x, Blankly.analysis.calculate_sma(history["close"], 50, offset=True), line_width=2, line_color='yellow',
+    p.line(x, Blankly.indicators.sma(history["close"], 50), line_width=2, line_color='yellow',
            legend_label="50d SMA")
 
     # Plot close price

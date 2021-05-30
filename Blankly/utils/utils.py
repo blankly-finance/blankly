@@ -144,13 +144,28 @@ def fit_parabola(ticker, point_number):
     return numpy.polyfit(times, prices, 2, full=True)
 
 
-def to_blankly_coin_id(coin_id, exchange, base_currency):
+def to_blankly_coin_id(coin_id, exchange, quote_currency=None) -> str:
     if exchange == "binance":
-        index = int(coin_id.find(base_currency))
-        coin_id = coin_id[0:index]
-        return coin_id + "-" + base_currency
+        if quote_currency is not None:
+            index = int(coin_id.find(quote_currency))
+            coin_id = coin_id[0:index]
+            return coin_id + "-" + quote_currency
+        else:
+            # Try your best to try to parse anyway
+            quotes = ['BNB', 'BTC', 'TRX', 'XRP', 'ETH', 'USDT', 'BUSD', 'AUD', 'BRL', 'EUR', 'GBP', 'RUB',
+                      'TRY', 'TUSD', 'USDC', 'PAX', 'BIDR', 'DAI', 'IDRT', 'UAH', 'NGN', 'VAI', 'BVND']
+            for i in quotes:
+                if __check_ending(coin_id, i):
+                    return to_blankly_coin_id(coin_id, 'binance', quote_currency=i)
+            raise LookupError("Unable to parse binance coin id of: " + str(coin_id))
+
     if exchange == "coinbase_pro":
         return coin_id
+
+
+def __check_ending(full_string, checked_ending) -> bool:
+    check_length = len(checked_ending)
+    return checked_ending == full_string[-check_length:]
 
 
 def to_exchange_coin_id(blankly_coin_id, exchange):
