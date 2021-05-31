@@ -31,7 +31,11 @@ class Strategy:
         self.currency_pair = currency_pair
         self.Interface = exchange.get_interface()
 
-        self.Schedulers = []
+        # Create a cache for the current interface, and a wrapped paper trade object for user backtesting
+        self.__interface_cache = self.Interface
+        self.__paper_trade_exchange = Blankly.PaperTrade(self.exchange)
+
+        self.__schedulers = []
 
     def add_price_event(self, callback: typing.Callable, currency_pair: str, resolution: str):
         """
@@ -45,14 +49,19 @@ class Strategy:
         if resolution < 10:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
             self.Ticker_Manager.create_ticker(self.__idle_event, currency_id=currency_pair)
-            self.Schedulers.append(
+            self.__schedulers.append(
                 Blankly.Scheduler(self.__price_event_websocket, resolution,
-                                  callback=callback, currency_pair=currency_pair)
+                                  initially_stopped=True,
+                                  callback=callback,
+                                  currency_pair=currency_pair)
             )
         else:
-            # use the API
-            self.Schedulers.append(
-                Blankly.Scheduler(self.__price_event_rest, resolution, callback=callback, currency_pair=currency_pair)
+            # Use the API
+            self.__schedulers.append(
+                Blankly.Scheduler(self.__price_event_rest, resolution,
+                                  initially_stopped=True,
+                                  callback=callback,
+                                  currency_pair=currency_pair)
             )
 
     def __idle_event(self):
@@ -87,9 +96,15 @@ class Strategy:
 
         # TODO the tickers need some type of argument passing & saving like scheduler so that the 1 second min isn't
         #  required
-        self.Schedulers.append(
-            Blankly.Scheduler(self.__orderbook_event_websocket, 1, callback=callback, currency_pair=currency_pair)
+        self.__schedulers.append(
+            Blankly.Scheduler(self.__orderbook_event_websocket, 1,
+                              initially_stopped=True,
+                              callback=callback, currency_pair=currency_pair)
         )
+
+    def start(self):
+        for i in self.__schedulers:
+            i.start()
 
     def __orderbook_event_websocket(self, **kwargs):
         callback = kwargs['callback']
@@ -107,22 +122,24 @@ class Strategy:
             asset_id (str): Asset ID of the price passed in - such as "BTC-USD"
             price_data (dataframe): Price dataframe from blankly historical download
         """
-
-        # Ensure that the current exchange is a backtesting exchange
-        backtesting_exchange = self.exchange
-        if not self.exchange.get_type() == "paper_trade":
-            backtesting_exchange = Blankly.PaperTrade(backtesting_exchange)
+        self.Interface = self.__paper_trade_exchange.get_interface()
 
         # Append each of the events the class defines into the backtest
-        for i in self.Schedulers:
+        for i in self.__schedulers:
             kwargs = i.get_kwargs()
-            backtesting_exchange.append_backtest_price_event(callback=i.get_callback(),
-                                                             asset_id=kwargs['currency_pair'],
-                                                             time_interval=i.get_interval()
-                                                             )
+            self.__paper_trade_exchange.append_backtest_price_event(callback=kwargs['callback'],
+                                                                    asset_id=kwargs['currency_pair'],
+                                                                    time_interval=i.get_interval()
+                                                                    )
 
         # Append the price data just passed in
-        backtesting_exchange.append_backtest_price_data(asset_id, price_data)
+        self.__paper_trade_exchange.append_backtest_price_data(asset_id, price_data)
 
         # Run the backtest & return results
-        return backtesting_exchange.backtest()
+        results = self.__paper_trade_exchange.backtest()
+
+        # Clean up
+        self.Interface = self.__interface_cache
+
+        return results
+

@@ -143,4 +143,3 @@ class BackTestController:
 
         self.paper_trade_interface.set_backtesting(False)
         return cycle_status
-

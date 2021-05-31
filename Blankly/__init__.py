@@ -30,4 +30,4 @@ from Blankly.utils.scheduler import Scheduler
 import Blankly.indicators as indicators
 from Blankly.utils import time_builder
 
-from Blankly.strategy.strategy_base import Strategy as StrategyHelper
+from Blankly.strategy.strategy_base import Strategy
