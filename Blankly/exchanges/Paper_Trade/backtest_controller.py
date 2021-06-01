@@ -34,7 +34,7 @@ def to_string_key(separated_list):
     output = ""
     for i in range(len(separated_list) - 1):
         output += str(separated_list[i])
-        output += "."
+        output += ","
     output += str(separated_list[-1:][0])
     return output
 
@@ -51,7 +51,7 @@ class BackTestController:
 
         self.prices = []  # [epoch, "BTC-USD", price]
 
-    def sync_prices(self) -> dict:
+    def sync_prices(self, save=True) -> dict:
         cache_folder = self.preferences['price_data']["cache_location"]
         # Make sure the cache folder exists and read files
         try:
@@ -64,7 +64,7 @@ class BackTestController:
         for i in range(len(files)):
             # example file name: 'BTC-USD.1622400000.1622510793.60.csv'
             # Remove the .csv from each of the files: BTC-USD.1622400000.1622510793.60
-            available_files.append(files[i].split(".")[1:])
+            available_files.append(files[i].split(",")[1:])
 
         price_dictionary = {}
 
@@ -85,11 +85,12 @@ class BackTestController:
                                                               identifier[2],
                                                               identifier[3])
                 price_dictionary[tuple(identifier)] = download
-                download.to_csv(os.path.join(cache_folder, string_identifier + ".csv"), index=False)
+                if save:
+                    download.to_csv(os.path.join(cache_folder, string_identifier + ".csv"), index=False)
 
         # Merge all the same asset ids into the same dictionary spots
         unique_assets = {}
-        for k, v in price_dictionary:
+        for k, v in price_dictionary.items():
             if k[0] in unique_assets:
                 unique_assets[k[0]] = pd.concat([unique_assets[k[0]], v], ignore_index=True)
             else:
@@ -97,7 +98,7 @@ class BackTestController:
 
         return unique_assets
 
-    def add_prices(self, asset_id, start_time, end_time, resolution):
+    def add_prices(self, asset_id, start_time, end_time, resolution, save=False):
         # Create its unique identifier
         identifier = [asset_id, start_time, end_time, resolution]
 
@@ -105,12 +106,23 @@ class BackTestController:
         price_identifiers = self.preferences['price_data']['assets']
         if identifier not in price_identifiers:
             self.preferences['price_data']['assets'].append(identifier)
-            write_backtest_preferences(self.preferences)
+            if save:
+                write_backtest_preferences(self.preferences)
 
         # Ensure everything is up to date
-        self.sync_prices()
+        print("syncing:")
+        print(save)
+        self.sync_prices(save=save)
 
-    def backtest(self):
+    def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval):
+        if isinstance(time_interval, str):
+            time_interval = time_interval_to_seconds(time_interval)
+        self.price_events.append([callback, asset_id, time_interval])
+
+    def run(self):
+        """
+        Setup
+        """
         prices = self.sync_prices()
 
         # Organize each price into this structure: [epoch, "BTC-USD", price]
@@ -138,15 +150,9 @@ class BackTestController:
             raise ValueError("Either no price data or backtest events given. "
                              "Use .append_backtest_price_data or "
                              "append_backtest_price_event to create the backtest model.")
-
-        self.run()
-
-    def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval):
-        if isinstance(time_interval, str):
-            time_interval = time_interval_to_seconds(time_interval)
-        self.price_events.append([callback, asset_id, time_interval])
-
-    def run(self):
+        """
+        Begin backtesting
+        """
         self.interface.set_backtesting(True)
         account = self.interface.get_account()
         column_keys = ['time']

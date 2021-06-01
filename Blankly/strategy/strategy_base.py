@@ -121,6 +121,7 @@ class Strategy:
     def backtest(self, to: str = None,
                  start_date: str = None,
                  end_date: str = None,
+                 save: bool = False
                  ):
         """
         Turn this strategy into a backtest.
@@ -133,6 +134,7 @@ class Strategy:
             end_date (str): End the backtest at a date such as "03/06/2018"
             asset_id (str): Asset ID of the price passed in - such as "BTC-USD"
             resolution (str): Resolution of time to download this price instance
+            save (bool): Save the price data that is required for the backtest
         """
         backtesting_controller = BackTestController(self.__paper_trade_exchange)
 
@@ -147,7 +149,7 @@ class Strategy:
         end = None
 
         if to is not None:
-            start = time_interval_to_seconds(to)
+            start = time.time() - time_interval_to_seconds(to)
             end = time.time()
 
         if start_date is not None:
@@ -171,7 +173,7 @@ class Strategy:
                                                                )
 
         for i in self.scheduling_pair:
-            backtesting_controller.add_prices(i[0], start, end, i[1])
+            backtesting_controller.add_prices(i[0], start, end, i[1], save=save)
 
         # if asset_id is None:
         #     for currency in self.currency_pairs:
