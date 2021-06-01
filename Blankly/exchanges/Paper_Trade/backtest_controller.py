@@ -15,9 +15,11 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import os
+
 
 from Blankly.exchanges.Paper_Trade.Paper_Trade import PaperTrade
+from Blankly.exchanges.Paper_Trade.Paper_Trade_Interface import PaperTradeInterface
+
 from Blankly.utils.time_builder import time_interval_to_seconds
 from Blankly.utils.utils import load_backtest_preferences
 import typing
@@ -28,14 +30,28 @@ from bokeh.palettes import Category10_10
 import os
 
 
+def to_string_key(separated_list):
+    output = ""
+    for i in range(len(separated_list) - 1):
+        output += separated_list[i]
+        output += "."
+    output += separated_list[-1:][0]
+    return output
+
+
 class BackTestController:
     def __init__(self, paper_trade_exchange: PaperTrade):
         self.preferences = load_backtest_preferences()
-        self.interface = paper_trade_exchange.get_interface()
+        self.interface = paper_trade_exchange.get_interface()  # type: PaperTradeInterface
 
-        self.backtest_price_events = []
+        self.price_events = []
 
-    def download_prices(self):
+        self.current_time = None
+        self.initial_time = None
+
+        self.prices = []  # [epoch, "BTC-USD", price]
+
+    def sync_prices(self) -> dict:
         cache_folder = self.preferences['price_data']["cache_location"]
         # Make sure the cache folder exists and read files
         try:
@@ -44,25 +60,46 @@ class BackTestController:
             files = []
             os.mkdir(cache_folder)
 
-        split_files = []
+        available_files = []
         for i in range(len(files)):
             # example file name: 'BTC-USD.1622400000.1622510793.60.csv'
             # Remove the .csv from each of the files: BTC-USD.1622400000.1622510793.60
-            split_files.append(files[i].split(".")[1:])
+            available_files.append(files[i].split(".")[1:])
+
+        price_dictionary = {}
 
         assets = self.preferences['price_data']['assets']  # type: dict
-        price_data = {}
         for k, v in assets.items():
-            price_data[k] = self.interface.get_product_history(k, v[0], v[1], v[2])
+            identifier = [k, v[0], v[1], v[2]]
+            string_identifier = to_string_key(identifier)
+            if identifier in available_files:
+                # Read the csv here
+                price_dictionary[tuple(identifier)] = pd.read_csv(os.path.join(cache_folder,
+                                                                               string_identifier + ".csv")
+                                                                  )
+            else:
+                print("No exact cache exists for " + str(identifier[0]) + " from " + str(identifier[1]) + " to " +
+                      str(identifier[2]) + " at " + str(identifier[3]) + "s resolution. Downloading...")
+                download = self.interface.get_product_history(identifier[0],
+                                                              identifier[1],
+                                                              identifier[2],
+                                                              identifier[3])
+                price_dictionary[tuple(identifier)] = download
+                download.to_csv(os.path.join(cache_folder, string_identifier + ".csv"), index=False)
 
+        # Merge all the same asset ids into the same dictionary spots
+        unique_assets = {}
+        for k, v in price_dictionary:
+            if k[0] in unique_assets:
+                unique_assets[k[0]] = pd.concat([unique_assets[k[0]], v], ignore_index=True)
+            else:
+                unique_assets[k[0]] = v
 
-    def __init__(self, paper_trade_interface: PaperTradeInterface, prices: dict, price_events=None):
-        if price_events is None:
-            price_events = []  # [[price_event, asset_id, time_interval_to_seconds(interval)]]
-        self.price_events = price_events
-        self.paper_trade_interface = paper_trade_interface
-        self.current_time = 0
-        self.prices = []
+        return unique_assets
+
+    def backtest(self):
+        prices = self.sync_prices()
+
         # Organize each price into this structure: [epoch, "BTC-USD", price]
         for k, v in prices.items():
             frame = v  # type: pd.DataFrame
@@ -84,28 +121,21 @@ class BackTestController:
                 'next_run': self.initial_time
             }
 
-    def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval):
-        if isinstance(time_interval, str):
-            time_interval = time_interval_to_seconds(time_interval)
-        self.backtest_price_events.append([callback, asset_id, time_interval])
-
-    def backtest(self):
-        # Create arrays of price events along with their interval
-
-        # Create a new controller
-        if self.price_data == {} or self.backtest_price_events == []:
+        if prices == {} or self.price_events == []:
             raise ValueError("Either no price data or backtest events given. "
                              "Use .append_backtest_price_data or "
                              "append_backtest_price_event to create the backtest model.")
-        else:
-            controller = BackTestController(self.get_interface(), self.price_data, self.backtest_price_events)
 
-        # Run the controller
-        return controller.run()
+        self.run()
+
+    def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval):
+        if isinstance(time_interval, str):
+            time_interval = time_interval_to_seconds(time_interval)
+        self.price_events.append([callback, asset_id, time_interval])
 
     def run(self):
-        self.paper_trade_interface.set_backtesting(True)
-        account = self.paper_trade_interface.get_account()
+        self.interface.set_backtesting(True)
+        account = self.interface.get_account()
         column_keys = ['time']
         for i in account:
             column_keys.append(i['currency'])
@@ -116,15 +146,15 @@ class BackTestController:
 
         try:
             for price_array in self.prices:
-                self.paper_trade_interface.receive_price(price_array[1], price_array[2])
+                self.interface.receive_price(price_array[1], price_array[2])
                 self.current_time = price_array[0]
-                self.paper_trade_interface.receive_time(self.current_time)
+                self.interface.receive_time(self.current_time)
 
                 for function_dict in self.price_events:
                     while function_dict['next_run'] <= self.current_time:
                         local_time = function_dict['next_run']
                         # This is the actual callback to the user space
-                        function_dict['function'](self.paper_trade_interface.get_price(function_dict['asset_id']),
+                        function_dict['function'](self.interface.get_price(function_dict['asset_id']),
                                                   function_dict['asset_id'])
 
                         # Delay the next run until after the interval
@@ -132,7 +162,7 @@ class BackTestController:
 
                         available_dict = {}
                         # Grab the account status
-                        account_status = self.paper_trade_interface.get_account()
+                        account_status = self.interface.get_account()
                         for i in account_status:
                             available_dict[i['currency']] = i['available']
                         # Make sure to add the time key in
@@ -162,5 +192,5 @@ class BackTestController:
         p.legend.title_text_font_size = "20px"
         show(p)
 
-        self.paper_trade_interface.set_backtesting(False)
+        self.interface.set_backtesting(False)
         return cycle_status
