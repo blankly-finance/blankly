@@ -15,45 +15,47 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import os
 
-
-from Blankly.exchanges.Paper_Trade.Paper_Trade_Interface import PaperTradeInterface
+from Blankly.exchanges.Paper_Trade.Paper_Trade import PaperTrade
+from Blankly.utils.time_builder import time_interval_to_seconds
+from Blankly.utils.utils import load_backtest_preferences
+import typing
 import pandas as pd
 import traceback
 from bokeh.plotting import figure, show
 from bokeh.palettes import Category10_10
-
-
-def get_blank_settings():
-    """
-    This is a format draft for multi-equity backtesting
-    """
-    return {
-        'price_event': [{
-                'function': None,  # Run interval in seconds
-                'interval': 0.0,  # Run interval in seconds
-                'price_data': None  # Price data for this specific function
-            }],
-        'orderbook_event': [{
-            'function': None,  # Run interval in seconds
-            'interval': 0.0,  # Run interval in seconds
-            'price_data': None,
-            'orderbook_data': None,
-            }],
-        'price_dictionary': None,  # Set a global price dictionary for all functions to use
-
-        'interval_enabled': {  # Choose between passing in a price dictionary or a
-            # linear list with internally modified time
-            'enabled': True  # True will mean interval, which means price data should be lists
-        },
-        'Use_Price': 'close',
-        'Assume_Linear_Prices': False,
-        'GUI_Output': True,
-        'Show_Tickers_With_Zero_Delta': False,
-    }
+import os
 
 
 class BackTestController:
+    def __init__(self, paper_trade_exchange: PaperTrade):
+        self.preferences = load_backtest_preferences()
+        self.interface = paper_trade_exchange.get_interface()
+
+        self.backtest_price_events = []
+
+    def download_prices(self):
+        cache_folder = self.preferences['price_data']["cache_location"]
+        # Make sure the cache folder exists and read files
+        try:
+            files = os.listdir(cache_folder)
+        except FileNotFoundError:
+            files = []
+            os.mkdir(cache_folder)
+
+        split_files = []
+        for i in range(len(files)):
+            # example file name: 'BTC-USD.1622400000.1622510793.60.csv'
+            # Remove the .csv from each of the files: BTC-USD.1622400000.1622510793.60
+            split_files.append(files[i].split(".")[1:])
+
+        assets = self.preferences['price_data']['assets']  # type: dict
+        price_data = {}
+        for k, v in assets.items():
+            price_data[k] = self.interface.get_product_history(k, v[0], v[1], v[2])
+
+
     def __init__(self, paper_trade_interface: PaperTradeInterface, prices: dict, price_events=None):
         if price_events is None:
             price_events = []  # [[price_event, asset_id, time_interval_to_seconds(interval)]]
@@ -81,6 +83,25 @@ class BackTestController:
                 'interval': self.price_events[i][2],
                 'next_run': self.initial_time
             }
+
+    def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval):
+        if isinstance(time_interval, str):
+            time_interval = time_interval_to_seconds(time_interval)
+        self.backtest_price_events.append([callback, asset_id, time_interval])
+
+    def backtest(self):
+        # Create arrays of price events along with their interval
+
+        # Create a new controller
+        if self.price_data == {} or self.backtest_price_events == []:
+            raise ValueError("Either no price data or backtest events given. "
+                             "Use .append_backtest_price_data or "
+                             "append_backtest_price_event to create the backtest model.")
+        else:
+            controller = BackTestController(self.get_interface(), self.price_data, self.backtest_price_events)
+
+        # Run the controller
+        return controller.run()
 
     def run(self):
         self.paper_trade_interface.set_backtesting(True)

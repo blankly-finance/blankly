@@ -6,7 +6,7 @@ prices = []
 
 def price_event(price, currency_pair):
     prices.append(price)
-    sma50 = Blankly.analysis.calculate_sma(price, window=10)
+    sma50 = Blankly.indicators.sma(price, 10)
     if price > sma50:
         interface.market_order(currency_pair, 'buy', 10)
     else:

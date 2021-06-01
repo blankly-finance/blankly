@@ -142,7 +142,6 @@ class Strategy:
                 epoch = datetime.datetime.utcfromtimestamp(0)
                 end = (end_date - epoch).total_seconds()
 
-
         self.Interface = self.__paper_trade_exchange.get_interface()
 
         # Append each of the events the class defines into the backtest
