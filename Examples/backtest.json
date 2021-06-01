@@ -1,0 +1,43 @@
+{
+  "price_data": {
+    "assets": [
+      [
+        "BTC-EUR",
+        1622400000,
+        1622510793,
+        60
+      ],
+      [
+        "LINK-USD",
+        1622400000,
+        1622510793,
+        240
+      ],
+      [
+        "BTC-USD",
+        864000.0,
+        1622589245.178988,
+        120.0
+      ],
+      [
+        "BTC-USD",
+        864000.0,
+        1622589262.814199,
+        120.0
+      ],
+      [
+        "BTC-USD",
+        864000.0,
+        1622589379.755326,
+        120.0
+      ]
+    ],
+    "cache_location": "./price_caches"
+  },
+  "settings": {
+    "use_price": "close",
+    "smooth_prices": false,
+    "GUI_output": false,
+    "show_tickers_with_zero_delta": false
+  }
+}

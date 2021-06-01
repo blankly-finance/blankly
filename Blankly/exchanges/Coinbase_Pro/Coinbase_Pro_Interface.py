@@ -412,8 +412,10 @@ class CoinbaseProInterface(CurrencyInterface):
             window_close = window_open + 300 * granularity
             open_iso = utils.ISO8601_from_epoch(window_open)
             close_iso = utils.ISO8601_from_epoch(window_close)
-            history = history + self.calls.get_product_historic_rates(product_id, open_iso, close_iso,
-                                                                      granularity)
+            response = self.calls.get_product_historic_rates(product_id, open_iso, close_iso, granularity)
+            if isinstance(response, dict):
+                raise APIException(response['message'])
+            history = history + response
 
             window_open = window_close
             need -= 300

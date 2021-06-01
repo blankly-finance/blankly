@@ -77,14 +77,21 @@ def load_backtest_preferences(override_path=None) -> dict:
             else:
                 preferences = load_json_file(override_path)
         except FileNotFoundError:
-            raise FileNotFoundError("Make sure a backtest.json file is placed in the same folder as the project "
-                                    "working directory!")
+            raise FileNotFoundError("To perform a backtest, make sure a backtest.json file is placed in the same "
+                                    "folder as the project working directory!")
         # TODO add backtesting preferences compare ability
         # preferences = __compare_dicts(default_settings, preferences)
         backtest_cache = preferences
         return preferences
     else:
         return backtest_cache
+
+
+def write_backtest_preferences(json_file, override_path=None):
+    global backtest_cache
+    backtest_cache = json_file
+    with open('backtest.json', "w") as preferences:
+        preferences.write(json.dumps(json_file, indent=2))
 
 
 def load_user_preferences(override_path=None) -> dict:

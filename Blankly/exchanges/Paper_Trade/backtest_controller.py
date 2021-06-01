@@ -21,7 +21,7 @@ from Blankly.exchanges.Paper_Trade.Paper_Trade import PaperTrade
 from Blankly.exchanges.Paper_Trade.Paper_Trade_Interface import PaperTradeInterface
 
 from Blankly.utils.time_builder import time_interval_to_seconds
-from Blankly.utils.utils import load_backtest_preferences
+from Blankly.utils.utils import load_backtest_preferences, write_backtest_preferences
 import typing
 import pandas as pd
 import traceback
@@ -33,9 +33,9 @@ import os
 def to_string_key(separated_list):
     output = ""
     for i in range(len(separated_list) - 1):
-        output += separated_list[i]
+        output += str(separated_list[i])
         output += "."
-    output += separated_list[-1:][0]
+    output += str(separated_list[-1:][0])
     return output
 
 
@@ -69,8 +69,8 @@ class BackTestController:
         price_dictionary = {}
 
         assets = self.preferences['price_data']['assets']  # type: dict
-        for k, v in assets.items():
-            identifier = [k, v[0], v[1], v[2]]
+        for i in assets:
+            identifier = [i[0], i[1], i[2], i[3]]
             string_identifier = to_string_key(identifier)
             if identifier in available_files:
                 # Read the csv here
@@ -96,6 +96,19 @@ class BackTestController:
                 unique_assets[k[0]] = v
 
         return unique_assets
+
+    def add_prices(self, asset_id, start_time, end_time, resolution):
+        # Create its unique identifier
+        identifier = [asset_id, start_time, end_time, resolution]
+
+        # If it's not loaded then write it to the file
+        price_identifiers = self.preferences['price_data']['assets']
+        if identifier not in price_identifiers:
+            self.preferences['price_data']['assets'].append(identifier)
+            write_backtest_preferences(self.preferences)
+
+        # Ensure everything is up to date
+        self.sync_prices()
 
     def backtest(self):
         prices = self.sync_prices()
