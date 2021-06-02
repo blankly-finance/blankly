@@ -59,6 +59,7 @@ class Strategy:
                 Blankly.Scheduler(self.__price_event_websocket, resolution,
                                   initially_stopped=True,
                                   callback=callback,
+                                  resolution=resolution,
                                   currency_pair=currency_pair)
             )
         else:
@@ -76,13 +77,6 @@ class Strategy:
         """
         pass
 
-    def __price_event_rest(self, **kwargs):
-        callback = kwargs['callback']
-        currency_pair = kwargs['currency_pair']
-
-        price = self.Interface.get_price(currency_pair)
-        orders = callback(price, currency_pair)
-        self.__process_orders(orders, currency_pair)
 
     def __process_orders(self, orders: typing.Any, currency_pair: str):
         if orders is None:
@@ -105,13 +99,30 @@ class Strategy:
         if order.type == 'limit':
             self.Interface.limit_order(currency_pair, order.side, order.price, order.amount)
         
+    def __price_event_rest(self, **kwargs):
+        callback = kwargs['callback']
+        currency_pair = kwargs['currency_pair']
+        resolution = kwargs['resolution']
+
+        price = self.Interface.get_price(currency_pair)
+        orders = callback(price, currency_pair, strategy=self, 
+            interface=self.Interface, 
+            portfolio_value=self.Interface.get_account(), 
+            open_orders=self.Interface.get_open_orders(), 
+            resolution=resolution)
+        self.__process_orders(orders, currency_pair)
 
     def __price_event_websocket(self, **kwargs):
         callback = kwargs['callback']
         currency_pair = kwargs['currency_pair']
+        resolution = kwargs['resolution']
 
         price = self.Ticker_Manager.get_most_recent_tick(override_currency=currency_pair)
-        orders = callback(price, currency_pair)
+        orders = callback(price, currency_pair, strategy=self, 
+            interface=self.Interface, 
+            portfolio_value=self.Interface.get_account(), 
+            open_orders=self.Interface.get_open_orders(), 
+            resolution=resolution)
         self.__process_orders(orders)
 
     def add_orderbook_event(self, callback: typing.Callable, currency_pair: str):
@@ -141,7 +152,11 @@ class Strategy:
         currency_pair = kwargs['currency_pair']
 
         price = self.Orderbook_Manager.get_most_recent_tick(override_currency=currency_pair)
-        orders = callback(price, currency_pair)
+        orders = callback(price, currency_pair, 
+            strategy=self, 
+            interface=self.Interface, 
+            portfolio_value=self.Interface.get_account(), 
+            open_orders=self.Interface.get_open_orders())
         self.__process_orders(orders, currency_pair)
 
     def backtest(self, to='5y', start_date: str=None, end_date: str=None, asset_id: str = None, price_data: pd.DataFrame = None):
