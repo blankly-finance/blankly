@@ -40,6 +40,7 @@ class Strategy:
         self.__paper_trade_exchange = Blankly.PaperTrade(self.exchange)
         self.__resolutions = set()
         self.__schedulers = []
+        self.variables = {}
 
     def add_price_event(self, callback: typing.Callable, currency_pair: str, resolution: str):
         """
@@ -109,6 +110,7 @@ class Strategy:
             interface=self.Interface, 
             portfolio_value=self.Interface.get_account(), 
             open_orders=self.Interface.get_open_orders(), 
+            variables=self.variables,
             resolution=resolution)
         self.__process_orders(orders, currency_pair)
 
@@ -122,6 +124,7 @@ class Strategy:
             interface=self.Interface, 
             portfolio_value=self.Interface.get_account(), 
             open_orders=self.Interface.get_open_orders(), 
+            variables=self.variables,
             resolution=resolution)
         self.__process_orders(orders)
 
@@ -156,6 +159,7 @@ class Strategy:
             strategy=self, 
             interface=self.Interface, 
             portfolio_value=self.Interface.get_account(), 
+            variables=self.variables,
             open_orders=self.Interface.get_open_orders())
         self.__process_orders(orders, currency_pair)
 
