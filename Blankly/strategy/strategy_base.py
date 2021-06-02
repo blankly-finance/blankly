@@ -15,6 +15,8 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import warnings
+
 from Blankly.strategy.strategy_state import StrategyState
 from Blankly.utils.utils import AttributeDict
 import typing
@@ -211,8 +213,11 @@ class Strategy:
                                                                time_interval=i.get_interval()
                                                                )
 
-        for i in self.scheduling_pair:
-            backtesting_controller.add_prices(i[0], start, end, i[1], save=save)
+        if start is not None and end is not None:
+            for i in self.scheduling_pair:
+                backtesting_controller.add_prices(i[0], start, end, i[1], save=save)
+        else:
+            warnings.warn("User-specified start and end time not given. Defaulting to using only cached data.")
 
         # if asset_id is None:
         #     for currency in self.currency_pairs:

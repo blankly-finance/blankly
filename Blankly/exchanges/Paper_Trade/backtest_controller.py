@@ -19,13 +19,15 @@
 
 from Blankly.exchanges.Paper_Trade.Paper_Trade import PaperTrade
 from Blankly.exchanges.Paper_Trade.Paper_Trade_Interface import PaperTradeInterface
-
 from Blankly.utils.time_builder import time_interval_to_seconds
 from Blankly.utils.utils import load_backtest_preferences, write_backtest_preferences
+
 import typing
 import pandas as pd
+from datetime import datetime
 import traceback
 from bokeh.plotting import figure, show
+from bokeh.layouts import column as bokeh_columns
 from bokeh.palettes import Category10_10
 import os
 
@@ -137,11 +139,12 @@ class BackTestController:
         prices = self.sync_prices(False)
 
         # Organize each price into this structure: [epoch, "BTC-USD", price]
+        use_price = self.preferences['settings']['use_price']
         for k, v in prices.items():
             frame = v  # type: pd.DataFrame
             for index, row in frame.iterrows():
                 # TODO this currently only works with open & iterrows() is allegedly pretty slow
-                self.prices.append([row.time, k, row.open])
+                self.prices.append([row.time, k, row[use_price]])
 
         self.prices = sorted(self.prices, key=lambda x: x[0])
 
@@ -196,7 +199,7 @@ class BackTestController:
                         for i in account_status:
                             available_dict[i['currency']] = i['available']
                         # Make sure to add the time key in
-                        available_dict['time'] = local_time - self.initial_time
+                        available_dict['time'] = local_time
                         price_data.append(available_dict)
         except Exception:
             traceback.print_exc()
@@ -204,23 +207,35 @@ class BackTestController:
         # Push the accounts to the dataframe
         cycle_status = cycle_status.append(price_data, ignore_index=True)
 
-        p = figure(plot_width=800, plot_height=900)
+        figures = []
+        global_x_range = None
+
+        show_zero_delta = self.preferences['settings']['show_tickers_with_zero_delta']
+
         color = Category10_10.__iter__()
         for column in cycle_status:
-            if column != 'time':
-                p.step(cycle_status['time'].tolist(), cycle_status[column].tolist(),
+            if column != 'time' and (not (cycle_status[column][0] == cycle_status[column].iloc[-1]) or show_zero_delta):
+                p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
+                time = [datetime.fromtimestamp(ts) for ts in cycle_status['time']]
+                p.step(time, cycle_status[column].tolist(),
                        line_width=2,
                        color=next(color),
                        legend_label=column,
-                       mode="before"
+                       mode="before",
                        )
+                # Format graph
+                p.legend.location = "top_left"
+                p.legend.title = column
+                p.legend.title_text_font_style = "bold"
+                p.legend.title_text_font_size = "20px"
+                if global_x_range is None:
+                    global_x_range = p.x_range
+                else:
+                    p.x_range = global_x_range
 
-        # Format graph
-        p.legend.location = "top_left"
-        p.legend.title = "Backtest results"
-        p.legend.title_text_font_style = "bold"
-        p.legend.title_text_font_size = "20px"
-        show(p)
+                figures.append(p)
+
+        show(bokeh_columns(figures))
 
         self.interface.set_backtesting(False)
         return cycle_status

@@ -2,8 +2,18 @@ import Blankly
 
 
 def price_event(price, product_id):
-    # Run this every "2 minutes" in the backtest
-    strategy.Interface.market_order(product_id, 'buy', 10)
+    # Run this every hour
+    interface = strategy.Interface
+    usd_amount = interface.get_account('USD')['available']
+
+    # Try to make our account value match 1/100 of the price.
+    price = price/100
+
+    delta = price-usd_amount
+    if delta > 10:
+        strategy.Interface.market_order(product_id, 'sell', delta)
+    if delta < -10:
+        strategy.Interface.market_order(product_id, 'buy', -1*delta)
 
 
 if __name__ == "__main__":
