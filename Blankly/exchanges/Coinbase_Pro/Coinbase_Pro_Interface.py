@@ -406,6 +406,7 @@ class CoinbaseProInterface(CurrencyInterface):
 
         # Figure out how many points are needed
         need = int((epoch_stop - epoch_start) / granularity)
+        initial_need = need
         window_open = epoch_start
         history = []
         # Iterate while its more than max
@@ -421,7 +422,8 @@ class CoinbaseProInterface(CurrencyInterface):
 
             window_open = window_close
             need -= 300
-            time.sleep(1)
+            time.sleep(.2)
+            self.update_progress((initial_need - need) / initial_need)
 
         # Fill the remainder
         open_iso = utils.ISO8601_from_epoch(window_open)

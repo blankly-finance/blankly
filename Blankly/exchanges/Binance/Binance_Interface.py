@@ -579,6 +579,7 @@ class BinanceInterface(CurrencyInterface):
 
         # Figure out how many points are needed
         need = int((epoch_stop - epoch_start) / granularity)
+        initial_need = need
         window_open = epoch_start
         history = []
 
@@ -593,7 +594,8 @@ class BinanceInterface(CurrencyInterface):
 
             window_open = window_close
             need -= 1000
-            time.sleep(1)
+            time.sleep(.2)
+            self.update_progress((initial_need - need) / initial_need)
 
         # Fill the remainder
         history_block = history + self.calls.get_klines(symbol=product_id, startTime=window_open * 1000,

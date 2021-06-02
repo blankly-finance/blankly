@@ -51,7 +51,12 @@ class BackTestController:
 
         self.prices = []  # [epoch, "BTC-USD", price]
 
+        self.price_dictionary = {}
+
+        self.sync_prices()
+
     def sync_prices(self, save=True) -> dict:
+
         cache_folder = self.preferences['price_data']["cache_location"]
         # Make sure the cache folder exists and read files
         try:
@@ -64,9 +69,11 @@ class BackTestController:
         for i in range(len(files)):
             # example file name: 'BTC-USD.1622400000.1622510793.60.csv'
             # Remove the .csv from each of the files: BTC-USD.1622400000.1622510793.60
-            available_files.append(files[i].split(",")[1:])
-
-        price_dictionary = {}
+            identifier = files[i][:-4].split(",")
+            identifier[1] = float(identifier[1])
+            identifier[2] = float(identifier[2])
+            identifier[3] = float(identifier[3])
+            available_files.append(identifier)
 
         assets = self.preferences['price_data']['assets']  # type: dict
         for i in assets:
@@ -74,23 +81,26 @@ class BackTestController:
             string_identifier = to_string_key(identifier)
             if identifier in available_files:
                 # Read the csv here
-                price_dictionary[tuple(identifier)] = pd.read_csv(os.path.join(cache_folder,
-                                                                               string_identifier + ".csv")
-                                                                  )
+                if tuple(identifier) not in self.price_dictionary.keys():
+                    print("Including: " + string_identifier + ".csv in backtest.")
+                    self.price_dictionary[tuple(identifier)] = pd.read_csv(os.path.join(cache_folder,
+                                                                           string_identifier + ".csv")
+                                                                           )
             else:
-                print("No exact cache exists for " + str(identifier[0]) + " from " + str(identifier[1]) + " to " +
-                      str(identifier[2]) + " at " + str(identifier[3]) + "s resolution. Downloading...")
-                download = self.interface.get_product_history(identifier[0],
-                                                              identifier[1],
-                                                              identifier[2],
-                                                              identifier[3])
-                price_dictionary[tuple(identifier)] = download
-                if save:
-                    download.to_csv(os.path.join(cache_folder, string_identifier + ".csv"), index=False)
+                if tuple(identifier) not in self.price_dictionary.keys():
+                    print("No exact cache exists for " + str(identifier[0]) + " from " + str(identifier[1]) + " to " +
+                          str(identifier[2]) + " at " + str(identifier[3]) + "s resolution. Downloading...")
+                    download = self.interface.get_product_history(identifier[0],
+                                                                  identifier[1],
+                                                                  identifier[2],
+                                                                  identifier[3])
+                    self.price_dictionary[tuple(identifier)] = download
+                    if save:
+                        download.to_csv(os.path.join(cache_folder, string_identifier + ".csv"), index=False)
 
         # Merge all the same asset ids into the same dictionary spots
         unique_assets = {}
-        for k, v in price_dictionary.items():
+        for k, v in self.price_dictionary.items():
             if k[0] in unique_assets:
                 unique_assets[k[0]] = pd.concat([unique_assets[k[0]], v], ignore_index=True)
             else:
@@ -103,16 +113,15 @@ class BackTestController:
         identifier = [asset_id, start_time, end_time, resolution]
 
         # If it's not loaded then write it to the file
-        price_identifiers = self.preferences['price_data']['assets']
-        if identifier not in price_identifiers:
+        if tuple(identifier) not in self.price_dictionary.keys():
             self.preferences['price_data']['assets'].append(identifier)
             if save:
                 write_backtest_preferences(self.preferences)
+        else:
+            print("already identified")
 
         # Ensure everything is up to date
-        print("syncing:")
-        print(save)
-        self.sync_prices(save=save)
+        self.sync_prices(save)
 
     def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval):
         if isinstance(time_interval, str):
@@ -123,7 +132,7 @@ class BackTestController:
         """
         Setup
         """
-        prices = self.sync_prices()
+        prices = self.sync_prices(False)
 
         # Organize each price into this structure: [epoch, "BTC-USD", price]
         for k, v in prices.items():

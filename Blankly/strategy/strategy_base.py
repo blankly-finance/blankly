@@ -17,7 +17,6 @@
 """
 import typing
 import time
-import warnings
 
 import pandas as pd
 import datetime
@@ -132,18 +131,9 @@ class Strategy:
             to (str): Declare an amount of time before now to backtest from: ex: '5y' or '10h'
             start_date (str): Override argument "to" by specifying a start date such as "03/06/2018"
             end_date (str): End the backtest at a date such as "03/06/2018"
-            asset_id (str): Asset ID of the price passed in - such as "BTC-USD"
-            resolution (str): Resolution of time to download this price instance
             save (bool): Save the price data that is required for the backtest
         """
         backtesting_controller = BackTestController(self.__paper_trade_exchange)
-
-        # Exclude this case
-        # if to is not None and start_date is not None and end_date is not None:
-        #     pass
-        # elif to is not None or start_date is not None or end_date is not None:
-        #     warnings.warn("All three of parameters start_date, end_date, asset_id must be filled to use argument-based "
-        #                   "configuration.")
 
         start = None
         end = None
