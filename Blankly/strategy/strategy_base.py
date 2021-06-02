@@ -19,9 +19,11 @@ import typing
 import time
 
 import pandas as pd
+import numpy as np
 import datetime
 import Blankly
 from Blankly.exchanges.exchange import Exchange
+from Blankly.strategy.order import Order
 from Blankly.utils.time_builder import time_interval_to_seconds
 
 
@@ -79,14 +81,38 @@ class Strategy:
         currency_pair = kwargs['currency_pair']
 
         price = self.Interface.get_price(currency_pair)
-        callback(price, currency_pair)
+        orders = callback(price, currency_pair)
+        self.__process_orders(orders, currency_pair)
+
+    def __process_orders(self, orders: typing.Any, currency_pair: str):
+        if orders is None:
+            return
+        is_list_of_orders = isinstance(orders, list) and not isinstance(orders[0], Order)
+        is_np_array_of_orders = isinstance(orders, np.array) and not isinstance(orders[0], Order)
+
+        if is_list_of_orders or is_np_array_of_orders or not isinstance(orders, Order):
+            raise ValueError("Expected an Order or a list of Orders but instead " + type(orders[0]))
+        
+        if isinstance(orders, list) or isinstance(orders, np.array):
+            for order in orders:
+                self.__submit_order(order)
+        else:
+            self.__submit_order(orders, currency_pair)
+
+    def __submit_order(self, order: Order, currency_pair: str):
+        if order.type == 'market':
+            self.Interface.market_order(currency_pair, order.side, order.amount)
+        if order.type == 'limit':
+            self.Interface.limit_order(currency_pair, order.side, order.price, order.amount)
+        
 
     def __price_event_websocket(self, **kwargs):
         callback = kwargs['callback']
         currency_pair = kwargs['currency_pair']
 
         price = self.Ticker_Manager.get_most_recent_tick(override_currency=currency_pair)
-        callback(price, currency_pair)
+        orders = callback(price, currency_pair)
+        self.__process_orders(orders)
 
     def add_orderbook_event(self, callback: typing.Callable, currency_pair: str):
         """
@@ -115,7 +141,8 @@ class Strategy:
         currency_pair = kwargs['currency_pair']
 
         price = self.Orderbook_Manager.get_most_recent_tick(override_currency=currency_pair)
-        callback(price, currency_pair)
+        orders = callback(price, currency_pair)
+        self.__process_orders(orders, currency_pair)
 
     def backtest(self, to='5y', start_date: str=None, end_date: str=None, asset_id: str = None, price_data: pd.DataFrame = None):
         """
