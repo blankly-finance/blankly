@@ -3,12 +3,12 @@ import Blankly
 from Blankly.strategy.strategy_base import Strategy
 
 
-def golden_cross(price, currency_pair, **kwargs):
+def golden_cross(price, currency_pair, state):
     # we give you an assortment of values 
     # as well as access to the underlying strategy or interface
-    portfolio_value = kwargs['portfolio_value']
-    resolution = kwargs['resolution'] # get the resolution that this price event is stored at
-    variables = kwargs['variables'] # each price event has it's own local variable state
+    portfolio_value = state.portfolio_value
+    resolution = state.resolution # get the resolution that this price event is stored at
+    variables = state.variables # each price event has it's own local variable state
 
 
     historical_prices = Blankly.historical(currency_pair, 50, resolution=resolution)
@@ -20,10 +20,10 @@ def golden_cross(price, currency_pair, **kwargs):
         variables['open_order'] = False
         return Order(currency_pair, 'market', 'sell', portfolio_value * 0.25)
 
-def rsi(price, currency_pair, **kwargs):
-    portfolio_value = kwargs['portfolio_value']
-    resolution = kwargs['resolution']
-    variables = kwargs['variables']
+def rsi(price, currency_pair, state):
+    portfolio_value = state.portfolio_value
+    resolution = state.resolution # get the resolution that this price event is stored at
+    variables = state.variables # each price event has it's own local variable state
     
     historical_prices = Blankly.historical(currency_pair, 50)
     historical_prices = Blankly.historical(currency_pair, 50, resolution=resolution)

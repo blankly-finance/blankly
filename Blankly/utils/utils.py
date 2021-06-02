@@ -314,3 +314,10 @@ def compare_dictionaries(dict1, dict2) -> bool:
         print(dict1)
         print(dict2)
         return False
+
+
+class AttributeDict(dict):
+    def __getattr__(self, attr):
+        return self[attr]
+    def __setattr__(self, attr, value):
+        self[attr] = value

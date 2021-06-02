@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from Blankly.utils.utils import AttributeDict
 import typing
 import time
 
@@ -111,12 +112,17 @@ class Strategy:
         resolution = kwargs['resolution']
         variables = kwargs['variables']
         price = self.Interface.get_price(currency_pair)
-        orders = callback(price, currency_pair, strategy=self, 
-            interface=self.Interface, 
-            portfolio_value=self.Interface.get_account(), 
-            open_orders=self.Interface.get_open_orders(), 
-            variables=variables,
-            resolution=resolution)
+
+        state = AttributeDict({
+            'strategy': self, 
+            'interface': self.Interface, 
+            'portfolio_value': self.Interface.get_account(), 
+            'open_orders': self.Interface.get_open_orders(), 
+            'variables': variables,
+            'resolution': resolution
+        })
+        
+        orders = callback(price, currency_pair, state)
         self.__process_orders(orders, currency_pair)
 
     def __price_event_websocket(self, **kwargs):
@@ -126,12 +132,15 @@ class Strategy:
         variables = kwargs['variables']
 
         price = self.Ticker_Manager.get_most_recent_tick(override_currency=currency_pair)
-        orders = callback(price, currency_pair, strategy=self, 
-            interface=self.Interface, 
-            portfolio_value=self.Interface.get_account(), 
-            open_orders=self.Interface.get_open_orders(), 
-            variables=variables,
-            resolution=resolution)
+        state = AttributeDict({
+            'strategy': self, 
+            'interface': self.Interface, 
+            'portfolio_value': self.Interface.get_account(), 
+            'open_orders': self.Interface.get_open_orders(), 
+            'variables': variables,
+            'resolution': resolution
+        })
+        orders = callback(price, currency_pair, state)
         self.__process_orders(orders)
 
     def add_orderbook_event(self, callback: typing.Callable, currency_pair: str):
@@ -165,12 +174,14 @@ class Strategy:
         variables = kwargs['variables']
 
         price = self.Orderbook_Manager.get_most_recent_tick(override_currency=currency_pair)
-        orders = callback(price, currency_pair, 
-            strategy=self, 
-            interface=self.Interface, 
-            portfolio_value=self.Interface.get_account(), 
-            variables=variables,
-            open_orders=self.Interface.get_open_orders())
+        state = AttributeDict({
+            'strategy': self, 
+            'interface': self.Interface, 
+            'portfolio_value': self.Interface.get_account(), 
+            'open_orders': self.Interface.get_open_orders(), 
+            'variables': variables,
+        })
+        orders = callback(price, currency_pair, state)
         self.__process_orders(orders, currency_pair)
 
     def backtest(self, to='5y', start_date: str=None, end_date: str=None, asset_id: str = None, price_data: pd.DataFrame = None):
