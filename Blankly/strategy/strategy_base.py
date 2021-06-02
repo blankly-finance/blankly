@@ -86,7 +86,6 @@ class Strategy:
         """
         pass
 
-
     def __process_orders(self, orders: typing.Any, currency_pair: str):
         if orders is None:
             return
