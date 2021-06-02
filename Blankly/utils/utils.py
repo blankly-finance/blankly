@@ -48,7 +48,9 @@ def __compare_dicts(default_settings, user_settings):
 
 
 settings_cache = None
+backtest_cache = None
 
+# Copy of settings to compare defaults vs overrides
 default_settings = {
     "settings": {
         "account_update_time": 5000,
@@ -59,20 +61,49 @@ default_settings = {
 }
 
 
-def load_user_preferences(override_path=None):
+def load_json_file(override_path=None):
+    f = open(override_path, )
+    json_file = json.load(f)
+    f.close()
+    return json_file
+
+
+def load_backtest_preferences(override_path=None) -> dict:
+    global backtest_cache
+    if backtest_cache is None:
+        try:
+            if override_path is None:
+                preferences = load_json_file('backtest.json')
+            else:
+                preferences = load_json_file(override_path)
+        except FileNotFoundError:
+            raise FileNotFoundError("To perform a backtest, make sure a backtest.json file is placed in the same "
+                                    "folder as the project working directory!")
+        # TODO add backtesting preferences compare ability
+        # preferences = __compare_dicts(default_settings, preferences)
+        backtest_cache = preferences
+        return preferences
+    else:
+        return backtest_cache
+
+
+def write_backtest_preferences(json_file, override_path=None):
+    global backtest_cache
+    backtest_cache = json_file
+    with open('backtest.json', "w") as preferences:
+        preferences.write(json.dumps(json_file, indent=2))
+
+
+def load_user_preferences(override_path=None) -> dict:
     global settings_cache
     if settings_cache is None:
         try:
             if override_path is None:
-                f = open("Settings.json", )
-                preferences = json.load(f)
-                f.close()
+                preferences = load_json_file('settings.json')
             else:
-                f = open(override_path, )
-                preferences = json.load(f)
-                f.close()
+                preferences = load_json_file(override_path)
         except FileNotFoundError:
-            raise FileNotFoundError("Make sure a Settings.json file is placed in the same folder as the project "
+            raise FileNotFoundError("Make sure a settings.json file is placed in the same folder as the project "
                                     "working directory!")
         preferences = __compare_dicts(default_settings, preferences)
         settings_cache = preferences

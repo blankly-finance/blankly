@@ -10,7 +10,6 @@ def golden_cross(price, currency_pair, state):
     resolution = state.resolution # get the resolution that this price event is stored at
     variables = state.variables # each price event has it's own local variable state
 
-
     historical_prices = Blankly.historical(currency_pair, 50, resolution=resolution)
     sma50 = Blankly.analysis.calculate_sma(historical_prices, window=50)[-1] # last 50 day sma value is the value we want
     if price > sma50 and not variables['open_order']:
@@ -20,6 +19,7 @@ def golden_cross(price, currency_pair, state):
         variables['open_order'] = False
         return Order(currency_pair, 'market', 'sell', portfolio_value * 0.25)
 
+      
 def rsi(price, currency_pair, state):
     portfolio_value = state.portfolio_value
     resolution = state.resolution # get the resolution that this price event is stored at

@@ -23,6 +23,7 @@ import pandas as pd
 import numpy as np
 import datetime
 import Blankly
+from Blankly.exchanges.Paper_Trade.backtest_controller import BackTestController
 from uuid import uuid4
 from Blankly.exchanges.exchange import Exchange
 from Blankly.strategy.order import Order
@@ -34,13 +35,13 @@ class Strategy:
         self.exchange = exchange
         self.Ticker_Manager = Blankly.TickerManager(self.exchange.get_type(), currency_pair)
         self.Orderbook_Manager = Blankly.OrderbookManager(self.exchange.get_type(), currency_pair)
-        self.currency_pairs = set([ currency_pair ])
+
+        self.scheduling_pair = []  # Object to hold a currency and the resolution its pulled at: ["BTC-USD", 60]
         self.Interface = exchange.get_interface()
 
         # Create a cache for the current interface, and a wrapped paper trade object for user backtesting
         self.__interface_cache = self.Interface
         self.__paper_trade_exchange = Blankly.PaperTrade(self.exchange)
-        self.__resolutions = set()
         self.__schedulers = []
         self.variables = {}
 
@@ -53,8 +54,8 @@ class Strategy:
             resolution: The resolution that the callback will be run - in seconds
         """
         resolution = time_interval_to_seconds(resolution)
-        self.__resolutions.add(resolution)
-        self.currency_pairs.add(currency_pair)
+        
+        self.scheduling_pair.append([currency_pair, resolution])
         callback_id = str(uuid4())
         self.variables[callback_id] = {}
         if resolution < 10:
@@ -184,57 +185,69 @@ class Strategy:
         orders = callback(price, currency_pair, state)
         self.__process_orders(orders, currency_pair)
 
-    def backtest(self, to='5y', start_date: str=None, end_date: str=None, asset_id: str = None, price_data: pd.DataFrame = None):
+    def backtest(self, to: str = None,
+                 start_date: str = None,
+                 end_date: str = None,
+                 save: bool = False
+                 ):
         """
         Turn this strategy into a backtest.
-        Make sure the price events use a paper trade object unless you want actual live trading
 
         Args:
-            asset_id (str): Asset ID of the price passed in - such as "BTC-USD"
-            price_data (dataframe): Price dataframe from blankly historical download
+            ** All arguments are optional - be sure that the required price info has been given at some point **
+
+            to (str): Declare an amount of time before now to backtest from: ex: '5y' or '10h'
+            start_date (str): Override argument "to" by specifying a start date such as "03/06/2018"
+            end_date (str): End the backtest at a date such as "03/06/2018"
+            save (bool): Save the price data that is required for the backtest
         """
+        backtesting_controller = BackTestController(self.__paper_trade_exchange)
 
-        if price_data is None:
-            if to: 
-                start = time_interval_to_seconds(to)
-                end = time.time()
+        start = None
+        end = None
 
-            if start_date:
-                start_date = pd.to_datetime(start_date)
-                epoch = datetime.datetime.utcfromtimestamp(0)
-                start = (start_date - epoch).total_seconds()
+        if to is not None:
+            start = time.time() - time_interval_to_seconds(to)
+            end = time.time()
 
-            if end_date:
-                end_date = pd.to_datetime(end_date)
-                epoch = datetime.datetime.utcfromtimestamp(0)
-                end = (end_date - epoch).total_seconds()
+        if start_date is not None:
+            start_date = pd.to_datetime(start_date)
+            epoch = datetime.datetime.utcfromtimestamp(0)
+            start = (start_date - epoch).total_seconds()
 
+        if end_date is not None:
+            end_date = pd.to_datetime(end_date)
+            epoch = datetime.datetime.utcfromtimestamp(0)
+            end = (end_date - epoch).total_seconds()
 
         self.Interface = self.__paper_trade_exchange.get_interface()
 
         # Append each of the events the class defines into the backtest
         for i in self.__schedulers:
             kwargs = i.get_kwargs()
-            self.__paper_trade_exchange.append_backtest_price_event(callback=kwargs['callback'],
-                                                                    asset_id=kwargs['currency_pair'],
-                                                                    time_interval=i.get_interval()
-                                                                    )
-        if asset_id is None:
-            for currency in self.currency_pairs:
-                for resolution in self.__resolutions:
-                    hist = self.Interface.get_product_history(currency, start, end, resolution)
-                    self.__paper_trade_exchange.append_backtest_price_data(currency, hist)
-        elif asset_id and price_data is None:
-            for resolution in self.__resolutions:
-                hist = self.Interface.get_product_history(asset_id, start, end, resolution)
-                self.__paper_trade_exchange.append_backtest_price_data(asset_id, hist)
-        else:
-            self.__paper_trade_exchange.append_backtest_price_data(asset_id, price_data)
+            backtesting_controller.append_backtest_price_event(callback=kwargs['callback'],
+                                                               asset_id=kwargs['currency_pair'],
+                                                               time_interval=i.get_interval()
+                                                               )
+
+        for i in self.scheduling_pair:
+            backtesting_controller.add_prices(i[0], start, end, i[1], save=save)
+
+        # if asset_id is None:
+        #     for currency in self.currency_pairs:
+        #         for resolution in self.__resolutions:
+        #             backtesting_controller.add_prices(currency, start, end, resolution)
+        # elif asset_id is None and price_data is None:
+        #     for resolution in self.__resolutions:
+        #         hist = self.Interface.get_product_history(asset_id, start, end, resolution)
+        #         self.__paper_trade_exchange.append_backtest_price_data(asset_id, hist)
+        # else:
+        #     backtesting_controller.append_backtest_price_data(asset_id, price_data)
+
         # Run the backtest & return results
-        results = self.__paper_trade_exchange.backtest()
+        results = backtesting_controller.run()
 
         # Clean up
         self.Interface = self.__interface_cache
 
         return results
-
