@@ -13,8 +13,8 @@ def golden_cross(price, currency_pair, **kwargs):
     sma50 = Blankly.analysis.calculate_sma(historical_prices, window=50)[-1] # last 50 day sma value is the value we want
     if price > sma50:
         return Order(currency_pair, 'market', 'buy', portfolio_value * 0.25)
-    else:
-        return Order(currency_pair, 'market', 'buy', portfolio_value * 0.25)
+    elif price < sma50:
+        return Order(currency_pair, 'market', 'sell', portfolio_value * 0.25)
 
 def rsi(price, currency_pair, **kwargs):
     portfolio_value = kwargs['portfolio_value']
