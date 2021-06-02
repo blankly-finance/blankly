@@ -15,14 +15,18 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from Blankly.utils.utils import AttributeDict
 import typing
 import time
 
 import pandas as pd
+import numpy as np
 import datetime
 import Blankly
 from Blankly.exchanges.Paper_Trade.backtest_controller import BackTestController
+from uuid import uuid4
 from Blankly.exchanges.exchange import Exchange
+from Blankly.strategy.order import Order
 from Blankly.utils.time_builder import time_interval_to_seconds
 
 
@@ -39,6 +43,7 @@ class Strategy:
         self.__interface_cache = self.Interface
         self.__paper_trade_exchange = Blankly.PaperTrade(self.exchange)
         self.__schedulers = []
+        self.variables = {}
 
     def add_price_event(self, callback: typing.Callable, currency_pair: str, resolution: str):
         """
@@ -49,7 +54,10 @@ class Strategy:
             resolution: The resolution that the callback will be run - in seconds
         """
         resolution = time_interval_to_seconds(resolution)
+        
         self.scheduling_pair.append([currency_pair, resolution])
+        callback_id = str(uuid4())
+        self.variables[callback_id] = {}
         if resolution < 10:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
             self.Ticker_Manager.create_ticker(self.__idle_event, currency_id=currency_pair)
@@ -57,6 +65,8 @@ class Strategy:
                 Blankly.Scheduler(self.__price_event_websocket, resolution,
                                   initially_stopped=True,
                                   callback=callback,
+                                  resolution=resolution,
+                                  variables = self.variables[callback_id],
                                   currency_pair=currency_pair)
             )
         else:
@@ -65,6 +75,7 @@ class Strategy:
                 Blankly.Scheduler(self.__price_event_rest, resolution,
                                   initially_stopped=True,
                                   callback=callback,
+                                  variables = self.variables[callback_id],
                                   currency_pair=currency_pair)
             )
 
@@ -74,19 +85,64 @@ class Strategy:
         """
         pass
 
+
+    def __process_orders(self, orders: typing.Any, currency_pair: str):
+        if orders is None:
+            return
+        is_list_of_orders = isinstance(orders, list) and not isinstance(orders[0], Order)
+        is_np_array_of_orders = isinstance(orders, np.array) and not isinstance(orders[0], Order)
+
+        if is_list_of_orders or is_np_array_of_orders or not isinstance(orders, Order):
+            raise ValueError("Expected an Order or a list of Orders but instead " + type(orders[0]))
+        
+        if isinstance(orders, list) or isinstance(orders, np.array):
+            for order in orders:
+                self.__submit_order(order)
+        else:
+            self.__submit_order(orders, currency_pair)
+
+    def __submit_order(self, order: Order, currency_pair: str):
+        if order.type == 'market':
+            self.Interface.market_order(currency_pair, order.side, order.amount)
+        if order.type == 'limit':
+            self.Interface.limit_order(currency_pair, order.side, order.price, order.amount)
+        
     def __price_event_rest(self, **kwargs):
         callback = kwargs['callback']
         currency_pair = kwargs['currency_pair']
-
+        resolution = kwargs['resolution']
+        variables = kwargs['variables']
         price = self.Interface.get_price(currency_pair)
-        callback(price, currency_pair)
+
+        state = AttributeDict({
+            'strategy': self, 
+            'interface': self.Interface, 
+            'portfolio_value': self.Interface.get_account(), 
+            'open_orders': self.Interface.get_open_orders(), 
+            'variables': variables,
+            'resolution': resolution
+        })
+        
+        orders = callback(price, currency_pair, state)
+        self.__process_orders(orders, currency_pair)
 
     def __price_event_websocket(self, **kwargs):
         callback = kwargs['callback']
         currency_pair = kwargs['currency_pair']
+        resolution = kwargs['resolution']
+        variables = kwargs['variables']
 
         price = self.Ticker_Manager.get_most_recent_tick(override_currency=currency_pair)
-        callback(price, currency_pair)
+        state = AttributeDict({
+            'strategy': self, 
+            'interface': self.Interface, 
+            'portfolio_value': self.Interface.get_account(), 
+            'open_orders': self.Interface.get_open_orders(), 
+            'variables': variables,
+            'resolution': resolution
+        })
+        orders = callback(price, currency_pair, state)
+        self.__process_orders(orders)
 
     def add_orderbook_event(self, callback: typing.Callable, currency_pair: str):
         """
@@ -100,9 +156,12 @@ class Strategy:
 
         # TODO the tickers need some type of argument passing & saving like scheduler so that the 1 second min isn't
         #  required
+        callback_id = str(uuid4())
+        self.variables[callback_id] = {}
         self.__schedulers.append(
             Blankly.Scheduler(self.__orderbook_event_websocket, 1,
                               initially_stopped=True,
+                              variables = self.variables[callback_id],
                               callback=callback, currency_pair=currency_pair)
         )
 
@@ -113,9 +172,18 @@ class Strategy:
     def __orderbook_event_websocket(self, **kwargs):
         callback = kwargs['callback']
         currency_pair = kwargs['currency_pair']
+        variables = kwargs['variables']
 
         price = self.Orderbook_Manager.get_most_recent_tick(override_currency=currency_pair)
-        callback(price, currency_pair)
+        state = AttributeDict({
+            'strategy': self, 
+            'interface': self.Interface, 
+            'portfolio_value': self.Interface.get_account(), 
+            'open_orders': self.Interface.get_open_orders(), 
+            'variables': variables,
+        })
+        orders = callback(price, currency_pair, state)
+        self.__process_orders(orders, currency_pair)
 
     def backtest(self, to: str = None,
                  start_date: str = None,
