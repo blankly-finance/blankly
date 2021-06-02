@@ -7,8 +7,8 @@ def golden_cross(price, currency_pair, **kwargs):
     # we give you an assortment of values 
     # as well as access to the underlying strategy or interface
     portfolio_value = kwargs['portfolio_value']
-    resolution = kwargs['resolution']
-    variables = kwargs['variables']
+    resolution = kwargs['resolution'] # get the resolution that this price event is stored at
+    variables = kwargs['variables'] # each price event has it's own local variable state
 
 
     historical_prices = Blankly.historical(currency_pair, 50, resolution=resolution)
@@ -16,7 +16,7 @@ def golden_cross(price, currency_pair, **kwargs):
     if price > sma50 and not variables['open_order']:
         variables['open_order'] = True
         return Order(currency_pair, 'market', 'buy', portfolio_value * 0.25)
-    elif price < sma50:
+    elif price < sma50 and variables['open_order']: # only sell if there's an open position
         variables['open_order'] = False
         return Order(currency_pair, 'market', 'sell', portfolio_value * 0.25)
 
@@ -28,10 +28,10 @@ def rsi(price, currency_pair, **kwargs):
     historical_prices = Blankly.historical(currency_pair, 50)
     historical_prices = Blankly.historical(currency_pair, 50, resolution=resolution)
     rsi = Blankly.analysis.calculate_rsi(historical_prices, window=10)[-1] # last 50 day sma value is the value we want
-    if rsi < 30:
+    if rsi < 30 and not variables['open_order']:
         variables['open_order'] = True
         return Order(currency_pair, 'market', 'buy', portfolio_value * 0.35)
-    elif rsi > 70:
+    elif rsi > 70 and variables['open_order']: # only sell if there's an open position
         variables['open_order'] = False
         return Order(currency_pair, 'market', 'buy', portfolio_value * 0.35)
 
