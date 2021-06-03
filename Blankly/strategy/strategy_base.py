@@ -69,7 +69,7 @@ class Strategy:
                                   initially_stopped=True,
                                   callback=callback,
                                   resolution=resolution,
-                                  variables = self.variables[callback_id],
+                                  variables=self.variables[callback_id],
                                   currency_pair=currency_pair)
             )
         else:
@@ -78,7 +78,7 @@ class Strategy:
                 Blankly.Scheduler(self.__price_event_rest, resolution,
                                   initially_stopped=True,
                                   callback=callback,
-                                  variables = self.variables[callback_id],
+                                  variables=self.variables[callback_id],
                                   currency_pair=currency_pair)
             )
 
@@ -88,26 +88,26 @@ class Strategy:
         """
         pass
 
-    def __process_orders(self, orders: typing.Any, currency_pair: str):
-        if orders is None:
-            return
-        is_list_of_orders = isinstance(orders, list) and not isinstance(orders[0], Order)
-        is_np_array_of_orders = isinstance(orders, np.array) and not isinstance(orders[0], Order)
-
-        if is_list_of_orders or is_np_array_of_orders or not isinstance(orders, Order):
-            raise ValueError("Expected an Order or a list of Orders but instead " + type(orders[0]))
-        
-        if isinstance(orders, list) or isinstance(orders, np.array):
-            for order in orders:
-                self.__submit_order(order, currency_pair)
-        else:
-            self.__submit_order(orders, currency_pair)
-
-    def __submit_order(self, order: Order, currency_pair: str):
-        if order.type == 'market':
-            self.Interface.market_order(currency_pair, order.side, order.amount)
-        if order.type == 'limit':
-            self.Interface.limit_order(currency_pair, order.side, order.price, order.amount)
+    # def __process_orders(self, orders: typing.Any, currency_pair: str):
+    #     if orders is None:
+    #         return
+    #     is_list_of_orders = isinstance(orders, list) and not isinstance(orders[0], Order)
+    #     is_np_array_of_orders = isinstance(orders, np.array) and not isinstance(orders[0], Order)
+    #
+    #     if is_list_of_orders or is_np_array_of_orders or not isinstance(orders, Order):
+    #         raise ValueError("Expected an Order or a list of Orders but instead " + type(orders[0]))
+    #
+    #     if isinstance(orders, list) or isinstance(orders, np.array):
+    #         for order in orders:
+    #             self.__submit_order(order, currency_pair)
+    #     else:
+    #         self.__submit_order(orders, currency_pair)
+    #
+    # def __submit_order(self, order: Order, currency_pair: str):
+    #     if order.type == 'market':
+    #         self.Interface.market_order(currency_pair, order.side, order.amount)
+    #     if order.type == 'limit':
+    #         self.Interface.limit_order(currency_pair, order.side, order.price, order.amount)
         
     def __price_event_rest(self, **kwargs):
         callback = kwargs['callback']
@@ -118,7 +118,7 @@ class Strategy:
 
         state = StrategyState(self, self.Interface, variables, resolution)
         orders = callback(price, currency_pair, self.Interface, state)
-        self.__process_orders(orders, currency_pair)
+        # self.__process_orders(orders, currency_pair)
 
     def __price_event_websocket(self, **kwargs):
         callback = kwargs['callback']
@@ -129,7 +129,7 @@ class Strategy:
         price = self.Ticker_Manager.get_most_recent_tick(override_currency=currency_pair)
         state = state = StrategyState(self, self.Interface, variables, resolution)
         orders = callback(price, currency_pair, self.Interface, state)
-        self.__process_orders(orders, currency_pair)
+        # self.__process_orders(orders, currency_pair)
 
     def add_orderbook_event(self, callback: typing.Callable, currency_pair: str):
         """
@@ -164,9 +164,9 @@ class Strategy:
         price = self.Orderbook_Manager.get_most_recent_tick(override_currency=currency_pair)
         state = StrategyState(self, self.Interface, variables)
         orders = callback(price, currency_pair, self.Interface, state)
-        is_arr_type = isinstance(orders, list) or isinstance(orders, np.array)
-        if is_arr_type and isinstance(orders[0], Order):
-            raise ValueError("It is best that you directly use the interface for orderbook event orders")
+        # is_arr_type = isinstance(orders, list) or isinstance(orders, np.array)
+        # if is_arr_type and isinstance(orders[0], Order):
+        #     raise ValueError("It is best that you directly use the interface for orderbook event orders")
 
     def backtest(self, to: str = None,
                  start_date: str = None,

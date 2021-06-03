@@ -185,6 +185,7 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
             progress = 1
             status = "Done...\r\n"
         block = int(round(bar_length * progress))
-        text = "\rPercent: [{0}] {1}% {2}".format("#" * block + "-" * (bar_length - block), progress * 100, status)
+        text = "\rProgress: [{0}] {1}% {2}".format("#" * block + "-" * (bar_length - block), round(progress * 100, 2),
+                                                   status)
         sys.stdout.write(text)
         sys.stdout.flush()

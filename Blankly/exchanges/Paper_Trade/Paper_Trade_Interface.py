@@ -59,7 +59,10 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
 
         # Iterate & pair
         for i in accounts:
-            value_pairs[i['currency']] = i['available']
+            value_pairs[i['currency']] = {
+                'available': i['available'],
+                'hold': i['hold']
+            }
 
         # Initialize the local account
         trade_local.init_local_account(value_pairs)
@@ -141,7 +144,19 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
 
                 if index['side'] == 'buy':
                     if index['price'] > current_price:
-                        order, funds = self.evaluate_paper_trade(index, current_price)
+                        # Take everything off hold
+                        asset_id = index['product_id']
+                        quote = utils.get_quote_currency(asset_id)
+
+                        available = trade_local.get_account(quote)['available']
+                        # Put it back into available
+                        trade_local.update_available(quote, available + (index['size'] * index['price']))
+
+                        # Take it out of hold
+                        hold = trade_local.get_account(quote)['hold']
+                        trade_local.update_hold(quote, hold - (index['size'] * index['price']))
+
+                        order, funds = self.evaluate_paper_trade(index, index['price'])
                         trade_local.trade_local(currency_pair=index['product_id'],
                                                 side='buy',
                                                 base_delta=float(order['filled_size']),  # Gain filled size after fees
@@ -151,8 +166,21 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
 
                         self.paper_trade_orders[i] = order
                 elif index['side'] == 'sell':
+                    # Take everything off hold
+
+                    asset_id = index['product_id']
+                    base = utils.get_base_currency(asset_id)
+
+                    available = trade_local.get_account(base)['available']
+                    # Put it back into available
+                    trade_local.update_available(base, available + index['size'])
+
+                    # Remove it from hold
+                    hold = trade_local.get_account(base)['hold']
+                    trade_local.update_hold(base, hold - index['size'])
+
                     if index['price'] < prices[index['product_id']]:
-                        order, funds = self.evaluate_paper_trade(index, current_price)
+                        order, funds = self.evaluate_paper_trade(index, index['price'])
                         trade_local.trade_local(currency_pair=index['product_id'],
                                                 side='sell',
                                                 base_delta=float(index['size'] * - 1),  # Loose size before any fees
@@ -189,9 +217,8 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
         for key, value in local_account.items():
             accounts.append({
                 'currency': key,
-                'balance': value,
-                'available': value,
-                'hold': 0
+                'available': value['available'],
+                'hold': value['hold']
             })
 
         # We have to sort through it if the accounts are none
@@ -336,6 +363,26 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
+
+        base = utils.get_base_currency(product_id)
+        quote = utils.get_quote_currency(product_id)
+
+        if side == "buy":
+            available = trade_local.get_account(quote)['available']
+            # Loose the funds when buying
+            trade_local.update_available(quote, available - (size*price))
+
+            # Gain the funds on hold when buying
+            hold = trade_local.get_account(quote)['hold']
+            trade_local.update_hold(quote, hold + (size*price))
+        elif side == "sell":
+            available = trade_local.get_account(base)['available']
+            # Loose the size when selling
+            trade_local.update_available(base, available - size)
+
+            # Gain size on hold when buying
+            hold = trade_local.get_account(base)['hold']
+            trade_local.update_hold(base, hold + size)
         return LimitOrder(order, response, self)
 
     def cancel_order(self, currency_id, order_id) -> dict:

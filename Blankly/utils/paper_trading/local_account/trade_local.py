@@ -38,22 +38,22 @@ def trade_local(currency_pair, side, base_delta, quote_delta) -> None:
 
     # Push these abstracted deltas to the local account
     try:
-        local_account.account[base] = local_account.account[base] + base_delta
+        local_account.account[base]['available'] = local_account.account[base]['available'] + base_delta
     except KeyError:
         raise KeyError("Base currency specified not found in local account")
 
     try:
-        local_account.account[quote] = local_account.account[quote] + quote_delta
+        local_account.account[quote]['available'] = local_account.account[quote]['available'] + quote_delta
     except KeyError:
         raise KeyError("Quote currency specified not found in local account")
 
 
-def init_local_account(currencies) -> None:
+def init_local_account(currencies: dict) -> None:
     """
     Create the local account to paper trade with.
 
     Args:
-        currencies: (dict) with key/value pairs such as {'BTC': 2.3, 'USD': 4352, 'XLM': 32}
+        currencies: (dict) with key/value pairs such as {'BTC': {'available: 2.3, 'hold': 0}}
     """
     local_account.account = currencies
 
@@ -70,7 +70,7 @@ def test_trade(currency_pair, side, qty, quote_price) -> bool:
     """
     if side == 'buy':
         quote = utils.get_quote_currency(currency_pair)
-        current_funds = local_account.account[quote]
+        current_funds = local_account.account[quote]['available']
         purchase_funds = quote_price * qty
 
         # If you have more funds than the purchase requires then return true
@@ -78,7 +78,7 @@ def test_trade(currency_pair, side, qty, quote_price) -> bool:
 
     elif side == 'sell':
         base = utils.get_base_currency(currency_pair)
-        current_base = local_account.account[base]
+        current_base = local_account.account[base]['available']
 
         # If you have more base than the sell requires then return true
         return current_base > qty
@@ -92,3 +92,18 @@ def get_accounts() -> dict:
     Get the paper trading local account
     """
     return local_account.account
+
+
+def get_account(asset_id) -> dict:
+    """
+    Get a single account under an asset id
+    """
+    return local_account.account[asset_id]
+
+
+def update_available(asset_id, new_value):
+    local_account.account[asset_id]['available'] = new_value
+
+
+def update_hold(asset_id, new_value):
+    local_account.account[asset_id]['hold'] = new_value
