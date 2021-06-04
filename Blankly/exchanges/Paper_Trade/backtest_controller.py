@@ -132,6 +132,17 @@ class BackTestController:
             time_interval = time_interval_to_seconds(time_interval)
         self.price_events.append([callback, asset_id, time_interval])
 
+    def format_account_data(self, local_time) -> dict:
+        available_dict = {}
+        # Grab the account status
+        account_status = self.interface.get_account()
+        for i in account_status:
+            available_dict[i['currency']] = i['available']
+        # Make sure to add the time key in
+        available_dict['time'] = local_time
+
+        return available_dict
+
     def run(self):
         """
         Setup
@@ -177,11 +188,17 @@ class BackTestController:
         # Append dictionaries to this to make the pandas dataframe
         price_data = []
 
+        # Add an initial account row here
+        if self.preferences['settings']['save_initial_account_value']:
+            available_dict = self.format_account_data(self.initial_time)
+            price_data.append(available_dict)
+
         try:
             for price_array in self.prices:
                 self.interface.receive_price(price_array[1], price_array[2])
                 self.current_time = price_array[0]
                 self.interface.receive_time(self.current_time)
+                self.interface.evaluate_limits()
 
                 for function_dict in self.price_events:
                     while function_dict['next_run'] <= self.current_time:
@@ -193,13 +210,7 @@ class BackTestController:
                         # Delay the next run until after the interval
                         function_dict['next_run'] += function_dict['interval']
 
-                        available_dict = {}
-                        # Grab the account status
-                        account_status = self.interface.get_account()
-                        for i in account_status:
-                            available_dict[i['currency']] = i['available']
-                        # Make sure to add the time key in
-                        available_dict['time'] = local_time
+                        available_dict = self.format_account_data(local_time)
                         price_data.append(available_dict)
         except Exception:
             traceback.print_exc()

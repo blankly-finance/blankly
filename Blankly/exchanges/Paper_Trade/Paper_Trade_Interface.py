@@ -166,25 +166,25 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
 
                         self.paper_trade_orders[i] = order
                 elif index['side'] == 'sell':
-                    # Take everything off hold
-
-                    asset_id = index['product_id']
-                    base = utils.get_base_currency(asset_id)
-
-                    available = trade_local.get_account(base)['available']
-                    # Put it back into available
-                    trade_local.update_available(base, available + index['size'])
-
-                    # Remove it from hold
-                    hold = trade_local.get_account(base)['hold']
-                    trade_local.update_hold(base, hold - index['size'])
-
                     if index['price'] < prices[index['product_id']]:
+                        # Take everything off hold
+
+                        asset_id = index['product_id']
+                        base = utils.get_base_currency(asset_id)
+
+                        available = trade_local.get_account(base)['available']
+                        # Put it back into available
+                        trade_local.update_available(base, available + index['size'])
+
+                        # Remove it from hold
+                        hold = trade_local.get_account(base)['hold']
+                        trade_local.update_hold(base, hold - index['size'])
+
                         order, funds = self.evaluate_paper_trade(index, index['price'])
                         trade_local.trade_local(currency_pair=index['product_id'],
                                                 side='sell',
-                                                base_delta=float(index['size'] * - 1),  # Loose size before any fees
-                                                quote_delta=index['executed_value'])  # Gain executed value after fees
+                                                base_delta=float(order['size'] * - 1),  # Loose size before any fees
+                                                quote_delta=float(order['executed_value']))  # Executed value after fees
                         order['status'] = 'done'
                         order['settled'] = 'true'
 
@@ -198,9 +198,9 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
             current_price (float): The current price of the currency pair the limit order was created on
         """
         funds = order['size'] * current_price
-        executed_value = funds - funds * float((self.exchange_properties["maker_fee_rate"]))
-        fill_fees = funds * float((self.exchange_properties["maker_fee_rate"]))
-        fill_size = order['size'] - order['size'] * float((self.exchange_properties["maker_fee_rate"]))
+        executed_value = funds - funds * float((self.__exchange_properties["maker_fee_rate"]))
+        fill_fees = funds * float((self.__exchange_properties["maker_fee_rate"]))
+        fill_size = order['size'] - order['size'] * float((self.__exchange_properties["maker_fee_rate"]))
 
         order['executed_value'] = str(executed_value)
         order['fill_fees'] = str(fill_fees)
@@ -403,7 +403,7 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
     def get_open_orders(self, product_id=None):
         open_orders = []
         for i in self.paper_trade_orders:
-            if i["status"] == "open":
+            if i["status"] == "pending":
                 open_orders.append(i)
         return open_orders
 
