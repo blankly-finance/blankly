@@ -2,7 +2,7 @@ import Blankly
 
 
 def price_event(price, product_id):
-    # Run this every hour
+    # Run this every "hour"
     interface = strategy.Interface
     usd_amount = interface.get_account('USD')['available']
 

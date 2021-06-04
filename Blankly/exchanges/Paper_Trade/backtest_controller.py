@@ -137,7 +137,8 @@ class BackTestController:
         # Grab the account status
         account_status = self.interface.get_account()
         for i in account_status:
-            available_dict[i['currency']] = i['available']
+            # Funds on hold are still added
+            available_dict[i['currency']] = i['available'] + i['hold']
         # Make sure to add the time key in
         available_dict['time'] = local_time
 

@@ -17,6 +17,7 @@
 """
 import Blankly.utils.paper_trading.local_account.local_account as local_account
 import Blankly.utils.utils as utils
+from Blankly.utils.exceptions import InvalidOrder
 
 
 def trade_local(currency_pair, side, base_delta, quote_delta) -> None:
@@ -70,18 +71,36 @@ def test_trade(currency_pair, side, qty, quote_price) -> bool:
     """
     if side == 'buy':
         quote = utils.get_quote_currency(currency_pair)
-        current_funds = local_account.account[quote]['available']
+        account = local_account.account[quote]
+        current_funds = account['available']
         purchase_funds = quote_price * qty
 
         # If you have more funds than the purchase requires then return true
-        return current_funds > purchase_funds
+        if current_funds > purchase_funds:
+            return True
+        else:
+            raise InvalidOrder("Insufficient funds | available:" +
+                               str(current_funds) +
+                               " hold: " +
+                               str(account['hold']) +
+                               " requested: " +
+                               str(qty) + ".")
 
     elif side == 'sell':
         base = utils.get_base_currency(currency_pair)
-        current_base = local_account.account[base]['available']
+        account = local_account.account[base]
+        current_base = account['available']
 
         # If you have more base than the sell requires then return true
-        return current_base > qty
+        if current_base > qty:
+            return True
+        else:
+            raise InvalidOrder("Insufficient size | available: " +
+                               str(current_base) +
+                               ". hold: " +
+                               str(account['hold']) +
+                               ". requested: " +
+                               str(qty) + ".")
 
     else:
         raise LookupError("Invalid purchase side")

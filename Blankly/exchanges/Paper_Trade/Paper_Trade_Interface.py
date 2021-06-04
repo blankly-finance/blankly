@@ -256,8 +256,8 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
 
         qty = funds / price
 
-        if not trade_local.test_trade(product_id, side, qty , price):
-            raise InvalidOrder("Invalid Order: Insufficient funds")
+        # Test the purchase
+        trade_local.test_trade(product_id, side, qty, price)
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
         # TODO the force typing here isn't strictly necessary because its run int the isolate_specific anyway
@@ -339,8 +339,8 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
         if size < min_base:
             raise InvalidOrder("Invalid Order: Order quantity is too small. Minimum is: " + str(min_base))
 
-        if not trade_local.test_trade(product_id, side, size, price):
-            raise InvalidOrder("Invalid Order: Insufficient funds")
+        # Test the trade
+        trade_local.test_trade(product_id, side, size, price)
 
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
