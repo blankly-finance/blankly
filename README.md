@@ -8,6 +8,7 @@
 
 ​	Blankly is an elegant python library for interacting with many crypto exchanges on multiple portfolios in a consistent way. Blankly offers a powerful feature-set, optimized for speed and ease of use.
 
+Try it out: `pip install blankly`
 
 
 Check out our [website](http://blankly.finance).
@@ -50,6 +51,12 @@ Check out our [website](http://blankly.finance).
 
 - Status management for purchases
 
+- Create strategies using an event-based framework
+
+- Instantly backtest your strategies (`strategy.backtest(to='1y')`)
+
+- Automatic price downloads & caching for use in backtests
+
 - Interface that allows calls to each supported exchange to be identical:
 
   > Buy example for Coinbase Pro and Binance:
@@ -70,7 +77,6 @@ Check out our [website](http://blankly.finance).
 
 ## Coming Features
 
-- Backtesting (`bot.backtest(time_frame)`)
 - Deployment (`> Blankly push bot/*`)
 - Online hosting
 
@@ -109,97 +115,141 @@ Check out our [website](http://blankly.finance).
 7. **Everything should work**! Run the `Basic_Bot` example in `Basic_Bot.py`. Note a warning will be shown because the `Basic_Bot` script does not specify the exchange name by default (explained in step 5 above).
     - Note the library is developed on Python 3.7, but most modern versions of python 3 should work.
 
-## What is it doing?
+[comment]: <> (## What is it doing?)
 
-The comments offer a decent amount of description for the behavior, but here is a broader overview:
+[comment]: <> (The comments offer a decent amount of description for the behavior, but here is a broader overview:)
 
-​	The motivation behind this is to **allow full independence** between each bot, but still **giving it the ability to report** back to the main thread easily. The setup runs by specifying three increasingly specific things about the behavior we want:
+[comment]: <> (​	The motivation behind this is to **allow full independence** between each bot, but still **giving it the ability to report** back to the main thread easily. The setup runs by specifying three increasingly specific things about the behavior we want:)
 
-1. We first **declare** that we want to run on a certain `exchange`, such as Coinbase Pro or Binance. This is done with (for example) `Blankly.Coinbase_Pro()`
+[comment]: <> (1. We first **declare** that we want to run on a certain `exchange`, such as Coinbase Pro or Binance. This is done with &#40;for example&#41; `Blankly.Coinbase_Pro&#40;&#41;`)
 
-   - Documentation refers to this as the `exchange`
+[comment]: <> (   - Documentation refers to this as the `exchange`)
 
-   - ```python
-     if __name__ == "__main__":
-         """
-         Easily setup and run a model on any exchange
-         """
+[comment]: <> (   - ```python)
+
+[comment]: <> (     if __name__ == "__main__":)
+
+[comment]: <> (         """)
+
+[comment]: <> (         Easily setup and run a model on any exchange)
+
+[comment]: <> (         """)
      
-         # This creates an authenticated exchange. Now we can append models.
-         exchange = Blankly.Coinbase_Pro()
-         # Imagine this:
-         #   Coinbase Pro <-- Choosing to assign this bot to this exchange
-         #   Kraken
-         #   Binance
-     ```
+[comment]: <> (         # This creates an authenticated exchange. Now we can append models.)
 
-2. We initialize the bot object. This creates a boilerplate bot that isn't attached or running on anything yet.
+[comment]: <> (         exchange = Blankly.Coinbase_Pro&#40;&#41;)
 
-   - ```python
-     # Create the bot.
-     bot=Bot()
-     ```
+[comment]: <> (         # Imagine this:)
 
-3. This same function is also **attached** to a `portfolio` within the exchange. Each portfolio has access to each `currency` on the `exchange`. This means that each portfolio is independent from the other. **You can tell it which portfolio you want** by naming it in the `Keys.json` file and then declaring the `portfolio_name` argument to match the same name in `Keys.json`
+[comment]: <> (         #   Coinbase Pro <-- Choosing to assign this bot to this exchange)
 
-   - Documentation refers to this set of currencies as a `portfolio`
+[comment]: <> (         #   Kraken)
 
-   - ```python
-     # Add it to run as the coinbase_pro bitcoin model
-     exchange.append_model(bot, "BTC-USD")
-     # Imagine this:
-     #   Coinbase Pro:
-     #       Bitcoin
-     #       Ethereum
-     #       Stellar
-     #       The Graph <-- Added to the data from this currency
-     ```
+[comment]: <> (         #   Binance)
 
-4. The code above also **declares** the `currency` that we want it to run on within the `portfolio`. The bot is attached to this currency and is provided default ways to interact with the exchange.
+[comment]: <> (     ```)
 
-   - Documentation calls this the `currency`. Bots are by default **not** currency specific because this dramatically enhances portability.
+[comment]: <> (2. We initialize the bot object. This creates a boilerplate bot that isn't attached or running on anything yet.)
 
-5. We then ask the model to start. By default this iterates through all the attached models and queries them to start but you can also specify a particular currency to begin executing the bot attached to it.
+[comment]: <> (   - ```python)
 
-   - ```python
-     # Begins running the main() function of the model on a different process
-     exchange.start_models()
-     # Imagine this:
-     #   Coinbase Pro:
-     #       Bitcoin
-     #       Ethereum
-     #       Stellar
-     #       The Graph <-- Bot <-- Asking to start
-     ```
+[comment]: <> (     # Create the bot.)
 
-6. The bot then starts the main class. The example updates the "heartbeat" value every second. The main thread then reads this and prints it along with some exchange information about that currency.
+[comment]: <> (     bot=Bot&#40;&#41;)
 
-   - Some default, pre-authenticaed objects are provided to quick start interact with the exchange:
+[comment]: <> (     ```)
 
-     > self.Interface: allows API through the Blankly exchange interface. The interface object is already authenticated, so the calls are ready to go!
+[comment]: <> (3. This same function is also **attached** to a `portfolio` within the exchange. Each portfolio has access to each `currency` on the `exchange`. This means that each portfolio is independent from the other. **You can tell it which portfolio you want** by naming it in the `Keys.json` file and then declaring the `portfolio_name` argument to match the same name in `Keys.json`)
 
-     > self.Ticker_Manager: Allows easy access to a websocket ticker. The actual ticker object can be pulled by self.Ticker_Manager.get_ticker(). This offers all kinds of functionality. See the docs for more information. By default this will be calling the `price_event` function.
+[comment]: <> (   - Documentation refers to this set of currencies as a `portfolio`)
 
-   - Main thread calling:
+[comment]: <> (   - ```python)
 
-   - ```python
-     # Now other processes can be created or just continue with this one.
-     while True:
-        # Print the state every 2 seconds
-        state = exchange.get_full_state("BTC-USD")
-        Blankly.utils.pretty_print_JSON(state)
-        time.sleep(1)
-     ```
+[comment]: <> (     # Add it to run as the coinbase_pro bitcoin model)
 
-   - Bot state updates:
+[comment]: <> (     exchange.append_model&#40;bot, "BTC-USD"&#41;)
 
-   - ```python
-     while True:
-        # This demonstrates a way to change the state. The default script just reports the state on this currency.
-        # Increment heartbeat value by one every second
-        self.update_state("Heartbeat", self.get_state()["Heartbeat"] + 1)
-        time.sleep(1)
-     ```
+[comment]: <> (     # Imagine this:)
+
+[comment]: <> (     #   Coinbase Pro:)
+
+[comment]: <> (     #       Bitcoin)
+
+[comment]: <> (     #       Ethereum)
+
+[comment]: <> (     #       Stellar)
+
+[comment]: <> (     #       The Graph <-- Added to the data from this currency)
+
+[comment]: <> (     ```)
+
+[comment]: <> (4. The code above also **declares** the `currency` that we want it to run on within the `portfolio`. The bot is attached to this currency and is provided default ways to interact with the exchange.)
+
+[comment]: <> (   - Documentation calls this the `currency`. Bots are by default **not** currency specific because this dramatically enhances portability.)
+
+[comment]: <> (5. We then ask the model to start. By default this iterates through all the attached models and queries them to start but you can also specify a particular currency to begin executing the bot attached to it.)
+
+[comment]: <> (   - ```python)
+
+[comment]: <> (     # Begins running the main&#40;&#41; function of the model on a different process)
+
+[comment]: <> (     exchange.start_models&#40;&#41;)
+
+[comment]: <> (     # Imagine this:)
+
+[comment]: <> (     #   Coinbase Pro:)
+
+[comment]: <> (     #       Bitcoin)
+
+[comment]: <> (     #       Ethereum)
+
+[comment]: <> (     #       Stellar)
+
+[comment]: <> (     #       The Graph <-- Bot <-- Asking to start)
+
+[comment]: <> (     ```)
+
+[comment]: <> (6. The bot then starts the main class. The example updates the "heartbeat" value every second. The main thread then reads this and prints it along with some exchange information about that currency.)
+
+[comment]: <> (   - Some default, pre-authenticaed objects are provided to quick start interact with the exchange:)
+
+[comment]: <> (     > self.Interface: allows API through the Blankly exchange interface. The interface object is already authenticated, so the calls are ready to go!)
+
+[comment]: <> (     > self.Ticker_Manager: Allows easy access to a websocket ticker. The actual ticker object can be pulled by self.Ticker_Manager.get_ticker&#40;&#41;. This offers all kinds of functionality. See the docs for more information. By default this will be calling the `price_event` function.)
+
+[comment]: <> (   - Main thread calling:)
+
+[comment]: <> (   - ```python)
+
+[comment]: <> (     # Now other processes can be created or just continue with this one.)
+
+[comment]: <> (     while True:)
+
+[comment]: <> (        # Print the state every 2 seconds)
+
+[comment]: <> (        state = exchange.get_full_state&#40;"BTC-USD"&#41;)
+
+[comment]: <> (        Blankly.utils.pretty_print_JSON&#40;state&#41;)
+
+[comment]: <> (        time.sleep&#40;1&#41;)
+
+[comment]: <> (     ```)
+
+[comment]: <> (   - Bot state updates:)
+
+[comment]: <> (   - ```python)
+
+[comment]: <> (     while True:)
+
+[comment]: <> (        # This demonstrates a way to change the state. The default script just reports the state on this currency.)
+
+[comment]: <> (        # Increment heartbeat value by one every second)
+
+[comment]: <> (        self.update_state&#40;"Heartbeat", self.get_state&#40;&#41;["Heartbeat"] + 1&#41;)
+
+[comment]: <> (        time.sleep&#40;1&#41;)
+
+[comment]: <> (     ```)
 
      
 
@@ -230,7 +280,8 @@ Please report any bugs or issues in Github's Issues page.
 
 ## Disclaimer 
 
-Trading is risky. We are not responsible for losses incurred using this software.
+Trading is risky. We are not responsible for losses incurred using this software, software fitness for any particular purpose, or responsibility for any issues or bugs.
+This is free software.
 
 ## Contributing
 
