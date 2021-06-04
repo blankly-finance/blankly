@@ -1,6 +1,6 @@
 """
     Inherited exchange object.
-    Copyright (C) 2021  Emerson Dove
+    Copyright (C) 2021  Emerson Dove, Arun Annamalai, Brandon Fan
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -132,6 +132,7 @@ class Exchange(IExchange, abc.ABC):
         model.setup(self.__type, coin_id, self.preferences, self.get_full_state(coin_id),
                     self.Interface)
 
+    @abc.abstractmethod
     def get_currency_state(self, currency):
         pass
 
