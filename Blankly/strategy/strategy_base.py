@@ -16,9 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import warnings
-import tempfile
-import json
-import os
 
 from Blankly.strategy.strategy_state import StrategyState
 from Blankly.utils.utils import AttributeDict
@@ -26,13 +23,11 @@ import typing
 import time
 
 import pandas as pd
-import numpy as np
 import datetime
 import Blankly
 from Blankly.exchanges.Paper_Trade.backtest_controller import BackTestController
 from uuid import uuid4
 from Blankly.exchanges.exchange import Exchange
-from Blankly.strategy.order import Order
 from Blankly.utils.time_builder import time_interval_to_seconds
 
 
@@ -172,18 +167,13 @@ class Strategy:
         #     raise ValueError("It is best that you directly use the interface for orderbook event orders")
     
     def backtest(self, 
-                 initial_value: int or float = None,
                  initial_values: dict = None,
                  to: str = None,
                  start_date: str = None,
                  end_date: str = None,
                  save: bool = False,
-                 use_price: str = 'close',
-                 smooth_prices: bool = False,
-                 GUI_output: bool = False,
-                 show_tickers_with_zero_delta: bool = False,
-                 save_initial_account_value: bool = True,
-                 show_progress_during_backtest: bool = True,
+                 settings_path: str = None,
+                 **kwargs
                  ):
         """
         Turn this strategy into a backtest.
@@ -192,40 +182,41 @@ class Strategy:
             ** We expect either an initial_value (in USD) or a dictionary of initial values, we also expect
             either `to` to be set or `start_date` and `end_date` **
 
-            initial_value (int or float): The initial value (in USD) that the portfolio will use to backtest
-            initial_values (dict): Dictionary of initial value sizes (i.e { 'BTC': 3, 'USD': 5650})
+            initial_values (dict): Dictionary of initial value sizes (i.e { 'BTC': 3, 'USD': 5650}).
+                Using this will override the values that are currently on your exchange.
             to (str): Declare an amount of time before now to backtest from: ex: '5y' or '10h'
             start_date (str): Override argument "to" by specifying a start date such as "03/06/2018"
             end_date (str): End the backtest at a date such as "03/06/2018"
             save (bool): Save the price data that is required for the backtest
+            settings_path (str): Path to the backtest.json file.
+
+            Keyword Arguments:
+                **Use these to override parameters in the backtest.json file**
+
+                use_price: str = 'close',
+                    Set which price column to use.
+
+                smooth_prices: bool = False,
+                    Create linear connections between downloaded prices
+
+                GUI_output: bool = False,
+                    Enable/disable GUI webpage display after backtest
+
+                show_tickers_with_zero_delta: bool = False,
+                    Exclude tickers that have no change to account value in the GUI
+
+                save_initial_account_value: bool = True,
+                    Put an extra frame which contains the initial account values before any trade
+
+                show_progress_during_backtest: bool = True,
+                    Show a progress bar as the backtest runs
+
+                cache_location: str = './price_caches'
+                    Set a location for the price cache csv's to be written to
         """
-        fd, path = tempfile.mkstemp()
+
         start = None
         end = None
-        backtest_dict = {
-            "price_data": {
-                "assets": []
-            },
-            "settings": {
-                "use_price": use_price,
-                "smooth_prices": smooth_prices,
-                "GUI_output": GUI_output,
-                "show_tickers_with_zero_delta": show_tickers_with_zero_delta,
-                "save_initial_account_value": save_initial_account_value,
-                "show_progress_during_backtest": show_progress_during_backtest
-            }
-        }
-
-        values = {}
-        
-        if initial_value is not None and initial_values is not None:
-            raise ValueError("Error, please input either an initial values or dictionary of initial values, we received both")
-        
-        if initial_value is not None:
-            values["USD"] = initial_value
-        elif initial_values is not None:
-            values = initial_values
-        backtest_dict["initial_values"] = values
 
         if to is not None:
             start = time.time() - time_interval_to_seconds(to)
@@ -241,22 +232,23 @@ class Strategy:
             epoch = datetime.datetime.utcfromtimestamp(0)
             end = (end_date - epoch).total_seconds()
 
-
-        for pair in self.__scheduling_pair:
-            ticker = pair[0]
-            resolution = pair[1]
-            data = [ticker, start, end, resolution]
-            backtest_dict["price_data"]["assets"].append(data)
-
-        
-        backtest_dict["price_data"]["cache_location"] = "./price_caches"
-        
-        with os.fdopen(fd, 'w') as tmp:
-            json.dump(backtest_dict, tmp)
-
-
         self.Interface = self.__paper_trade_exchange.get_interface()
-        backtesting_controller = BackTestController(self.__paper_trade_exchange, backtest_settings_path=path)
+        backtesting_controller = BackTestController(self.__paper_trade_exchange, backtest_settings_path=settings_path)
+
+        # Write any kwargs as settings to the settings - save if enabled.
+        for k, v in kwargs.items():
+            backtesting_controller.write_setting(k, v, save)
+
+        if initial_values is not None:
+            backtesting_controller.write_initial_price_values(initial_values)
+
+        # Write each scheduling pair as a price event - save if enabled.
+        if start is not None and end is not None:
+            for i in self.__scheduling_pair:
+                backtesting_controller.add_prices(i[0], start, end, i[1], save=save)
+        else:
+            warnings.warn("User-specified start and end time not given. Defaulting to using only cached data.")
+
         # Append each of the events the class defines into the backtest
         for i in self.__schedulers:
             kwargs = i.get_kwargs()
@@ -270,5 +262,4 @@ class Strategy:
 
         # Clean up
         self.Interface = self.__interface_cache
-        os.remove(path) # remove tmp backtest.json
         return results

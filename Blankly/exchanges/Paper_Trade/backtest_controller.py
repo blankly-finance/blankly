@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import sys
+
 
 from Blankly.exchanges.Paper_Trade.Paper_Trade import PaperTrade
 from Blankly.exchanges.Paper_Trade.Paper_Trade_Interface import PaperTradeInterface
@@ -44,6 +44,7 @@ def to_string_key(separated_list):
 class BackTestController:
     def __init__(self, paper_trade_exchange: PaperTrade, backtest_settings_path=None):
         self.preferences = load_backtest_preferences(backtest_settings_path)
+        self.backtest_settings_path = backtest_settings_path
         if not paper_trade_exchange.get_type() == "paper_trade":
             raise ValueError("Backtest controller was not constructed with a paper trade exchange object.")
         self.interface = paper_trade_exchange.get_interface()  # type: PaperTradeInterface
@@ -59,9 +60,10 @@ class BackTestController:
 
         self.sync_prices()
 
-    def sync_prices(self, save=True) -> dict:
+        self.queue_backtest_write = False
 
-        cache_folder = self.preferences['price_data']["cache_location"]
+    def sync_prices(self, save=True) -> dict:
+        cache_folder = self.preferences['settings']["cache_location"]
         # Make sure the cache folder exists and read files
         try:
             files = os.listdir(cache_folder)
@@ -120,7 +122,7 @@ class BackTestController:
         if tuple(identifier) not in self.price_dictionary.keys():
             self.preferences['price_data']['assets'].append(identifier)
             if save:
-                write_backtest_preferences(self.preferences)
+                self.queue_backtest_write = True
         else:
             print("already identified")
 
@@ -131,6 +133,27 @@ class BackTestController:
         if isinstance(time_interval, str):
             time_interval = time_interval_to_seconds(time_interval)
         self.price_events.append([callback, asset_id, time_interval])
+
+    def write_setting(self, key, value, save=False):
+        """
+        Write a setting to the .json preferences
+
+        Args:
+            key: Key under settings
+            value: Value to set that settings key to
+            save: Write this new setting to the file
+        """
+        self.preferences['settings'][key] = value
+        if save:
+            self.queue_backtest_write = True
+
+        self.sync_prices(save)
+
+    def write_initial_price_values(self, account_dictionary):
+        """
+        Write in a new price dictionary for the paper trade exchange.
+        """
+        self.interface.override_local_account(account_dictionary)
 
     def format_account_data(self, local_time) -> dict:
         available_dict = {}
@@ -148,6 +171,10 @@ class BackTestController:
         """
         Setup
         """
+        # Write our queued edits to the file
+        if self.queue_backtest_write:
+            write_backtest_preferences(self.preferences, self.backtest_settings_path)
+
         prices = self.sync_prices(False)
 
         # Organize each price into this structure: [epoch, "BTC-USD", price]
@@ -230,35 +257,38 @@ class BackTestController:
         # Push the accounts to the dataframe
         cycle_status = cycle_status.append(price_data, ignore_index=True)
 
-        figures = []
-        global_x_range = None
+        if self.preferences['settings']['GUI_output']:
+            figures = []
+            global_x_range = None
 
-        show_zero_delta = self.preferences['settings']['show_tickers_with_zero_delta']
+            show_zero_delta = self.preferences['settings']['show_tickers_with_zero_delta']
 
-        color = Category10_10.__iter__()
-        for column in cycle_status:
-            if column != 'time' and (not (cycle_status[column][0] == cycle_status[column].iloc[-1]) or show_zero_delta):
-                p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
-                time = [datetime.fromtimestamp(ts) for ts in cycle_status['time']]
-                p.step(time, cycle_status[column].tolist(),
-                       line_width=2,
-                       color=next(color),
-                       legend_label=column,
-                       mode="before",
-                       )
-                # Format graph
-                p.legend.location = "top_left"
-                p.legend.title = column
-                p.legend.title_text_font_style = "bold"
-                p.legend.title_text_font_size = "20px"
-                if global_x_range is None:
-                    global_x_range = p.x_range
-                else:
-                    p.x_range = global_x_range
+            color = Category10_10.__iter__()
+            for column in cycle_status:
+                if column != 'time' and (not (cycle_status[column][0] == cycle_status[column].iloc[-1]) or
+                                         show_zero_delta):
 
-                figures.append(p)
+                    p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
+                    time = [datetime.fromtimestamp(ts) for ts in cycle_status['time']]
+                    p.step(time, cycle_status[column].tolist(),
+                           line_width=2,
+                           color=next(color),
+                           legend_label=column,
+                           mode="before",
+                           )
+                    # Format graph
+                    p.legend.location = "top_left"
+                    p.legend.title = column
+                    p.legend.title_text_font_style = "bold"
+                    p.legend.title_text_font_size = "20px"
+                    if global_x_range is None:
+                        global_x_range = p.x_range
+                    else:
+                        p.x_range = global_x_range
 
-        show(bokeh_columns(figures))
+                    figures.append(p)
+
+            show(bokeh_columns(figures))
 
         self.interface.set_backtesting(False)
         return cycle_status

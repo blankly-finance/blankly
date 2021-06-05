@@ -9,24 +9,20 @@
       ],
       [
         "BTC-USD",
-        1591109810,
-        1622645810,
+        1591389962.5150762,
+        1622925962.515081,
         3600.0
       ]
     ],
-    "cache_location": "./price_caches",
-    "initial_values": {
-      "BTC": 3,
-      "USD": -10
-    }
+    "cache_location": "./price_caches"
   },
   "settings": {
-    "use_price": "close",
+    "use_price": "open",
     "smooth_prices": false,
-    "GUI_output": false,
+    "GUI_output": true,
     "show_tickers_with_zero_delta": false,
     "save_initial_account_value": false,
     "show_progress_during_backtest": false,
-    "use_current_account_values": false
+    "cache_location": "./price_caches"
   }
 }

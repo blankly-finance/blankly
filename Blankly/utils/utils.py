@@ -91,8 +91,12 @@ def load_backtest_preferences(override_path=None) -> dict:
 def write_backtest_preferences(json_file, override_path=None):
     global backtest_cache
     backtest_cache = json_file
-    with open('backtest.json', "w") as preferences:
-        preferences.write(json.dumps(json_file, indent=2))
+
+    if override_path is not None:
+        f = open(override_path, "w")
+    else:
+        f = open('backtest.json', "w")
+    f.write(json.dumps(json_file, indent=2))
 
 
 def load_user_preferences(override_path=None) -> dict:

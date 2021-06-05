@@ -50,6 +50,8 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
 
         self.__run_watchdog = True
 
+        self.__thread = None
+
         CurrencyInterface.__init__(self, "paper_trade", derived_interface)
         BacktestingWrapper.__init__(self)
 
@@ -101,6 +103,28 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
             if not self.__run_watchdog:
                 break
             self.evaluate_limits()
+
+    def override_local_account(self, value_dictionary: dict):
+        """
+        Push a new set of initial account values to the algorithm. All values not given in in the
+        value dictionary that currently exist will be set to zero.
+
+        Args:
+            value_dictionary (dict): Account dictionary of format {'BTC': 2.3, 'GRT': 1.1}
+        """
+        current_account = trade_local.get_accounts()
+        for k, v in current_account.items():
+            if k in value_dictionary.keys():
+                current_account[k] = {
+                    'available': value_dictionary[k],
+                    'hold': 0
+                }
+            else:
+                current_account[k] = {
+                    'available': 0,
+                    'hold': 0
+                }
+        trade_local.init_local_account(current_account)
 
     def evaluate_limits(self):
         """
@@ -396,9 +420,9 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
                 order_index = i
 
         if order_index is not None:
-            id = self.paper_trade_orders[order_index]['id']
+            order_id = self.paper_trade_orders[order_index]['id']
             del self.paper_trade_orders[order_index]
-            return {"order_id": id}
+            return {"order_id": order_id}
 
     def get_open_orders(self, product_id=None):
         open_orders = []
