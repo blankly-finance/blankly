@@ -13,26 +13,26 @@ def cum_returns(start_value, end_value):
 def sortino(returns, days=252, risk_free_rate=None):
     returns = pd.Series(returns)
     if risk_free_rate:
-        mean = returns.mean() * days - risk_free_rate
+        mean = returns.mean() - risk_free_rate
     else:
         mean = returns.mean() * days
-    std_neg = returns[returns < 0].std() * np.sqrt(days)
-    return mean / std_neg
+    std_neg = returns[returns < 0].std() 
+    return mean / std_neg * np.sqrt(days)
 
 
 def sharpe(returns, days=252, risk_free_rate=None):
     returns = pd.Series(returns)
     if risk_free_rate:
-        mean = returns.mean() * days - risk_free_rate
+        mean = returns.mean() - risk_free_rate
     else:
         mean = returns.mean() * days
-    std = returns.std() * np.sqrt(days)
-    return mean / std
+    std = returns.std() 
+    return mean / std * np.sqrt(days)
 
 
 def calmar(returns, days=252):
     return_series = pd.Series(returns)
-    return return_series.mean() * days / abs(max_drawdown(return_series))
+    return return_series.mean() * np.sqrt(days) / abs(max_drawdown(return_series))
 
 
 def volatility(returns, days=None):
