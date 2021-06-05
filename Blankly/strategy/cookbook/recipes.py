@@ -3,7 +3,7 @@ import Blankly
 
 def golden_cross(ticker, interface: Blankly.Interface, state: StrategyState):
     resolution: str = state.resolution  # get the resolution that this price event is stored at
-    variables = state.variables  # each price event has it's own local variable state
+    variables = state.__variables  # each price event has it's own local variable state
 
     account = interface.account  # get account holdings
 
@@ -22,7 +22,7 @@ def golden_cross(ticker, interface: Blankly.Interface, state: StrategyState):
 
 def rsi(price, ticker, interface: Blankly.Interface, state: StrategyState):
     resolution: str = state.resolution  # get the resolution that this price event is stored at
-    variables = state.variables  # each price event has it's own local variable state
+    variables = state.__variables  # each price event has it's own local variable state
 
     account = interface.account  # get account holdings
 

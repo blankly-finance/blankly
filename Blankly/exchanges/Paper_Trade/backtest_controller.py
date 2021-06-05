@@ -42,8 +42,8 @@ def to_string_key(separated_list):
 
 
 class BackTestController:
-    def __init__(self, paper_trade_exchange: PaperTrade):
-        self.preferences = load_backtest_preferences()
+    def __init__(self, paper_trade_exchange: PaperTrade, backtest_settings_path=None):
+        self.preferences = load_backtest_preferences(backtest_settings_path)
         if not paper_trade_exchange.get_type() == "paper_trade":
             raise ValueError("Backtest controller was not constructed with a paper trade exchange object.")
         self.interface = paper_trade_exchange.get_interface()  # type: PaperTradeInterface

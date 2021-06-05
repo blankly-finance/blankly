@@ -14,7 +14,11 @@
         3600.0
       ]
     ],
-    "cache_location": "./price_caches"
+    "cache_location": "./price_caches",
+    "initial_values": {
+      "BTC": 3,
+      "USD": -10
+    }
   },
   "settings": {
     "use_price": "close",
@@ -22,6 +26,7 @@
     "GUI_output": false,
     "show_tickers_with_zero_delta": false,
     "save_initial_account_value": false,
-    "show_progress_during_backtest": false
+    "show_progress_during_backtest": false,
+    "use_current_account_values": false
   }
 }

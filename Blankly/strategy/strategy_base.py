@@ -35,18 +35,18 @@ from Blankly.utils.time_builder import time_interval_to_seconds
 
 class Strategy:
     def __init__(self, exchange: Exchange, currency_pair='BTC-USD'):
-        self.exchange = exchange
-        self.Ticker_Manager = Blankly.TickerManager(self.exchange.get_type(), currency_pair)
-        self.Orderbook_Manager = Blankly.OrderbookManager(self.exchange.get_type(), currency_pair)
+        self.__exchange = exchange
+        self.Ticker_Manager = Blankly.TickerManager(self.__exchange.get_type(), currency_pair)
+        self.Orderbook_Manager = Blankly.OrderbookManager(self.__exchange.get_type(), currency_pair)
 
-        self.scheduling_pair = []  # Object to hold a currency and the resolution its pulled at: ["BTC-USD", 60]
+        self.__scheduling_pair = []  # Object to hold a currency and the resolution its pulled at: ["BTC-USD", 60]
         self.Interface = exchange.get_interface()
 
         # Create a cache for the current interface, and a wrapped paper trade object for user backtesting
         self.__interface_cache = self.Interface
-        self.__paper_trade_exchange = Blankly.PaperTrade(self.exchange)
+        self.__paper_trade_exchange = Blankly.PaperTrade(self.__exchange)
         self.__schedulers = []
-        self.variables = {}
+        self.__variables = {}
 
     def add_price_event(self, callback: typing.Callable, currency_pair: str, resolution: str):
         """
@@ -58,9 +58,9 @@ class Strategy:
         """
         resolution = time_interval_to_seconds(resolution)
         
-        self.scheduling_pair.append([currency_pair, resolution])
+        self.__scheduling_pair.append([currency_pair, resolution])
         callback_id = str(uuid4())
-        self.variables[callback_id] = AttributeDict({})
+        self.__variables[callback_id] = AttributeDict({})
         if resolution < 10:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
             self.Ticker_Manager.create_ticker(self.__idle_event, currency_id=currency_pair)
@@ -69,7 +69,7 @@ class Strategy:
                                   initially_stopped=True,
                                   callback=callback,
                                   resolution=resolution,
-                                  variables=self.variables[callback_id],
+                                  variables=self.__variables[callback_id],
                                   currency_pair=currency_pair)
             )
         else:
@@ -78,7 +78,7 @@ class Strategy:
                 Blankly.Scheduler(self.__price_event_rest, resolution,
                                   initially_stopped=True,
                                   callback=callback,
-                                  variables=self.variables[callback_id],
+                                  variables=self.__variables[callback_id],
                                   currency_pair=currency_pair)
             )
 
@@ -144,11 +144,11 @@ class Strategy:
         # TODO the tickers need some type of argument passing & saving like scheduler so that the 1 second min isn't
         #  required
         callback_id = str(uuid4())
-        self.variables[callback_id] = {}
+        self.__variables[callback_id] = {}
         self.__schedulers.append(
             Blankly.Scheduler(self.__orderbook_event_websocket, 1,
                               initially_stopped=True,
-                              variables = self.variables[callback_id],
+                              variables = self.__variables[callback_id],
                               callback=callback, currency_pair=currency_pair)
         )
 
@@ -214,21 +214,10 @@ class Strategy:
                                                                )
 
         if start is not None and end is not None:
-            for i in self.scheduling_pair:
+            for i in self.__scheduling_pair:
                 backtesting_controller.add_prices(i[0], start, end, i[1], save=save)
         else:
             warnings.warn("User-specified start and end time not given. Defaulting to using only cached data.")
-
-        # if asset_id is None:
-        #     for currency in self.currency_pairs:
-        #         for resolution in self.__resolutions:
-        #             backtesting_controller.add_prices(currency, start, end, resolution)
-        # elif asset_id is None and price_data is None:
-        #     for resolution in self.__resolutions:
-        #         hist = self.Interface.get_product_history(asset_id, start, end, resolution)
-        #         self.__paper_trade_exchange.append_backtest_price_data(asset_id, hist)
-        # else:
-        #     backtesting_controller.append_backtest_price_data(asset_id, price_data)
 
         # Run the backtest & return results
         results = backtesting_controller.run()

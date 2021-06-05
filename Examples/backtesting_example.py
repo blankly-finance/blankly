@@ -5,7 +5,7 @@ def price_event(price, product_id):
     # Run this every "hour"
     interface = strategy.Interface
 
-    usd_amount = interface.get_account('USDT')['available']
+    usd_amount = interface.get_account('USD')['available']
 
     # Try to make our account value match 1/100 of the price.
     price = price/100
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     """
     print("Authenticating...")
     # Create an authenticated coinbase pro object
-    coinbase_pro = Blankly.Binance()
+    coinbase_pro = Blankly.Coinbase_Pro()
 
     # Create a strategy object
     strategy = Blankly.Strategy(coinbase_pro)
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     """
     print("Backtesting...")
     # Add the function to the strategy class
-    strategy.add_price_event(price_event, 'BTC-USDT', resolution='1m')
+    strategy.add_price_event(price_event, 'BTC-USD', resolution='1h')
 
     # The backtest function will now turn our strategy class into a class that can be backtested
-    print(strategy.backtest(to='1w'))
+    print(strategy.backtest(to='1y'))
