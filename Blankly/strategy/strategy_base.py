@@ -242,7 +242,7 @@ class Strategy:
             end = (end_date - epoch).total_seconds()
 
 
-        for pair in self.scheduling_pair:
+        for pair in self.__scheduling_pair:
             ticker = pair[0]
             resolution = pair[1]
             data = [ticker, start, end, resolution]
