@@ -587,7 +587,7 @@ class BinanceInterface(CurrencyInterface):
         product_id = utils.to_exchange_coin_id(product_id, 'binance')
         while need > 1000:
             # Close is always 300 points ahead
-            window_close = window_open + 1000 * granularity
+            window_close = int(window_open + 1000 * granularity)
             history = history + self.calls.get_klines(symbol=product_id, startTime=window_open * 1000,
                                                       endTime=window_close * 1000, interval=gran_string,
                                                       limit=1000)
@@ -595,7 +595,7 @@ class BinanceInterface(CurrencyInterface):
             window_open = window_close
             need -= 1000
             time.sleep(.2)
-            self.update_progress((initial_need - need) / initial_need)
+            utils.update_progress((initial_need - need) / initial_need)
 
         # Fill the remainder
         history_block = history + self.calls.get_klines(symbol=product_id, startTime=window_open * 1000,
@@ -609,6 +609,23 @@ class BinanceInterface(CurrencyInterface):
         # Clear the ignore column, why is that there binance?
         del data_frame['ignore']
         # Want them in this order: ['time (epoch)', 'low', 'high', 'open', 'close', 'volume']
+
+        # Cast dataframe
+        data_frame = data_frame.astype({'time': int,
+                                        'open': float,
+                                        'high': float,
+                                        'low': float,
+                                        'close': float,
+                                        'volume': float,
+                                        'close time': int,
+                                        'quote asset volume': float,
+                                        'number of trades': int,
+                                        'taker buy base asset volume': float,
+                                        'taker buy quote asset volume': float
+                                        })
+
+        # Convert time to seconds
+        data_frame['time'] = data_frame['time'].div(1000)
 
         return data_frame.reindex(columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 
@@ -728,6 +745,7 @@ class BinanceInterface(CurrencyInterface):
             "max_orders": max_orders,
             "min_price": min_price,
             "max_price": max_price,
+            "exchange_specific": {}
         }
 
     def get_price(self, currency_pair) -> float:

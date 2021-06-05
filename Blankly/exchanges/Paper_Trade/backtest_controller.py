@@ -15,12 +15,12 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import sys
 
 from Blankly.exchanges.Paper_Trade.Paper_Trade import PaperTrade
 from Blankly.exchanges.Paper_Trade.Paper_Trade_Interface import PaperTradeInterface
 from Blankly.utils.time_builder import time_interval_to_seconds
-from Blankly.utils.utils import load_backtest_preferences, write_backtest_preferences
+from Blankly.utils.utils import load_backtest_preferences, write_backtest_preferences, update_progress
 
 import typing
 import pandas as pd
@@ -154,8 +154,12 @@ class BackTestController:
         use_price = self.preferences['settings']['use_price']
         for k, v in prices.items():
             frame = v  # type: pd.DataFrame
+
+            # Be sure to push these initial prices to the strategy
+            self.interface.receive_price(k, v[use_price].iloc[0])
+
             for index, row in frame.iterrows():
-                # TODO this currently only works with open & iterrows() is allegedly pretty slow
+                # TODO iterrows() is allegedly pretty slow
                 self.prices.append([row.time, k, row[use_price]])
 
         self.prices = sorted(self.prices, key=lambda x: x[0])
@@ -194,8 +198,15 @@ class BackTestController:
             available_dict = self.format_account_data(self.initial_time)
             price_data.append(available_dict)
 
+        show_progress = self.preferences['settings']['show_progress_during_backtest']
+
+        print("\nBacktesting...")
+        price_number = len(self.prices)
         try:
-            for price_array in self.prices:
+            for i in range(price_number):
+                price_array = self.prices[i]
+                if show_progress:
+                    update_progress(i/price_number)
                 self.interface.receive_price(price_array[1], price_array[2])
                 self.current_time = price_array[0]
                 self.interface.receive_time(self.current_time)

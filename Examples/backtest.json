@@ -21,6 +21,7 @@
     "smooth_prices": false,
     "GUI_output": false,
     "show_tickers_with_zero_delta": false,
-    "save_initial_account_value": false
+    "save_initial_account_value": false,
+    "show_progress_during_backtest": false
   }
 }

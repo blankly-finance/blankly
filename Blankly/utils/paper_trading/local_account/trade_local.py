@@ -79,7 +79,7 @@ def test_trade(currency_pair, side, qty, quote_price) -> bool:
         if current_funds > purchase_funds:
             return True
         else:
-            raise InvalidOrder("Insufficient funds | available:" +
+            raise InvalidOrder("Insufficient funds. Available:" +
                                str(current_funds) +
                                " hold: " +
                                str(account['hold']) +
@@ -95,7 +95,7 @@ def test_trade(currency_pair, side, qty, quote_price) -> bool:
         if current_base > qty:
             return True
         else:
-            raise InvalidOrder("Insufficient size | available: " +
+            raise InvalidOrder("Not enough base currency. Available: " +
                                str(current_base) +
                                ". hold: " +
                                str(account['hold']) +

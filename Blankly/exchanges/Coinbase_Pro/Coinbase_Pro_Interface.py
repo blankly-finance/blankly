@@ -423,7 +423,7 @@ class CoinbaseProInterface(CurrencyInterface):
             window_open = window_close
             need -= 300
             time.sleep(.2)
-            self.update_progress((initial_need - need) / initial_need)
+            utils.update_progress((initial_need - need) / initial_need)
 
         # Fill the remainder
         open_iso = utils.ISO8601_from_epoch(window_open)
