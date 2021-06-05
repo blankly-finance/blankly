@@ -19,8 +19,6 @@
 
 from Blankly.utils.utils import AttributeDict
 from Blankly import Interface
-# from Blankly.strategy.strategy_base import Strategy
-
 
 class StrategyState:
     """Strategy State"""
