@@ -10,37 +10,37 @@ def cum_returns(start_value, end_value):
     return (start_value - end_value) / start_value
 
 
-def sortino(returns, days=252, risk_free_rate=None):
+def sortino(returns, n=252, risk_free_rate=None):
     returns = pd.Series(returns)
     if risk_free_rate:
         mean = returns.mean() - risk_free_rate
     else:
-        mean = returns.mean() * days
+        mean = returns.mean()
     std_neg = returns[returns < 0].std() 
-    return mean / std_neg * np.sqrt(days)
+    return mean / std_neg * np.sqrt(n)
 
 
-def sharpe(returns, days=252, risk_free_rate=None):
+def sharpe(returns, n=252, risk_free_rate=None):
     returns = pd.Series(returns)
     if risk_free_rate:
         mean = returns.mean() - risk_free_rate
     else:
-        mean = returns.mean() * days
+        mean = returns.mean()
     std = returns.std() 
-    return mean / std * np.sqrt(days)
+    return mean / std * np.sqrt(n)
 
 
-def calmar(returns, days=252):
+def calmar(returns, n=252):
     return_series = pd.Series(returns)
-    return return_series.mean() * np.sqrt(days) / abs(max_drawdown(return_series))
+    return return_series.mean() * np.sqrt(n) / abs(max_drawdown(return_series))
 
 
-def volatility(returns, days=None):
-    return np.std(returns) * np.sqrt(days) if days else np.std(returns)
+def volatility(returns, n=None):
+    return np.std(returns) * np.sqrt(n) if n else np.std(returns)
 
 
-def variance(returns, days=None):
-    return np.var(returns) * np.sqrt(days) if days else np.var(returns)
+def variance(returns, n=None):
+    return np.var(returns) * np.sqrt(n) if n else np.var(returns)
 
 
 def beta(returns, market_base_returns):
