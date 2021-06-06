@@ -167,6 +167,7 @@ class Strategy:
         #     raise ValueError("It is best that you directly use the interface for orderbook event orders")
     
     def backtest(self, 
+                 initial_value: float = None,
                  initial_values: dict = None,
                  to: str = None,
                  start_date: str = None,
@@ -182,6 +183,7 @@ class Strategy:
             ** We expect either an initial_value (in USD) or a dictionary of initial values, we also expect
             either `to` to be set or `start_date` and `end_date` **
 
+            initial_value (float): Used for Alpaca, that defines the initial value (in USD) that you want to start the backtest
             initial_values (dict): Dictionary of initial value sizes (i.e { 'BTC': 3, 'USD': 5650}).
                 Using this will override the values that are currently on your exchange.
             to (str): Declare an amount of time before now to backtest from: ex: '5y' or '10h'
@@ -238,6 +240,9 @@ class Strategy:
         # Write any kwargs as settings to the settings - save if enabled.
         for k, v in kwargs.items():
             backtesting_controller.write_setting(k, v, save)
+
+        if initial_value is not None:
+            backtesting_controller.write_initial_price_values({ "USD": initial_value })
 
         if initial_values is not None:
             backtesting_controller.write_initial_price_values(initial_values)
