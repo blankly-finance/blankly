@@ -490,7 +490,7 @@ class BinanceInterface(CurrencyInterface):
     Binance: get_trade_fee
     """
 
-    def get_fees(self):
+    def get_fees(self) -> dict:
         needed = self.needed['get_fees']
         """
         {

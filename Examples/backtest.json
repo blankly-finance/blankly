@@ -17,7 +17,7 @@
     "cache_location": "./price_caches"
   },
   "settings": {
-    "use_price": "open",
+    "use_price": "close",
     "smooth_prices": false,
     "GUI_output": true,
     "show_tickers_with_zero_delta": false,

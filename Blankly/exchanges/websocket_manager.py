@@ -31,6 +31,10 @@ class WebsocketManager(IExchangeWebsocket):
         """
         self.__recursive_close(self.__websockets)
 
+    # TODO add general websocket connection ability
+    # def create_general_connection(self, callback, log=None, asset_id=None, override_exchange=None):
+    #     pass
+
     def __recursive_close(self, d):
         for k, v in d.items():
             if isinstance(v, dict):

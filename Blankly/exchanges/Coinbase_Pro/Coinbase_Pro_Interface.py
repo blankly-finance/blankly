@@ -89,7 +89,6 @@ class CoinbaseProInterface(CurrencyInterface):
 
             These arguments are mutually exclusive
         Coinbase Pro: get_account
-        Binance: get_account["balances"]
         """
         currency = super().get_account(currency=currency)
 
@@ -363,7 +362,7 @@ class CoinbaseProInterface(CurrencyInterface):
     Binance: get_trade_fee
     """
 
-    def get_fees(self):
+    def get_fees(self) -> dict:
         needed = self.needed['get_fees']
         """
         {
