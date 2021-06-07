@@ -436,7 +436,7 @@ class BinanceInterface(CurrencyInterface):
             orders = self.calls.get_open_orders(symbol=product_id)
             orders = utils.rename_to(renames, orders)
             orders = utils.isolate_specific(needed, orders)
-            orders['product_id'] = utils.to_blankly_coin_id(orders['product_id'], 'binance', quote_currency=None)
+            orders['product_id'] = utils.to_blankly_coin_id(orders['product_id'], 'binance', quote_guess=None)
             return orders
         else:
             orders = self.calls.get_open_orders()
@@ -444,7 +444,7 @@ class BinanceInterface(CurrencyInterface):
         for i in range(len(orders)):
             orders[i] = utils.rename_to(renames, orders[i])
             orders[i] = utils.isolate_specific(needed, orders[i])
-            orders[i]['product_id'] = utils.to_blankly_coin_id(orders[i]['product_id'], 'binance', quote_currency=None)
+            orders[i]['product_id'] = utils.to_blankly_coin_id(orders[i]['product_id'], 'binance', quote_guess=None)
 
         return orders
 
