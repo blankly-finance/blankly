@@ -91,11 +91,11 @@ def trade_interface(message):
     ]
     message = utils.rename_to(renames, message)
     needed = [
-        ["type", str],
         ["product_id", str],
         ["price", float],
         ["time", int],
         ["trade_id", int]
     ]
+    message["time"] = message["time"]/1000
     return utils.isolate_specific(needed, message)
 

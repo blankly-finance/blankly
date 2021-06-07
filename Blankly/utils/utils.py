@@ -49,16 +49,30 @@ def __compare_dicts(default_settings, user_settings):
 
 
 settings_cache = None
+settings_path_override = None
+
 backtest_cache = None
+backteset_path_override = None
 
 # Copy of settings to compare defaults vs overrides
-default_settings = {
+default_global_settings = {
     "settings": {
         "account_update_time": 5000,
-        "use_sandbox": True,
+        "use_sandbox": False,
+        "use_sandbox_websockets": False,
         "binance_tld": "us",
         "websocket_buffer_size": 100000,
     }
+}
+
+default_backtest_settings = {
+    "use_price": "close",
+    "smooth_prices": False,
+    "GUI_output": True,
+    "show_tickers_with_zero_delta": False,
+    "save_initial_account_value": False,
+    "show_progress_during_backtest": False,
+    "cache_location": "./price_caches"
 }
 
 
@@ -71,6 +85,14 @@ def load_json_file(override_path=None):
 
 def load_backtest_preferences(override_path=None) -> dict:
     global backtest_cache
+    global backteset_path_override
+
+    # Allow this override to be evaluated anywhere
+    if override_path is None and backteset_path_override is not None:
+        override_path = backteset_path_override
+    elif override_path is not None:
+        backteset_path_override = override_path
+
     if backtest_cache is None:
         try:
             if override_path is None:
@@ -80,8 +102,8 @@ def load_backtest_preferences(override_path=None) -> dict:
         except FileNotFoundError:
             raise FileNotFoundError("To perform a backtest, make sure a backtest.json file is placed in the same "
                                     "folder as the project working directory!")
-        # TODO add backtesting preferences compare ability
-        # preferences = __compare_dicts(default_settings, preferences)
+        # Just compare the settings because everything else could be chaotic
+        preferences['settings'] = __compare_dicts(default_backtest_settings, preferences['settings'])
         backtest_cache = preferences
         return preferences
     else:
@@ -101,6 +123,14 @@ def write_backtest_preferences(json_file, override_path=None):
 
 def load_user_preferences(override_path=None) -> dict:
     global settings_cache
+    global settings_path_override
+
+    # Allow this override to be evaluated anywhere
+    if override_path is None and settings_path_override is not None:
+        override_path = settings_path_override
+    elif override_path is not None:
+        settings_path_override = override_path
+
     if settings_cache is None:
         try:
             if override_path is None:
@@ -110,7 +140,7 @@ def load_user_preferences(override_path=None) -> dict:
         except FileNotFoundError:
             raise FileNotFoundError("Make sure a settings.json file is placed in the same folder as the project "
                                     "working directory!")
-        preferences = __compare_dicts(default_settings, preferences)
+        preferences = __compare_dicts(default_global_settings, preferences)
         settings_cache = preferences
         return preferences
     else:
@@ -126,11 +156,11 @@ def pretty_print_JSON(json_object):
     return out
 
 
-def epoch_from_ISO8601(ISO8601):
+def epoch_from_ISO8601(ISO8601) -> float:
     return DP.parse(ISO8601).timestamp()
 
 
-def ISO8601_from_epoch(epoch):
+def ISO8601_from_epoch(epoch) -> str:
     return DT.datetime.utcfromtimestamp(epoch).isoformat() + 'Z'
 
 
