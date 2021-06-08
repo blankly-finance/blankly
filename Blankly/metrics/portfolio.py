@@ -48,19 +48,19 @@ def beta(returns, market_base_returns):
     return np.cov(m)[0][1] / np.std(market_base_returns)
 
 
-def var(returns, alpha: float):
+def var(initial_value, returns, alpha: float):
     returns_sorted = np.sort(returns)
     index = int(alpha * len(returns_sorted))
-    return abs(returns_sorted[index])
+    return initial_value * abs(returns_sorted[index])
 
 
-def cvar(returns, alpha):
+def cvar(initial_value, returns, alpha):
     returns_sorted = np.sort(returns)
     index = int(alpha * len(returns_sorted))
     sum_var = returns_sorted[0]
     for i in range(1, index):
         sum_var += returns_sorted[i]
-    return abs(sum_var / index)
+    return initial_value * abs(sum_var / index)
 
 
 def max_drawdown(returns):
