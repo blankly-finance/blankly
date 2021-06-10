@@ -21,7 +21,7 @@ from Blankly.exchanges.IExchange_Websocket import IExchangeWebsocket
 
 class WebsocketManager(IExchangeWebsocket):
     def __init__(self, websockets, default_currency, default_exchange):
-        self.__websockets = websockets
+        self.websockets = websockets
         self.__default_currency = default_currency
         self.__default_exchange = default_exchange
 
@@ -29,11 +29,7 @@ class WebsocketManager(IExchangeWebsocket):
         """
         Iterate through orderbooks and make sure they're closed
         """
-        self.__recursive_close(self.__websockets)
-
-    # TODO add general websocket connection ability
-    # def create_general_connection(self, callback, log=None, asset_id=None, override_exchange=None):
-    #     pass
+        self.__recursive_close(self.websockets)
 
     def __recursive_close(self, d):
         for k, v in d.items():
@@ -59,7 +55,7 @@ class WebsocketManager(IExchangeWebsocket):
 
         if exchange == "binance":
             currency_id = Blankly.utils.to_exchange_coin_id(currency_id, "binance")
-        return currency_id, exchange
+        return self.websockets[exchange][currency_id]
 
     def get_ticker(self, currency_id, override_exchange=None):
         """
@@ -69,9 +65,9 @@ class WebsocketManager(IExchangeWebsocket):
             override_exchange: Override the default to get tickers for different exchanges
         """
         if override_exchange is None:
-            return self.__websockets[self.__default_exchange][currency_id]
+            return self.websockets[self.__default_exchange][currency_id]
         else:
-            return self.__websockets[override_exchange][currency_id]
+            return self.websockets[override_exchange][currency_id]
 
     def get_all_tickers(self):
         """
@@ -79,7 +75,7 @@ class WebsocketManager(IExchangeWebsocket):
         Returns:
             Dictionary with tickers referenced for each currency
         """
-        return self.__websockets
+        return self.websockets
 
     """
     Ticker functions/overridden
@@ -96,71 +92,71 @@ class WebsocketManager(IExchangeWebsocket):
             override_currency: Ticker id, such as "BTC-USD" or exchange equivalents.
             override_exchange: Forces the manager to use a different supported exchange.
         """
-        currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
+        websocket = self.__evaluate_overrides(override_currency, override_exchange)
 
-        self.__websockets[exchange][currency_id].append_callback(callback_object)
+        websocket.append_callback(callback_object)
 
     def is_websocket_open(self, override_currency=None, override_exchange=None):
         """
         Check if the websocket attached to a currency is open
         """
-        currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
+        websocket = self.__evaluate_overrides(override_currency, override_exchange)
 
-        return self.__websockets[exchange][currency_id].is_websocket_open()
+        return websocket.is_websocket_open()
 
     def get_most_recent_time(self, override_currency=None, override_exchange=None):
         """
         Get the most recent time associated with the most recent tick
         """
-        currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
+        websocket = self.__evaluate_overrides(override_currency, override_exchange)
 
-        return self.__websockets[exchange][currency_id].get_most_recent_time()
+        return websocket.get_most_recent_time()
 
     def get_time_feed(self, override_currency=None, override_exchange=None):
         """
         Get a time array associated with the ticker feed.
         """
-        currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
+        websocket = self.__evaluate_overrides(override_currency, override_exchange)
 
-        return self.__websockets[exchange][currency_id].get_time_feed()
+        return websocket.get_time_feed()
 
     def get_feed(self, override_currency=None, override_exchange=None):
         """
         Get the full ticker array. This can be extremely large.
         """
-        currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
+        websocket = self.__evaluate_overrides(override_currency, override_exchange)
 
-        return self.__websockets[exchange][currency_id].get_feed()
+        return websocket.get_feed()
 
     def get_response(self, override_currency=None, override_exchange=None):
         """
         Get the exchange's response to the request to subscribe to a feed
         """
-        currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
+        websocket = self.__evaluate_overrides(override_currency, override_exchange)
 
-        return self.__websockets[exchange][currency_id].get_response()
+        return websocket.get_response()
 
     def close_websocket(self, override_currency=None, override_exchange=None):
         """
         Close a websocket thread
         """
-        currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
+        websocket = self.__evaluate_overrides(override_currency, override_exchange)
 
-        self.__websockets[exchange][currency_id].close_websocket()
+        websocket.close_websocket()
 
     def restart_ticker(self, override_currency=None, override_exchange=None):
         """
         Restart a websocket feed after asking it to stop
         """
-        currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
+        websocket = self.__evaluate_overrides(override_currency, override_exchange)
 
-        self.__websockets[exchange][currency_id].restart_ticker()
+        websocket.restart_ticker()
 
     def get_most_recent_tick(self, override_currency=None, override_exchange=None):
         """
         Get the most recent tick received
         """
-        currency_id, exchange = self.__evaluate_overrides(override_currency, override_exchange)
+        websocket = self.__evaluate_overrides(override_currency, override_exchange)
         # TODO fix the returned value below, really this needs a class like in Binance that can create a callback to
         #  allow a pointer to be subbed in for whichever exchange/currency/websocket type is overridden
-        return self.__websockets[exchange][currency_id].get_most_recent_tick()
+        return websocket.get_most_recent_tick()

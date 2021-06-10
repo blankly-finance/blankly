@@ -15,7 +15,6 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
 import threading
 import json
 import ssl
@@ -26,6 +25,10 @@ import collections
 from Blankly.exchanges.IExchange_Websocket import IExchangeWebsocket
 
 from websocket import create_connection
+
+"""
+--- DEPRECATED FILE. All orderbook management now goes through the Coinbase Pro Websocket file. -----
+"""
 
 
 def create_websocket_connection(id, url):

@@ -17,7 +17,7 @@
 """
 import Blankly.utils.utils
 
-from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ticker
+from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Websocket import Tickers as Coinbase_Pro_Ticker
 from Blankly.exchanges.Binance.Binance_Websocket import Tickers as Binance_Ticker
 
 from Blankly.exchanges.websocket_manager import WebsocketManager
@@ -72,10 +72,10 @@ class TickerManager(WebsocketManager):
                 currency_id = self.__default_currency
 
             if sandbox_mode:
-                ticker = Coinbase_Pro_Ticker(currency_id, log=log,
+                ticker = Coinbase_Pro_Ticker(currency_id, "ticker", log=log,
                                              WEBSOCKET_URL="wss://ws-feed-public.sandbox.pro.coinbase.com")
             else:
-                ticker = Coinbase_Pro_Ticker(currency_id, log=log)
+                ticker = Coinbase_Pro_Ticker(currency_id, "ticker", log=log)
 
             ticker.append_callback(callback)
             # Store this object
