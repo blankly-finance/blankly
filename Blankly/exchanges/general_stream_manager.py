@@ -23,10 +23,9 @@ from Blankly.exchanges.websocket_manager import WebsocketManager
 
 
 class GeneralManager(WebsocketManager):
-    def __init__(self, default_exchange, default_currency, default_channel):
+    def __init__(self, default_exchange, default_currency):
         self.__default_exchange = default_exchange
         self.__default_currency = default_currency
-        self.default_channel = default_channel
 
         self.__websockets = {}
 
@@ -82,6 +81,9 @@ class GeneralManager(WebsocketManager):
 
             return websocket
 
+    """
+    Create overriden method signatures
+    """
     def append_callback(self, callback_object, channel, override_currency=None, override_exchange=None):
         self.websockets = self.__websockets[channel]
         super().append_callback(callback_object, override_currency, override_exchange)

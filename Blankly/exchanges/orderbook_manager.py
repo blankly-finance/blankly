@@ -160,7 +160,7 @@ class OrderbookManger(WebsocketManager):
         self.__websockets_callbacks['coinbase_pro'][update['product_id']](book)
 
     def binance_update(self, update):
-        # TODO this needs a snapshot to work correctly
+        # TODO this needs a snapshot to work correctly, which needs arun's rest code
         # Get symbol first
         symbol = update['s']
 
@@ -210,5 +210,4 @@ class OrderbookManger(WebsocketManager):
         if override_exchange is None:
             override_exchange = self.__default_exchange
 
-        # if override_exchange == "coinbase_pro":
         self.__websockets_callbacks[override_exchange][override_currency_id] = callback_object

@@ -69,7 +69,7 @@ class WebsocketManager(IExchangeWebsocket):
         else:
             return self.websockets[override_exchange][currency_id]
 
-    def get_all_tickers(self):
+    def get_all_tickers(self) -> dict:
         """
         Get the tickers object dictionary. This can be used for individual management, or to stop using the manager.
         Returns:
@@ -96,7 +96,7 @@ class WebsocketManager(IExchangeWebsocket):
 
         websocket.append_callback(callback_object)
 
-    def is_websocket_open(self, override_currency=None, override_exchange=None):
+    def is_websocket_open(self, override_currency=None, override_exchange=None) -> bool:
         """
         Check if the websocket attached to a currency is open
         """

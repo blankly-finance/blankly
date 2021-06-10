@@ -31,7 +31,7 @@ def switch_type(stream):
                no_callback, \
                ""
     else:
-        return no_callback, no_callback
+        return no_callback, no_callback, ""
 
 
 def no_callback(message):
