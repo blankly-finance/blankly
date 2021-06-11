@@ -13,8 +13,7 @@
         1622925962.515081,
         3600.0
       ]
-    ],
-    "cache_location": "./price_caches"
+    ]
   },
   "settings": {
     "use_price": "close",

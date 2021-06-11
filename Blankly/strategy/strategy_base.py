@@ -138,18 +138,18 @@ class Strategy:
             currency_pair: Currency pair to create the orderbook for
         """
         # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
-        self.Orderbook_Manager.create_orderbook(self.__idle_event, currency_id=currency_pair)
+        self.Orderbook_Manager.create_orderbook(callback, currency_id=currency_pair)
 
         # TODO the tickers need some type of argument passing & saving like scheduler so that the 1 second min isn't
         #  required
-        callback_id = str(uuid4())
-        self.__variables[callback_id] = {}
-        self.__schedulers.append(
-            Blankly.Scheduler(self.__orderbook_event_websocket, 1,
-                              initially_stopped=True,
-                              variables=self.__variables[callback_id],
-                              callback=callback, currency_pair=currency_pair)
-        )
+        # callback_id = str(uuid4())
+        # self.__variables[callback_id] = {}
+        # self.__schedulers.append(
+        #     Blankly.Scheduler(self.__orderbook_event_websocket, 1,
+        #                       initially_stopped=True,
+        #                       variables=self.__variables[callback_id],
+        #                       callback=callback, currency_pair=currency_pair)
+        # )
 
     def start(self):
         for i in self.__schedulers:
@@ -160,9 +160,9 @@ class Strategy:
         currency_pair = kwargs['currency_pair']
         variables = kwargs['variables']
 
-        price = self.Orderbook_Manager.get_most_recent_tick(override_currency=currency_pair)
+        book = self.Orderbook_Manager.get_most_recent_orderbook(override_currency_id=currency_pair)
         state = StrategyState(self, self.Interface, variables)
-        orders = callback(price, currency_pair)  # self.Interface, state)
+        orders = callback(book, currency_pair)  # self.Interface, state)
         # is_arr_type = isinstance(orders, list) or isinstance(orders, np.array)
         # if is_arr_type and isinstance(orders[0], Order):
         #     raise ValueError("It is best that you directly use the interface for orderbook event orders")

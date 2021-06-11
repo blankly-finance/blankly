@@ -36,9 +36,9 @@ class Bot(Blankly.BlanklyBot):
         This is called on price update events from the ticker feeds
         """
         # Example of updating the price state for the GUI
-        self.update_state("Price", tick["price"])
+        self.update_state("Price", str(tick["price"]))
         # Show these new ticks to the console
-        print("New price tick at: " + tick["price"])
+        print("New price tick at: " + str(tick["price"]))
 
 
 if __name__ == "__main__":

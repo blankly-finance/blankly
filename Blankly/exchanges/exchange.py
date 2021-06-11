@@ -65,7 +65,6 @@ class Exchange(IExchange, abc.ABC):
             # Run a specific model with the args
             if not self.models[coin_id]["model"].is_running():
                 self.models[coin_id]["model"].run(self.models[coin_id]["args"])
-            return "Started model attached to: " + coin_id
         else:
             for coin_iterator in self.models:
                 # Start all models
@@ -76,9 +75,11 @@ class Exchange(IExchange, abc.ABC):
                     time.sleep(.1)
                 else:
                     print("Ignoring the model on " + coin_iterator)
-            return "Started all models"
 
-    def get_model(self, coin):
+    def __get_model(self, coin):
+        """
+        Get the model to reference to
+        """
         return self.models[coin]["model"]
 
     def get_model_state(self, currency):
@@ -88,7 +89,7 @@ class Exchange(IExchange, abc.ABC):
         Args:
             currency: Currency that the selected model is running on.
         """
-        return (self.get_model(currency)).get_state()
+        return (self.__get_model(currency)).get_state()
 
     def get_full_state(self, currency):
         """
@@ -114,7 +115,7 @@ class Exchange(IExchange, abc.ABC):
             key: Key to assign a value to
             value: Value to assign to the key
         """
-        self.get_model(currency).update_state(key, value)
+        self.__get_model(currency).update_state(key, value)
 
     def append_model(self, model, coin_id, args=None):
         """

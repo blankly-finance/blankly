@@ -211,3 +211,19 @@ class OrderbookManger(WebsocketManager):
             override_exchange = self.__default_exchange
 
         self.__websockets_callbacks[override_exchange][override_currency_id] = callback_object
+
+    def get_most_recent_orderbook(self, override_currency_id=None, override_exchange=None):
+        """
+        Get the most recent orderbook under a currency and exchange.
+
+        Args:
+            override_currency_id: Ticker id, such as "BTC-USD" or exchange equivalents.
+            override_exchange: Forces the manager to use a different supported exchange.
+        """
+        if override_currency_id is None:
+            override_currency_id = self.__default_currency
+
+        if override_exchange is None:
+            override_exchange = self.__default_exchange
+
+        return self.__orderbooks[override_exchange][override_currency_id]

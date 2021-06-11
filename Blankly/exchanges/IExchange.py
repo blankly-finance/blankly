@@ -29,10 +29,6 @@ class IExchange(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_model(self, coin):
-        pass
-
-    @abc.abstractmethod
     def get_full_state(self, currency):
         pass
 
