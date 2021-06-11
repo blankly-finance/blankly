@@ -40,7 +40,7 @@ def zlema(data: Any, period: int = 50) -> Any:
         use_series = True
     data = convert_to_numpy(data)
     zlema = ti.zlema(data, period)
-    return zlema if use_series else zlema
+    return pd.Series(zlema) if use_series else zlema
 
 
 def sma(data: Any, period: int = 50) -> Any:
