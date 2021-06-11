@@ -25,7 +25,7 @@ from binance.client import Client
 
 
 class Binance(Exchange):
-    def __init__(self, portfolio_name=None, auth_path="Keys.json", preferences_path=None):
+    def __init__(self, portfolio_name=None, auth_path="keys.json", preferences_path=None):
         # Load the auth from the keys file
         auth, defined_name = Blankly.auth_constructor.load_auth_binance(auth_path, portfolio_name)
 

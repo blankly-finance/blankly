@@ -27,7 +27,7 @@ def load_json(keys_file):
         f.close()
         return contents
     except FileNotFoundError:
-        raise FileNotFoundError("Make sure a Keys.json file is placed in the same folder as the project working "
+        raise FileNotFoundError("Make sure a keys.json file is placed in the same folder as the project working "
                                 "directory!")
 
 

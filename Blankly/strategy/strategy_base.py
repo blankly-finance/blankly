@@ -109,7 +109,6 @@ class Strategy:
     #         self.Interface.limit_order(currency_pair, order.side, order.price, order.amount)
         
     def __price_event_rest(self, **kwargs):
-        print(kwargs)
         callback = kwargs['callback']
         currency_pair = kwargs['currency_pair']
         resolution = kwargs['resolution']
