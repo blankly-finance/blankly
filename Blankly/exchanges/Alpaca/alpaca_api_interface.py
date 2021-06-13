@@ -3,19 +3,19 @@ import warnings
 from Blankly.utils import utils as utils
 from Blankly.exchanges.Alpaca.Alpaca_API import API
 from Blankly.interface.currency_Interface import CurrencyInterface
-import alpaca_trade_api as tradeapi
+import alpaca_trade_api
 
 from Blankly.utils.purchases.limit_order import LimitOrder
 from Blankly.utils.purchases.market_order import MarketOrder
 
 class AlpacaInterface(CurrencyInterface):
-    def __init__(self, authenticated_API: API):
-        super().__init__('alpaca', authenticated_API)
-        assert isinstance(self.calls, tradeapi.REST)
+    def __init__(self, authenticated_API: API, preferences_path: str):
+        super().__init__('alpaca', authenticated_API, preferences_path)
+        assert isinstance(self.calls, alpaca_trade_api.REST)
 
     def init_exchange(self):
-        assert isinstance(self.calls, tradeapi.REST)
-        account_info = self.calls.get_account()._raw
+        assert isinstance(self.calls, alpaca_trade_api.REST)
+        account_info = self.calls.get_account()
         try:
             if account_info['account_blocked']:
                 warnings.warn('Your alpaca account is indicated as blocked for trading....')
@@ -27,7 +27,7 @@ class AlpacaInterface(CurrencyInterface):
             "taker_fee_rate": 0
         }
 
-    def get_products(self):
+    def get_products(self) -> dict:
         '''
         [
             {
@@ -46,7 +46,7 @@ class AlpacaInterface(CurrencyInterface):
         ]
         '''
         needed = self.needed['get_products']
-        assets = self.calls.list_assets(status=None, asset_class=None)._raw
+        assets = self.calls.list_assets(status=None, asset_class=None)
 
         for asset in assets:
             asset['currency_id'] = asset.pop('id')
@@ -62,11 +62,11 @@ class AlpacaInterface(CurrencyInterface):
         return assets
 
     def get_account(self, currency=None, override_paper_trading=False):
-        assert isinstance(self.calls, tradeapi.REST)
+        assert isinstance(self.calls, alpaca_trade_api.REST)
         needed = self.needed['get_account']
 
-        account_dict = self.calls.get_account()._raw
-        account_dict['currency'] = account_dict.pop('cash')
+        account_dict = self.calls.get_account()
+        account_dict['available'] = account_dict.pop('cash')
         account_dict['hold'] = -1
 
         positions = self.calls.list_positions()
@@ -83,7 +83,7 @@ class AlpacaInterface(CurrencyInterface):
         return positions
 
     def market_order(self, product_id, side, funds) -> MarketOrder:
-        assert isinstance(self.calls, tradeapi.REST)
+        assert isinstance(self.calls, alpaca_trade_api.REST)
         needed = self.needed['market_order']
 
         order = {
@@ -92,7 +92,7 @@ class AlpacaInterface(CurrencyInterface):
             'product_id': product_id,
             'type': 'market'
         }
-        response = self.calls.submit_order(product_id, side=side, type='market', time_int_force='day', notional=funds)._raw
+        response = self.calls.submit_order(product_id, side=side, type='market', time_int_force='day', notional=funds)
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
@@ -100,7 +100,7 @@ class AlpacaInterface(CurrencyInterface):
         pass
 
     def cancel_order(self, currency_id, order_id) -> dict:
-        assert isinstance(self.calls, tradeapi.REST)
+        assert isinstance(self.calls, alpaca_trade_api.REST)
         self.calls.cancel_order(order_id)
 
         #TODO: handle the different response codes
@@ -108,9 +108,9 @@ class AlpacaInterface(CurrencyInterface):
 
     # TODO: this doesnt exactly fit
     def get_open_orders(self, product_id=None):
-        assert isinstance(self.calls, tradeapi.REST)
+        assert isinstance(self.calls, alpaca_trade_api.REST)
         needed = self.needed['get_open_orders']
-        orders = self.calls.list_orders()._raw
+        orders = self.calls.list_orders()
         renames = [
             ["asset_id", "product_id"],
             ["filled_at", "price"],
@@ -123,9 +123,9 @@ class AlpacaInterface(CurrencyInterface):
         return orders
 
     def get_order(self, currency_id, order_id) -> dict:
-        assert isinstance(self.calls, tradeapi.REST)
+        assert isinstance(self.calls, alpaca_trade_api.REST)
         needed = self.needed['get_order']
-        order = self.calls.get_order(order_id)._raw
+        order = self.calls.get_order(order_id)
         renames = [
             ["asset_id", "product_id"],
             ["filled_at", "price"],
@@ -137,23 +137,23 @@ class AlpacaInterface(CurrencyInterface):
         return order
 
     def get_fees(self):
-        assert isinstance(self.calls, tradeapi.REST)
+        assert isinstance(self.calls, alpaca_trade_api.REST)
         return {
             'maker_fee_rate': 0,
             'taker_fee_rate': 0
         }
 
     def get_product_history(self, product_id, epoch_start, epoch_stop, granularity):
-        assert isinstance(self.calls, tradeapi.REST)
+        assert isinstance(self.calls, alpaca_trade_api.REST)
 
         pass
 
     # TODO: tbh not sure how this one works
     def get_market_limits(self, product_id):
-        assert isinstance(self.calls, tradeapi.REST)
+        assert isinstance(self.calls, alpaca_trade_api.REST)
         pass
 
     def get_price(self, currency_pair) -> float:
-        assert isinstance(self.calls, tradeapi.REST)
+        assert isinstance(self.calls, alpaca_trade_api.REST)
         response = self.calls.get_last_trade()
         return float(response['p'])

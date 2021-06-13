@@ -1,15 +1,15 @@
 from Blankly.exchanges.Alpaca.alpaca_api_interface import AlpacaInterface
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
 from binance.client import Client
-from Blankly.exchanges.Alpaca.Alpaca_API import API as Alpaca_API
+from Blankly.exchanges.Alpaca.Alpaca_API import create_alpaca_client
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Interface import CoinbaseProInterface
 from Blankly.exchanges.Binance.Binance_Interface import BinanceInterface
-from Blankly.auth.auth_factory import AuthFactory
+import Blankly.utils.utils as utils
 
 class InterfaceFactory:
-
     @staticmethod
-    def create_interface(exchange_name: str, preferences, auth):
+    def create_interface(exchange_name: str, auth, preferences_path: str = None):
+        preferences = utils.load_user_preferences(preferences_path)
         if exchange_name == 'coinbase_pro':
             if preferences["settings"]["use_sandbox"]:
                 calls = Coinbase_Pro_API(auth[0], auth[1], auth[2],
@@ -31,6 +31,5 @@ class InterfaceFactory:
             return BinanceInterface(exchange_name, calls)
 
         elif exchange_name == 'alpaca':
-            # TODO: Fix the hardcoded true
-            calls = Alpaca_API(auth, True)
-            return AlpacaInterface(calls)
+            calls = create_alpaca_client(auth, preferences["settings"]["use_sandbox"])
+            return AlpacaInterface(calls, preferences_path)
