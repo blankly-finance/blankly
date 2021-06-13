@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import Blankly.utils.utils as utils
 from Blankly.interface.abc_currency_interface import ICurrencyInterface
 import abc
@@ -24,11 +23,11 @@ import abc
 
 # TODO: need to add a cancel all orders function
 class CurrencyInterface(ICurrencyInterface, abc.ABC):
-    def __init__(self, exchange_name, authenticated_API):
+    def __init__(self, exchange_name, authenticated_API, preferences_path=None):
         self.exchange_name = exchange_name
         self.calls = authenticated_API
         # Reload user preferences here
-        self.user_preferences = utils.load_user_preferences()
+        self.user_preferences = utils.load_user_preferences(preferences_path)
 
         # TODO, improve creation of its own properties
         self.exchange_properties = None
@@ -135,6 +134,7 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
         pass
 
     """ Needs to be overridden here """
+
     def get_calls(self):
         """
         Returns:
@@ -144,6 +144,7 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
         return self.calls
 
     """ Needs to be overridden here """
+
     def get_exchange_type(self):
         return self.exchange_name
 

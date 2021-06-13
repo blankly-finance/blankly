@@ -36,7 +36,8 @@ setup(
         'tulipy',
         'alpaca-trade-api',
         'pytest',
-        'bokeh'
+        'bokeh',
+        'pytest-mock'
     ],
     classifiers=[
         # Possible: "3 - Alpha", "4 - Beta" or "5 - Production/Stable"
