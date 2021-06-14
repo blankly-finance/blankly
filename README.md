@@ -1,4 +1,4 @@
-![Blankly_Github_Logo](https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/logo.png?alt=media&token=7b582b7a-25c3-4c6b-8b04-becdee3d3551)
+![Blankly_Github_Logo](https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/blankly-white.svg?alt=media&token=d5d57c15-4c55-422f-9b06-2e578288fa14)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=security_rating)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=alert_status)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
