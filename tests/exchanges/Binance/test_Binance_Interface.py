@@ -23,7 +23,9 @@ from Blankly.utils.utils import compare_dictionaries
 class BinanceInterface(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.Binance = Blankly.Binance(portfolio_name="Spot Test Key")
+        cls.Binance = Blankly.Binance(portfolio_name="Spot Test Key",
+                                      keys_path="./tests/config/keys.json",
+                                      settings_path="./tests/config/settings.json")
         cls.Binance_Interface = cls.Binance.get_interface()
 
     def test_get_exchange_type(self):

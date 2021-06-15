@@ -22,7 +22,9 @@ import unittest
 class CoinbaseInterface(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.Coinbase_Pro = Blankly.Coinbase_Pro(portfolio_name="Sandbox Portfolio")
+        cls.Coinbase_Pro = Blankly.Coinbase_Pro(portfolio_name="Sandbox Portfolio",
+                                                keys_path='./tests/config/keys.json',
+                                                settings_path="./tests/config/settings.json")
         cls.Coinbase_Pro_Interface = cls.Coinbase_Pro.get_interface()
 
     def test_get_exchange_type(self):
