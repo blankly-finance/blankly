@@ -292,9 +292,9 @@ class BinanceInterface(CurrencyInterface):
         # The interface here will be the query of order status from this object, because orders are dynamic
         # creatures
         response = self.calls.order_market(symbol=modified_product_id, side=side, quoteOrderQty=funds)
+        response["transactTime"] = response["transactTime"] / 1000
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
-        response["transactTime"] = response["transactTime"] / 1000
         return MarketOrder(order, response, self)
 
     def limit_order(self, product_id, side, price, size) -> LimitOrder:

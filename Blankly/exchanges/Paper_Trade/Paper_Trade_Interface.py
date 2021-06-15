@@ -74,7 +74,7 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
             fees = self.calls.get_fees()
         except AttributeError:
             traceback.print_exc()
-            raise AttributeError("Are you passing a non-interface object into the paper trade constructor?")
+            raise AttributeError("Are you passing a non-exchange object into the paper trade constructor?")
 
         self.__exchange_properties = {
             "maker_fee_rate": fees['maker_fee_rate'],

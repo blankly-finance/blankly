@@ -1,13 +1,11 @@
-from unittest.mock import patch
-
 from Blankly.auth.Alpaca.auth import alpaca_auth
 from Blankly.interface.currency_factory import InterfaceFactory
 import pytest
 from pytest_mock import MockerFixture
 
 from tests.helpers.comparisons import is_sub_dict
-import pathlib
 from pathlib import Path
+
 
 class mock_alpaca_direct_calls:
     def __init__(self, *args, **kwargs):
@@ -80,6 +78,7 @@ class mock_alpaca_direct_calls:
         }]
         return mock_products_response
 
+
 class mock_alpaca_interface:
     def __init__(self, *args, **kwargs):
         pass
@@ -94,7 +93,7 @@ def alpaca_mock_interface(mocker: MockerFixture) -> None:
     settings_file_path = Path("tests/config/settings.json").resolve()
 
     auth_obj = alpaca_auth(keys_file_path, "alpaca test portfolio")
-    mocker.patch("alpaca_trade_api.REST", new = mock_alpaca_direct_calls)
+    mocker.patch("alpaca_trade_api.REST", new=mock_alpaca_direct_calls)
     alpaca_interface = InterfaceFactory.create_interface("alpaca", auth_obj, settings_file_path)
 
     return alpaca_interface
@@ -131,6 +130,7 @@ def test_get_products(alpaca_mock_interface) -> None:
 
     assert "exchange_specific" in return_val[0]
 
+
 def test_get_account(alpaca_mock_interface) -> None:
     return_val = alpaca_mock_interface.get_account()
 
@@ -156,4 +156,3 @@ def test_get_account(alpaca_mock_interface) -> None:
         assert found, "expected return element not found: %r" % answer
 
     assert "exchange_specific" in return_val[0]
-
