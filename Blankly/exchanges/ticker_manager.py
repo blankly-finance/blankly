@@ -17,7 +17,7 @@
 """
 import Blankly.utils.utils
 
-from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Tickers import Tickers as Coinbase_Pro_Ticker
+from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Websocket import Tickers as Coinbase_Pro_Ticker
 from Blankly.exchanges.Binance.Binance_Websocket import Tickers as Binance_Ticker
 
 from Blankly.exchanges.websocket_manager import WebsocketManager
@@ -56,6 +56,9 @@ class TickerManager(WebsocketManager):
         Returns:
             Direct ticker object
         """
+        preferences = Blankly.utils.load_user_preferences()
+        sandbox_mode = preferences['settings']['use_sandbox_websockets']
+
         exchange_name = self.__default_exchange
         # Ensure the ticker dict has this overridden exchange
         if override_exchange is not None:
@@ -68,7 +71,12 @@ class TickerManager(WebsocketManager):
             if currency_id is None:
                 currency_id = self.__default_currency
 
-            ticker = Coinbase_Pro_Ticker(currency_id, log=log)
+            if sandbox_mode:
+                ticker = Coinbase_Pro_Ticker(currency_id, "ticker", log=log,
+                                             WEBSOCKET_URL="wss://ws-feed-public.sandbox.pro.coinbase.com")
+            else:
+                ticker = Coinbase_Pro_Ticker(currency_id, "ticker", log=log)
+
             ticker.append_callback(callback)
             # Store this object
             self.__tickers['coinbase_pro'][currency_id] = ticker
@@ -78,7 +86,10 @@ class TickerManager(WebsocketManager):
                 currency_id = self.__default_currency
 
             currency_id = Blankly.utils.to_exchange_coin_id(currency_id, "binance").lower()
-            ticker = Binance_Ticker(currency_id, "trade", log=log)
+            if sandbox_mode:
+                ticker = Binance_Ticker(currency_id, "trade", log=log, WEBSOCKET_URL="wss://testnet.binance.vision/ws")
+            else:
+                ticker = Binance_Ticker(currency_id, "trade", log=log)
             ticker.append_callback(callback)
             self.__tickers['binance'][currency_id] = ticker
             return ticker

@@ -1,5 +1,5 @@
 """
-    Websocket feeds need to be modular due to the subscription methods, this provides dynamic management.
+    Websocket feeds need to be modular due to the subscription methods, this provides dynamic management for Binance.
     Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
@@ -91,11 +91,10 @@ def trade_interface(message):
     ]
     message = utils.rename_to(renames, message)
     needed = [
-        ["type", str],
         ["product_id", str],
         ["price", float],
         ["time", int],
         ["trade_id", int]
     ]
+    message["time"] = message["time"]/1000
     return utils.isolate_specific(needed, message)
-

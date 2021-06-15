@@ -1,6 +1,6 @@
 """
-    Interface for exchange objects.
-    Copyright (C) 2021  Emerson Dove
+    Class to pass in the current Strategy State
+    Copyright (C) 2021  Emerson Dove, Brandon Fan
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -16,29 +16,15 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import abc
 
+from Blankly.utils.utils import AttributeDict
+from Blankly import Interface
 
-class IExchange(abc.ABC):
-    """
-    Functions required for easy interaction with the GUI/main
-    """
+class StrategyState:
+    """Strategy State"""
+    def __init__(self, strategy, interface: Interface, variables: AttributeDict, resolution: str = None):
+        self.strategy = strategy
+        self.interface = interface
+        self.variables = variables
+        self.resolution = resolution
 
-    @abc.abstractmethod
-    def append_model(self, model, coin, args):
-        pass
-
-    @abc.abstractmethod
-    def get_full_state(self, currency):
-        pass
-
-    @abc.abstractmethod
-    def get_model_state(self, currency):
-        pass
-
-    @abc.abstractmethod
-    def get_currency_state(self, currency):
-        pass
-
-    def get_exchange_state(self):
-        pass

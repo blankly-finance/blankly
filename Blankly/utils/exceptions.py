@@ -1,6 +1,6 @@
 """
     Exceptions definitions for Blankly
-    Copyright (c) 2017 Daniel Paquin, modified by Emerson Dove
+    Copyright (c) 2021 Emerson Dove
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to deal

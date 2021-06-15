@@ -60,7 +60,7 @@ class Order:
         """
         return self.__response["id"]
 
-    def get_product_id(self):
+    def get_product_id(self) -> str:
         """
         Get the asset id of the exchange
         """

@@ -17,43 +17,43 @@
 """
 
 
-def build_second():
+def build_second() -> int:
     return 1
 
 
-def build_minute():
+def build_minute() -> int:
     return build_second() * 60
 
 
-def build_hour():
+def build_hour() -> int:
     return build_minute() * 60
 
 
-def build_day():
+def build_day() -> int:
     return build_hour() * 24
 
 
-def build_week():
+def build_week() -> int:
     return build_day() * 7
 
 
-def build_month():
+def build_month() -> int:
     return build_day() * 30
 
 
-def build_year():
+def build_year() -> int:
     return build_day() * 365
 
 
-def build_decade():
+def build_decade() -> int:
     return build_year() * 10
 
 
-def build_century():
+def build_century() -> int:
     return build_decade() * 10
 
 
-def build_millennium():
+def build_millennium() -> int:
     return build_century() * 10
 
 

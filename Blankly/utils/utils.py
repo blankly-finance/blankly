@@ -21,6 +21,7 @@ import dateutil.parser as DP
 import json
 import numpy
 import warnings
+import sys
 
 from sklearn.linear_model import LinearRegression
 
@@ -48,33 +49,98 @@ def __compare_dicts(default_settings, user_settings):
 
 
 settings_cache = None
+settings_path_override = None
 
-default_settings = {
+backtest_cache = None
+backteset_path_override = None
+
+# Copy of settings to compare defaults vs overrides
+default_global_settings = {
     "settings": {
         "account_update_time": 5000,
-        "use_sandbox": True,
+        "use_sandbox": False,
+        "use_sandbox_websockets": False,
         "binance_tld": "us",
         "websocket_buffer_size": 100000,
     }
 }
 
+default_backtest_settings = {
+    "use_price": "close",
+    "smooth_prices": False,
+    "GUI_output": True,
+    "show_tickers_with_zero_delta": False,
+    "save_initial_account_value": False,
+    "show_progress_during_backtest": False,
+    "cache_location": "./price_caches"
+}
 
-def load_user_preferences(override_path=None):
+
+def load_json_file(override_path=None):
+    f = open(override_path, )
+    json_file = json.load(f)
+    f.close()
+    return json_file
+
+
+def load_backtest_preferences(override_path=None) -> dict:
+    global backtest_cache
+    global backteset_path_override
+
+    # Allow this override to be evaluated anywhere
+    if override_path is None and backteset_path_override is not None:
+        override_path = backteset_path_override
+    elif override_path is not None:
+        backteset_path_override = override_path
+
+    if backtest_cache is None:
+        try:
+            if override_path is None:
+                preferences = load_json_file('backtest.json')
+            else:
+                preferences = load_json_file(override_path)
+        except FileNotFoundError:
+            raise FileNotFoundError("To perform a backtest, make sure a backtest.json file is placed in the same "
+                                    "folder as the project working directory!")
+        # Just compare the settings because everything else could be chaotic
+        preferences['settings'] = __compare_dicts(default_backtest_settings, preferences['settings'])
+        backtest_cache = preferences
+        return preferences
+    else:
+        return backtest_cache
+
+
+def write_backtest_preferences(json_file, override_path=None):
+    global backtest_cache
+    backtest_cache = json_file
+
+    if override_path is not None:
+        f = open(override_path, "w")
+    else:
+        f = open('backtest.json', "w")
+    f.write(json.dumps(json_file, indent=2))
+
+
+def load_user_preferences(override_path=None) -> dict:
     global settings_cache
+    global settings_path_override
+
+    # Allow this override to be evaluated anywhere
+    if override_path is None and settings_path_override is not None:
+        override_path = settings_path_override
+    elif override_path is not None:
+        settings_path_override = override_path
+
     if settings_cache is None:
         try:
             if override_path is None:
-                f = open("Settings.json", )
-                preferences = json.load(f)
-                f.close()
+                preferences = load_json_file('settings.json')
             else:
-                f = open(override_path, )
-                preferences = json.load(f)
-                f.close()
+                preferences = load_json_file(override_path)
         except FileNotFoundError:
-            raise FileNotFoundError("Make sure a Settings.json file is placed in the same folder as the project "
+            raise FileNotFoundError("Make sure a settings.json file is placed in the same folder as the project "
                                     "working directory!")
-        preferences = __compare_dicts(default_settings, preferences)
+        preferences = __compare_dicts(default_global_settings, preferences)
         settings_cache = preferences
         return preferences
     else:
@@ -90,11 +156,11 @@ def pretty_print_JSON(json_object):
     return out
 
 
-def epoch_from_ISO8601(ISO8601):
+def epoch_from_ISO8601(ISO8601) -> float:
     return DP.parse(ISO8601).timestamp()
 
 
-def ISO8601_from_epoch(epoch):
+def ISO8601_from_epoch(epoch) -> str:
     return DT.datetime.utcfromtimestamp(epoch).isoformat() + 'Z'
 
 
@@ -144,23 +210,23 @@ def fit_parabola(ticker, point_number):
     return numpy.polyfit(times, prices, 2, full=True)
 
 
-def to_blankly_coin_id(coin_id, exchange, quote_currency=None) -> str:
+def to_blankly_coin_id(asset_id, exchange, quote_guess=None) -> str:
     if exchange == "binance":
-        if quote_currency is not None:
-            index = int(coin_id.find(quote_currency))
-            coin_id = coin_id[0:index]
-            return coin_id + "-" + quote_currency
+        if quote_guess is not None:
+            index = int(asset_id.find(quote_guess))
+            asset_id = asset_id[0:index]
+            return asset_id + "-" + quote_guess
         else:
             # Try your best to try to parse anyway
             quotes = ['BNB', 'BTC', 'TRX', 'XRP', 'ETH', 'USDT', 'BUSD', 'AUD', 'BRL', 'EUR', 'GBP', 'RUB',
                       'TRY', 'TUSD', 'USDC', 'PAX', 'BIDR', 'DAI', 'IDRT', 'UAH', 'NGN', 'VAI', 'BVND']
             for i in quotes:
-                if __check_ending(coin_id, i):
-                    return to_blankly_coin_id(coin_id, 'binance', quote_currency=i)
-            raise LookupError("Unable to parse binance coin id of: " + str(coin_id))
+                if __check_ending(asset_id, i):
+                    return to_blankly_coin_id(asset_id, 'binance', quote_guess=i)
+            raise LookupError("Unable to parse binance coin id of: " + str(asset_id))
 
     if exchange == "coinbase_pro":
-        return coin_id
+        return asset_id
 
 
 def __check_ending(full_string, checked_ending) -> bool:
@@ -208,6 +274,7 @@ def rename_to(keys_array, renaming_dictionary):
         mutated_dictionary[i[1]] = renaming_dictionary[(i[0])]
         del mutated_dictionary[i[0]]
     return mutated_dictionary
+
 
 # Non-recursive check
 def isolate_specific(needed, compare_dictionary):
@@ -314,3 +381,35 @@ def compare_dictionaries(dict1, dict2) -> bool:
         print(dict1)
         print(dict2)
         return False
+
+
+def update_progress(progress):
+    # update_progress() : Displays or updates a console progress bar
+    # Accepts a float between 0 and 1. Any int will be converted to a float.
+    # A value under 0 represents a 'halt'.
+    # A value at 1 or bigger represents 100%
+    bar_length = 10  # Modify this to change the length of the progress bar
+    status = ""
+    if isinstance(progress, int):
+        progress = float(progress)
+    if not isinstance(progress, float):
+        progress = 0
+        status = "error: progress var must be float\r\n"
+    if progress < 0:
+        progress = 0
+        status = "Halt...\r\n"
+    if progress >= 1:
+        progress = 1
+        status = "Done...\r\n"
+    block = int(round(bar_length * progress))
+    text = "\rProgress: [{0}] {1}% {2}".format("#" * block + "-" * (bar_length - block), round(progress * 100, 2),
+                                               status)
+    sys.stdout.write(text)
+    sys.stdout.flush()
+
+
+class AttributeDict(dict):
+    def __getattr__(self, attr):
+        return self[attr]
+    def __setattr__(self, attr, value):
+        self[attr] = value

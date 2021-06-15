@@ -23,33 +23,37 @@ import ssl
 import time
 import traceback
 from Blankly.exchanges.IExchange_Websocket import IExchangeWebsocket
+import Blankly.exchanges.Coinbase_Pro.websocket_utils as websocket_utils
 import collections
 
 from websocket import create_connection
 
 
-def create_ticker_connection(id, url):
+def create_ticker_connection(id, url, channel):
     ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
     request = """{
     "type": "subscribe",
     "product_ids": [
         \"""" + id + """\"
     ],
-    "channels": [
-        {
-            "name": "ticker",
-            "product_ids": [
-                \"""" + id + """\"
-            ]
-        }
-    ]
+    "channels": [ \"""" + channel + """\" ]
     }"""
     ws.send(request)
     return ws
 
+# This could be needed:
+# "channels": [
+#     {
+#         "name": "ticker",
+#         "product_ids": [
+#             \"""" + id + """\"
+#         ]
+#     }
+# ]
+
 
 class Tickers(IExchangeWebsocket):
-    def __init__(self, currency_id, log=None, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
+    def __init__(self, currency_id, stream, log=None, pre_event_callback=None, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
         """
         Create and initialize the ticker
         Args:
@@ -58,6 +62,8 @@ class Tickers(IExchangeWebsocket):
             WEBSOCKET_URL: Default websocket URL feed.
         """
         self.__id = currency_id
+        self.__stream = stream
+        self.__logging_callback, self.__interface_callback, log_message = websocket_utils.switch_type(stream)
 
         # Initialize log file
         if log is not None:
@@ -65,9 +71,7 @@ class Tickers(IExchangeWebsocket):
             self.__filePath = log
             try:
                 self.__file = open(log, 'x+')
-                self.__file.write(
-                    "time,system_time,price,open_24h,volume_24h,low_24h,high_24h,volume_30d,best_bid,best_ask,"
-                    "last_size\n")
+                self.__file.write(log_message)
             except FileExistsError:
                 self.__file = open(log, 'a')
         else:
@@ -79,6 +83,7 @@ class Tickers(IExchangeWebsocket):
         self.__most_recent_tick = None
         self.__most_recent_time = None
         self.__callbacks = []
+        self.__pre_event_callback = pre_event_callback
 
         # Reload preferences
         self.__preferences = Blankly.utils.load_user_preferences()
@@ -94,7 +99,7 @@ class Tickers(IExchangeWebsocket):
         Restart websocket if it was asked to stop.
         """
         if self.ws is None:
-            self.ws = create_ticker_connection(self.__id, self.URL)
+            self.ws = create_ticker_connection(self.__id, self.URL, self.__stream)
             self.__response = self.ws.recv()
             thread = threading.Thread(target=self.read_websocket)
             thread.start()
@@ -108,6 +113,15 @@ class Tickers(IExchangeWebsocket):
                 self.start_websocket()
 
     def read_websocket(self):
+        # This is unique because coinbase first sends the entire orderbook to use
+        if self.__pre_event_callback is not None and self.__stream == "level2":
+            received_string = json.loads(self.ws.recv())
+            if received_string['type'] == 'snapshot':
+                try:
+                    self.__pre_event_callback(received_string)
+                except:
+                    traceback.print_exc()
+
         counter = 0
         # TODO port this to "WebSocketApp" found in the websockets documentation
         while self.ws.connected:
@@ -116,27 +130,25 @@ class Tickers(IExchangeWebsocket):
             try:
                 received_string = self.ws.recv()
                 received = json.loads(received_string)
-                self.__most_recent_time = Blankly.utils.epoch_from_ISO8601(received["time"])
                 # Modify time to use epoch
+                self.__most_recent_time = Blankly.utils.epoch_from_ISO8601(received["time"])
                 received["time"] = self.__most_recent_time
+                self.__time_feed.append(self.__most_recent_time)
                 self.__most_recent_tick = received
                 self.__ticker_feed.append(received)
-                self.__time_feed.append(self.__most_recent_time)
 
                 if self.__log:
                     if counter % 100 == 0:
                         self.__file.close()
                         self.__file = open(self.__filePath, 'a')
-                    line = str(received["time"]) + "," + str(time.time()) + "," + received["price"] + "," + received[
-                        "open_24h"] + "," + received["volume_24h"] + "," + received["low_24h"] + "," + received[
-                               "high_24h"] + "," + received["volume_30d"] + "," + received["best_bid"] + "," + received[
-                               "best_ask"] + "," + received["last_size"] + "\n"
+                    line = self.__logging_callback(received)
                     self.__file.write(line)
 
                 # Manage price events and fire for each manager attached
+                interface_message = self.__interface_callback(received)
                 try:
                     for i in self.__callbacks:
-                        i(self.__most_recent_tick)
+                        i(interface_message)
                 except Exception:
                     traceback.print_exc()
 
@@ -147,11 +159,12 @@ class Tickers(IExchangeWebsocket):
                     pass
                 else:
                     traceback.print_exc()
-                    print("Error reading ticker websocket for " + self.__id + ": attempting to re-initialize")
+                    print("Error reading ticker websocket for " + self.__id + " on " +
+                          self.__stream + ": attempting to re-initialize")
                     # Give a delay so this doesn't eat up from the main thread if it takes many tries to initialize
                     time.sleep(2)
                     self.ws.close()
-                    self.ws = create_ticker_connection(self.__id, self.URL)
+                    self.ws = create_ticker_connection(self.__id, self.URL, self.__stream)
                     # Update response
                     self.__response = self.ws.recv()
 
@@ -193,7 +206,7 @@ class Tickers(IExchangeWebsocket):
         if self.ws.connected:
             self.ws.close()
         else:
-            print("Websocket for " + self.__id + " is already closed")
+            print("Websocket for " + self.__id + ' on channel ' + self.__stream + " is already closed")
 
     """ Required in manager """
     def restart_ticker(self):

@@ -89,7 +89,6 @@ class CoinbaseProInterface(CurrencyInterface):
 
             These arguments are mutually exclusive
         Coinbase Pro: get_account
-        Binance: get_account["balances"]
         """
         currency = super().get_account(currency=currency)
 
@@ -363,7 +362,7 @@ class CoinbaseProInterface(CurrencyInterface):
     Binance: get_trade_fee
     """
 
-    def get_fees(self):
+    def get_fees(self) -> dict:
         needed = self.needed['get_fees']
         """
         {
@@ -402,8 +401,11 @@ class CoinbaseProInterface(CurrencyInterface):
             granularity = accepted_grans[min(range(len(accepted_grans)),
                                              key=lambda i: abs(accepted_grans[i] - granularity))]
 
+        granularity = int(granularity)
+
         # Figure out how many points are needed
         need = int((epoch_stop - epoch_start) / granularity)
+        initial_need = need
         window_open = epoch_start
         history = []
         # Iterate while its more than max
@@ -412,18 +414,23 @@ class CoinbaseProInterface(CurrencyInterface):
             window_close = window_open + 300 * granularity
             open_iso = utils.ISO8601_from_epoch(window_open)
             close_iso = utils.ISO8601_from_epoch(window_close)
-            history = history + self.calls.get_product_historic_rates(product_id, open_iso, close_iso,
-                                                                      granularity)
+            response = self.calls.get_product_historic_rates(product_id, open_iso, close_iso, granularity)
+            if isinstance(response, dict):
+                raise APIException(response['message'])
+            history = history + response
 
             window_open = window_close
             need -= 300
-            time.sleep(1)
+            time.sleep(.2)
+            utils.update_progress((initial_need - need) / initial_need)
 
         # Fill the remainder
         open_iso = utils.ISO8601_from_epoch(window_open)
         close_iso = utils.ISO8601_from_epoch(epoch_stop)
-        history_block = history + self.calls.get_product_historic_rates(product_id, open_iso, close_iso,
-                                                                        granularity)
+        response = self.calls.get_product_historic_rates(product_id, open_iso, close_iso, granularity)
+        if isinstance(response, dict):
+            raise APIException(response['message'])
+        history_block = history + response
         history_block.sort(key=lambda x: x[0])
         return pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 

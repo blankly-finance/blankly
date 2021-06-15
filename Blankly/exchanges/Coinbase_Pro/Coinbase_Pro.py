@@ -22,12 +22,12 @@ from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_
 
 
 class Coinbase_Pro(Exchange):
-    def __init__(self, portfolio_name=None, auth_path="Keys.json", preferences_path=None):
+    def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
         # Load the auth from the keys file
-        auth, defined_name = Blankly.auth_constructor.load_auth_coinbase_pro(auth_path, portfolio_name)
+        auth, defined_name = Blankly.auth_constructor.load_auth_coinbase_pro(keys_path, portfolio_name)
 
         # Giving the preferences path as none allows us to create a default
-        Exchange.__init__(self, "coinbase_pro", defined_name, preferences_path)
+        Exchange.__init__(self, "coinbase_pro", defined_name, settings_path)
 
         if self.preferences["settings"]["use_sandbox"]:
             self.__calls = Coinbase_Pro_API(auth[0], auth[1], auth[2],

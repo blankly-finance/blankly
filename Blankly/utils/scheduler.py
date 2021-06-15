@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import warnings
 
 from Blankly.utils.time_builder import time_interval_to_seconds
 import threading
@@ -23,26 +24,27 @@ import traceback
 
 
 class Scheduler:
-    def __init__(self, function, interval, **kwargs):
+    def __init__(self, function, interval, initially_stopped=False, **kwargs):
         """
         Wrapper for functions that run at a set interval
         Args:
             function: Function reference to create the scheduler on ex: self.price_event
             interval: int of delay between calls in seconds, or a string that takes units s, m, h, d w, M, y (second,
-            minute, hour, day, week, month, year) after a magnitude. Examples: "4s", "6h", "10d":
+            minute, hour, day, week, month, year) after a magnitude. Examples: "4s", "6h", "10d".
         """
         if isinstance(interval, str):
             interval = time_interval_to_seconds(interval)
 
         # Stop flag
         self.__stop = False
-
-        self.__thread = threading.Thread(target=self.__threading_wait, args=(function, interval, kwargs))
-        self.__thread.start()
+        self.__thread = None
 
         self.__interval = interval
         self.__kwargs = kwargs
         self.__callback = function
+
+        if not initially_stopped:
+            self.start()
 
         # This can be used for a statically typed, single-process bot decorator.
         # Leaving this because it probably will be used soon
@@ -54,6 +56,20 @@ class Scheduler:
         #         thread.start()
         #     wrapper()
         # return decorator
+
+    def start(self, force=False):
+        """
+        Start the scheduler.
+
+        Args:
+            force: Override multi-thread protection and create more threads of the scheduler callback
+        """
+        if self.__thread is None or force:
+            self.__thread = threading.Thread(target=self.__threading_wait,
+                                             args=(self.__callback, self.__interval, self.__kwargs))
+            self.__thread.start()
+        else:
+            warnings.warn("Scheduler already started and force not enabled...skipping start.")
 
     def get_interval(self):
         """

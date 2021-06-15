@@ -137,7 +137,7 @@ class ICurrencyInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_fees(self):
+    def get_fees(self) -> dict:
         """
         Get market fees
         TODO add return example

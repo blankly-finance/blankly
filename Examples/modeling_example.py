@@ -18,11 +18,17 @@ if __name__ == "__main__":
                                             Blankly.time_builder.build_day())
     # Create X-axis
     x = range(len(history['close']))
+
+    # Shift the graph to match
+    shift = [shift + 99 for shift in x]
     # Plot 100 day moving average
-    p.line(x, Blankly.indicators.sma(history["close"], 100), line_width=2, line_color='pink',
+    p.line(shift, Blankly.indicators.sma(history["close"], 100), line_width=2, line_color='pink',
            legend_label="100d SMA")
+
+    # Shift the graph to match
+    shift = [shift+49 for shift in x]
     # Plot 50 day moving average
-    p.line(x, Blankly.indicators.sma(history["close"], 50), line_width=2, line_color='yellow',
+    p.line(shift, Blankly.indicators.sma(history["close"], 50), line_width=2, line_color='yellow',
            legend_label="50d SMA")
 
     # Plot close price
@@ -34,4 +40,3 @@ if __name__ == "__main__":
     p.legend.title_text_font_style = "bold"
     p.legend.title_text_font_size = "20px"
     show(p)
-

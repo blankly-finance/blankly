@@ -1,6 +1,6 @@
 """
-    Coinbase Pro exchange definitions and setup
-    Copyright (C) 2021  Emerson Dove
+    Alpaca exchange definitions and setup
+    Copyright (C) 2021  Emerson Dove, Arun Annamalai, Brandon Fan
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -22,11 +22,11 @@ from Blankly.auth.utils import default_first_portfolio
 from Blankly.interface.currency_factory import InterfaceFactory
 
 class Alpaca(Exchange):
-    def __init__(self, portfolio_name=None, auth_path="Keys.json", preferences_path=None):
+    def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
         if not portfolio_name:
-            portfolio_name = default_first_portfolio(auth_path, 'alpaca')
-        Exchange.__init__(self, 'alpaca', portfolio_name, preferences_path)
-        alpaca_auth = AuthFactory(auth_path, 'alpaca', portfolio_name)
+            portfolio_name = default_first_portfolio(keys_path, 'alpaca')
+        Exchange.__init__(self, 'alpaca', portfolio_name, settings_path)
+        alpaca_auth = AuthFactory(keys_path, 'alpaca', portfolio_name)
         self.interface = InterfaceFactory('alpaca', alpaca_auth, self.preferences)
 
 

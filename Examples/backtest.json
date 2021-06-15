@@ -1,0 +1,27 @@
+{
+  "price_data": {
+    "assets": [
+      [
+        "BTC-USD",
+        1621726015,
+        1622590015,
+        3600.0
+      ],
+      [
+        "BTC-USD",
+        1591389962.5150762,
+        1622925962.515081,
+        3600.0
+      ]
+    ]
+  },
+  "settings": {
+    "use_price": "close",
+    "smooth_prices": false,
+    "GUI_output": true,
+    "show_tickers_with_zero_delta": false,
+    "save_initial_account_value": false,
+    "show_progress_during_backtest": false,
+    "cache_location": "./price_caches"
+  }
+}

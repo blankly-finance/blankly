@@ -19,7 +19,7 @@ import Blankly.utils.utils
 import Blankly.auth_constructor
 import requests
 
-from Blankly.exchanges.Coinbase_Pro.orderbook_websocket import OrderBook as Coinbase_Pro_Orderbook
+from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Websocket import Tickers as Coinbase_Pro_Orderbook
 from Blankly.exchanges.Binance.Binance_Websocket import Tickers as Binance_Orderbook
 
 from Blankly.exchanges.websocket_manager import WebsocketManager
@@ -84,10 +84,10 @@ class OrderbookManger(WebsocketManager):
         if exchange_name == "coinbase_pro":
             if currency_id is None:
                 currency_id = self.__default_currency
-            websocket = Coinbase_Pro_Orderbook(currency_id)
+            websocket = Coinbase_Pro_Orderbook(currency_id, "level2", pre_event_callback=self.coinbase_snapshot_update)
             # This is where the sorting magic happens
             websocket.append_callback(self.coinbase_update)
-            websocket.append_snapshot_callback(self.coinbase_snapshot_update)
+
             # Store this object
             self.__websockets['coinbase_pro'][currency_id] = websocket
             self.__websockets_callbacks['coinbase_pro'][currency_id] = callback
@@ -160,7 +160,7 @@ class OrderbookManger(WebsocketManager):
         self.__websockets_callbacks['coinbase_pro'][update['product_id']](book)
 
     def binance_update(self, update):
-        # TODO this needs a snapshot to work correctly
+        # TODO this needs a snapshot to work correctly, which needs arun's rest code
         # Get symbol first
         symbol = update['s']
 
@@ -210,5 +210,20 @@ class OrderbookManger(WebsocketManager):
         if override_exchange is None:
             override_exchange = self.__default_exchange
 
-        # if override_exchange == "coinbase_pro":
         self.__websockets_callbacks[override_exchange][override_currency_id] = callback_object
+
+    def get_most_recent_orderbook(self, override_currency_id=None, override_exchange=None):
+        """
+        Get the most recent orderbook under a currency and exchange.
+
+        Args:
+            override_currency_id: Ticker id, such as "BTC-USD" or exchange equivalents.
+            override_exchange: Forces the manager to use a different supported exchange.
+        """
+        if override_currency_id is None:
+            override_currency_id = self.__default_currency
+
+        if override_exchange is None:
+            override_exchange = self.__default_exchange
+
+        return self.__orderbooks[override_exchange][override_currency_id]

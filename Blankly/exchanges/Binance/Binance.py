@@ -25,11 +25,11 @@ from binance.client import Client
 
 
 class Binance(Exchange):
-    def __init__(self, portfolio_name=None, auth_path="Keys.json", preferences_path=None):
+    def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
         # Load the auth from the keys file
-        auth, defined_name = Blankly.auth_constructor.load_auth_binance(auth_path, portfolio_name)
+        auth, defined_name = Blankly.auth_constructor.load_auth_binance(keys_path, portfolio_name)
 
-        Exchange.__init__(self, "binance", defined_name, preferences_path)
+        Exchange.__init__(self, "binance", defined_name, settings_path)
 
         preferences = utils.load_user_preferences()
         if preferences["settings"]["use_sandbox"] or preferences["settings"]["paper_trade"]:

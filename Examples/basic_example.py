@@ -16,9 +16,12 @@ if __name__ == "__main__":
     interface = coinbase_pro.get_interface()
 
     # Use our strategy helper on coinbase pro
-    coinbase_strategy = Blankly.StrategyHelper(coinbase_pro)
+    coinbase_strategy = Blankly.Strategy(coinbase_pro)
 
     # Run the price event function every time we check for a new price - by default that is 15 seconds
     coinbase_strategy.add_price_event(price_event, currency_pair='BTC-USD', resolution='15s')
     coinbase_strategy.add_price_event(price_event, currency_pair='LINK-USD', resolution='15s')
     coinbase_strategy.add_price_event(price_event, currency_pair='ETH-BTC', resolution='15s')
+
+    # Start the strategy. This will begin each of the price event ticks
+    coinbase_strategy.start()

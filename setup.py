@@ -14,7 +14,7 @@ setup(
     name='Blankly',  # How you named your package folder (MyLib)
     packages=find_packages(),
     # packages=['Blankly'],  # Potentially should be the same thing as name
-    version='v0.1.11-alpha',
+    version='v0.1.12-alpha',
     license='lgpl-3.0',  # Licenses: https://help.github.com/articles/licensing-a-repository
     description='Cryptocurrency bot development platform',  # Give a short description about your library
     long_description=long_description,
@@ -35,7 +35,9 @@ setup(
         'python-binance',
         'tulipy',
         'alpaca-trade-api',
-        'pytest'
+        'pytest',
+        'bokeh',
+        'pytest-mock'
     ],
     classifiers=[
         # Possible: "3 - Alpha", "4 - Beta" or "5 - Production/Stable"
