@@ -59,6 +59,7 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
                 ["created_at", float],
                 ["funds", float],
                 ["status", str],
+                ["time_in_force", str],
                 ["type", str],
                 ["side", str]
             ],

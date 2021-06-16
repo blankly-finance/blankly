@@ -341,6 +341,10 @@ def compare_dictionaries(dict1, dict2) -> bool:
     Returns:
         bool: Are the non specific tags the same?
     """
+
+    # Make copies of the dictionaries
+    dict1 = {**dict1}
+    dict2 = {**dict2}
     if "exchange_specific" not in dict1:
         raise KeyError("Exchange specific tag not in: " + str(dict1))
 

@@ -28,10 +28,6 @@ def compare_responses(response_list):
     Compare a set of responses against the others. This supports a large set of interfaces
     """
     for i in range(len(response_list)-1):
-        print("0-0-0-0")
-        print(response_list[i])
-        print(response_list[i+1])
-        print("0-0-0-0")
         if not compare_dictionaries(response_list[i], response_list[i+1]):
             print("Failed checking index " + str(i+1) + " against index " + str(i))
             return False
@@ -71,9 +67,6 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
         for i in range(len(self.Interfaces)):
             responses.append(self.Interfaces[i].get_account()[0])
-        print("000")
-        print(responses)
-        print("000")
         self.assertTrue(compare_responses(responses))
 
     def check_market_order(self, order1: MarketOrder, side, funds):
@@ -88,7 +81,6 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertLess(order1.get_funds(), funds)
         self.assertEqual(order1.get_type(), 'market')
 
-        self.assertLess(order1.get_purchase_time(), time.time())
         self.assertEqual(order1.get_time_in_force(), "GTC")
 
     def test_market_order(self):
@@ -101,8 +93,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         binance_buy = self.Binance_Interface.market_order('BTC-USDT', 'buy', 20)
         binance_sell = self.Binance_Interface.market_order('BTC-USDT', 'sell', 20)
 
-        self.assertTrue(self.check_market_order(binance_buy, 'buy', 20))
-        self.assertTrue(self.check_market_order(binance_sell, 'sell', 20))
+        self.check_market_order(binance_buy, 'buy', 20)
+        self.check_market_order(binance_sell, 'sell', 20)
 
         self.assertTrue(compare_dictionaries(binance_buy.get_response(), binance_sell.get_response()))
         self.assertTrue(compare_dictionaries(binance_buy.get_status(full=True), binance_sell.get_status(full=True)))

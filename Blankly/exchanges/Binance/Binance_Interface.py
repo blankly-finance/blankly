@@ -274,24 +274,54 @@ class BinanceInterface(CurrencyInterface):
             "type": "MARKET",       <-- Similar
             "side": "SELL"      <-- Similar
         }
-        """
-        order = {
-            'funds': funds,
-            'side': side,
-            'product_id': product_id,
-            'type': 'market'
+        
+        Actual response buying 20 dollars worth
+        {
+            'symbol': 'BTCUSDT', 
+            'orderId': 3038554, 
+            'orderListId': -1, 
+            'clientOrderId': 'xJqha6DQgdYHNdxuVqV2BZ', 
+            'transactTime': 1623800280187, 
+            'price': '0.00000000', 
+            'origQty': '0.00049600', 
+            'executedQty': '0.00049600', 
+            'cummulativeQuoteQty': '19.99128000', 
+            'status': 'FILLED', 
+            'timeInForce': 'GTC', 
+            'type': 'MARKET', 
+            'side': 'BUY', 
+            'fills': [
+                {
+                    'price': '40305.00000000', 
+                    'qty': '0.00049600', 
+                    'commission': '0.00000000', 
+                    'commissionAsset': 'BTC', 
+                    'tradeId': 564349
+                }
+            ]
         }
+        """
         renames = [
             ["symbol", "product_id"],
             ["orderId", "id"],
             ["transactTime", "created_at"],
             ["origQty", "size"],
             ["timeInForce", "time_in_force"],
+            ["cummulativeQuoteQty", "funds"]
         ]
+        order = {
+            'funds': funds,
+            'side': side,
+            'product_id': product_id,
+            'type': 'market'
+        }
         modified_product_id = utils.to_exchange_coin_id(product_id, "binance")
         # The interface here will be the query of order status from this object, because orders are dynamic
         # creatures
         response = self.calls.order_market(symbol=modified_product_id, side=side, quoteOrderQty=funds)
+        response['side'] = response['side'].lower()
+        response['type'] = response['type'].lower()
+        response['status'] = response['status'].lower()
         response["transactTime"] = response["transactTime"] / 1000
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
@@ -481,6 +511,7 @@ class BinanceInterface(CurrencyInterface):
             ["origQty", "size"],
             ["isWorking", "status"]
         ]
+        currency_id = utils.to_exchange_coin_id(currency_id, 'binance')
         response = self.calls.get_order(symbol=currency_id, orderId=int(order_id))
         response = utils.rename_to(renames, response)
         return utils.isolate_specific(needed, response)
