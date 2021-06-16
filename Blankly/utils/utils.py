@@ -368,6 +368,12 @@ def compare_dictionaries(dict1, dict2) -> bool:
                 return False
             else:
                 valid_keys.append(key)
+                # This code can more specifically compare the key pairs
+                # if dict1[key] == dict2[key]:
+                #     valid_keys.append(key)
+                # else:
+                #     print("Types of keys are the same, however " + str(dict1[key]) + " != " + str(dict2[key]) + ".")
+                #     return False
         else:
             # Issue detected
             print(key + " found in dict1 but not in " + str(dict2))
@@ -415,5 +421,6 @@ def update_progress(progress):
 class AttributeDict(dict):
     def __getattr__(self, attr):
         return self[attr]
+
     def __setattr__(self, attr, value):
         self[attr] = value

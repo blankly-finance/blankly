@@ -15,6 +15,8 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
+
 import Blankly
 from Blankly.utils.utils import compare_dictionaries
 import unittest
@@ -81,8 +83,6 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertLess(order1.get_funds(), funds)
         self.assertEqual(order1.get_type(), 'market')
 
-        self.assertEqual(order1.get_time_in_force(), "GTC")
-
     def test_market_order(self):
         # Make sure to buy back the funds we're loosing from fees - minimum balance of .1 bitcoin
         btc_account = self.Binance_Interface.get_account(currency="BTC")['available']
@@ -98,3 +98,29 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         self.assertTrue(compare_dictionaries(binance_buy.get_response(), binance_sell.get_response()))
         self.assertTrue(compare_dictionaries(binance_buy.get_status(full=True), binance_sell.get_status(full=True)))
+
+        coinbase_buy = self.Coinbase_Pro_Interface.market_order('BTC-USD', 'buy', 20)
+        coinbase_sell = self.Coinbase_Pro_Interface.market_order('BTC-USD', 'sell', 20)
+
+        self.assertTrue(compare_dictionaries(coinbase_buy.get_response(), coinbase_sell.get_response()))
+        print(coinbase_buy.get_status(full=True))
+        print(coinbase_sell.get_status(full=True))
+        self.assertTrue(compare_dictionaries(coinbase_buy.get_status(full=True), coinbase_sell.get_status(full=True)))
+
+        response_list = [coinbase_buy.get_response(),
+                         coinbase_sell.get_response(),
+                         binance_buy.get_response(),
+                         binance_sell.get_response()
+                         ]
+
+        time.sleep(1)
+
+        status_list = [coinbase_buy.get_status(full=True),
+                       coinbase_sell.get_status(full=True),
+                       binance_buy.get_status(full=True),
+                       binance_sell.get_status(full=True)
+                       ]
+
+        self.assertTrue(compare_responses(response_list))
+
+        self.assertTrue(compare_responses(status_list))

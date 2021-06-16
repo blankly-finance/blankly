@@ -429,7 +429,6 @@ class BinanceInterface(CurrencyInterface):
         """
         List open orders.
         """
-        needed = self.needed['get_open_orders']
         """
         [
             {
@@ -457,29 +456,31 @@ class BinanceInterface(CurrencyInterface):
         renames = [
             ["orderId", "id"],
             ["origQty", "size"],
-            ["isWorking", "status"],
-            ["symbol", "product_id"]
+            ["symbol", "product_id"],
+            ["cummulativeQuoteQty", "funds"],
+            ["time", "created_at"]
         ]
 
         if product_id is not None:
             product_id = utils.to_exchange_coin_id(product_id, "binance")
             orders = self.calls.get_open_orders(symbol=product_id)
-            orders = utils.rename_to(renames, orders)
-            orders = utils.isolate_specific(needed, orders)
-            orders['product_id'] = utils.to_blankly_coin_id(orders['product_id'], 'binance', quote_guess=None)
-            return orders
         else:
             orders = self.calls.get_open_orders()
 
         for i in range(len(orders)):
             orders[i] = utils.rename_to(renames, orders[i])
+            orders[i]['type'] = orders[i]['type'].lower()
+            orders[i]['side'] = orders[i]['side'].lower()
+            orders[i]['status'] = orders[i]['status'].lower()
+            orders[i]['created_at'] = orders[i]['created_at'] / 1000
+            orders[i]['product_id'] = utils.to_blankly_coin_id(orders[i]['product_id'], 'binance')
+            needed = self.choose_order_specificity(orders[i]['type'])
             orders[i] = utils.isolate_specific(needed, orders[i])
             orders[i]['product_id'] = utils.to_blankly_coin_id(orders[i]['product_id'], 'binance', quote_guess=None)
 
         return orders
 
     def get_order(self, currency_id, order_id) -> dict:
-        needed = self.needed['get_order']
         """
         :param symbol: required
         :type symbol: str
@@ -509,12 +510,24 @@ class BinanceInterface(CurrencyInterface):
         renames = [
             ["orderId", "id"],
             ["origQty", "size"],
-            ["isWorking", "status"]
+            ["symbol", "product_id"],
+            ["cummulativeQuoteQty", "funds"],
+            ["time", "created_at"]
         ]
+
         currency_id = utils.to_exchange_coin_id(currency_id, 'binance')
         response = self.calls.get_order(symbol=currency_id, orderId=int(order_id))
+
         response = utils.rename_to(renames, response)
-        return utils.isolate_specific(needed, response)
+        response['type'] = response['type'].lower()
+        response['side'] = response['side'].lower()
+        response['status'] = response['status'].lower()
+        response['created_at'] = response['created_at']/1000
+        response['product_id'] = utils.to_blankly_coin_id(response['product_id'], 'binance')
+        needed = self.choose_order_specificity(response['type'])
+        response = utils.isolate_specific(needed, response)
+
+        return response
 
     """
     Coinbase Pro: get_fees
