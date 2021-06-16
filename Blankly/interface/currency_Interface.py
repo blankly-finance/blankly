@@ -59,7 +59,6 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
                 ["created_at", float],
                 ["funds", float],
                 ["status", str],
-                ["time_in_force", str],
                 ["type", str],
                 ["side", str]
             ],
@@ -90,25 +89,25 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
             'cancel_order': [
                 ['order_id', str]
             ],
-            'get_open_orders': [
-                ["id", str],
-                ["price", float],
-                ["size", float],
-                ["type", str],
-                ["side", str],
-                ["status", str],
-                ["product_id", str]
-            ],
-            'get_order': [
-                ["id", str],
-                ["product_id", str],
-                ["price", float],
-                ["size", float],
-                ["type", str],
-                ["side", str],
-                ["status", str],
-                ["funds", float]
-            ],
+            # 'get_open_orders': [  # Key specificity changes based on order type
+            #     ["id", str],
+            #     ["price", float],
+            #     ["size", float],
+            #     ["type", str],
+            #     ["side", str],
+            #     ["status", str],
+            #     ["product_id", str]
+            # ],
+            # 'get_order': [
+            #     ["product_id", str],
+            #     ["id", str],
+            #     ["price", float],
+            #     ["size", float],
+            #     ["type", str],
+            #     ["side", str],
+            #     ["status", str],
+            #     ["funds", float]
+            # ],
             'get_fees': [
                 ['maker_fee_rate', float],
                 ['taker_fee_rate', float]
@@ -166,3 +165,13 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
 
     def get_product_history(self, product_id, epoch_start, epoch_stop, granularity):
         return utils.convert_epochs(epoch_start), utils.convert_epochs(epoch_stop)
+
+    def choose_order_specificity(self, order_type):
+        # This lower should not be necessary if everything is truly homogeneous
+        order_type = order_type.lower()
+        if order_type == 'market':
+            return self.needed['market_order']
+        elif order_type == 'limit':
+            return self.needed['limit_order']
+        else:
+            return self.needed['market_order']

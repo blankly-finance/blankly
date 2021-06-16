@@ -274,7 +274,6 @@ class CoinbaseProInterface(CurrencyInterface):
         """
         List open orders.
         """
-        needed = self.needed['get_open_orders']
         """
         [
             {
@@ -310,12 +309,13 @@ class CoinbaseProInterface(CurrencyInterface):
             raise InvalidOrder("Invalid Order: " + str(orders))
 
         for i in range(len(orders)):
+            orders[i]["created_at"] = utils.epoch_from_ISO8601(orders[i]["created_at"])
+            needed = self.choose_order_specificity(orders[i]['type'])
             orders[i] = utils.isolate_specific(needed, orders[i])
 
         return orders
 
     def get_order(self, currency_id, order_id) -> dict:
-        needed = self.needed['get_order']
         """
         {
             "created_at": "2017-06-18T00:27:42.920136Z",
@@ -355,6 +355,14 @@ class CoinbaseProInterface(CurrencyInterface):
         }
         """
         response = self.calls.get_order(order_id)
+        response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
+
+        if response['type'] == 'market':
+            needed = self.needed['market_order']
+        elif response['type'] == 'limit':
+            needed = self.needed['limit_order']
+        else:
+            needed = self.needed['market_order']
         return utils.isolate_specific(needed, response)
 
     """
