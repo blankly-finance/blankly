@@ -15,8 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
-
+from Blankly.auth.utils import default_first_portfolio
 from Blankly.exchanges.exchange import Exchange
 import Blankly.auth_constructor
 import Blankly.utils.utils as utils
@@ -26,23 +25,9 @@ from binance.client import Client
 
 class Binance(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
-        # Load the auth from the keys file
-        auth, defined_name = Blankly.auth_constructor.load_auth_binance(keys_path, portfolio_name)
-
-        Exchange.__init__(self, "binance", defined_name, settings_path)
-
-        preferences = utils.load_user_preferences()
-        if preferences["settings"]["use_sandbox"] or preferences["settings"]["paper_trade"]:
-            self.__calls = Client(api_key=auth[0], api_secret=auth[1],
-                                  tld=self.get_preferences()["settings"]["binance_tld"],
-                                  testnet=True)
-        else:
-            self.__calls = Client(api_key=auth[0], api_secret=auth[1],
-                                  tld=self.get_preferences()["settings"]["binance_tld"])
-
-        Blankly.auth_constructor.write_auth_cache("binance", defined_name, self.__calls)
-
-        self.construct_interface(self.__calls)
+        if not portfolio_name:
+            portfolio_name = default_first_portfolio(keys_path, 'binance')
+        Exchange.__init__(self, "binance", portfolio_name, keys_path, settings_path)
 
     """
     Builds information about the currency on this exchange by making particular API calls
