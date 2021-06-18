@@ -23,6 +23,7 @@ import unittest
 import time
 
 from Blankly.utils.purchases.market_order import MarketOrder
+from Blankly.utils.purchases.limit_order import LimitOrder
 
 
 def compare_responses(response_list):
@@ -124,3 +125,47 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertTrue(compare_responses(response_list))
 
         self.assertTrue(compare_responses(status_list))
+
+    def check_limit_order(self, limit_order: LimitOrder, expected_side: str, size, product_id):
+        self.assertEqual(limit_order.get_side(), expected_side)
+        self.assertEqual(limit_order.get_type(), 'limit')
+        self.assertEqual(limit_order.get_time_in_force(), 'GTC')
+        self.assertEqual(limit_order.get_status(), 'pending')
+        self.assertEqual(limit_order.get_quantity(), size)
+        self.assertEqual(limit_order.get_product_id(), product_id)
+
+    def test_limit_order(self):
+        binance_limits = self.Binance_Interface.get_market_limits('BTC-USDT')
+
+        binance_buy = self.Binance_Interface.limit_order('BTC-USDT', 'buy', int(binance_limits['min_price']+10), .001)
+        self.check_limit_order(binance_buy, 'buy', .001, 'BTC-USDT')
+
+        coinbase_buy = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'buy', 0, .001)
+        self.check_limit_order(coinbase_buy, 'buy', .001, 'BTC-USD')
+
+        binance_sell = self.Binance_Interface.limit_order('BTC-USDT', 'sell', int(binance_limits['max_price']-10), .001)
+        self.check_limit_order(binance_sell, 'sell', .001, 'BTC-USDT')
+
+        coinbase_sell = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'sell', 100000, .001)
+        self.check_limit_order(coinbase_sell, 'sell', .001, 'BTC-USD')
+
+        limits = [binance_buy, coinbase_buy, binance_sell, coinbase_sell]
+        responses = []
+        status = []
+
+        cancels = []
+
+        for i in limits:
+            responses.append(i.get_response())
+            status.append(i.get_status(full=True))
+
+        self.assertTrue(compare_responses(responses))
+        self.assertTrue(compare_responses(status))
+
+        cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_buy.get_id()))
+        cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_sell.get_id()))
+
+        cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_sell.get_id()))
+        cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_buy.get_id()))
+
+        self.assertTrue(compare_responses(cancels))
