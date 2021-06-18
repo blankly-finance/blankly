@@ -1,6 +1,6 @@
 from Blankly.strategy.order import Order
 import Blankly
-from Blankly.strategy.strategy_base import Strategy, StrategyState
+from Blankly.strategy import Strategy, StrategyState
 
 
 def golden_cross(price, ticker, state: StrategyState):
