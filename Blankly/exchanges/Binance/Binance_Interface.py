@@ -679,7 +679,6 @@ class BinanceInterface(CurrencyInterface):
     """
 
     def get_market_limits(self, product_id):
-        needed = self.needed['get_market_limits']
         """
         Optimally we'll just remove the filter section and make the returns accurate
         {
@@ -754,13 +753,15 @@ class BinanceInterface(CurrencyInterface):
         if current_price is None:
             raise LookupError("Specified market not found")
 
+        print(symbol_data)
+
         filters = symbol_data["filters"]
         hard_min_price = float(filters[0]["minPrice"])
         hard_max_price = float(filters[0]["maxPrice"])
         quote_increment = float(filters[0]["tickSize"])
 
-        percent_min_price = float(filters[1]["multiplierUp"]) * current_price
-        percent_max_price = float(filters[1]["multiplierDown"]) * current_price
+        percent_min_price = float(filters[1]["multiplierDown"]) * current_price
+        percent_max_price = float(filters[1]["multiplierUp"]) * current_price
 
         min_quantity = float(filters[2]["minQty"])
         max_quantity = float(filters[2]["maxQty"])
@@ -768,15 +769,15 @@ class BinanceInterface(CurrencyInterface):
 
         max_orders = int(filters[6]["maxNumOrders"])
 
-        if hard_min_price < percent_min_price:
-            min_price = percent_min_price
-        else:
+        if percent_min_price < hard_min_price:
             min_price = hard_min_price
-
-        if hard_max_price > percent_max_price:
-            max_price = percent_max_price
         else:
+            min_price = percent_min_price
+
+        if percent_max_price > hard_max_price:
             max_price = hard_max_price
+        else:
+            max_price = percent_max_price
 
         return {
             "market": product_id,
