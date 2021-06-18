@@ -95,7 +95,7 @@ class Strategy:
         price = self.Interface.get_price(currency_pair)
 
         state = StrategyState(self, self.Interface, variables, resolution)
-        return callback(price, currency_pair, self.Interface, state)
+        return callback(price, currency_pair) #, self.Interface, state)
 
     def __price_event_websocket(self, **kwargs):
         callback = kwargs['callback']
@@ -105,7 +105,7 @@ class Strategy:
 
         price = self.Ticker_Manager.get_most_recent_tick(override_currency=currency_pair)
         state = StrategyState(self, self.Interface, variables, resolution)
-        return callback(price, currency_pair, self.Interface, state)
+        return callback(price, currency_pair) #, self.Interface, state)
 
     def add_orderbook_event(self, callback: typing.Callable, currency_pair: str):
         """
@@ -138,7 +138,7 @@ class Strategy:
         variables = kwargs['variables']
         state = StrategyState(self, self.Interface, variables)
         book = self.Orderbook_Manager.get_most_recent_orderbook(override_currency_id=currency_pair)
-        callback(book, currency_pair, self.Interface, state)
+        callback(book, currency_pair) #, self.Interface, state)
     
     def backtest(self, 
                  initial_values: dict = None,
