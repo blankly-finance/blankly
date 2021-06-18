@@ -86,27 +86,6 @@ class Strategy:
         Function to skip & ignore callbacks
         """
         pass
-
-    # def __process_orders(self, orders: typing.Any, currency_pair: str):
-    #     if orders is None:
-    #         return
-    #     is_list_of_orders = isinstance(orders, list) and not isinstance(orders[0], Order)
-    #     is_np_array_of_orders = isinstance(orders, np.array) and not isinstance(orders[0], Order)
-    #
-    #     if is_list_of_orders or is_np_array_of_orders or not isinstance(orders, Order):
-    #         raise ValueError("Expected an Order or a list of Orders but instead " + type(orders[0]))
-    #
-    #     if isinstance(orders, list) or isinstance(orders, np.array):
-    #         for order in orders:
-    #             self.__submit_order(order, currency_pair)
-    #     else:
-    #         self.__submit_order(orders, currency_pair)
-    #
-    # def __submit_order(self, order: Order, currency_pair: str):
-    #     if order.type == 'market':
-    #         self.Interface.market_order(currency_pair, order.side, order.amount)
-    #     if order.type == 'limit':
-    #         self.Interface.limit_order(currency_pair, order.side, order.price, order.amount)
         
     def __price_event_rest(self, **kwargs):
         callback = kwargs['callback']
@@ -116,8 +95,7 @@ class Strategy:
         price = self.Interface.get_price(currency_pair)
 
         state = StrategyState(self, self.Interface, variables, resolution)
-        orders = callback(price, currency_pair)  # self.Interface, state)
-        # self.__process_orders(orders, currency_pair)
+        return callback(price, currency_pair, self.Interface, state)
 
     def __price_event_websocket(self, **kwargs):
         callback = kwargs['callback']
@@ -127,8 +105,7 @@ class Strategy:
 
         price = self.Ticker_Manager.get_most_recent_tick(override_currency=currency_pair)
         state = StrategyState(self, self.Interface, variables, resolution)
-        orders = callback(price, currency_pair)  # self.Interface, state)
-        # self.__process_orders(orders, currency_pair)
+        return callback(price, currency_pair, self.Interface, state)
 
     def add_orderbook_event(self, callback: typing.Callable, currency_pair: str):
         """
@@ -159,13 +136,9 @@ class Strategy:
         callback = kwargs['callback']
         currency_pair = kwargs['currency_pair']
         variables = kwargs['variables']
-
-        book = self.Orderbook_Manager.get_most_recent_orderbook(override_currency_id=currency_pair)
         state = StrategyState(self, self.Interface, variables)
-        orders = callback(book, currency_pair)  # self.Interface, state)
-        # is_arr_type = isinstance(orders, list) or isinstance(orders, np.array)
-        # if is_arr_type and isinstance(orders[0], Order):
-        #     raise ValueError("It is best that you directly use the interface for orderbook event orders")
+        book = self.Orderbook_Manager.get_most_recent_orderbook(override_currency_id=currency_pair)
+        callback(book, currency_pair, self.Interface, state)
     
     def backtest(self, 
                  initial_values: dict = None,
@@ -174,7 +147,7 @@ class Strategy:
                  end_date: str = None,
                  save: bool = False,
                  settings_path: str = None,
-                 optional_indicator: typing.Callable = None,
+                 callbacks: list[typing.Callable] = None,
                  **kwargs
                  ):
         """
@@ -192,7 +165,7 @@ class Strategy:
             save (bool): Save the price data references to the data required for the backtest as well as
                 overriden settings.
             settings_path (str): Path to the backtest.json file.
-            optional_indicator (callable): A function which takes a single dataframe parameter to the
+            callbacks (list of callables): Custom functions that will be run at the end of the backtest
 
             Keyword Arguments:
                 **Use these to override parameters in the backtest.json file**
@@ -239,7 +212,7 @@ class Strategy:
         self.Interface = self.__paper_trade_exchange.get_interface()
         backtesting_controller = BackTestController(self.__paper_trade_exchange,
                                                     backtest_settings_path=settings_path,
-                                                    user_callback=optional_indicator
+                                                    callbacks=callbacks
                                                     )
 
         # Write any kwargs as settings to the settings - save if enabled.
