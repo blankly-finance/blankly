@@ -42,7 +42,7 @@ def to_string_key(separated_list):
 
 
 class BackTestController:
-    def __init__(self, paper_trade_exchange: PaperTrade, backtest_settings_path: str =None, callbacks: list[typing.Callable] =[]):
+    def __init__(self, paper_trade_exchange: PaperTrade, backtest_settings_path: str = None, user_callback=None):
         self.preferences = load_backtest_preferences(backtest_settings_path)
         self.backtest_settings_path = backtest_settings_path
         if not paper_trade_exchange.get_type() == "paper_trade":
@@ -50,7 +50,7 @@ class BackTestController:
         self.interface = paper_trade_exchange.get_interface()  # type: PaperTradeInterface
 
         self.price_events = []
-        self.callbacks = callbacks
+        self.user_callback = user_callback
 
         self.current_time = None
         self.initial_time = None
@@ -291,8 +291,12 @@ class BackTestController:
 
             show(bokeh_columns(figures))
 
-        for callback in self.callbacks:
-            # TODO: Finish this logic here, what to print? What else to handle? 
-            callback(cycle_status)
+        return_dict = {
+            'history': cycle_status
+        }
+
+        if self.user_callback is not None:
+            return_dict['custom_callback'] = self.user_callback(cycle_status)
+
         self.interface.set_backtesting(False)
-        return cycle_status
+        return return_dict
