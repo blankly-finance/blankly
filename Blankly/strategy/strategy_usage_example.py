@@ -3,10 +3,11 @@ import Blankly
 from Blankly.strategy.strategy_base import Strategy, StrategyState
 
 
-def golden_cross(price, ticker, interface: Blankly.Interface, state: StrategyState):
+def golden_cross(price, ticker, state: StrategyState):
     resolution: str = state.resolution # get the resolution that this price event is stored at
     variables = state.variables # each price event has it's own local variable state
-
+    interface: Blankly.Interface = state.interface
+    
     account = interface.account # get account holdings
 
     historical_prices = Blankly.historical(ticker, 50, resolution=resolution)
