@@ -20,12 +20,13 @@ import abc
 from Blankly.auth.utils import load_json
 
 class auth_interface(abc.ABC):
-    def __init__(self, keys_file, portfolio_name, exchange):
+    def __init__(self, keys_file: str, portfolio_name: str, exchange: str):
         """
-        Create a currency interface
+        Create a auth interface
         Args:
             keys_file (str): filepath to keys.json
             portfolio_name (str): name of portfolio
+            exchange (str): name of exchange
         """
         assert keys_file
         assert portfolio_name
