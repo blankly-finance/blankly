@@ -32,7 +32,7 @@ class InterfaceFactory:
             return calls, BinanceInterface(exchange_name, calls)
 
         elif exchange_name == 'alpaca':
-            calls = create_alpaca_client(auth.raw_cred, preferences["settings"]["use_sandbox"])
+            calls = create_alpaca_client(auth, preferences["settings"]["use_sandbox"])
             return calls, AlpacaInterface(calls, preferences_path)
 
         elif exchange_name == 'paper_trade':
