@@ -1,6 +1,7 @@
 import json
 import warnings
 
+
 def load_json(keys_file):
     try:
         f = open(keys_file)
@@ -8,6 +9,7 @@ def load_json(keys_file):
     except FileNotFoundError:
         raise FileNotFoundError("Make sure a Keys.json file is placed in the same folder as the project working "
                                 "directory!")
+
 
 def default_first_portfolio(keys_file, exchange_name):
     auth_object = load_json(keys_file)

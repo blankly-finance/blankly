@@ -19,7 +19,8 @@
 import abc
 from Blankly.auth.utils import load_json
 
-class auth_interface(abc.ABC):
+
+class AuthInterface(abc.ABC):
     def __init__(self, keys_file: str, portfolio_name: str, exchange: str):
         """
         Create a auth interface
@@ -33,7 +34,8 @@ class auth_interface(abc.ABC):
         assert exchange
         self.portfolio_name = portfolio_name
         self.exchange = exchange
-        self.raw_cred = self.load_credentials(keys_file, portfolio_name, exchange)
+        self.raw_cred = self.\
+            load_credentials(keys_file, portfolio_name, exchange)
 
     def load_credentials(self, keys_file, portfolio_name, exchange):
         """

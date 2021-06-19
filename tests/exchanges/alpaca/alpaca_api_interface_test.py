@@ -1,5 +1,5 @@
 from Blankly.auth.Alpaca.auth import alpaca_auth
-from Blankly.interface.currency_factory import InterfaceFactory
+from Blankly.auth.direct_calls_factory import InterfaceFactory
 import pytest
 from pytest_mock import MockerFixture
 

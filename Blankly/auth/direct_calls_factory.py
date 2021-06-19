@@ -1,4 +1,4 @@
-from Blankly.auth.abc_auth import auth_interface
+from Blankly.auth.abc_auth import AuthInterface
 from Blankly.exchanges.Alpaca.alpaca_api_interface import AlpacaInterface
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
 from binance.client import Client
@@ -7,9 +7,10 @@ from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Interface import CoinbaseProInt
 from Blankly.exchanges.Binance.Binance_Interface import BinanceInterface
 import Blankly.utils.utils as utils
 
+
 class InterfaceFactory:
     @staticmethod
-    def create_interface(exchange_name: str, auth: auth_interface, preferences_path: str = None):
+    def create(exchange_name: str, auth: AuthInterface, preferences_path: str = None):
         preferences = utils.load_user_preferences(preferences_path)
         if exchange_name == 'coinbase_pro':
             if preferences["settings"]["use_sandbox"]:
@@ -18,18 +19,22 @@ class InterfaceFactory:
                 # Create the authenticated object
                 calls = Coinbase_Pro_API(auth)
 
-            return CoinbaseProInterface(exchange_name, calls)
+            return calls, CoinbaseProInterface(exchange_name, calls)
 
         elif exchange_name == 'binance':
             if preferences["settings"]["use_sandbox"] or preferences["settings"]["paper_trade"]:
                 calls = Client(api_key=auth.API_KEY, api_secret=auth.API_SECRET,
-                                      tld=preferences["settings"]["binance_tld"],
-                                      testnet=True)
+                               tld=preferences["settings"]["binance_tld"],
+                               testnet=True)
             else:
                 calls = Client(api_key=auth.API_KEY, api_secret=auth.API_SECRET,
-                                      tld=preferences["settings"]["binance_tld"])
-            return BinanceInterface(exchange_name, calls)
+                               tld=preferences["settings"]["binance_tld"])
+            return calls, BinanceInterface(exchange_name, calls)
 
         elif exchange_name == 'alpaca':
-            calls = create_alpaca_client(auth, preferences["settings"]["use_sandbox"])
-            return AlpacaInterface(calls, preferences_path)
+            calls = create_alpaca_client(auth.raw_cred, preferences["settings"]["use_sandbox"])
+            return calls, AlpacaInterface(calls, preferences_path)
+
+        elif exchange_name == 'paper_trade':
+            calls = preferences_path.get_direct_calls()
+            return calls, preferences_path.get_interface()
