@@ -487,7 +487,7 @@ class CoinbaseProInterface(CurrencyInterface):
             raise LookupError("Specified market not found")
 
         products = utils.rename_to(renames, products)
-        products["min_price"] = 0
+        products["min_price"] = .01
         # These don't really exist on this exchange
         products["max_price"] = -1
         products["max_orders"] = -1

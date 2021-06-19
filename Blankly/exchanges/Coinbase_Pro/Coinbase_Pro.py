@@ -53,7 +53,7 @@ class Coinbase_Pro(Exchange):
     GUI Testing Functions | These only exist in the Coinbase_Pro class:
     """
     def get_indicators(self):
-        return self.__calls.get_fees()
+        return self.calls.get_fees()
 
     def filter_relevant(self, dict):
         """
