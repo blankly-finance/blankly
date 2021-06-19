@@ -1,4 +1,4 @@
-from Blankly.auth.Alpaca.auth import alpaca_auth
+from Blankly.auth.Alpaca.auth import AlpacaAuth
 
 import alpaca_trade_api
 import os
@@ -6,7 +6,8 @@ import os
 APCA_API_LIVE_URL = "https://api.alpaca.markets"
 APCA_API_PAPER_URL = "https://paper-api.alpaca.markets"
 
-def create_alpaca_client(auth: alpaca_auth, paper_trading=True):
+
+def create_alpaca_client(auth: AlpacaAuth, paper_trading=True):
     if paper_trading:
         api_url = APCA_API_PAPER_URL
     else:
@@ -14,8 +15,9 @@ def create_alpaca_client(auth: alpaca_auth, paper_trading=True):
 
     return alpaca_trade_api.REST(auth.API_KEY, auth.API_SECRET, api_url, 'v2', raw_data=True)
 
+
 class API:
-    def __init__(self, auth: alpaca_auth, paper_trading=True):
+    def __init__(self, auth: AlpacaAuth, paper_trading=True):
         if paper_trading:
             self.__api_url = APCA_API_PAPER_URL
         else:
