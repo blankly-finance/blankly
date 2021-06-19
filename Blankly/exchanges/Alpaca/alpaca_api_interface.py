@@ -7,6 +7,7 @@ import alpaca_trade_api
 
 from Blankly.utils.purchases.limit_order import LimitOrder
 from Blankly.utils.purchases.market_order import MarketOrder
+from dateutil import parser
 
 class AlpacaInterface(CurrencyInterface):
     def __init__(self, authenticated_API: API, preferences_path: str):
@@ -92,7 +93,8 @@ class AlpacaInterface(CurrencyInterface):
             'product_id': product_id,
             'type': 'market'
         }
-        response = self.calls.submit_order(product_id, side=side, type='market', time_int_force='day', notional=funds)
+        response = self.calls.submit_order(product_id, side=side, type='market', time_in_force='day', notional=funds)
+        response['created_at'] = parser.isoparse(response['created_at']).timestamp()
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
@@ -109,7 +111,6 @@ class AlpacaInterface(CurrencyInterface):
     # TODO: this doesnt exactly fit
     def get_open_orders(self, product_id=None):
         assert isinstance(self.calls, alpaca_trade_api.REST)
-        needed = self.needed['get_open_orders']
         orders = self.calls.list_orders()
         renames = [
             ["asset_id", "product_id"],
@@ -119,13 +120,14 @@ class AlpacaInterface(CurrencyInterface):
         ]
         for order in orders:
             order = utils.rename_to(renames, order)
+            needed = self.choose_order_specificity(order['type'])
             order = utils.isolate_specific(needed, order)
         return orders
 
     def get_order(self, currency_id, order_id) -> dict:
         assert isinstance(self.calls, alpaca_trade_api.REST)
-        needed = self.needed['get_order']
         order = self.calls.get_order(order_id)
+        needed = self.choose_order_specificity(order['type'])
         renames = [
             ["asset_id", "product_id"],
             ["filled_at", "price"],
