@@ -36,5 +36,4 @@ class InterfaceFactory:
             return calls, AlpacaInterface(calls, preferences_path)
 
         elif exchange_name == 'paper_trade':
-            calls = preferences_path.get_direct_calls()
-            return calls, preferences_path.get_interface()
+            return None, None
