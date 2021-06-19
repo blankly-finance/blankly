@@ -2,20 +2,7 @@
 
 name: Blankly Module Tests
 
-on:
-  push:
-    branches:
-      - main
-      - development
-      - *
-      
-  pull_request:
-    branches:
-      - main
-      - development
-
-  workflow_dispatch:
-
+on: [push, pull_request]
 
 jobs:
   build:
