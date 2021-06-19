@@ -425,6 +425,7 @@ class BinanceInterface(CurrencyInterface):
         renames = [
             ["orderId", "order_id"]
         ]
+        currency_id = utils.to_exchange_coin_id(currency_id, 'binance')
         response = self.calls.cancel_order(symbol=currency_id, orderId=order_id)
         response = utils.rename_to(renames, response)
         return utils.isolate_specific(needed, response)
@@ -477,7 +478,6 @@ class BinanceInterface(CurrencyInterface):
             orders[i]['side'] = orders[i]['side'].lower()
             orders[i]['status'] = orders[i]['status'].lower()
             orders[i]['created_at'] = orders[i]['created_at'] / 1000
-            orders[i]['product_id'] = utils.to_blankly_coin_id(orders[i]['product_id'], 'binance')
             needed = self.choose_order_specificity(orders[i]['type'])
             orders[i] = utils.isolate_specific(needed, orders[i])
             orders[i]['product_id'] = utils.to_blankly_coin_id(orders[i]['product_id'], 'binance', quote_guess=None)
