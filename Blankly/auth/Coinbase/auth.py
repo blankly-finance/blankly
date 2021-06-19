@@ -4,7 +4,7 @@ import warnings
 
 class CoinbaseAuth(AuthInterface):
     def __init__(self, keys_file, portfolio_name):
-        super().__init__(keys_file, portfolio_name, 'coinbase')
+        super().__init__(keys_file, portfolio_name, 'coinbase_pro')
         self.API_KEY = None
         self.API_SECRET = None
         self.API_PASS = None

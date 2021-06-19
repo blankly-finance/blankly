@@ -47,4 +47,4 @@ class PaperTrade(Exchange):
         return self.Interface.get_fees()
 
     def get_direct_calls(self):
-        return None
+        return self.calls
