@@ -300,7 +300,10 @@ def isolate_specific(needed, compare_dictionary):
             # If it is, there is a state value for it
             if k == val:
                 # Push type to value
-                compare_dictionary[k] = needed[index][1](v)
+                if v is not None:
+                    compare_dictionary[k] = needed[index][1](v)
+                else:
+                    compare_dictionary[k] = v
                 required = True
                 break
         # Must not be found
