@@ -42,7 +42,7 @@ def to_string_key(separated_list):
 
 
 class BackTestController:
-    def __init__(self, paper_trade_exchange: PaperTrade, backtest_settings_path: str = None, callbacks: list[typing.Callable]=[]):
+    def __init__(self, paper_trade_exchange: PaperTrade, backtest_settings_path: str = None, callbacks: list = None):
         self.preferences = load_backtest_preferences(backtest_settings_path)
         self.backtest_settings_path = backtest_settings_path
         if not paper_trade_exchange.get_type() == "paper_trade":
@@ -50,6 +50,9 @@ class BackTestController:
         self.interface = paper_trade_exchange.get_interface()  # type: PaperTradeInterface
 
         self.price_events = []
+
+        if callbacks is None:
+            callbacks = []
         self.callbacks = callbacks
 
         self.current_time = None
