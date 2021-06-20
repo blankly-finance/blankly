@@ -17,7 +17,7 @@
 """
 from Blankly.auth.utils import default_first_portfolio
 from Blankly.exchanges.exchange import Exchange
-import Blankly.auth_constructor
+import Blankly.auth.auth_constructor
 
 from binance.client import Client
 

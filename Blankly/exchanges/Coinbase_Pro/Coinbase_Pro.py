@@ -15,16 +15,12 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from Blankly.auth.utils import default_first_portfolio
 from Blankly.exchanges.exchange import Exchange
-import Blankly.auth_constructor
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
 
 
 class Coinbase_Pro(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
-        if not portfolio_name:
-            portfolio_name = default_first_portfolio(keys_path, 'coinbase_pro')
         # Giving the preferences path as none allows us to create a default
         Exchange.__init__(self, "coinbase_pro", portfolio_name, keys_path, settings_path)
 

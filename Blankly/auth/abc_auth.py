@@ -1,6 +1,6 @@
 """
-    Logic to provide consistency across exchanges
-    Copyright (C) 2021  Emerson Dove
+    Inherited authentication object
+    Copyright (C) 2021  Emerson Dove, Arun Annamalai
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 
 import abc
 from Blankly.auth.utils import load_json
@@ -34,8 +35,9 @@ class AuthInterface(abc.ABC):
         assert exchange
         self.portfolio_name = portfolio_name
         self.exchange = exchange
-        self.raw_cred = self.\
-            load_credentials(keys_file, portfolio_name, exchange)
+        self.raw_cred = self.load_credentials(keys_file,
+                                              portfolio_name,
+                                              exchange)
 
     def load_credentials(self, keys_file, portfolio_name, exchange):
         """
@@ -43,7 +45,7 @@ class AuthInterface(abc.ABC):
         """
         auth_object = load_json(keys_file)
         exchange_keys = auth_object[exchange]
-        credentials = exchange_keys[portfolio_name[0]]
+        credentials = exchange_keys[portfolio_name]
 
         return credentials
 
