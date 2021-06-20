@@ -16,12 +16,12 @@ MARKET_OPEN = datetime.time(hour=9, minute=0, second=0, tzinfo=timeZ_Ny)
 MARKET_CLOSE = datetime.time(hour=17, minute=0, second=0, tzinfo=timeZ_Ny)
 
 @pytest.fixture
-def alpaca_interface() -> None:
+def alpaca_interface():
     keys_file_path = Path("tests/config/keys.json").resolve()
     settings_file_path = Path("tests/config/settings.json").resolve()
 
-    auth_obj = AlpacaAuth(keys_file_path, "alpaca test portfolio")
-    _, alpaca_interface = InterfaceFactory.create("alpaca", auth_obj, settings_file_path)
+    auth_obj = AlpacaAuth(str(keys_file_path), "alpaca test portfolio")
+    _, alpaca_interface = InterfaceFactory.create("alpaca", auth_obj, str(settings_file_path))
     return alpaca_interface
 
 
@@ -60,7 +60,7 @@ def test_get_buy_sell(alpaca_interface: AlpacaInterface) -> None:
 
     num_retries = 0
     # wait until order is filled
-    while alpaca_interface.get_order('AAPL', market_order.get_id())['price'] is None:
+    while alpaca_interface.get_order('AAPL', market_order.get_id())['funds'] is None:
         time.sleep(1)
         num_retries += 1
         if num_retries > 10:
