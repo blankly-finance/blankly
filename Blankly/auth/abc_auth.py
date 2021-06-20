@@ -43,7 +43,7 @@ class AuthInterface(abc.ABC):
         """
         auth_object = load_json(keys_file)
         exchange_keys = auth_object[exchange]
-        credentials = exchange_keys[portfolio_name]
+        credentials = exchange_keys[portfolio_name[0]]
 
         return credentials
 

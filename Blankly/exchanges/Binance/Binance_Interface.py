@@ -378,7 +378,6 @@ class BinanceInterface(CurrencyInterface):
         }
         modified_product_id = utils.to_exchange_coin_id(product_id, 'binance')
         response = self.calls.order_limit(symbol=modified_product_id, side=side, price=price, quantity=size)
-        print(response)
         renames = [
             ["symbol", "product_id"],
             ["orderId", "id"],
@@ -516,7 +515,8 @@ class BinanceInterface(CurrencyInterface):
             ["origQty", "size"],
             ["symbol", "product_id"],
             ["cummulativeQuoteQty", "funds"],
-            ["time", "created_at"]
+            ["time", "created_at"],
+            ["timeInForce", "time_in_force"]
         ]
 
         currency_id = utils.to_exchange_coin_id(currency_id, 'binance')
