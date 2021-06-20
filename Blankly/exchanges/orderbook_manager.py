@@ -32,7 +32,10 @@ def binance_snapshot(symbol, limit):
         "limit": limit
     }
     response = requests.get("https://api.binance.com/api/v3/depth", params=params).json()
-    buys_response = response['bids']
+    try:
+        buys_response = response['bids']
+    except KeyError:
+        raise KeyError(response)
     sells_response = response['asks']
     buys = {}
     sells = {}
@@ -54,23 +57,31 @@ class OrderbookManger(WebsocketManager):
         """
         self.__default_exchange = default_exchange
         self.__default_currency = default_currency
+
         self.__orderbooks = {}
         self.__orderbooks[default_exchange] = {}
+
         self.__websockets = {}
         self.__websockets[default_exchange] = {}
+
         self.__websockets_callbacks = {}
         self.__websockets_callbacks[default_exchange] = {}
+
+        self.__websockets_kwargs = {}
+        self.__websockets_kwargs[default_exchange] = {}
 
         # Create the abstraction for adding many managers
         super().__init__(self.__websockets, default_currency, default_exchange)
 
-    def create_orderbook(self, callback, currency_id=None, override_exchange=None):
+    def create_orderbook(self, callback, currency_id=None, override_exchange=None, **kwargs):
         """
         Create an orderbook for a given exchange
         Args:
             callback: Callback object for the function. Should be something like self.price_event
             currency_id: Override the default currency id
             override_exchange: Override the default exchange
+            kwargs: Add any other parameters that should be passed into a callback function to identify
+                it or modify behavior
         """
         exchange_name = self.__default_exchange
         # Ensure the ticker dict has this overridden exchange
@@ -78,6 +89,7 @@ class OrderbookManger(WebsocketManager):
             if override_exchange not in self.__websockets.keys():
                 self.__websockets[override_exchange] = {}
                 self.__websockets_callbacks[override_exchange] = {}
+                self.__websockets_kwargs[override_exchange] = {}
             # Write this value so it can be used later
             exchange_name = override_exchange
 
@@ -91,6 +103,7 @@ class OrderbookManger(WebsocketManager):
             # Store this object
             self.__websockets['coinbase_pro'][currency_id] = websocket
             self.__websockets_callbacks['coinbase_pro'][currency_id] = callback
+            self.__websockets_kwargs['coinbase_pro'][currency_id] = kwargs
             self.__orderbooks['coinbase_pro'][currency_id] = {
                 "buy": {},
                 "sell": {}
@@ -109,6 +122,7 @@ class OrderbookManger(WebsocketManager):
             specific_currency_id = specific_currency_id.upper()
             self.__websockets['binance'][specific_currency_id] = websocket
             self.__websockets_callbacks['binance'][specific_currency_id] = callback
+            self.__websockets_kwargs['binance'][specific_currency_id] = kwargs
 
             buys, sells = binance_snapshot(specific_currency_id, 1000)
             self.__orderbooks['binance'][specific_currency_id] = {
@@ -157,7 +171,9 @@ class OrderbookManger(WebsocketManager):
         else:
             book[price] = float(update['changes'][0][2])
         self.__orderbooks['coinbase_pro'][update['product_id']][side] = book
-        self.__websockets_callbacks['coinbase_pro'][update['product_id']](book)
+        self.__websockets_callbacks['coinbase_pro'][update['product_id']](book,
+                                                                          **self.__websockets_kwargs['coinbase_pro']
+                                                                          [update['product_id']])
 
     def binance_update(self, update):
         # TODO this needs a snapshot to work correctly, which needs arun's rest code
@@ -192,7 +208,8 @@ class OrderbookManger(WebsocketManager):
         self.__orderbooks['binance'][symbol]['buy'] = book_buys
         self.__orderbooks['binance'][symbol]['sell'] = book_sells
         # Pass in this new updated orderbook
-        self.__websockets_callbacks['binance'][symbol](self.__orderbooks['binance'][symbol])
+        self.__websockets_callbacks['binance'][symbol](self.__orderbooks['binance'][symbol],
+                                                       **self.__websockets_kwargs['binance'][symbol])
 
     def append_orderbook_callback(self, callback_object, override_currency_id=None, override_exchange=None):
         """
