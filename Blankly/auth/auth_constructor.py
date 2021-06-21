@@ -34,21 +34,21 @@ def load_json(keys_file):
 auth_cache = {}
 
 
-def load_auth_coinbase_pro(keys_file, name):
-    exchange_type = "coinbase_pro"
-    name, portfolio = __load_auth(keys_file, name, exchange_type)
+# def load_auth_coinbase_pro(keys_file, name):
+#     exchange_type = "coinbase_pro"
+#     name, portfolio = __load_auth(keys_file, name, exchange_type)
+#
+#     return [portfolio["API_KEY"], portfolio["API_SECRET"], portfolio["API_PASS"]], name
+#
+#
+# def load_auth_binance(keys_file, name):
+#     exchange_type = "binance"
+#     name, portfolio = __load_auth(keys_file, name, exchange_type)
+#
+#     return [portfolio["API_KEY"], portfolio["API_SECRET"]], name
 
-    return [portfolio["API_KEY"], portfolio["API_SECRET"], portfolio["API_PASS"]], name
 
-
-def load_auth_binance(keys_file, name):
-    exchange_type = "binance"
-    name, portfolio = __load_auth(keys_file, name, exchange_type)
-
-    return [portfolio["API_KEY"], portfolio["API_SECRET"]], name
-
-
-def __load_auth(keys_file, name, exchange_type):
+def load_auth(keys_file, name, exchange_type):
     auth_object = load_json(keys_file)
     exchange_keys = auth_object[exchange_type]
     if name is None:
