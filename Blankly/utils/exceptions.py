@@ -20,3 +20,7 @@ class InvalidOrder(Exception):
 
 class APIException(Exception):
     pass
+
+
+class AuthError(Exception):
+    pass
