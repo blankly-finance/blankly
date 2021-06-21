@@ -55,7 +55,7 @@ def test_get_exchange(binance_interface: BinanceInterface) -> None:
 
 def test_get_account(binance_interface: BinanceInterface) -> None:
     resp = binance_interface.get_account()
-    assert type(resp) is dict
+    assert type(resp) is list
 
     found_btc = False
     for asset in resp:
