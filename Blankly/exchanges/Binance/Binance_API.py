@@ -25,7 +25,7 @@ from collections import OrderedDict
 
 
 # Create custom authentication for Exchange
-from Blankly.auth.Binance.auth import binance_auth
+from Blankly.auth.Binance.auth import BinanceAuth
 
 
 class BinanceExchangeAuth(AuthBase):
@@ -49,9 +49,9 @@ class API:
     API_URL = 'https://api.binance.{}/api'
     API_TESTNET_URL = 'https://testnet.binance.vision/api'
 
-    def __init__(self, auth: binance_auth, tld: str = '.us', testnet: bool = False):
-        self.api_key = binance_auth.API_KEY
-        self.secret_key = binance_auth.API_SECRET
+    def __init__(self, auth: BinanceAuth, tld: str = '.us', testnet: bool = False):
+        self.api_key = auth.keys['API_KEY']
+        self.secret_key = auth.keys['API_SECRET']
 
         self.__auth = BinanceExchangeAuth(self.api_key)
         if not testnet:
