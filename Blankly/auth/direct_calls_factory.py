@@ -1,6 +1,6 @@
 """
     Final constructor for authentication objects
-    Copyright (C) 2021  Emerson Dove, Arun Annamalai
+    Copyright (C) 2021  Arun Annamalai, Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -42,11 +42,11 @@ class InterfaceFactory:
 
         elif exchange_name == 'binance':
             if preferences["settings"]["use_sandbox"] or preferences["settings"]["paper_trade"]:
-                calls = Client(api_key=auth.API_KEY, api_secret=auth.API_SECRET,
+                calls = Client(api_key=auth.keys['API_KEY'], api_secret=auth.keys['API_SECRET'],
                                tld=preferences["settings"]["binance_tld"],
                                testnet=True)
             else:
-                calls = Client(api_key=auth.API_KEY, api_secret=auth.API_SECRET,
+                calls = Client(api_key=auth.keys['API_KEY'], api_secret=auth.keys['API_SECRET'],
                                tld=preferences["settings"]["binance_tld"])
             return calls, BinanceInterface(exchange_name, calls)
 

@@ -25,15 +25,15 @@ from requests.auth import AuthBase
 
 
 # Create custom authentication for Exchange
-from Blankly.auth.Coinbase.auth import CoinbaseAuth
+from Blankly.auth.abc_auth import AuthInterface
 
 
 class CoinbaseExchangeAuth(AuthBase):
     # Provided by CBPro: https://docs.pro.coinbase.com/#signing-a-message
-    def __init__(self, cb_auth: CoinbaseAuth):
-        self.api_key = cb_auth.API_KEY
-        self.secret_key = cb_auth.API_SECRET
-        self.passphrase = cb_auth.API_PASS
+    def __init__(self, cb_auth: AuthInterface):
+        self.api_key = cb_auth.keys['API_KEY']
+        self.secret_key = cb_auth.keys['API_SECRET']
+        self.passphrase = cb_auth.keys['API_PASS']
 
     def __call__(self, request):
         timestamp = str(time.time())
@@ -61,7 +61,7 @@ def get_auth_headers(timestamp, message, api_key, secret_key, passphrase):
 
 
 class API:
-    def __init__(self, cb_auth: CoinbaseAuth, API_URL='https://api.pro.coinbase.com/'):
+    def __init__(self, cb_auth: AuthInterface, API_URL='https://api.pro.coinbase.com/'):
         self.__auth = CoinbaseExchangeAuth(cb_auth)
         self.__api_url = API_URL
         self.session = requests.Session()
