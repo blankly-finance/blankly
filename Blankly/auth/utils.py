@@ -1,6 +1,6 @@
 """
     Utils for constructing authentication
-    Copyright (C) 2021  Emerson Dove, Arun Annamalai
+    Copyright (C) 2021  Arun Annamalai, Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
