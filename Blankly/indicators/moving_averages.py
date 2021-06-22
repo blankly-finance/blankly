@@ -19,7 +19,7 @@ def vwma(data: Any, volume_data: Any, period: int = 50) -> Any:
         use_series = True
 
     data = convert_to_numpy(data)
-    volume_data = convert_to_numpy(volume_data)
+    volume_data = convert_to_numpy(volume_data).astype(float)
 
     vwma = ti.vwma(data, volume_data, period=period)
     return pd.Series(vwma) if use_series else vwma
