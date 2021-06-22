@@ -6,7 +6,7 @@ import pandas as pd
 import tulipy as ti
 
 
-def rsi(data: Any, period: int = 14, round_rsi: bool = True) -> np.array:
+def rsi(data: Any, period: int = 14, round_rsi: bool = False) -> np.array:
     """ Implements RSI Indicator """
     use_series = False
     if check_series(data):
