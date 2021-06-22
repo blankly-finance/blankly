@@ -5,7 +5,7 @@ import tulipy as ti
 import pandas as pd
 
 
-def stdev_period(data, period=14, use_series=False) -> Any:
+def stddev_period(data, period=14, use_series=False) -> Any:
     if check_series(data):
         use_series = True
     data = convert_to_numpy(data)    
