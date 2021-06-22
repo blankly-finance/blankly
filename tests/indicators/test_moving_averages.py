@@ -6,7 +6,7 @@ from Blankly.indicators import ema, vwma, wma, zlema, sma, hma, kaufman_adaptive
 
 def compare_equal(a, b):
     # compares two numpy arrays
-    return (a == b).all()
+    return np.array_equal(a, b)
 
 class MovingAverages(unittest.TestCase):
     @classmethod
