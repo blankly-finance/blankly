@@ -33,7 +33,7 @@ setup(
         'websocket-client',
         'pandas',
         'python-binance',
-        'newtulipy',
+        'tulipy',
         'alpaca-trade-api',
         'pytest',
         'bokeh',
