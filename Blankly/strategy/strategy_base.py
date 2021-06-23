@@ -128,7 +128,7 @@ class Strategy:
                  end_date: str = None,
                  save: bool = False,
                  settings_path: str = None,
-                 callbacks: list = None,
+                 callbacks: list[typing.Callable] = None,
                  **kwargs
                  ):
         """
