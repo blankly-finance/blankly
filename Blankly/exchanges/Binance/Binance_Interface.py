@@ -378,7 +378,6 @@ class BinanceInterface(CurrencyInterface):
         }
         modified_product_id = utils.to_exchange_coin_id(product_id, 'binance')
         response = self.calls.order_limit(symbol=modified_product_id, side=side, price=price, quantity=size)
-        print(response)
         renames = [
             ["symbol", "product_id"],
             ["orderId", "id"],
@@ -386,9 +385,6 @@ class BinanceInterface(CurrencyInterface):
             ["origQty", "size"],
             ["timeInForce", "time_in_force"],
         ]
-        response['side'] = response['side'].lower()
-        response['type'] = response['type'].lower()
-        response['symbol'] = utils.to_blankly_coin_id(response['symbol'], 'binance')
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
@@ -756,6 +752,8 @@ class BinanceInterface(CurrencyInterface):
                 break
         if current_price is None:
             raise LookupError("Specified market not found")
+
+        print(symbol_data)
 
         filters = symbol_data["filters"]
         hard_min_price = float(filters[0]["minPrice"])
