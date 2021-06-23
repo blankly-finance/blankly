@@ -15,19 +15,12 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import pytest
-
 import Blankly
 import unittest
-
-from Blankly.auth.Binance.auth import BinanceAuth
-from Blankly.auth.direct_calls_factory import InterfaceFactory
-from Blankly.exchanges.Binance.Binance_Interface import BinanceInterface
 from Blankly.utils.utils import compare_dictionaries
-from pathlib import Path
-import time
 
-class BinanceInterface_test(unittest.TestCase):
+
+class BinanceInterface(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.Binance = Blankly.Binance(portfolio_name="Spot Test Key",
@@ -38,56 +31,3 @@ class BinanceInterface_test(unittest.TestCase):
     def test_get_exchange_type(self):
         binance = self.Binance_Interface.get_exchange_type()
         self.assertEqual(binance, "binance")
-
-
-@pytest.fixture
-def binance_interface():
-    keys_file_path = Path("tests/config/keys.json").resolve()
-    settings_file_path = Path("tests/config/settings.json").resolve()
-
-    auth_obj = BinanceAuth(str(keys_file_path), "Spot Test Key")
-    _, binance_interface = InterfaceFactory.create("binance", auth_obj, str(settings_file_path))
-    return binance_interface
-
-
-def test_get_exchange(binance_interface: BinanceInterface) -> None:
-    assert binance_interface.get_exchange_type() == 'binance'
-
-
-def test_get_buy_sell(binance_interface: BinanceInterface) -> None:
-    # query for the unique ID of BTC-USD
-    products = binance_interface.get_products()
-    btc_usd_id = None
-
-    for product in products:
-        if product['base_currency'] == 'BTC':
-            btc_usd_id = product['currency_id']
-    print(btc_usd_id)
-    assert btc_usd_id
-
-    market_buy_order = binance_interface.market_order(btc_usd_id, 'buy', 200)
-
-    num_retries = 0
-    # wait until order is filled
-    while binance_interface.get_order(btc_usd_id, market_buy_order.get_id())['status'] != "filled":
-        time.sleep(1)
-        num_retries += 1
-        if num_retries > 10:
-            raise TimeoutError("Too many retries, cannot get order status")
-
-    resp = binance_interface.get_order(btc_usd_id, market_buy_order.get_id())
-    assert resp["side"] == "buy"
-    assert resp["type"] == "market"
-
-    market_sell_order = binance_interface.market_order(btc_usd_id, 'sell', 200)
-
-    # wait until order is filled
-    while binance_interface.get_order(btc_usd_id, market_sell_order.get_id())['status'] != "filled":
-        time.sleep(1)
-        num_retries += 1
-        if num_retries > 10:
-            raise TimeoutError("Too many retries, cannot get order status")
-
-    resp = binance_interface.get_order(btc_usd_id, market_sell_order.get_id())
-    assert resp["side"] == "sell"
-    assert resp["type"] == "market"
