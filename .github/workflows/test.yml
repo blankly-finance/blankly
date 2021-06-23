@@ -37,10 +37,11 @@ jobs:
 
     - name: Inject Keys
       run: |
-        echo "$KEYS_FILE" > ./tests/config/keys.json
+        KEYS_FILE=${{ secrets.SANDBOX_KEYS }}
+
+        echo $KEYS_FILE > ./tests/config/keys.json
       shell: bash
-      env: 
-        KEYS_FILE: ${{ secrets.SANDBOX_KEYS }}
+
     - name: Run test file
       run: |
         pytest
