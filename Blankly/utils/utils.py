@@ -335,13 +335,12 @@ def convert_epochs(epoch):
     return epoch
 
 
-def compare_dictionaries(dict1, dict2, force_exchange_specific=True) -> bool:
+def compare_dictionaries(dict1, dict2) -> bool:
     """
     Compare two output dictionaries to check if they have the same keys (excluding "exchange_specific")
     Args:
         dict1 (dict): First dictionary to compare
         dict2 (dict): Second dictionary to compare
-        force_exchange_specific (bool): Check if the the exchange_specific tag is in the dictionary
     Returns:
         bool: Are the non specific tags the same?
     """
@@ -349,27 +348,15 @@ def compare_dictionaries(dict1, dict2, force_exchange_specific=True) -> bool:
     # Make copies of the dictionaries
     dict1 = {**dict1}
     dict2 = {**dict2}
+    if "exchange_specific" not in dict1:
+        raise KeyError("Exchange specific tag not in: " + str(dict1))
 
-    if force_exchange_specific:
-        if "exchange_specific" not in dict1:
-            raise KeyError("Exchange specific tag not in: " + str(dict1))
+    if "exchange_specific" not in dict2:
+        raise KeyError("Exchange specific tag not in: " + str(dict2))
 
-        if "exchange_specific" not in dict2:
-            raise KeyError("Exchange specific tag not in: " + str(dict2))
-
-        # Safely remove keys now
-        del dict1["exchange_specific"]
-        del dict2["exchange_specific"]
-    else:
-        # Remove the tag if its there anyway
-        try:
-            del dict1["exchange_specific"]
-        except KeyError:
-            pass
-        try:
-            del dict2["exchange_specific"]
-        except KeyError:
-            pass
+    # Safely remove keys now
+    del dict1["exchange_specific"]
+    del dict2["exchange_specific"]
 
     valid_keys = []
 
