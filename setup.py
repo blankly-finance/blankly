@@ -26,6 +26,7 @@ setup(
     keywords=['Crypto', 'Exchanges', 'Bot'],  # Keywords
     install_requires=[
         'numpy',
+        'sklearn',
         'scikit-learn',
         'zerorpc',
         'requests',
