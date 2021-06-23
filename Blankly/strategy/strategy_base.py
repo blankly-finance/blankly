@@ -128,7 +128,7 @@ class Strategy:
                  end_date: str = None,
                  save: bool = False,
                  settings_path: str = None,
-                 callbacks: list[typing.Callable] = None,
+                 optional_indicator: typing.Callable = None,
                  **kwargs
                  ):
         """
@@ -146,7 +146,7 @@ class Strategy:
             save (bool): Save the price data references to the data required for the backtest as well as
                 overriden settings.
             settings_path (str): Path to the backtest.json file.
-            callbacks (list of callables): Custom functions that will be run at the end of the backtest
+            optional_indicator (callable): A function which takes a single dataframe parameter to the
 
             Keyword Arguments:
                 **Use these to override parameters in the backtest.json file**
@@ -193,7 +193,7 @@ class Strategy:
         self.Interface = self.__paper_trade_exchange.get_interface()
         backtesting_controller = BackTestController(self.__paper_trade_exchange,
                                                     backtest_settings_path=settings_path,
-                                                    callbacks=callbacks
+                                                    user_callback=optional_indicator
                                                     )
 
         # Write any kwargs as settings to the settings - save if enabled.
