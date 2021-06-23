@@ -1,12 +1,11 @@
 import pickle
-import numpy as np
 from pathlib import Path
 import unittest
 from Blankly.indicators import stddev_period, var_period, stderr_period, min_period, max_period
 
 def compare_equal(a, b):
     # compares two numpy arrays
-    return np.array_equal(a, b)
+    return (a == b).all()
 
 class Statistics(unittest.TestCase):
     @classmethod
