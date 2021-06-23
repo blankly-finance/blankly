@@ -53,18 +53,8 @@ def binance_interface():
 def test_get_exchange(binance_interface: BinanceInterface) -> None:
     assert binance_interface.get_exchange_type() == 'binance'
 
-def test_get_account(binance_interface: BinanceInterface) -> None:
-    resp = binance_interface.get_account()
-    assert type(resp) is dict
 
-    found_btc = False
-    for asset in resp:
-        if(asset['currency'] == "BTC"):
-            found_btc = True
-
-    assert found_btc
-
-def test_get_buy_sell_order(binance_interface: BinanceInterface) -> None:
+def test_get_buy_sell(binance_interface: BinanceInterface) -> None:
     # query for the unique ID of BTC-USD
     products = binance_interface.get_products()
     btc_usd_id = None
@@ -86,7 +76,6 @@ def test_get_buy_sell_order(binance_interface: BinanceInterface) -> None:
             raise TimeoutError("Too many retries, cannot get order status")
 
     resp = binance_interface.get_order(btc_usd_id, market_buy_order.get_id())
-    assert type(resp) is dict
     assert resp["side"] == "buy"
     assert resp["type"] == "market"
 
@@ -100,12 +89,5 @@ def test_get_buy_sell_order(binance_interface: BinanceInterface) -> None:
             raise TimeoutError("Too many retries, cannot get order status")
 
     resp = binance_interface.get_order(btc_usd_id, market_sell_order.get_id())
-    assert type(resp) is dict
     assert resp["side"] == "sell"
     assert resp["type"] == "market"
-
-def test_get_price(binance_interface: BinanceInterface) -> None:
-    # todo: just call a couple of popular coins and see if they all return floats
-    btcusd = 'BTC-USDT'
-    resp = binance_interface.get_price(btcusd)
-    assert type(resp) is float
