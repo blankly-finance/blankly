@@ -18,9 +18,7 @@
 
 
 import abc
-from Blankly.auth.auth_constructor import load_auth
-import warnings
-from Blankly.utils.exceptions import AuthError
+from Blankly.auth.utils import load_json
 
 
 class AuthInterface(abc.ABC):
@@ -32,33 +30,28 @@ class AuthInterface(abc.ABC):
             portfolio_name (str): name of portfolio
             exchange (str): name of exchange
         """
-        # self.portfolio_name = portfolio_name
+        assert keys_file
+        assert portfolio_name
+        assert exchange
+        self.portfolio_name = portfolio_name
         self.exchange = exchange
+        self.raw_cred = self.load_credentials(keys_file,
+                                              portfolio_name,
+                                              exchange)
 
-        # Load from file
-        self.portfolio_name, self.keys = load_auth(keys_file, portfolio_name, exchange)
+    def load_credentials(self, keys_file, portfolio_name, exchange):
+        """
+        Load credentials from keys json file
+        """
+        auth_object = load_json(keys_file)
+        exchange_keys = auth_object[exchange]
+        credentials = exchange_keys[portfolio_name]
+
+        return credentials
 
     @abc.abstractmethod
-    def validate_credentials(self, needed_keys: list) -> bool:
+    def validate_credentials(self):
         """
-        Args:
-            needed_keys (list): List of keys that the exchange needs in the format ['API_KEY', 'API_SECRET]
-
-        Returns:
-            A boolean that describes if the auth is good or bad (True if good).
+        Validate that exchange specific credentials are present
         """
-        # Make a copy of the keys dict & list to avoid modifying passed variables
-        keys_dict = {**self.keys}
-        needed_keys = list.copy(needed_keys)
-        for i in needed_keys:
-            if i in keys_dict.keys():
-                keys_dict.pop(i)
-            else:
-                return False
-
-        if len(keys_dict.keys()) > 0:
-            warnings.warn(f"Additional keys for Exchange: {self.exchange} Portfolio: {self.portfolio_name} will be"
-                          f" ignored.")
-            return False
-        else:
-            return True
+        pass
