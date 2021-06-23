@@ -45,10 +45,7 @@ class Strategy:
         self.__paper_trade_exchange = Blankly.PaperTrade(self.__exchange)
         self.__schedulers = []
         self.__variables = {}
-    
-    @property
-    def variables(self):
-        return self.__variables
+
     def add_price_event(self, callback: typing.Callable, currency_pair: str, resolution: str):
         """
         Add Orderbook Event
