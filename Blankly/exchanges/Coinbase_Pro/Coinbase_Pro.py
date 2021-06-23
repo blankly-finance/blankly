@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from Blankly.auth.utils import default_first_portfolio
+
 from Blankly.exchanges.exchange import Exchange
 import Blankly.auth_constructor
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
@@ -23,10 +23,22 @@ from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_
 
 class Coinbase_Pro(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
-        if not portfolio_name:
-            portfolio_name = default_first_portfolio(keys_path, 'coinbase_pro')
+        # Load the auth from the keys file
+        auth, defined_name = Blankly.auth_constructor.load_auth_coinbase_pro(keys_path, portfolio_name)
+
         # Giving the preferences path as none allows us to create a default
-        Exchange.__init__(self, "coinbase_pro", portfolio_name, keys_path, settings_path)
+        Exchange.__init__(self, "coinbase_pro", defined_name, settings_path)
+
+        if self.preferences["settings"]["use_sandbox"]:
+            self.__calls = Coinbase_Pro_API(auth[0], auth[1], auth[2],
+                                            API_URL="https://api-public.sandbox.pro.coinbase.com/")
+        else:
+            # Create the authenticated object
+            self.__calls = Coinbase_Pro_API(auth[0], auth[1], auth[2])
+
+        Blankly.auth_constructor.write_auth_cache("coinbase_pro", defined_name, self.__calls)
+
+        self.construct_interface(self.__calls)
 
     """
     Builds information about the currency on this exchange by making particular API calls
