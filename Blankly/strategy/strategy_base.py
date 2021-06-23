@@ -86,6 +86,27 @@ class Strategy:
         Function to skip & ignore callbacks
         """
         pass
+
+    # def __process_orders(self, orders: typing.Any, currency_pair: str):
+    #     if orders is None:
+    #         return
+    #     is_list_of_orders = isinstance(orders, list) and not isinstance(orders[0], Order)
+    #     is_np_array_of_orders = isinstance(orders, np.array) and not isinstance(orders[0], Order)
+    #
+    #     if is_list_of_orders or is_np_array_of_orders or not isinstance(orders, Order):
+    #         raise ValueError("Expected an Order or a list of Orders but instead " + type(orders[0]))
+    #
+    #     if isinstance(orders, list) or isinstance(orders, np.array):
+    #         for order in orders:
+    #             self.__submit_order(order, currency_pair)
+    #     else:
+    #         self.__submit_order(orders, currency_pair)
+    #
+    # def __submit_order(self, order: Order, currency_pair: str):
+    #     if order.type == 'market':
+    #         self.Interface.market_order(currency_pair, order.side, order.amount)
+    #     if order.type == 'limit':
+    #         self.Interface.limit_order(currency_pair, order.side, order.price, order.amount)
         
     def __price_event_rest(self, **kwargs):
         callback = kwargs['callback']
@@ -95,7 +116,8 @@ class Strategy:
         price = self.Interface.get_price(currency_pair)
 
         state = StrategyState(self, self.Interface, variables, resolution)
-        return callback(price, currency_pair, state)
+        orders = callback(price, currency_pair)  # self.Interface, state)
+        # self.__process_orders(orders, currency_pair)
 
     def __price_event_websocket(self, **kwargs):
         callback = kwargs['callback']
@@ -105,7 +127,8 @@ class Strategy:
 
         price = self.Ticker_Manager.get_most_recent_tick(override_currency=currency_pair)
         state = StrategyState(self, self.Interface, variables, resolution)
-        return callback(price, currency_pair, state)
+        orders = callback(price, currency_pair)  # self.Interface, state)
+        # self.__process_orders(orders, currency_pair)
 
     def add_orderbook_event(self, callback: typing.Callable, currency_pair: str):
         """
@@ -117,9 +140,32 @@ class Strategy:
         # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
         self.Orderbook_Manager.create_orderbook(callback, currency_id=currency_pair)
 
+        # TODO the tickers need some type of argument passing & saving like scheduler so that the 1 second min isn't
+        #  required
+        # callback_id = str(uuid4())
+        # self.__variables[callback_id] = {}
+        # self.__schedulers.append(
+        #     Blankly.Scheduler(self.__orderbook_event_websocket, 1,
+        #                       initially_stopped=True,
+        #                       variables=self.__variables[callback_id],
+        #                       callback=callback, currency_pair=currency_pair)
+        # )
+
     def start(self):
         for i in self.__schedulers:
             i.start()
+
+    def __orderbook_event_websocket(self, **kwargs):
+        callback = kwargs['callback']
+        currency_pair = kwargs['currency_pair']
+        variables = kwargs['variables']
+
+        book = self.Orderbook_Manager.get_most_recent_orderbook(override_currency_id=currency_pair)
+        state = StrategyState(self, self.Interface, variables)
+        orders = callback(book, currency_pair)  # self.Interface, state)
+        # is_arr_type = isinstance(orders, list) or isinstance(orders, np.array)
+        # if is_arr_type and isinstance(orders[0], Order):
+        #     raise ValueError("It is best that you directly use the interface for orderbook event orders")
     
     def backtest(self, 
                  initial_values: dict = None,
