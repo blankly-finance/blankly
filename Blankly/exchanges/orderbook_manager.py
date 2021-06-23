@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import Blankly.utils.utils
-import Blankly.auth.auth_constructor
+import Blankly.auth_constructor
 import requests
 
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Websocket import Tickers as Coinbase_Pro_Orderbook

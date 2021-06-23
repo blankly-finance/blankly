@@ -33,12 +33,12 @@ class Exchange(IExchange, abc.ABC):
         self.__type = exchange_type  # coinbase_pro, binance, alpaca
         self.__name = portfolio_name  # my_cool_portfolio
         self.__factory = AuthFactory()
-
         self.__auth = self.__factory.create_auth(keys_path, self.__type, self.__name)
-        self.calls, self.Interface = self.__direct_calls_factory.create(self.__type, self.__auth, preferences_path)
 
         self.preferences = Blankly.utils.load_user_preferences(preferences_path)
         self.__direct_calls_factory = InterfaceFactory()
+
+        self.calls, self.Interface = self.__direct_calls_factory.create(self.__type, self.__auth, preferences_path)
 
         # Create the model container
         self.models = {}

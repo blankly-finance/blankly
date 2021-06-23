@@ -1,22 +1,3 @@
-"""
-    Utils for constructing authentication
-    Copyright (C) 2021  Emerson Dove, Arun Annamalai
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
-
-
 import json
 import warnings
 
@@ -24,9 +5,7 @@ import warnings
 def load_json(keys_file):
     try:
         f = open(keys_file)
-        contents = json.load(f)
-        f.close()
-        return contents
+        return json.load(f)
     except FileNotFoundError:
         raise FileNotFoundError("Make sure a Keys.json file is placed in the same folder as the project working "
                                 "directory!")
