@@ -15,8 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
-
+from Blankly.auth.utils import default_first_portfolio
 from Blankly.exchanges.exchange import Exchange
 import Blankly.auth.auth_constructor
 
@@ -25,7 +24,11 @@ from binance.client import Client
 
 class Binance(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
-        Exchange.__init__(self, "binance", portfolio_name, keys_path, settings_path)
+        if not portfolio_name:
+            name, keys = default_first_portfolio(keys_path, 'binance')
+        else:
+            name = portfolio_name
+        Exchange.__init__(self, "binance", name, keys_path, settings_path)
 
     """
     Builds information about the currency on this exchange by making particular API calls

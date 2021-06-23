@@ -1,6 +1,6 @@
 """
     Inherited authentication object
-    Copyright (C) 2021  Arun Annamalai, Emerson Dove
+    Copyright (C) 2021  Emerson Dove, Arun Annamalai
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -38,7 +38,8 @@ class AuthInterface(abc.ABC):
         # Load from file
         self.portfolio_name, self.keys = load_auth(keys_file, portfolio_name, exchange)
 
-    def validate_credentials(self, needed_keys: list):
+    @abc.abstractmethod
+    def validate_credentials(self, needed_keys: list) -> bool:
         """
         Args:
             needed_keys (list): List of keys that the exchange needs in the format ['API_KEY', 'API_SECRET]
@@ -46,10 +47,6 @@ class AuthInterface(abc.ABC):
         Returns:
             A boolean that describes if the auth is good or bad (True if good).
         """
-
-        # Create an error message template to throw if needed
-        error_message = ""
-
         # Make a copy of the keys dict & list to avoid modifying passed variables
         keys_dict = {**self.keys}
         needed_keys = list.copy(needed_keys)
@@ -57,14 +54,11 @@ class AuthInterface(abc.ABC):
             if i in keys_dict.keys():
                 keys_dict.pop(i)
             else:
-                # Append a description header if not present
-                if error_message == "":
-                    error_message += "Error while loading authentication. Required keys for this are missing: \n"
-                error_message += str(str(i) + " is needed, but not defined.\n")
+                return False
 
         if len(keys_dict.keys()) > 0:
             warnings.warn(f"Additional keys for Exchange: {self.exchange} Portfolio: {self.portfolio_name} will be"
                           f" ignored.")
-
-        if error_message != "":
-            raise AuthError(error_message)
+            return False
+        else:
+            return True
