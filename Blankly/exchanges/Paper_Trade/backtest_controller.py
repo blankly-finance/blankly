@@ -261,8 +261,12 @@ class BackTestController:
         # Push the accounts to the dataframe
         cycle_status = cycle_status.append(price_data, ignore_index=True)
 
+        # figures = []
+        # for i in self.prices:
+        #     result_index = cycle_status['time'].sub(i[0]).abs().idxmin()
+        #     for i in cycle_status.iloc[result_index]:
+
         if self.preferences['settings']['GUI_output']:
-            figures = []
             global_x_range = None
 
             show_zero_delta = self.preferences['settings']['show_tickers_with_zero_delta']
