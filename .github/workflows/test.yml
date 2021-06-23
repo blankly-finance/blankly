@@ -39,7 +39,7 @@ jobs:
       run: |
         KEYS_FILE=${{ secrets.SANDBOX_KEYS }}
 
-        echo $KEYS_FILE > ./tests/config/keys.json
+        echo $keys_file >> ./tests/config/keys.json
       shell: bash
 
     - name: Run test file
