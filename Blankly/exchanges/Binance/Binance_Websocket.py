@@ -27,8 +27,7 @@ import traceback
 
 
 class Tickers(IExchangeWebsocket):
-    def __init__(self, symbol, stream, log=None, initially_stopped=False,
-                 WEBSOCKET_URL="wss://stream.binance.com:9443/ws"):
+    def __init__(self, symbol, stream, log=None, WEBSOCKET_URL="wss://stream.binance.com:9443/ws"):
         """
         Create and initialize the ticker
         Args:
@@ -71,8 +70,7 @@ class Tickers(IExchangeWebsocket):
         self.__time_feed = collections.deque(maxlen=buffer_size)
 
         # Start the websocket
-        if not initially_stopped:
-            self.start_websocket()
+        self.start_websocket()
 
     def start_websocket(self):
         """

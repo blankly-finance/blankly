@@ -45,12 +45,10 @@ class Strategy:
         self.__paper_trade_exchange = Blankly.PaperTrade(self.__exchange)
         self.__schedulers = []
         self.__variables = {}
-        self.__assigned_websockets = []
     
     @property
     def variables(self):
         return self.__variables
-
     def add_price_event(self, callback: typing.Callable, currency_pair: str, resolution: str):
         """
         Add Orderbook Event
@@ -64,9 +62,6 @@ class Strategy:
         self.__scheduling_pair.append([currency_pair, resolution])
         callback_id = str(uuid4())
         self.__variables[callback_id] = AttributeDict({})
-
-        variables = self.__variables[callback_id]
-
         if resolution < 10:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
             self.Ticker_Manager.create_ticker(self.__idle_event, currency_id=currency_pair)
@@ -75,8 +70,7 @@ class Strategy:
                                   initially_stopped=True,
                                   callback=callback,
                                   resolution=resolution,
-                                  variables=variables,
-                                  state_object=StrategyState(self, self.Interface, variables, resolution),
+                                  variables=self.__variables[callback_id],
                                   currency_pair=currency_pair)
             )
         else:
@@ -86,8 +80,7 @@ class Strategy:
                                   initially_stopped=True,
                                   callback=callback,
                                   resolution=resolution,
-                                  variables=variables,
-                                  state_object=StrategyState(self, self.Interface, variables, resolution),
+                                  variables=self.__variables[callback_id],
                                   currency_pair=currency_pair)
             )
 
@@ -102,32 +95,20 @@ class Strategy:
         currency_pair = kwargs['currency_pair']
         resolution = kwargs['resolution']
         variables = kwargs['variables']
-        state = kwargs['state_object']  # type: StrategyState
         price = self.Interface.get_price(currency_pair)
 
-        state.interface = self.Interface
-        state.variables = variables
-        state.resolution = resolution
-
-        callback(price, currency_pair, state)
+        state = StrategyState(self, self.Interface, variables, resolution)
+        return callback(price, currency_pair, state)
 
     def __price_event_websocket(self, **kwargs):
         callback = kwargs['callback']
         currency_pair = kwargs['currency_pair']
         resolution = kwargs['resolution']
         variables = kwargs['variables']
-        state = kwargs['state_object']  # type: StrategyState
 
         price = self.Ticker_Manager.get_most_recent_tick(override_currency=currency_pair)
-
-        state.interface = self.Interface
-        state.variables = variables
-        state.resolution = resolution
-
-        callback(price, currency_pair, state)
-
-    def __orderbook_event(self, tick, currency_pair, user_callback, state_object):
-        user_callback(tick, currency_pair, state_object)
+        state = StrategyState(self, self.Interface, variables, resolution)
+        return callback(price, currency_pair, state)
 
     def add_orderbook_event(self, callback: typing.Callable, currency_pair: str):
         """
@@ -136,29 +117,12 @@ class Strategy:
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
             currency_pair: Currency pair to create the orderbook for
         """
-        self.__scheduling_pair.append([currency_pair, 'live'])
-        callback_id = str(uuid4())
-        self.__variables[callback_id] = AttributeDict({})
-
-        variables = self.__variables[callback_id]
-
         # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
-        self.Orderbook_Manager.create_orderbook(self.__orderbook_event, initially_stopped=True,
-                                                currency_id=currency_pair,
-                                                currency_pair=currency_pair,
-                                                user_callback=callback,
-                                                state_object=StrategyState(self, self.Interface, variables)
-                                                )
-
-        exchange_type = self.__exchange.get_type()
-        self.__assigned_websockets.append([currency_pair, exchange_type])
+        self.Orderbook_Manager.create_orderbook(callback, currency_id=currency_pair)
 
     def start(self):
         for i in self.__schedulers:
             i.start()
-
-        for i in self.__assigned_websockets:
-            self.Orderbook_Manager.restart_ticker(i[0], i[1])
     
     def backtest(self, 
                  initial_values: dict = None,

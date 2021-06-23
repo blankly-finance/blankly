@@ -53,8 +53,7 @@ def create_ticker_connection(id, url, channel):
 
 
 class Tickers(IExchangeWebsocket):
-    def __init__(self, currency_id, stream, log=None,
-                 pre_event_callback=None, initially_stopped=False, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
+    def __init__(self, currency_id, stream, log=None, pre_event_callback=None, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
         """
         Create and initialize the ticker
         Args:
@@ -93,8 +92,7 @@ class Tickers(IExchangeWebsocket):
         self.__time_feed = collections.deque(maxlen=buffer_size)
 
         # Start the websocket
-        if not initially_stopped:
-            self.start_websocket()
+        self.start_websocket()
 
     def start_websocket(self):
         """

@@ -20,10 +20,9 @@
 from Blankly.utils.utils import AttributeDict
 from Blankly import Interface
 
-
 class StrategyState:
     """Strategy State"""
-    def __init__(self, strategy, interface: Interface, variables: AttributeDict, resolution: float = None):
+    def __init__(self, strategy, interface: Interface, variables: AttributeDict, resolution: str = None):
         self.strategy = strategy
         self.interface = interface
         self.variables = variables

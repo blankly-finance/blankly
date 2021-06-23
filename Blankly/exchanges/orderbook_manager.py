@@ -73,14 +73,13 @@ class OrderbookManger(WebsocketManager):
         # Create the abstraction for adding many managers
         super().__init__(self.__websockets, default_currency, default_exchange)
 
-    def create_orderbook(self, callback, currency_id=None, override_exchange=None, initially_stopped=False, **kwargs):
+    def create_orderbook(self, callback, currency_id=None, override_exchange=None, **kwargs):
         """
         Create an orderbook for a given exchange
         Args:
             callback: Callback object for the function. Should be something like self.price_event
             currency_id: Override the default currency id
             override_exchange: Override the default exchange
-            initially_stopped: Keep the websocket stopped when created
             kwargs: Add any other parameters that should be passed into a callback function to identify
                 it or modify behavior
         """
@@ -97,10 +96,7 @@ class OrderbookManger(WebsocketManager):
         if exchange_name == "coinbase_pro":
             if currency_id is None:
                 currency_id = self.__default_currency
-            websocket = Coinbase_Pro_Orderbook(currency_id, "level2",
-                                               pre_event_callback=self.coinbase_snapshot_update,
-                                               initially_stopped=initially_stopped
-                                               )
+            websocket = Coinbase_Pro_Orderbook(currency_id, "level2", pre_event_callback=self.coinbase_snapshot_update)
             # This is where the sorting magic happens
             websocket.append_callback(self.coinbase_update)
 
@@ -119,7 +115,7 @@ class OrderbookManger(WebsocketManager):
 
             # Lower the keys to subscribe
             specific_currency_id = Blankly.utils.to_exchange_coin_id(currency_id, "binance").lower()
-            websocket = Binance_Orderbook(specific_currency_id, "depth", initially_stopped=initially_stopped)
+            websocket = Binance_Orderbook(specific_currency_id, "depth")
             websocket.append_callback(self.binance_update)
 
             # Binance returns the keys in all UPPER so the books should be created based on response
