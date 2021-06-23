@@ -1,18 +1,16 @@
-from Blankly.auth.Alpaca.auth import AlpacaAuth
-from Blankly.auth.Binance.auth import BinanceAuth
-from Blankly.auth.Coinbase.auth import CoinbaseAuth
+from Blankly.auth.Alpaca.auth import alpaca_auth
+from Blankly.auth.Binance.auth import binance_auth
+from Blankly.auth.Coinbase.auth import coinbase_auth
 
 
 class AuthFactory:
     @staticmethod
-    def create_auth(keys_file, exchange_name, portfolio_name):
+    def create_auth(self, keys_file, exchange_name, portfolio_name):
         if exchange_name == 'alpaca':
-            return AlpacaAuth(keys_file, portfolio_name)
+            return alpaca_auth(keys_file, portfolio_name)
         elif exchange_name == 'binance':
-            return BinanceAuth(keys_file, portfolio_name)
+            return binance_auth(keys_file, portfolio_name)
         elif exchange_name == 'coinbase_pro':
-            return CoinbaseAuth(keys_file, portfolio_name)
-        elif exchange_name == 'paper_trade':
-            return None
+            return coinbase_auth(keys_file, portfolio_name)
         else:
             raise KeyError("Exchange not supported")

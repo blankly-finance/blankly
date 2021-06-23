@@ -20,7 +20,7 @@ from Blankly.exchanges.IExchange import IExchange
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Interface import CoinbaseProInterface
 from Blankly.exchanges.Binance.Binance_Interface import BinanceInterface
 from Blankly.auth.auth_factory import AuthFactory
-from Blankly.auth.direct_calls_factory import InterfaceFactory
+from Blankly.interface.currency_factory import InterfaceFactory
 
 from Blankly.interface.abc_currency_interface import ICurrencyInterface
 import time
@@ -32,13 +32,10 @@ class Exchange(IExchange, abc.ABC):
     def __init__(self, exchange_type, portfolio_name, keys_path, preferences_path):
         self.__type = exchange_type  # coinbase_pro, binance, alpaca
         self.__name = portfolio_name  # my_cool_portfolio
-        self.__factory = AuthFactory()
-        self.__auth = self.__factory.create_auth(keys_path, self.__type, self.__name)
+        self.__auth = AuthFactory(keys_path, exchange_type, portfolio_name)
 
         self.preferences = Blankly.utils.load_user_preferences(preferences_path)
-        self.__direct_calls_factory = InterfaceFactory()
-
-        self.calls, self.Interface = self.__direct_calls_factory.create(self.__type, self.__auth, preferences_path)
+        self.Interface = InterfaceFactory('alpaca', self.__auth, self.preferences)
 
         # Create the model container
         self.models = {}

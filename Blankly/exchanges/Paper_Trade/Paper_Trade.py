@@ -24,7 +24,10 @@ from Blankly.exchanges.exchange import Exchange
 class PaperTrade(Exchange):
     def __init__(self, authenticated_exchange: Exchange):
         # Giving the preferences path as none allows us to create a default
-        Exchange.__init__(self, "paper_trade", "", None, authenticated_exchange)
+        Exchange.__init__(self, "paper_trade", "", None)
+
+        self.backtest_price_events = []
+        self.price_data = {}
 
         self.Interface = PaperTradeInterface(authenticated_exchange.get_interface())
 

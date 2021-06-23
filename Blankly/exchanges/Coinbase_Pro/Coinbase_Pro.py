@@ -47,7 +47,7 @@ class Coinbase_Pro(Exchange):
         return self.Interface.get_fees()
 
     def get_direct_calls(self) -> Coinbase_Pro_API:
-        return self.calls
+        return self.__calls
 
     """
     GUI Testing Functions | These only exist in the Coinbase_Pro class:
