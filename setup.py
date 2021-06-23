@@ -16,14 +16,14 @@ setup(
     # packages=['Blankly'],  # Potentially should be the same thing as name
     version='v0.1.12-alpha',
     license='lgpl-3.0',  # Licenses: https://help.github.com/articles/licensing-a-repository
-    description='Rapidly build trading bots that run on any exchange',  # Give a short description about your library
+    description='Cryptocurrency bot development platform',  # Give a short description about your library
     long_description=long_description,
     long_description_content_type='text/markdown',
-    author='Blankly',
+    author='Emerson Dove',
     author_email='contact@blankly.finance',
     url='https://github.com/Blankly-Finance/Blankly',  # Could be github or website
     # download_url='https://github.com/EmersonDove/Blankly/archive/v0.1.1-alpha.tar.gz',
-    keywords=['Crypto', 'Stocks', 'Quantitative Finance', 'Exchanges', 'Bot'],  # Keywords
+    keywords=['Crypto', 'Exchanges', 'Bot'],  # Keywords
     install_requires=[
         'numpy',
         'scikit-learn',
