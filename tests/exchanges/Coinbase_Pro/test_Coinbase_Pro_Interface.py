@@ -17,16 +17,9 @@
 """
 import Blankly
 import unittest
-import pytest
-
-from pathlib import Path
-
-from Blankly.auth.Coinbase.auth import CoinbaseAuth
-from Blankly.auth.direct_calls_factory import InterfaceFactory
-from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Interface import CoinbaseProInterface
 
 
-class CoinbaseInterface2(unittest.TestCase):
+class CoinbaseInterface(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.Coinbase_Pro = Blankly.Coinbase_Pro(portfolio_name="Sandbox Portfolio",
@@ -38,35 +31,7 @@ class CoinbaseInterface2(unittest.TestCase):
         coinbase_pro = self.Coinbase_Pro_Interface.get_exchange_type()
         self.assertEqual(coinbase_pro, "coinbase_pro")
 
-
-@pytest.fixture
-def coinbase_interface():
-    keys_file_path = Path("tests/config/keys.json").resolve()
-    settings_file_path = Path("tests/config/settings.json").resolve()
-
-    auth_obj = CoinbaseAuth(str(keys_file_path), "Sandbox Portfolio")
-    _, coinbase_interface = InterfaceFactory.create("coinbase_pro", auth_obj, str(settings_file_path))
-    return coinbase_interface
-
-
-def test_get_exchange(coinbase_interface: CoinbaseProInterface) -> None:
-    assert coinbase_interface.get_exchange_type() == 'coinbase_pro'
-
-    products = coinbase_interface.get_products()
-    btc_usd_id = None
-
-    for product in products:
-        if product['base_currency'] == 'BTC' and product['quote_currency'] == 'USD':
-            btc_usd_id = product['currency_id']
-
-    assert btc_usd_id
-
-    #market_buy_order = coinbase_interface.market_order(btc_usd_id, 'buy', 200)
-
-def test_get_price(coinbase_interface: CoinbaseProInterface) -> None:
-    return
-    # todo: just call a couple of popular coins and see if they all return floats
-    btcusd = 'BTC-USDT'
-    resp = coinbase_interface.get_price(btcusd)
-    assert type(resp) is float
-
+    # def test_market_order(self):
+    #     cbp_status = self.Coinbase_Pro_Interface.get_paper_trading_status()
+    #
+    #     self.assertTrue(cbp_status)
