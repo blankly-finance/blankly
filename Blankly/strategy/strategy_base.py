@@ -128,7 +128,6 @@ class Strategy:
                  end_date: str = None,
                  save: bool = False,
                  settings_path: str = None,
-                 optional_indicator: typing.Callable = None,
                  **kwargs
                  ):
         """
@@ -146,7 +145,6 @@ class Strategy:
             save (bool): Save the price data references to the data required for the backtest as well as
                 overriden settings.
             settings_path (str): Path to the backtest.json file.
-            optional_indicator (callable): A function which takes a single dataframe parameter to the
 
             Keyword Arguments:
                 **Use these to override parameters in the backtest.json file**
@@ -191,10 +189,7 @@ class Strategy:
             end = (end_date - epoch).total_seconds()
 
         self.Interface = self.__paper_trade_exchange.get_interface()
-        backtesting_controller = BackTestController(self.__paper_trade_exchange,
-                                                    backtest_settings_path=settings_path,
-                                                    user_callback=optional_indicator
-                                                    )
+        backtesting_controller = BackTestController(self.__paper_trade_exchange, backtest_settings_path=settings_path)
 
         # Write any kwargs as settings to the settings - save if enabled.
         for k, v in kwargs.items():
