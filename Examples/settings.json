@@ -4,6 +4,7 @@
     "use_sandbox": true,
     "use_sandbox_websockets": false,
     "binance_tld": "us",
-    "websocket_buffer_size": 10000
+    "websocket_buffer_size": 10000,
+    "authenticate_offline": true
   }
 }

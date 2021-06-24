@@ -70,16 +70,22 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
         trade_local.init_local_account(value_pairs)
 
     def init_exchange(self):
-        try:
-            fees = self.calls.get_fees()
-        except AttributeError:
-            traceback.print_exc()
-            raise AttributeError("Are you passing a non-exchange object into the paper trade constructor?")
+        if not self.user_preferences['settings']['authenticate_offline']:
+            try:
+                fees = self.calls.get_fees()
+            except AttributeError:
+                traceback.print_exc()
+                raise AttributeError("Are you passing a non-exchange object into the paper trade constructor?")
 
-        self.__exchange_properties = {
-            "maker_fee_rate": fees['maker_fee_rate'],
-            "taker_fee_rate": fees['taker_fee_rate']
-        }
+            self.__exchange_properties = {
+                "maker_fee_rate": fees['maker_fee_rate'],
+                "taker_fee_rate": fees['taker_fee_rate']
+            }
+        else:
+            self.__exchange_properties = {
+                "maker_fee_rate": .005,
+                "taker_fee_rate": .005
+            }
 
     """ Needs to be overridden here """
     def start_paper_trade_watchdog(self):

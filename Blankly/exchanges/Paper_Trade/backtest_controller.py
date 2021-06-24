@@ -138,6 +138,9 @@ class BackTestController:
             time_interval = time_interval_to_seconds(time_interval)
         self.price_events.append([callback, asset_id, time_interval])
 
+    def __determine_price(self, asset_id, epoch):
+        pass
+
     def write_setting(self, key, value, save=False):
         """
         Write a setting to the .json preferences
@@ -261,7 +264,7 @@ class BackTestController:
         # Push the accounts to the dataframe
         cycle_status = cycle_status.append(price_data, ignore_index=True)
 
-        # figures = []
+        figures = []
         # for i in self.prices:
         #     result_index = cycle_status['time'].sub(i[0]).abs().idxmin()
         #     for i in cycle_status.iloc[result_index]:
