@@ -37,17 +37,23 @@ class CoinbaseProInterface(CurrencyInterface):
         super().__init__(exchange_name, authenticated_API)
 
     def init_exchange(self):
-        fees = self.calls.get_fees()
-        try:
-            if fees['message'] == "Invalid API Key":
-                raise LookupError("Invalid API Key - are you trying to use your normal exchange keys "
-                                  "while in sandbox mode?")
-        except KeyError:
-            pass
-        self.__exchange_properties = {
-            "maker_fee_rate": fees['maker_fee_rate'],
-            "taker_fee_rate": fees['taker_fee_rate']
-        }
+        if not self.user_preferences['settings']['authenticate_offline']:
+            fees = self.calls.get_fees()
+            try:
+                if fees['message'] == "Invalid API Key":
+                    raise LookupError("Invalid API Key - are you trying to use your normal exchange keys "
+                                      "while in sandbox mode?")
+            except KeyError:
+                pass
+            self.__exchange_properties = {
+                "maker_fee_rate": fees['maker_fee_rate'],
+                "taker_fee_rate": fees['taker_fee_rate']
+            }
+        else:
+            self.__exchange_properties = {
+                "maker_fee_rate": .005,
+                "taker_fee_rate": .005
+            }
 
     def get_products(self):
         needed = self.needed['get_products']
