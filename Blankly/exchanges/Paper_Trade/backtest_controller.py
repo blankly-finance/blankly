@@ -139,7 +139,15 @@ class BackTestController:
         self.price_events.append([callback, asset_id, time_interval])
 
     def __determine_price(self, asset_id, epoch):
-        pass
+        try:
+            prices = self.price_dictionary[asset_id]  # type: pd.DataFrame
+            times = prices['times'].tolist()
+            # Iterate and find a reasonable quote price
+            for i in range(len(times)):
+                if epoch > times[i]:
+                    return prices.iloc[i]
+        except KeyError:
+            return 0
 
     def write_setting(self, key, value, save=False):
         """
@@ -166,12 +174,19 @@ class BackTestController:
         available_dict = {}
         # Grab the account status
         account_status = self.interface.get_account()
+
+        # Create an account total value
+        value_total = 0
         for i in account_status:
             # Funds on hold are still added
             available_dict[i['currency']] = i['available'] + i['hold']
+            currency_pair = i['currency']
+            currency_pair += '-USD'
+            value_total += self.__determine_price(currency_pair, local_time)
         # Make sure to add the time key in
         available_dict['time'] = local_time
 
+        available_dict['account_value'] = value_total
         return available_dict
 
     def run(self):
