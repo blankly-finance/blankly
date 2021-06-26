@@ -16,7 +16,7 @@ Blankly is an elegant python library for interacting with many crypto and stock 
 
 We abstract away all the code related to connecting to exchanges (i.e. Coinbase Pro, Binance, and Stock Exchanges), order submission (Limit, Market, and Stop), and order book and price data (historical and real-time at your designated resolution) so that you can focus on building your models. 
 
-Check out our [website](http://blankly.finance).
+Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
 
 ## Installation
 
@@ -43,7 +43,7 @@ Project
  |-settings.json
 ```
 
-Individuals will need to add a `settings.json`, and a `keys.json` to their directory, please check out our documentation on [required files](https://docs.blankly.finance/usage/setup)
+Individuals will need to add a `settings.json`, and a `keys.json` to their directory, please check out our documentation on [required files](https://docs.blankly.finance/usage/setup).
 
 ## Example Use
 
@@ -102,9 +102,6 @@ s.add_price_event(price_event,
 
 * Interface calls take ~300 µs extra to homogenize the exchange data.
 
-## Docs
-We've made awesome docs that you should check out: https://docs.blankly.finance
-
 ## Bugs
 
 Please report any bugs or issues on the Github's Issues page.
@@ -118,5 +115,9 @@ This is free software.
 
 If you would like to support the project, pull requests are welcome.
 You can also contribute just by telling us what you think of Blankly: https://forms.gle/4oAjG9MKRTYKX2hP9
+
+## Licensing 
+
+**Blankly** is distributed under the [**LGPL License**](https://www.gnu.org/licenses/lgpl-3.0.en.html). See the [LICENSE](/LICENSE) for more details.
 
 New updates every day 💪.
