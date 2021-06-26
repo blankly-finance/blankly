@@ -1,6 +1,7 @@
 <div>
    <img width="50%" src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/blankly-white.svg?alt=media&token=d5d57c15-4c55-422f-9b06-2e578288fa14">
 </div>
+
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=security_rating)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=alert_status)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
@@ -69,10 +70,6 @@ s = Strategy(c)
 s.add_price_event(price_event, 
     currency_pair='MSFT', 
     resolution='1d')
-
-s.add_price_event(price_event, 
-    currency_pair='AAPL', 
-    resolution='30m')
 ```
 
 ## Supported Exchanges
