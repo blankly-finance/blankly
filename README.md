@@ -34,6 +34,15 @@ Make sure you're using a supported version of python. The module is currently te
 
 ### Adding Keys
 
+The standard project structure is
+
+```
+Project
+|-script.py
+|-keys.json
+|-settings.json
+```
+
 Individuals will need to add a `settings.json`, and a `keys.json` to their directory, please check out our documentation on [required files](https://docs.blankly.finance/usage/setup)
 
 ## Example Use
@@ -94,7 +103,7 @@ s.add_price_event(price_event,
 * Interface calls take ~300 µs extra to homogenize the exchange data.
 
 ## Docs
-https://docs.blankly.finance
+We've made awesome docs that you should check out: https://docs.blankly.finance
 
 ## Bugs
 
