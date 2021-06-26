@@ -70,6 +70,10 @@ s = Strategy(c)
 s.add_price_event(price_event, 
     currency_pair='MSFT', 
     resolution='1d')
+
+s.add_price_event(price_event, 
+    currency_pair='AAPL', 
+    resolution='30m')
 ```
 
 ## Supported Exchanges
