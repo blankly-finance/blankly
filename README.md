@@ -69,7 +69,7 @@ def price_event(price: float, ticker: str, state: StrategyState):
         interface.market_order('buy', 0.25 * interface.cash)
         state.variables['has_buy_order'] = True
     else if state.variables['has_buy_order'] and not decision:
-        amt = interface.account[currency_pair]['available']
+        amt = interface.account[ticker]['available']
         interface.market_order('sell', amt)
         state.variables['has_buy_order'] = False
 
