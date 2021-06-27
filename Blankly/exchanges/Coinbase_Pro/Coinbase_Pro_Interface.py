@@ -87,7 +87,7 @@ class CoinbaseProInterface(CurrencyInterface):
             products[i] = utils.isolate_specific(needed, products[i])
         return products
 
-    def get_account(self, currency=None):
+    def get_account(self, currency=None) -> dict:
         """
         Get all currencies in an account, or sort by currency/account_id
         Args:
@@ -115,16 +115,28 @@ class CoinbaseProInterface(CurrencyInterface):
         ]
         """
         accounts = self.calls.get_accounts()
+
+        parsed_dictionary = {}
+
         # We have to sort through it if the accounts are none
         if currency is not None:
             for i in accounts:
                 if i["currency"] == currency:
                     parsed_value = utils.isolate_specific(needed, i)
-                    return parsed_value
+                    return {
+                        'available': parsed_value['available'],
+                        'hold': parsed_value['hold']
+                    }
             raise ValueError("Currency not found")
         for i in range(len(accounts)):
-            accounts[i] = utils.isolate_specific(needed, accounts[i])
-        return accounts
+            account = utils.isolate_specific(needed, accounts[i])
+
+            parsed_dictionary[account['currency']] = {
+                'available': account['available'],
+                'hold': account['hold']
+            }
+
+        return parsed_dictionary
 
     def market_order(self, product_id, side, funds) -> MarketOrder:
         """

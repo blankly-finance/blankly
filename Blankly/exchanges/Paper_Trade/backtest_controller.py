@@ -143,14 +143,13 @@ class BackTestController:
         self.price_events.append([callback, asset_id, time_interval])
 
     def __determine_price(self, asset_id, epoch):
+        return 0
         try:
             prices = self.pd_prices[asset_id][self.use_price]  # type: pd.Series
             times = self.pd_prices[asset_id]['time']  # type: pd.Series
             # Iterate and find a reasonable quote price
 
             for i in range(times.size):
-                # print(epoch)
-                # print(times[i])
                 if epoch > times[i]:
                     return prices[i]
             print('kept_going')
