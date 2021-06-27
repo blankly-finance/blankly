@@ -53,25 +53,27 @@ def binance_interface():
 def test_get_exchange(binance_interface: BinanceInterface) -> None:
     assert binance_interface.get_exchange_type() == 'binance'
 
+
 def test_get_account(binance_interface: BinanceInterface) -> None:
     resp = binance_interface.get_account()
     assert type(resp) is list
 
     found_btc = False
     for asset in resp:
-        if(asset['currency'] == "BTC"):
+        if asset['currency'] == "BTC":
             found_btc = True
 
     assert found_btc
+
 
 def test_get_buy_sell_order(binance_interface: BinanceInterface) -> None:
     # query for the unique ID of BTC-USD
     products = binance_interface.get_products()
     btc_usd_id = None
 
-    for product in products:
-        if product['base_currency'] == 'BTC':
-            btc_usd_id = product['currency_id']
+    for product in products.keys():
+        if product['currency'] == 'BTC':
+            btc_usd_id = product['currency']
     print(btc_usd_id)
     assert btc_usd_id
 

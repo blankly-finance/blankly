@@ -51,8 +51,7 @@ class ICurrencyInterface(abc.ABC):
         Get the type of exchange ex: "coinbase_pro" or "binance"
 
         Returns:
-             The exchange's direct calls object. A Blankly Bot class should have immediate access to this by
-             default
+             A string that corresponds to the type of exchange
 
         TODO add return example
         """
@@ -68,7 +67,7 @@ class ICurrencyInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_account(self, currency=None):
+    def get_account(self, currency=None) -> dict:
         """
         Get all currencies in an account, or sort by currency/account_id
         Args:

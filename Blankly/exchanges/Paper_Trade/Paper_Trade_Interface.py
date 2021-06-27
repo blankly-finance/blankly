@@ -57,17 +57,9 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
 
         # Write in the accounts to our local account. This involves getting the values directly from the exchange
         accounts = self.calls.get_account()
-        value_pairs = {}
-
-        # Iterate & pair
-        for i in accounts:
-            value_pairs[i['currency']] = {
-                'available': i['available'],
-                'hold': i['hold']
-            }
 
         # Initialize the local account
-        trade_local.init_local_account(value_pairs)
+        trade_local.init_local_account(accounts)
 
     def init_exchange(self):
         if not self.user_preferences['settings']['authenticate_offline']:

@@ -154,7 +154,7 @@ class BinanceInterface(CurrencyInterface):
             products[i] = utils.isolate_specific(needed, products[i])
         return products
 
-    def get_account(self, currency=None):
+    def get_account(self, currency=None) -> dict:
         """
         Get all currencies in an account, or sort by currency/account_id
         Args:
@@ -208,11 +208,13 @@ class BinanceInterface(CurrencyInterface):
                     if accounts[i]["asset"] == currency:
                         accounts = utils.rename_to(renames, accounts[i])
                         parsed_value = utils.isolate_specific(needed, accounts)
-                        return parsed_value
+                        return {
+                            'available': parsed_value['available'],
+                            'hold': parsed_value['hold']
+                        }
                 # If not just return a default 0 value. This is safe because we already checked if the currency
                 #  was valid
                 return {
-                    "currency": currency,
                     "available": 0.0,
                     "hold": 0.0
                 }
@@ -224,8 +226,8 @@ class BinanceInterface(CurrencyInterface):
         owned_assets = []
         for i in accounts:
             owned_assets.append(i['asset'])
-        # Fill this list for return
-        filled_dict_list = []
+        # Create an empty list for return
+        parsed_dictionary = {}
         # Iterate through
         for i in self.__available_currencies:
             # Iterate through everything binance returned
@@ -236,16 +238,18 @@ class BinanceInterface(CurrencyInterface):
                     # Do the normal thing above and append
                     mutated = utils.rename_to(renames, val)
                     mutated = utils.isolate_specific(needed, mutated)
-                    filled_dict_list.append(mutated)
+                    parsed_dictionary[mutated['currency']] = {
+                        'available': mutated['available'],
+                        'hold': mutated['hold']
+                    }
                     found = True
             # If it wasn't found just default here
             if not found:
-                filled_dict_list.append({
-                    "currency": i,
-                    "available": 0.0,
-                    "hold": 0.0
-                })
-        return filled_dict_list
+                parsed_dictionary[i] = {
+                    'available': 0.0,
+                    'hold': 0.0
+                }
+        return parsed_dictionary
 
     def market_order(self, product_id, side, funds) -> MarketOrder:
         """
