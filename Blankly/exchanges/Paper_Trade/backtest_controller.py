@@ -62,7 +62,11 @@ class BackTestController:
 
         self.price_dictionary = {}
 
+        self.pd_prices = None
+
         self.sync_prices()
+
+        self.use_price = None
 
         self.queue_backtest_write = False
 
@@ -140,12 +144,17 @@ class BackTestController:
 
     def __determine_price(self, asset_id, epoch):
         try:
-            prices = self.price_dictionary[asset_id]  # type: pd.DataFrame
-            times = prices['times'].tolist()
+            prices = self.pd_prices[asset_id][self.use_price]  # type: pd.Series
+            times = self.pd_prices[asset_id]['time']  # type: pd.Series
             # Iterate and find a reasonable quote price
-            for i in range(len(times)):
+
+            for i in range(times.size):
+                # print(epoch)
+                # print(times[i])
                 if epoch > times[i]:
-                    return prices.iloc[i]
+                    return prices[i]
+            print('kept_going')
+            return prices[-1]
         except KeyError:
             return 0
 
@@ -186,7 +195,7 @@ class BackTestController:
         # Make sure to add the time key in
         available_dict['time'] = local_time
 
-        available_dict['account_value'] = value_total
+        available_dict['Account Value'] = value_total
         return available_dict
 
     def run(self):
@@ -199,8 +208,12 @@ class BackTestController:
 
         prices = self.sync_prices(False)
 
+        self.pd_prices = prices
+
         # Organize each price into this structure: [epoch, "BTC-USD", price]
         use_price = self.preferences['settings']['use_price']
+        self.use_price = use_price
+
         for k, v in prices.items():
             frame = v  # type: pd.DataFrame
 
