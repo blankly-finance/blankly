@@ -7,7 +7,7 @@ def cagr(start_value, end_value, years):
 
 
 def cum_returns(start_value, end_value):
-    return (start_value - end_value) / start_value
+    return (end_value - start_value) / start_value
 
 
 def sortino(returns, n=252, risk_free_rate=None):
