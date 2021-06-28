@@ -22,6 +22,7 @@
     "show_tickers_with_zero_delta": false,
     "save_initial_account_value": false,
     "show_progress_during_backtest": false,
-    "cache_location": "./price_caches"
+    "cache_location": "./price_caches",
+    "resample_account_value_for_metrics": "1d"
   }
 }

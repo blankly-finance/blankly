@@ -32,8 +32,6 @@ from bokeh.models import HoverTool
 from bokeh.palettes import Category10_10
 import os
 
-import sys
-
 
 def to_string_key(separated_list):
     output = ""
@@ -334,24 +332,29 @@ class BackTestController:
         # Push the accounts to the dataframe
         cycle_status = cycle_status.append(price_data, ignore_index=True)
 
+        print("Creating report...")
+
         figures = []
         # for i in self.prices:
         #     result_index = cycle_status['time'].sub(i[0]).abs().idxmin()
         #     for i in cycle_status.iloc[result_index]:
 
         hover = HoverTool(
-                        tooltips=[
-                            ('value', '@value')
-                        ],
+            tooltips=[
+                ('value', '@value')
+            ],
 
-                        # formatters={
-                        #     'time': 'datetime',  # use 'datetime' formatter for 'date' field
-                        #     '@{value}': 'printf',   # use 'printf' formatter for '@{adj close}' field
-                        # },
+            # formatters={
+            #     'time': 'datetime',  # use 'datetime' formatter for 'date' field
+            #     '@{value}': 'printf',   # use 'printf' formatter for '@{adj close}' field
+            # },
 
-                        # display a tooltip whenever the cursor is vertically in line with a glyph
-                        mode='vline'
-                    )
+            # display a tooltip whenever the cursor is vertically in line with a glyph
+            mode='vline'
+        )
+
+        # Back up the epoch list so that it can be used later for re-sampling
+        epoch_backup = cycle_status['time'].tolist()
 
         if self.preferences['settings']['GUI_output']:
             global_x_range = None
@@ -359,12 +362,14 @@ class BackTestController:
             show_zero_delta = self.preferences['settings']['show_tickers_with_zero_delta']
 
             color = Category10_10.__iter__()
+
+            time = [datetime.fromtimestamp(ts) for ts in cycle_status['time']]
+
             for column in cycle_status:
                 if column != 'time' and (not (cycle_status[column][0] == cycle_status[column].iloc[-1]) or
                                          show_zero_delta):
 
                     p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
-                    time = [datetime.fromtimestamp(ts) for ts in cycle_status['time']]
                     source = ColumnDataSource(data=dict(
                         time=time,
                         value=cycle_status[column].tolist()
@@ -393,10 +398,58 @@ class BackTestController:
 
             show(bokeh_columns(figures))
 
+        def is_number(s):
+            try:
+                float(s)
+                return True
+            except ValueError:
+                return False
+
         return_dict = {
             'history': cycle_status
         }
 
+        # Check if it needs resampling
+        resample_setting = self.preferences['settings']['resample_account_value_for_metrics']
+        if isinstance(resample_setting, str) or is_number(resample_setting):
+            # Backing arrays. We can't append directly to the dataframe so array has to also be made
+            resampled_returns = pd.DataFrame(columns=['time', 'value'])
+            resampled_backing_array = []
+
+            # Find the interval second value
+            interval_value = time_interval_to_seconds(resample_setting)
+
+            # Assign start and stop limits
+            epoch_start = epoch_backup[0]
+            epoch_max = epoch_backup[len(epoch_backup)-1]
+
+            while epoch_start <= epoch_max:
+                # Append this dict to the array
+                resampled_backing_array.append({
+                    'time': epoch_start,
+                    'value': self.__determine_price('Account Value (USD)', epoch_start)
+                })
+
+                # Increase the epoch value
+                epoch_start += interval_value
+
+            # Put this in the dataframe
+            resampled_returns.append(resampled_backing_array, ignore_index=True)
+
+            # This is the resampled version
+            return_dict['resampled_account_value'] = resampled_returns
+
+            # Now we need to copy it and find the differences
+            returns = resampled_returns.copy(deep=True)
+
+            # Default diff parameters should do it
+            print(returns)
+            returns['value'] = returns['value'].diff()
+
+            # Now write it to our dictionary
+            return_dict['returns'] = returns
+
+        # Run this last so that the user can override what they want
         for callback in self.callbacks:
             return_dict[callback.__name__] = callback(cycle_status)
 
