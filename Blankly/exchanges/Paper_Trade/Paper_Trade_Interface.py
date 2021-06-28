@@ -230,28 +230,26 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
 
         return order, funds
 
-    def get_account(self, currency=None):
+    def get_account(self, currency=None) -> dict:
         needed = self.needed['get_account']
 
         # TODO this can be optimized
         local_account = trade_local.get_accounts()
-        accounts = []
+        accounts = {}
         for key, value in local_account.items():
-            accounts.append({
-                'currency': key,
+            accounts[key] = {
                 'available': value['available'],
                 'hold': value['hold']
-            })
+            }
 
         # We have to sort through it if the accounts are none
         if currency is not None:
-            for i in accounts:
-                if i["currency"] == currency:
-                    parsed_value = utils.isolate_specific(needed, i)
-                    return parsed_value
+            if currency in accounts.keys():
+                return local_account[currency]
             warnings.warn("Currency not found")
-        for i in range(len(accounts)):
-            accounts[i] = utils.isolate_specific(needed, accounts[i])
+
+        for k, v in local_account.items():
+            local_account[k] = utils.isolate_specific(needed, accounts[k])
         return accounts
 
     def market_order(self, product_id, side, funds) -> MarketOrder:
