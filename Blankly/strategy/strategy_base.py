@@ -55,19 +55,26 @@ class Strategy:
         hashed = hash(callable)
         self.__variables[hashed][key] = value
 
-    def add_price_event(self, callback: typing.Callable, currency_pair: str, resolution: str):
+    def add_price_event(self, callback: typing.Callable, currency_pair: str, resolution: str,
+                        init: typing.Callable = None, **kwargs):
         """
         Add Orderbook Event
         Args:
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
             currency_pair: Currency pair to create the price event for
             resolution: The resolution that the callback will be run - in seconds
+            init: Callback function to allow a setup for the strategy variable. This
+                can be used for accumulating price data
         """
         resolution = time_interval_to_seconds(resolution)
         
         self.__scheduling_pair.append([currency_pair, resolution])
-        callback_id = hash(callback)
-        self.__variables[callback_id] = AttributeDict({})
+        self.__variables[callback] = AttributeDict({})
+        state = StrategyState(self, self.Interface, self.__variables[callback], resolution)
+
+        # run init
+        if init:
+            init(currency_pair, state)
 
         if resolution < 10:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
@@ -77,9 +84,9 @@ class Strategy:
                                   initially_stopped=True,
                                   callback=callback,
                                   resolution=resolution,
-                                  variables=self.__variables[callback_id],
-                                  state_object=StrategyState(self, self.Interface, self.__variables[callback_id], resolution),
-                                  currency_pair=currency_pair)
+                                  variables=self.__variables[callback],
+                                  state_object=state,
+                                  currency_pair=currency_pair, **kwargs)
             )
         else:
             # Use the API
@@ -88,9 +95,9 @@ class Strategy:
                                   initially_stopped=True,
                                   callback=callback,
                                   resolution=resolution,
-                                  variables=self.__variables[callback_id],
-                                  state_object=StrategyState(self, self.Interface, self.__variables[callback_id], resolution),
-                                  currency_pair=currency_pair)
+                                  variables=self.__variables[callback],
+                                  state_object=state,
+                                  currency_pair=currency_pair, **kwargs)
             )
 
     def __idle_event(self):
@@ -131,7 +138,7 @@ class Strategy:
     def __orderbook_event(self, tick, currency_pair, user_callback, state_object):
         user_callback(tick, currency_pair, state_object)
 
-    def add_orderbook_event(self, callback: typing.Callable, currency_pair: str):
+    def add_orderbook_event(self, callback: typing.Callable, currency_pair: str, init: typing.Callable = None, **kwargs):
         """
         Add Orderbook Event
         Args:
@@ -141,6 +148,9 @@ class Strategy:
         self.__scheduling_pair.append([currency_pair, 'live'])
         callback_id = str(uuid4())
         self.__variables[callback_id] = AttributeDict({})
+        state = StrategyState(self, self.Interface, self.__variables[callback])
+        if init:
+            init(currency_pair, state)
 
         variables = self.__variables[callback_id]
 
@@ -149,7 +159,8 @@ class Strategy:
                                                 currency_id=currency_pair,
                                                 currency_pair=currency_pair,
                                                 user_callback=callback,
-                                                state_object=StrategyState(self, self.Interface, variables)
+                                                state_object=state,
+                                                **kwargs
                                                 )
 
         exchange_type = self.__exchange.get_type()
