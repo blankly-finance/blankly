@@ -51,6 +51,10 @@ class Strategy:
     def variables(self):
         return self.__variables
 
+    def modify_variable(self, callable, key, value):
+        hashed = hash(callable)
+        self.__variables[hashed][key] = value
+
     def add_price_event(self, callback: typing.Callable, currency_pair: str, resolution: str):
         """
         Add Orderbook Event
@@ -62,10 +66,8 @@ class Strategy:
         resolution = time_interval_to_seconds(resolution)
         
         self.__scheduling_pair.append([currency_pair, resolution])
-        callback_id = str(uuid4())
+        callback_id = hash(callback)
         self.__variables[callback_id] = AttributeDict({})
-
-        variables = self.__variables[callback_id]
 
         if resolution < 10:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
@@ -75,8 +77,8 @@ class Strategy:
                                   initially_stopped=True,
                                   callback=callback,
                                   resolution=resolution,
-                                  variables=variables,
-                                  state_object=StrategyState(self, self.Interface, variables, resolution),
+                                  variables=self.__variables[callback_id],
+                                  state_object=StrategyState(self, self.Interface, self.__variables[callback_id], resolution),
                                   currency_pair=currency_pair)
             )
         else:
@@ -86,8 +88,8 @@ class Strategy:
                                   initially_stopped=True,
                                   callback=callback,
                                   resolution=resolution,
-                                  variables=variables,
-                                  state_object=StrategyState(self, self.Interface, variables, resolution),
+                                  variables=self.__variables[callback_id],
+                                  state_object=StrategyState(self, self.Interface, self.__variables[callback_id], resolution),
                                   currency_pair=currency_pair)
             )
 

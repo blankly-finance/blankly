@@ -143,7 +143,6 @@ class BackTestController:
         self.price_events.append([callback, asset_id, time_interval])
 
     def __determine_price(self, asset_id, epoch):
-        return 0
         try:
             prices = self.pd_prices[asset_id][self.use_price]  # type: pd.Series
             times = self.pd_prices[asset_id]['time']  # type: pd.Series
@@ -152,7 +151,6 @@ class BackTestController:
             for i in range(times.size):
                 if epoch > times[i]:
                     return prices[i]
-            print('kept_going')
             return prices[-1]
         except KeyError:
             return 0
@@ -185,14 +183,16 @@ class BackTestController:
 
         # Create an account total value
         value_total = 0
-        for i in account_status:
+        for i in account_status.keys():
             # Funds on hold are still added
-            available_dict[i['currency']] = i['available'] + i['hold']
-            currency_pair = i['currency']
+            available_dict[i] = account_status[i]['available'] + account_status[i]['hold']
+            currency_pair = i
             currency_pair += '-USD'
             value_total += self.__determine_price(currency_pair, local_time)
         # Make sure to add the time key in
         available_dict['time'] = local_time
+
+        value_total += account_status['USD']['available']
 
         available_dict['Account Value'] = value_total
         return available_dict
@@ -246,9 +246,13 @@ class BackTestController:
         """
         self.interface.set_backtesting(True)
         account = self.interface.get_account()
-        column_keys = ['time']
-        for i in account:
-            column_keys.append(i['currency'])
+        column_keys = list(account.keys())
+        column_keys.append('time')
+
+        # column_keys = ['time']
+        # for i in account.keys():
+        #     column_keys.append(i['currency'])
+
         cycle_status = pd.DataFrame(columns=column_keys)
 
         # Append dictionaries to this to make the pandas dataframe
