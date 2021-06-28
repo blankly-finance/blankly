@@ -55,13 +55,16 @@ class Strategy:
         hashed = hash(callable)
         self.__variables[hashed][key] = value
 
-    def add_price_event(self, callback: typing.Callable, currency_pair: str, resolution: str, init: typing.Callable = None, **kwargs):
+    def add_price_event(self, callback: typing.Callable, currency_pair: str, resolution: str,
+                        init: typing.Callable = None, **kwargs):
         """
         Add Orderbook Event
         Args:
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
             currency_pair: Currency pair to create the price event for
             resolution: The resolution that the callback will be run - in seconds
+            init: Callback function to allow a setup for the strategy variable. This
+                can be used for accumulating price data
         """
         resolution = time_interval_to_seconds(resolution)
         
