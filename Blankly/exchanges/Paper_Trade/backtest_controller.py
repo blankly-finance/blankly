@@ -26,10 +26,13 @@ import typing
 import pandas as pd
 from datetime import datetime
 import traceback
-from bokeh.plotting import figure, show
+from bokeh.plotting import figure, show, ColumnDataSource
 from bokeh.layouts import column as bokeh_columns
+from bokeh.models import HoverTool
 from bokeh.palettes import Category10_10
 import os
+
+import sys
 
 
 def to_string_key(separated_list):
@@ -143,16 +146,44 @@ class BackTestController:
         self.price_events.append([callback, asset_id, time_interval])
 
     def __determine_price(self, asset_id, epoch):
+
+        # Geeksforgeeks binary search implementation
+        def binary_search(arr, low, high, x):
+
+            # Check base case
+            if high >= low:
+
+                mid = (high + low) // 2
+
+                # Modify this to get our sort-of-right behavior
+                try:
+                    if arr[mid] <= x <= arr[mid + 1]:
+                        return mid
+                    elif arr[mid] > x:
+                        return binary_search(arr, low, mid - 1, x)
+                except IndexError:
+                    return len(arr)-1
+
+                # If element is smaller than mid, then it can only
+                # be present in left subarray
+
+                # Else the element can only be present in right subarray
+                else:
+                    return binary_search(arr, mid + 1, high, x)
+
+            else:
+                # Must be before this case
+                return 0
+
         try:
             prices = self.pd_prices[asset_id][self.use_price]  # type: pd.Series
             times = self.pd_prices[asset_id]['time']  # type: pd.Series
-            # Iterate and find a reasonable quote price
 
-            for i in range(times.size):
-                if epoch > times[i]:
-                    return prices[i]
-            return prices[-1]
+            # Iterate and find the correct quote price
+            index = binary_search(times, 0, times.size, epoch)
+            return prices[index]
         except KeyError:
+            # traceback.print_exc()
             return 0
 
     def write_setting(self, key, value, save=False):
@@ -183,18 +214,23 @@ class BackTestController:
 
         # Create an account total value
         value_total = 0
+
         for i in account_status.keys():
             # Funds on hold are still added
             available_dict[i] = account_status[i]['available'] + account_status[i]['hold']
             currency_pair = i
+
+            # Convert to quote
             currency_pair += '-USD'
-            value_total += self.__determine_price(currency_pair, local_time)
+
+            # Get price at time
+            value_total += self.__determine_price(currency_pair, local_time) * available_dict[i]
         # Make sure to add the time key in
         available_dict['time'] = local_time
 
         value_total += account_status['USD']['available']
 
-        available_dict['Account Value'] = value_total
+        available_dict['Account Value (USD)'] = value_total
         return available_dict
 
     def run(self):
@@ -207,11 +243,16 @@ class BackTestController:
 
         prices = self.sync_prices(False)
 
-        self.pd_prices = prices
-
         # Organize each price into this structure: [epoch, "BTC-USD", price]
         use_price = self.preferences['settings']['use_price']
         self.use_price = use_price
+
+        # Sort each column by the use price
+        for column in prices.keys():
+            prices[column] = prices[column].sort_values('time')
+
+        self.pd_prices = {**prices}
+        # sys.exit()
 
         for k, v in prices.items():
             frame = v  # type: pd.DataFrame
@@ -222,8 +263,6 @@ class BackTestController:
             for index, row in frame.iterrows():
                 # TODO iterrows() is allegedly pretty slow
                 self.prices.append([row.time, k, row[use_price]])
-
-        self.prices = sorted(self.prices, key=lambda x: x[0])
 
         self.current_time = self.prices[0][0]
         self.initial_time = self.current_time
@@ -300,6 +339,20 @@ class BackTestController:
         #     result_index = cycle_status['time'].sub(i[0]).abs().idxmin()
         #     for i in cycle_status.iloc[result_index]:
 
+        hover = HoverTool(
+                        tooltips=[
+                            ('value', '@value')
+                        ],
+
+                        # formatters={
+                        #     'time': 'datetime',  # use 'datetime' formatter for 'date' field
+                        #     '@{value}': 'printf',   # use 'printf' formatter for '@{adj close}' field
+                        # },
+
+                        # display a tooltip whenever the cursor is vertically in line with a glyph
+                        mode='vline'
+                    )
+
         if self.preferences['settings']['GUI_output']:
             global_x_range = None
 
@@ -312,12 +365,20 @@ class BackTestController:
 
                     p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
                     time = [datetime.fromtimestamp(ts) for ts in cycle_status['time']]
-                    p.step(time, cycle_status[column].tolist(),
+                    source = ColumnDataSource(data=dict(
+                        time=time,
+                        value=cycle_status[column].tolist()
+                    ))
+                    p.step('time', 'value',
+                           source=source,
                            line_width=2,
                            color=next(color),
                            legend_label=column,
                            mode="before",
                            )
+
+                    p.add_tools(hover)
+
                     # Format graph
                     p.legend.location = "top_left"
                     p.legend.title = column

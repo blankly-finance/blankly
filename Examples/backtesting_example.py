@@ -1,13 +1,12 @@
 import Blankly
 
-
 def price_event(price, product_id):
     # Run this every "hour"
     interface = strategy.Interface
 
     usd_amount = interface.get_account('USD')['available']
 
-    # Try to make our account value match 1/100 of the price.
+    # Try to make our account value match the price.
     price = price/100
 
     delta = price-usd_amount
@@ -36,7 +35,7 @@ if __name__ == "__main__":
     strategy.add_price_event(price_event, 'BTC-USD', resolution='1h')
 
     # The backtest function will now turn our strategy class into a class that can be backtested
-    print(strategy.backtest(
+    print(strategy.backtest(to='1y',
                             initial_values={
                                             'BTC': 100000,
                                             'USD': 100000
