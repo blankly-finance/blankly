@@ -1,5 +1,6 @@
 import Blankly
 
+
 def price_event(price, product_id):
     # Run this every "hour"
     interface = strategy.Interface
@@ -7,7 +8,7 @@ def price_event(price, product_id):
     usd_amount = interface.get_account('USD')['available']
 
     # Try to make our account value match the price.
-    price = price/100
+    price = price
 
     delta = price-usd_amount
     if delta > 10:
