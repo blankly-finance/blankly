@@ -27,6 +27,7 @@ from Blankly.utils.utils import compare_dictionaries
 from pathlib import Path
 import time
 
+
 class BinanceInterface_test(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -56,11 +57,14 @@ def test_get_exchange(binance_interface: BinanceInterface) -> None:
 
 def test_get_account(binance_interface: BinanceInterface) -> None:
     resp = binance_interface.get_account()
-    assert type(resp) is list
+    assert type(resp) is dict
 
     found_btc = False
-    for asset in resp:
-        if asset['currency'] == "BTC":
+    for asset in resp.keys():
+        if asset == "BTC":
+            resp['BTC']['available'] += 1
+            resp['BTC']['hold'] += 1
+
             found_btc = True
 
     assert found_btc
@@ -71,9 +75,10 @@ def test_get_buy_sell_order(binance_interface: BinanceInterface) -> None:
     products = binance_interface.get_products()
     btc_usd_id = None
 
-    for product in products.keys():
-        if product['currency'] == 'BTC':
-            btc_usd_id = product['currency']
+    for i in products:
+        if i['currency_id'] == 'BTC-USDT':
+            btc_usd_id = i['currency_id']
+            break
     print(btc_usd_id)
     assert btc_usd_id
 
@@ -105,6 +110,7 @@ def test_get_buy_sell_order(binance_interface: BinanceInterface) -> None:
     assert type(resp) is dict
     assert resp["side"] == "sell"
     assert resp["type"] == "market"
+
 
 def test_get_price(binance_interface: BinanceInterface) -> None:
     # todo: just call a couple of popular coins and see if they all return floats

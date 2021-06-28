@@ -64,13 +64,13 @@ class InterfaceHomogeneity(unittest.TestCase):
         for i in range(len(self.Interfaces)):
             responses.append(self.Interfaces[i].get_products()[0])
 
-        self.assertTrue(compare_responses(responses))
+        self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
     def test_get_account(self):
         responses = []
         for i in range(len(self.Interfaces)):
-            responses.append(self.Interfaces[i].get_account()['BTC-USD'])
-        self.assertTrue(compare_responses(responses))
+            responses.append(self.Interfaces[i].get_account()['BTC'])
+        self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
     def check_market_order(self, order1: MarketOrder, side, funds):
         """
