@@ -72,7 +72,8 @@ class Strategy:
         self.__scheduling_pair.append([currency_pair, resolution])
         callback_hash = hash((callback, hash((currency_pair, resolution))))
         if callback_hash in self.__hashes:
-            raise ValueError("A callback of the same type and resolution has already been made for the ticker: {}".format(currency_pair))
+            raise ValueError("A callback of the same type and resolution has already been made for "
+                             "the ticker: {}".format(currency_pair))
         else:
             self.__hashes.append(callback_hash)
         self.__variables[callback_hash] = AttributeDict({})
@@ -144,17 +145,21 @@ class Strategy:
     def __orderbook_event(self, tick, currency_pair, user_callback, state_object):
         user_callback(tick, currency_pair, state_object)
 
-    def add_orderbook_event(self, callback: typing.Callable, currency_pair: str, init: typing.Callable = None, **kwargs):
+    def add_orderbook_event(self, callback: typing.Callable, currency_pair: str, init: typing.Callable = None,
+                            **kwargs):
         """
         Add Orderbook Event
         Args:
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
             currency_pair: Currency pair to create the orderbook for
+            init: Callback function to allow a setup for the strategy variable. This
+                can be used for accumulating price data
         """
         self.__scheduling_pair.append([currency_pair, 'live'])
         callback_hash = hash((callback, currency_pair))
         if callback_hash in self.__hashes:
-            raise ValueError("A callback of the same type and resolution has already been made for the ticker: {}".format(currency_pair))
+            raise ValueError("A callback of the same type and resolution has already been made for the ticker: "
+                             "{}".format(currency_pair))
         else:
             self.__hashes.append(callback_hash)
         self.__variables[callback_hash] = AttributeDict({})
@@ -234,6 +239,12 @@ class Strategy:
 
                 cache_location: str = './price_caches'
                     Set a location for the price cache csv's to be written to
+
+                resample_account_value_for_metrics: str or bool = '1d' or False
+                    Because backtest data can be input at a variety of resolutions, account value often needs to be
+                        recalculated at consistent intervals for use in metrics & indicators.
+                        This setting allows the specification of that consistent interval.
+                        The value can be set to `False` to skip any recalculation.
         """
 
         start = None
