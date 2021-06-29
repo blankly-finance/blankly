@@ -8,9 +8,8 @@ def price_event(price, product_id):
     usd_amount = interface.get_account('USD')['available']
 
     # Try to make our account value match the price.
-    price = price
-
     delta = price-usd_amount
+
     if delta > 10:
         strategy.Interface.market_order(product_id, 'sell', delta)
     if delta < -10:
