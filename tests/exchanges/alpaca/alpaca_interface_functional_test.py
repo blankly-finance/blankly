@@ -9,7 +9,7 @@ import logging
 import datetime
 import time
 import pytz
-
+from datetime import datetime as dt
 timeZ_Ny = pytz.timezone('America/New_York')
 
 MARKET_OPEN = datetime.time(hour=9, minute=0, second=0, tzinfo=timeZ_Ny)
@@ -73,3 +73,12 @@ def test_get_buy_sell(alpaca_interface: AlpacaInterface) -> None:
     # get_asset(symbol)
 
     # place sell order
+
+def test_get_product_history(alpaca_interface: AlpacaInterface) -> None:
+    start = dt.strptime("2021-06-08 09:30", "%Y-%m-%d %H:%M")
+    end = dt.strptime("2021-06-08 16:00", "%Y-%m-%d %H:%M")
+
+    return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
+
+    print(return_df)
+    assert False

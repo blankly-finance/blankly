@@ -1,5 +1,7 @@
 import warnings
 
+from alpaca_trade_api.rest import TimeFrame
+
 from Blankly.utils import utils as utils
 from Blankly.exchanges.Alpaca.Alpaca_API import API
 from Blankly.interface.currency_Interface import CurrencyInterface
@@ -8,6 +10,10 @@ import alpaca_trade_api
 from Blankly.utils.purchases.limit_order import LimitOrder
 from Blankly.utils.purchases.market_order import MarketOrder
 from dateutil import parser
+import pandas as pd
+from datetime import datetime as dt
+
+NY = 'America/New_York'
 
 class AlpacaInterface(CurrencyInterface):
     def __init__(self, authenticated_API: API, preferences_path: str):
@@ -145,12 +151,30 @@ class AlpacaInterface(CurrencyInterface):
             'taker_fee_rate': 0
         }
 
-    def get_product_history(self, product_id, epoch_start, epoch_stop, granularity):
+    def get_product_history(self, product_id: str, epoch_start: dt, epoch_stop: dt, granularity: int):
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
-        pass
+        accepted_grans = [1, 60, 3600]
+        if granularity not in accepted_grans:
+            warnings.warn("Granularity is not an accepted granularity...didnt have a chance to implement more yet, returning empty df")
+            return pd.DataFrame()
 
-    # TODO: tbh not sure how this one works
+        if accepted_grans == 1:
+            time_interval = TimeFrame.Minute
+        elif accepted_grans == 60:
+            time_interval = TimeFrame.Hour
+        else:
+            time_interval = TimeFrame.Day
+        # '2020-08-28 9:30' <- this is how it should look
+        formatting_str = "%Y-%m-%d"
+        epoch_start_str = epoch_start.strftime(formatting_str)
+        epoch_stop_str = epoch_stop.strftime(formatting_str)
+
+
+        return self.calls.get_bars(product_id, time_interval, epoch_start_str, epoch_stop_str,adjustment='raw').df
+
+
+    # TODO: tbh not sure how this one works or if it applies to Alpaca
     def get_market_limits(self, product_id):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         pass
