@@ -45,6 +45,7 @@ class Strategy:
         self.__paper_trade_exchange = Blankly.PaperTrade(self.__exchange)
         self.__schedulers = []
         self.__variables = {}
+        self.__hashes = []
         self.__assigned_websockets = []
     
     @property
@@ -70,6 +71,10 @@ class Strategy:
         
         self.__scheduling_pair.append([currency_pair, resolution])
         callback_hash = hash((callback, hash((currency_pair, resolution))))
+        if callback_hash in self.__hashes:
+            raise ValueError("A callback of the same type and resolution has already been made for the ticker: {}".format(currency_pair))
+        else:
+            self.__hashes.append(callback_hash)
         self.__variables[callback_hash] = AttributeDict({})
         state = StrategyState(self, self.Interface, self.__variables[callback_hash], resolution)
 
@@ -148,6 +153,10 @@ class Strategy:
         """
         self.__scheduling_pair.append([currency_pair, 'live'])
         callback_hash = hash((callback, currency_pair))
+        if callback_hash in self.__hashes:
+            raise ValueError("A callback of the same type and resolution has already been made for the ticker: {}".format(currency_pair))
+        else:
+            self.__hashes.append(callback_hash)
         self.__variables[callback_hash] = AttributeDict({})
         state = StrategyState(self, self.Interface, self.__variables[callback])
         if init:
