@@ -147,7 +147,6 @@ class BackTestController:
 
         # Geeksforgeeks binary search implementation
         def binary_search(arr, low, high, x):
-
             # Check base case
             if high >= low:
 
@@ -181,7 +180,6 @@ class BackTestController:
             index = binary_search(times, 0, times.size, epoch)
             return prices[index]
         except KeyError:
-            # traceback.print_exc()
             return 0
 
     def write_setting(self, key, value, save=False):
@@ -423,6 +421,11 @@ class BackTestController:
             epoch_start = epoch_backup[0]
             epoch_max = epoch_backup[len(epoch_backup)-1]
 
+            # Going to push this in as a single column version of our price data so that __determine_price can handle it
+            self.pd_prices['Account Value (USD)'] = pd.DataFrame()
+            self.pd_prices['Account Value (USD)'][use_price] = cycle_status['Account Value (USD)']
+            self.pd_prices['Account Value (USD)']['time'] = cycle_status['time']
+
             while epoch_start <= epoch_max:
                 # Append this dict to the array
                 resampled_backing_array.append({
@@ -434,7 +437,7 @@ class BackTestController:
                 epoch_start += interval_value
 
             # Put this in the dataframe
-            resampled_returns.append(resampled_backing_array, ignore_index=True)
+            resampled_returns = resampled_returns.append(resampled_backing_array, ignore_index=True)
 
             # This is the resampled version
             return_dict['resampled_account_value'] = resampled_returns
@@ -443,7 +446,6 @@ class BackTestController:
             returns = resampled_returns.copy(deep=True)
 
             # Default diff parameters should do it
-            print(returns)
             returns['value'] = returns['value'].diff()
 
             # Now write it to our dictionary
