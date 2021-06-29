@@ -69,8 +69,9 @@ class Strategy:
         resolution = time_interval_to_seconds(resolution)
         
         self.__scheduling_pair.append([currency_pair, resolution])
-        self.__variables[callback] = AttributeDict({})
-        state = StrategyState(self, self.Interface, self.__variables[callback], resolution)
+        callback_hash = hash((callback, hash((currency_pair, resolution))))
+        self.__variables[callback_hash] = AttributeDict({})
+        state = StrategyState(self, self.Interface, self.__variables[callback_hash], resolution)
 
         # run init
         if init:
@@ -84,7 +85,7 @@ class Strategy:
                                   initially_stopped=True,
                                   callback=callback,
                                   resolution=resolution,
-                                  variables=self.__variables[callback],
+                                  variables=self.__variables[callback_hash],
                                   state_object=state,
                                   currency_pair=currency_pair, **kwargs)
             )
@@ -95,7 +96,7 @@ class Strategy:
                                   initially_stopped=True,
                                   callback=callback,
                                   resolution=resolution,
-                                  variables=self.__variables[callback],
+                                  variables=self.__variables[callback_hash],
                                   state_object=state,
                                   currency_pair=currency_pair, **kwargs)
             )
@@ -146,19 +147,20 @@ class Strategy:
             currency_pair: Currency pair to create the orderbook for
         """
         self.__scheduling_pair.append([currency_pair, 'live'])
-        callback_id = str(uuid4())
-        self.__variables[callback_id] = AttributeDict({})
+        callback_hash = hash((callback, currency_pair))
+        self.__variables[callback_hash] = AttributeDict({})
         state = StrategyState(self, self.Interface, self.__variables[callback])
         if init:
             init(currency_pair, state)
 
-        variables = self.__variables[callback_id]
+        variables = self.__variables[callback_hash]
 
         # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
         self.Orderbook_Manager.create_orderbook(self.__orderbook_event, initially_stopped=True,
                                                 currency_id=currency_pair,
                                                 currency_pair=currency_pair,
                                                 user_callback=callback,
+                                                variables=variables,
                                                 state_object=state,
                                                 **kwargs
                                                 )
