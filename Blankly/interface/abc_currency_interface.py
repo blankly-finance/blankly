@@ -71,10 +71,6 @@ class ICurrencyInterface(abc.ABC):
     def account(self):
         """
         Get all currencies in an account, or sort by currency/account_id
-        Args:
-            currency (Optional): Filter by particular currency
-
-            These arguments are mutually exclusive
 
         TODO add return example
         """
@@ -133,9 +129,15 @@ class ICurrencyInterface(abc.ABC):
     def orders(self):
         """
         List open orders.
-        Args:
-            product_id (optional) (str): Currency pair such as BTC-USD
         TODO add return example
+        """
+        pass
+
+    @property
+    @abc.abstractmethod
+    def cash(self):
+        """
+        Get the amount of cash in a portfolio. The cash default is set in the settings .json file
         """
         pass
 

@@ -16,8 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import datetime as DT
-import dateutil.parser as DP
+import datetime as dt
+import dateutil.parser as dp
 import json
 import numpy
 import warnings
@@ -56,13 +56,23 @@ backteset_path_override = None
 
 # Copy of settings to compare defaults vs overrides
 default_global_settings = {
-    "settings": {
-        "account_update_time": 5000,
-        "use_sandbox": False,
-        "use_sandbox_websockets": False,
-        "binance_tld": "us",
-        "websocket_buffer_size": 100000,
+  "settings": {
+    "account_update_time": 5000,
+    "use_sandbox": False,
+    "use_sandbox_websockets": False,
+    "websocket_buffer_size": 10000,
+
+    "coinbase_pro": {
+      "cash": "USD"
+    },
+    "binance": {
+      "cash": "USDT",
+      "binance_tld": "us"
+    },
+    "alpaca": {
+      "cash": "USD"
     }
+  }
 }
 
 default_backtest_settings = {
@@ -72,7 +82,8 @@ default_backtest_settings = {
     "show_tickers_with_zero_delta": False,
     "save_initial_account_value": False,
     "show_progress_during_backtest": False,
-    "cache_location": "./price_caches"
+    "cache_location": "./price_caches",
+    "resample_account_value_for_metrics": "1d"
 }
 
 
@@ -157,11 +168,11 @@ def pretty_print_JSON(json_object):
 
 
 def epoch_from_ISO8601(ISO8601) -> float:
-    return DP.parse(ISO8601).timestamp()
+    return dp.parse(ISO8601).timestamp()
 
 
 def ISO8601_from_epoch(epoch) -> str:
-    return DT.datetime.utcfromtimestamp(epoch).isoformat() + 'Z'
+    return dt.datetime.utcfromtimestamp(epoch).isoformat() + 'Z'
 
 
 def get_price_derivative(ticker, point_number):
