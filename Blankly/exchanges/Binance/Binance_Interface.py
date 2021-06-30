@@ -208,16 +208,16 @@ class BinanceInterface(CurrencyInterface):
                     if accounts[i]["asset"] == currency:
                         accounts = utils.rename_to(renames, accounts[i])
                         parsed_value = utils.isolate_specific(needed, accounts)
-                        return {
+                        return utils.AttributeDict({
                             'available': parsed_value['available'],
                             'hold': parsed_value['hold']
-                        }
+                        })
                 # If not just return a default 0 value. This is safe because we already checked if the currency
                 #  was valid
-                return {
+                return utils.AttributeDict({
                     "available": 0.0,
                     "hold": 0.0
-                }
+                })
             else:
                 raise LookupError("Currency not found")
 
@@ -238,18 +238,18 @@ class BinanceInterface(CurrencyInterface):
                     # Do the normal thing above and append
                     mutated = utils.rename_to(renames, val)
                     mutated = utils.isolate_specific(needed, mutated)
-                    parsed_dictionary[mutated['currency']] = {
+                    parsed_dictionary[mutated['currency']] = utils.AttributeDict({
                         'available': mutated['available'],
                         'hold': mutated['hold']
-                    }
+                    })
                     found = True
             # If it wasn't found just default here
             if not found:
-                parsed_dictionary[i] = {
+                parsed_dictionary[i] = utils.AttributeDict({
                     'available': 0.0,
                     'hold': 0.0
-                }
-        return parsed_dictionary
+                })
+        return utils.AttributeDict(parsed_dictionary)
 
     def market_order(self, product_id, side, funds) -> MarketOrder:
         """

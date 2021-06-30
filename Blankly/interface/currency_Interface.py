@@ -148,6 +148,18 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
     def get_exchange_type(self):
         return self.exchange_name
 
+    @property
+    def account(self):
+        return self.get_account()
+
+    @property
+    def orders(self):
+        return self.get_open_orders()
+
+    @property
+    def history(self, product_id, epoch_start, epoch_stop, granularity):
+        self.get_product_history(product_id, epoch_start, epoch_stop, granularity)
+
     def get_account(self, currency=None):
         """
         Get all currencies in an account, or sort by currency/account_id

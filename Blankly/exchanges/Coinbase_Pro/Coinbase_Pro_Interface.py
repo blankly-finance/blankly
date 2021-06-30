@@ -117,20 +117,20 @@ class CoinbaseProInterface(CurrencyInterface):
             for i in accounts:
                 if i["currency"] == currency:
                     parsed_value = utils.isolate_specific(needed, i)
-                    return {
+                    return utils.AttributeDict({
                         'available': parsed_value['available'],
                         'hold': parsed_value['hold']
-                    }
+                    })
             raise ValueError("Currency not found")
         for i in range(len(accounts)):
             account = utils.isolate_specific(needed, accounts[i])
 
-            parsed_dictionary[account['currency']] = {
+            parsed_dictionary[account['currency']] = utils.AttributeDict({
                 'available': account['available'],
                 'hold': account['hold']
-            }
+            })
 
-        return parsed_dictionary
+        return utils.AttributeDict({parsed_dictionary})
 
     def market_order(self, product_id, side, funds) -> MarketOrder:
         """

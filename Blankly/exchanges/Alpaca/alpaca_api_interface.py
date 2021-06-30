@@ -59,7 +59,7 @@ class AlpacaInterface(CurrencyInterface):
             asset['currency_id'] = asset.pop('id')
             asset['base_currency'] = asset.pop('symbol')
             asset['quote_currency'] = 'usd'
-            asset['base_min_size'] = -1
+            asset['base_min_size'] = -1 # TODO: Take a look at this
             asset['base_max_size'] = -1
             asset['base_increment'] = -1
 
@@ -73,21 +73,36 @@ class AlpacaInterface(CurrencyInterface):
         needed = self.needed['get_account']
 
         account_dict = self.calls.get_account()
-        account_dict['available'] = account_dict.pop('cash')
-        account_dict['hold'] = -1
 
         positions = self.calls.list_positions()
+
+        positions_dict = utils.AttributeDict({})
+
         for position in positions:
-            position['currency'] = position.pop('symbol')
-            position['available'] = position.pop('qty')
-            position['hold'] = -1
+            symbol = position.pop('symbol')
+            if currency is not None and currency == symbol:
+                return utils.AttributeDict({
+                    'available': position.pop('qty'),
+                    'hold': 0 # TODO: Calculate value on hold
+                })
+            positions_dict[symbol] = utils.AttributeDict({
+                'available': position.pop('qty'),
+                'hold': 0 # TODO: Calculate value on hold
+            })
 
-        positions.append(account_dict)
+        for key in positions_dict:
+            positions_dict[key] = utils.isolate_specific(needed, positions_dict[key])
 
-        for i in range(len(positions)):
-            positions[i] = utils.isolate_specific(needed, positions[i])
+        positions_dict.cash = account_dict.pop('cash')
 
-        return positions
+        if currency is not None:
+            # if we haven't found the currency, then we'll end up here
+            utils.AttributeDict({
+                'available': 0,
+                'hold': 0
+            })
+        
+        return positions_dict
 
     def market_order(self, product_id, side, funds) -> MarketOrder:
         assert isinstance(self.calls, alpaca_trade_api.REST)
