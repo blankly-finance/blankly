@@ -80,5 +80,4 @@ def test_get_product_history(alpaca_interface: AlpacaInterface) -> None:
 
     return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
 
-    print(return_df)
-    assert False
+    assert(return_df.iloc[0]['open'] == 126.6)

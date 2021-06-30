@@ -93,7 +93,7 @@ class AlpacaInterface(CurrencyInterface):
         for key in positions_dict:
             positions_dict[key] = utils.isolate_specific(needed, positions_dict[key])
 
-        positions_dict.cash = account_dict.pop('cash')
+        positions_dict.cash = float(account_dict.pop('cash'))
 
         if currency is not None:
             # if we haven't found the currency, then we'll end up here
