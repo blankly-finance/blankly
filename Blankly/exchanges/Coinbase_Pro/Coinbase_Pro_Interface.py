@@ -81,7 +81,7 @@ class CoinbaseProInterface(CurrencyInterface):
             products[i] = utils.isolate_specific(needed, products[i])
         return products
 
-    def get_account(self, currency=None) -> dict:
+    def get_account(self, currency=None) -> utils.AttributeDict:
         """
         Get all currencies in an account, or sort by currency/account_id
         Args:
@@ -130,7 +130,7 @@ class CoinbaseProInterface(CurrencyInterface):
                 'hold': account['hold']
             })
 
-        return utils.AttributeDict({parsed_dictionary})
+        return utils.AttributeDict(parsed_dictionary)
 
     def market_order(self, product_id, side, funds) -> MarketOrder:
         """
