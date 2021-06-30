@@ -95,11 +95,11 @@ s.add_price_event(price_event,
 | Alpaca       | 🟢         | 🟢             | 🟢      | 🟡        |
 | OANDA | 🔴 | 🔴 | 🔴 | 🔴 |
 
-🟢 = working
+🟢  = working
 
-🟡 = in development, some or most features are working
+🟡  = in development, some or most features are working
 
-🔴 = planned but not yet in development
+🔴  = planned but not yet in development
 
 * Interface calls take ~300 µs extra to homogenize the exchange data.
 
