@@ -156,7 +156,6 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
     def orders(self):
         return self.get_open_orders()
 
-    @property
     def history(self, product_id, epoch_start, epoch_stop, granularity):
         self.get_product_history(product_id, epoch_start, epoch_stop, granularity)
 
