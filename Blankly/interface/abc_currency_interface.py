@@ -65,6 +65,20 @@ class ICurrencyInterface(abc.ABC):
         TODO add return example
         """
         pass
+    
+    @property
+    @abc.abstractmethod
+    def account(self):
+        """
+        Get all currencies in an account, or sort by currency/account_id
+        Args:
+            currency (Optional): Filter by particular currency
+
+            These arguments are mutually exclusive
+
+        TODO add return example
+        """
+        pass
 
     @abc.abstractmethod
     def get_account(self, currency=None) -> dict:
@@ -114,6 +128,17 @@ class ICurrencyInterface(abc.ABC):
         TODO add return example
         """
 
+    @property
+    @abc.abstractmethod
+    def orders(self):
+        """
+        List open orders.
+        Args:
+            product_id (optional) (str): Currency pair such as BTC-USD
+        TODO add return example
+        """
+        pass
+
     @abc.abstractmethod
     def get_open_orders(self, product_id=None):
         """
@@ -150,6 +175,21 @@ class ICurrencyInterface(abc.ABC):
         get_withdraw_history
 
     """
+    @property
+    @abc.abstractmethod
+    def history(self, product_id, epoch_start, epoch_stop, granularity):
+        """
+        Property Function that Returns the product history from an exchange
+        Args:
+            product_id: Blankly product ID format (BTC-USD)
+            epoch_start: Time to begin download
+            epoch_stop: Time to stop download
+            granularity: Resolution in seconds between tick (ex: 60 = 1 per minute)
+        Returns:
+            Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
+            TODO add return example
+        """
+        pass
 
     @abc.abstractmethod
     def get_product_history(self, product_id, epoch_start, epoch_stop, granularity) -> pandas.DataFrame:
