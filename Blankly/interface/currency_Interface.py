@@ -156,6 +156,11 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
     def orders(self):
         return self.get_open_orders()
 
+    @property
+    def cash(self):
+        using_setting = self.user_preferences['settings'][self.exchange_name]['cash']
+        return self.get_account(using_setting)
+
     def history(self, product_id, epoch_start, epoch_stop, granularity):
         self.get_product_history(product_id, epoch_start, epoch_stop, granularity)
 
