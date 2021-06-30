@@ -2,7 +2,18 @@
   "settings": {
     "account_update_time": 5000,
     "use_sandbox": true,
-    "binance_tld": "us",
-    "websocket_buffer_size": 10000
+    "use_sandbox_websockets": false,
+    "websocket_buffer_size": 10000,
+
+    "coinbase_pro": {
+      "cash": "USD"
+    },
+    "binance": {
+      "cash": "USDT",
+      "binance_tld": "us"
+    },
+    "alpaca": {
+      "cash": "USD"
+    }
   }
 }
