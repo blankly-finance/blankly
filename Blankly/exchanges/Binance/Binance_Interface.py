@@ -154,7 +154,7 @@ class BinanceInterface(CurrencyInterface):
             products[i] = utils.isolate_specific(needed, products[i])
         return products
 
-    def get_account(self, currency=None) -> dict:
+    def get_account(self, currency=None) -> utils.AttributeDict:
         """
         Get all currencies in an account, or sort by currency/account_id
         Args:

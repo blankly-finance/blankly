@@ -134,28 +134,23 @@ def test_get_products(alpaca_mock_interface) -> None:
 def test_get_account(alpaca_mock_interface) -> None:
     return_val = alpaca_mock_interface.get_account()
 
-    expected_answer = [
-        {
-            "currency": "USD",
-            "available": 1500,
-            "hold": -1,
-        },
-        {
-            "currency": "AAPL",
+    expected_answer = {
+        "AAPL": {
             "available": 5,
-            "hold": -1,
+            "hold": 0,
         }
-    ]
-
+    }
+    print(return_val)
     for answer in expected_answer:
         found = False
         for result in return_val:
-            if is_sub_dict(answer, result):
-                found = True
+            if result != 'cash':
+                if is_sub_dict(expected_answer[answer], return_val[result]):
+                    found = True
 
         assert found, "expected return element not found: %r" % answer
-
-    assert "exchange_specific" in return_val[0]
+    assert return_val['cash'] == float(1500)
+    # assert "exchange_specific" in return_val[0]
 
 def test_get_fees(alpaca_mock_interface) -> None:
     fee_response = alpaca_mock_interface.get_fees()
