@@ -175,7 +175,6 @@ class ICurrencyInterface(abc.ABC):
         get_withdraw_history
 
     """
-    @property
     @abc.abstractmethod
     def history(self, product_id, epoch_start, epoch_stop, granularity):
         """
