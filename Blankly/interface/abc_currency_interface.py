@@ -65,16 +65,6 @@ class ICurrencyInterface(abc.ABC):
         TODO add return example
         """
         pass
-    
-    @property
-    @abc.abstractmethod
-    def account(self):
-        """
-        Get all currencies in an account, or sort by currency/account_id
-
-        TODO add return example
-        """
-        pass
 
     @abc.abstractmethod
     def get_account(self, currency=None) -> dict:
@@ -126,7 +116,17 @@ class ICurrencyInterface(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def orders(self):
+    def account(self) -> dict:
+        """
+        Get all currencies in an account, or sort by currency/account_id
+
+        TODO add return example
+        """
+        pass
+
+    @property
+    @abc.abstractmethod
+    def orders(self) -> list:
         """
         List open orders.
         TODO add return example
@@ -135,7 +135,7 @@ class ICurrencyInterface(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def cash(self):
+    def cash(self) -> dict:
         """
         Get the amount of cash in a portfolio. The cash default is set in the settings .json file
         """
