@@ -18,6 +18,7 @@
 
 
 from Blankly.interface.currency_Interface import CurrencyInterface
+from Blankly.interface.abc_currency_interface import ICurrencyInterface
 from Blankly.exchanges.Paper_Trade.backtesting_wrapper import BacktestingWrapper
 
 
@@ -39,7 +40,7 @@ import traceback
 
 
 class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
-    def __init__(self, derived_interface):
+    def __init__(self, derived_interface: ICurrencyInterface):
         self.paper_trade_orders = []
 
         self.get_products_cache = None
@@ -52,7 +53,8 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
 
         self.__thread = None
 
-        CurrencyInterface.__init__(self, "paper_trade", derived_interface)
+        # Set the type of the paper trade exchange to be the same as whichever interface its derived from
+        CurrencyInterface.__init__(self, derived_interface.get_exchange_type(), derived_interface)
         BacktestingWrapper.__init__(self)
 
         # Write in the accounts to our local account. This involves getting the values directly from the exchange
