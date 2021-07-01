@@ -306,7 +306,7 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
         elif side == "sell":
             trade_local.trade_local(currency_pair=product_id,
                                     side=side,
-                                    base_delta=float(qty - 1),  # Loose size before any fees
+                                    base_delta=float(qty * -1),  # Loose size before any fees
                                     quote_delta=funds - funds * float((self.__exchange_properties["maker_fee_rate"]))
                                     # Gain executed value after fees
                                     )
