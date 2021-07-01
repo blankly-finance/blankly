@@ -138,10 +138,10 @@ class BackTestController:
         # Ensure everything is up to date
         self.sync_prices(save)
 
-    def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval):
+    def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval, state_object):
         if isinstance(time_interval, str):
             time_interval = time_interval_to_seconds(time_interval)
-        self.price_events.append([callback, asset_id, time_interval])
+        self.price_events.append([callback, asset_id, time_interval, state_object])
 
     def __determine_price(self, asset_id, epoch):
 
@@ -269,6 +269,7 @@ class BackTestController:
                 'function': self.price_events[i][0],
                 'asset_id': self.price_events[i][1],
                 'interval': self.price_events[i][2],
+                'state_object': self.price_events[i][3],
                 'next_run': self.initial_time
             }
 
@@ -317,7 +318,7 @@ class BackTestController:
                         local_time = function_dict['next_run']
                         # This is the actual callback to the user space
                         function_dict['function'](self.interface.get_price(function_dict['asset_id']),
-                                                  function_dict['asset_id'])
+                                                  function_dict['asset_id'], function_dict['state_object'])
 
                         # Delay the next run until after the interval
                         function_dict['next_run'] += function_dict['interval']
