@@ -77,7 +77,7 @@ class Strategy:
         else:
             self.__hashes.append(callback_hash)
         self.__variables[callback_hash] = AttributeDict({})
-        state = StrategyState(self, self.Interface, self.__variables[callback_hash], resolution)
+        state = StrategyState(self, self.__variables[callback_hash], resolution)
 
         # run init
         if init:
@@ -121,7 +121,6 @@ class Strategy:
         state = kwargs['state_object']  # type: StrategyState
         price = self.Interface.get_price(currency_pair)
 
-        state.interface = self.Interface
         state.variables = variables
         state.resolution = resolution
 
@@ -136,7 +135,6 @@ class Strategy:
 
         price = self.Ticker_Manager.get_most_recent_tick(override_currency=currency_pair)
 
-        state.interface = self.Interface
         state.variables = variables
         state.resolution = resolution
 
@@ -163,7 +161,7 @@ class Strategy:
         else:
             self.__hashes.append(callback_hash)
         self.__variables[callback_hash] = AttributeDict({})
-        state = StrategyState(self, self.Interface, self.__variables[callback])
+        state = StrategyState(self, self.__variables[callback])
         if init:
             init(currency_pair, state)
 
