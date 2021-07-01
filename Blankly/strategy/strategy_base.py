@@ -289,7 +289,8 @@ class Strategy:
             kwargs = i.get_kwargs()
             backtesting_controller.append_backtest_price_event(callback=kwargs['callback'],
                                                                asset_id=kwargs['currency_pair'],
-                                                               time_interval=i.get_interval()
+                                                               time_interval=i.get_interval(),
+                                                               state_object=kwargs['state_object']
                                                                )
 
         # Run the backtest & return results
