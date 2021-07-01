@@ -17,8 +17,10 @@
 """
 
 import Blankly.utils.utils as utils
+from Blankly.utils.time_builder import time_interval_to_seconds
 from Blankly.interface.abc_currency_interface import ICurrencyInterface
 import abc
+import time
 
 
 # TODO: need to add a cancel all orders function
@@ -161,8 +163,10 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
         using_setting = self.user_preferences['settings'][self.exchange_name]['cash']
         return self.get_account(using_setting)
 
-    def history(self, product_id, epoch_start, epoch_stop, granularity):
-        self.get_product_history(product_id, epoch_start, epoch_stop, granularity)
+    def history(self, product_id, to, granularity):
+        epoch_stop = time.time()
+        epoch_start = epoch_stop - time_interval_to_seconds(to)
+        return self.get_product_history(product_id, epoch_start, epoch_stop, granularity)
 
     def get_account(self, currency=None):
         """

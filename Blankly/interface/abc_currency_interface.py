@@ -178,13 +178,12 @@ class ICurrencyInterface(abc.ABC):
 
     """
     @abc.abstractmethod
-    def history(self, product_id, epoch_start, epoch_stop, granularity):
+    def history(self, product_id, to, granularity) -> pandas.DataFrame:
         """
-        Property Function that Returns the product history from an exchange
+        Wrapper for .get_product_history() which allows users to more easily get product history from right now.
         Args:
             product_id: Blankly product ID format (BTC-USD)
-            epoch_start: Time to begin download
-            epoch_stop: Time to stop download
+            to (str or number): The amount of time before now to get product history
             granularity: Resolution in seconds between tick (ex: 60 = 1 per minute)
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
