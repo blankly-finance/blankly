@@ -22,6 +22,9 @@ from Blankly import Interface
 
 
 class StrategyState:
+    interface: Interface
+    variables: AttributeDict
+    resolution: float
     """Strategy State"""
     def __init__(self, strategy, interface: Interface, variables: AttributeDict, resolution: float = None):
         self.strategy = strategy

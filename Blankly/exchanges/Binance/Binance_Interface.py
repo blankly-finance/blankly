@@ -599,6 +599,9 @@ class BinanceInterface(CurrencyInterface):
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
         """
+
+        granularity = Blankly.time_builder.time_interval_to_seconds(granularity)
+
         epoch_start, epoch_stop = super().get_product_history(product_id, epoch_start, epoch_stop, granularity)
 
         epoch_start = int(epoch_start)
