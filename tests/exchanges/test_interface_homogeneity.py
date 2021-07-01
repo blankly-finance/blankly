@@ -136,14 +136,14 @@ class InterfaceHomogeneity(unittest.TestCase):
     def test_limit_order(self):
         binance_limits = self.Binance_Interface.get_market_limits('BTC-USDT')
 
-        binance_buy = self.Binance_Interface.limit_order('BTC-USDT', 'buy', int(binance_limits['min_price']+10), .01)
+        binance_buy = self.Binance_Interface.limit_order('BTC-USDT', 'buy', int(binance_limits['min_price']+30), .01)
         time.sleep(3)
         self.check_limit_order(binance_buy, 'buy', .01, 'BTC-USDT')
 
         coinbase_buy = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'buy', .01, .001)
         self.check_limit_order(coinbase_buy, 'buy', .001, 'BTC-USD')
 
-        binance_sell = self.Binance_Interface.limit_order('BTC-USDT', 'sell', int(binance_limits['max_price']-10), .01)
+        binance_sell = self.Binance_Interface.limit_order('BTC-USDT', 'sell', int(binance_limits['max_price']-30), .01)
         self.check_limit_order(binance_sell, 'sell', .01, 'BTC-USDT')
 
         coinbase_sell = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'sell', 100000, .001)
