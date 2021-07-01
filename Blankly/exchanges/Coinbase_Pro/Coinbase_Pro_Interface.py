@@ -21,6 +21,7 @@ import time
 import warnings
 import pandas as pd
 
+import Blankly.utils.time_builder
 import Blankly.utils.utils as utils
 from Blankly.utils.exceptions import InvalidOrder
 from Blankly.utils.exceptions import APIException
@@ -413,6 +414,9 @@ class CoinbaseProInterface(CurrencyInterface):
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
         """
+
+        granularity = Blankly.time_builder.time_interval_to_seconds(granularity)
+
         epoch_start, epoch_stop = super().get_product_history(product_id, epoch_start, epoch_stop, granularity)
 
         accepted_grans = [60, 300, 900, 3600, 21600, 86400]
