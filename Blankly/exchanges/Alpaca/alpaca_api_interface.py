@@ -1,3 +1,22 @@
+"""
+    Alpaca API Interface Definition
+    Copyright (C) 2021  Arun Annamalai
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
+
 import warnings
 
 from alpaca_trade_api.rest import TimeFrame
@@ -14,6 +33,7 @@ import pandas as pd
 from datetime import datetime as dt
 
 NY = 'America/New_York'
+
 
 class AlpacaInterface(CurrencyInterface):
     def __init__(self, authenticated_API: API, preferences_path: str):
@@ -83,11 +103,11 @@ class AlpacaInterface(CurrencyInterface):
             if currency is not None and currency == symbol:
                 return utils.AttributeDict({
                     'available': position.pop('qty'),
-                    'hold': 0 # TODO: Calculate value on hold
+                    'hold': 0  # TODO: Calculate value on hold
                 })
             positions_dict[symbol] = utils.AttributeDict({
                 'available': position.pop('qty'),
-                'hold': 0 # TODO: Calculate value on hold
+                'hold': 0  # TODO: Calculate value on hold
             })
 
         for key in positions_dict:
@@ -187,7 +207,8 @@ class AlpacaInterface(CurrencyInterface):
 
         accepted_grans = [1, 60, 3600]
         if granularity not in accepted_grans:
-            warnings.warn("Granularity is not an accepted granularity...didnt have a chance to implement more yet, returning empty df")
+            warnings.warn("Granularity is not an accepted granularity...didnt have a chance to implement more yet, "
+                          "returning empty df")
             return pd.DataFrame()
 
         if granularity == 1:
@@ -203,7 +224,6 @@ class AlpacaInterface(CurrencyInterface):
         epoch_stop_str = epoch_stop.strftime(formatting_str)
 
         return self.calls.get_bars(product_id, time_interval, epoch_start_str, epoch_stop_str,adjustment='raw').df
-
 
     # TODO: tbh not sure how this one works or if it applies to Alpaca
     def get_market_limits(self, product_id):

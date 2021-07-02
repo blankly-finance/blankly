@@ -7,8 +7,8 @@ APCA_API_LIVE_URL = "https://api.alpaca.markets"
 APCA_API_PAPER_URL = "https://paper-api.alpaca.markets"
 
 
-def create_alpaca_client(auth: AuthInterface, paper_trading=True):
-    if paper_trading:
+def create_alpaca_client(auth: AuthInterface, sandbox_mode=True):
+    if sandbox_mode:
         api_url = APCA_API_PAPER_URL
     else:
         api_url = APCA_API_LIVE_URL
