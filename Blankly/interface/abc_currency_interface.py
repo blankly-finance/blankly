@@ -67,7 +67,8 @@ class ICurrencyInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_account(self, currency=None) -> dict:
+    def get_account(self,
+                    currency: str = None) -> dict:
         """
         Get all currencies in an account, or sort by currency/account_id
         Args:
@@ -80,7 +81,10 @@ class ICurrencyInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def market_order(self, product_id, side, funds) -> MarketOrder:
+    def market_order(self,
+                     product_id: str,
+                     side: str,
+                     funds: float) -> MarketOrder:
         """
         Used for buying or selling market orders
         Args:
@@ -91,7 +95,11 @@ class ICurrencyInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def limit_order(self, product_id, side, price, size) -> LimitOrder:
+    def limit_order(self,
+                    product_id: str,
+                    side: str,
+                    price: float,
+                    size: float) -> LimitOrder:
         """
         Used for buying or selling limit orders
         Args:
@@ -103,7 +111,9 @@ class ICurrencyInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def cancel_order(self, currency_id, order_id) -> dict:
+    def cancel_order(self,
+                     currency_id: str,
+                     order_id: str) -> dict:
         """
         Cancel an order on a particular currency id & order id
 
@@ -142,7 +152,8 @@ class ICurrencyInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_open_orders(self, product_id=None):
+    def get_open_orders(self,
+                        product_id: str = None):
         """
         List open orders.
         Args:
@@ -152,7 +163,9 @@ class ICurrencyInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_order(self, currency_id, order_id) -> dict:
+    def get_order(self,
+                  currency_id: str,
+                  order_id: str) -> dict:
         """
         Get a certain order
         Args:
@@ -178,7 +191,10 @@ class ICurrencyInterface(abc.ABC):
 
     """
     @abc.abstractmethod
-    def history(self, product_id, to, granularity) -> pandas.DataFrame:
+    def history(self,
+                product_id: str,
+                to: str or int or float,
+                granularity: str or  float) -> pandas.DataFrame:
         """
         Wrapper for .get_product_history() which allows users to more easily get product history from right now.
         Args:
@@ -192,7 +208,11 @@ class ICurrencyInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_product_history(self, product_id, epoch_start, epoch_stop, granularity) -> pandas.DataFrame:
+    def get_product_history(self,
+                            product_id: str,
+                            epoch_start: float,
+                            epoch_stop: float,
+                            granularity: str or float) -> pandas.DataFrame:
         """
         Returns the product history from an exchange
         Args:
@@ -206,7 +226,8 @@ class ICurrencyInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_market_limits(self, product_id):
+    def get_market_limits(self,
+                          product_id: str):
         """
         Find order limits for the exchange
         Args:
@@ -216,7 +237,8 @@ class ICurrencyInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_price(self, currency_pair) -> float:
+    def get_price(self,
+                  currency_pair: str) -> float:
         """
         Returns just the price of a currency pair.
         Args:

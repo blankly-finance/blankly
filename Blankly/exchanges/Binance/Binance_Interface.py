@@ -799,6 +799,7 @@ class BinanceInterface(CurrencyInterface):
             "max_orders": max_orders,
             "min_price": min_price,
             "max_price": max_price,
+            "fractional_limit": False,
             "exchange_specific": {}
         }
 

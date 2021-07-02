@@ -20,6 +20,7 @@
 from Blankly.exchanges.exchange import Exchange
 import alpaca_trade_api
 
+
 class Alpaca(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", preferences_path=None):
         Exchange.__init__(self, 'alpaca', portfolio_name, keys_path, preferences_path)

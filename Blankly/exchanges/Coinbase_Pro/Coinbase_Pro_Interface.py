@@ -503,10 +503,11 @@ class CoinbaseProInterface(CurrencyInterface):
             raise LookupError("Specified market not found")
 
         products = utils.rename_to(renames, products)
-        products["min_price"] = .01
+        products["min_price"] = products['base_min_size']
         # These don't really exist on this exchange
-        products["max_price"] = -1
-        products["max_orders"] = -1
+        products["max_price"] = 9999999999  # This is actually the max price
+        products["max_orders"] = 1000000000000  # there is no limit
+        products["fractional_limit"] = False
         return utils.isolate_specific(needed, products)
 
     def get_price(self, currency_pair) -> float:

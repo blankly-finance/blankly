@@ -124,7 +124,8 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
                 ["base_increment", float],  # Specifies the minimum increment for the base_currency.
                 ["max_orders", int],
                 ["min_price", float],
-                ["max_price", float]
+                ["max_price", float],
+                ["fractional_limit", bool]
             ]
         }
 
