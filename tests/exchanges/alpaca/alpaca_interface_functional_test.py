@@ -75,9 +75,9 @@ def test_get_buy_sell(alpaca_interface: AlpacaInterface) -> None:
     # place sell order
 
 def test_get_product_history(alpaca_interface: AlpacaInterface) -> None:
-    start = dt.strptime("2021-06-08 09:30", "%Y-%m-%d %H:%M")
-    end = dt.strptime("2021-06-08 16:00", "%Y-%m-%d %H:%M")
+    start = dt.strptime("2021-02-08", "%Y-%m-%d")
+    end = dt.strptime("2021-02-08", "%Y-%m-%d")
 
     return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
 
-    assert(return_df.iloc[0]['open'] == 126.6)
+    assert(len(return_df) > 5)
