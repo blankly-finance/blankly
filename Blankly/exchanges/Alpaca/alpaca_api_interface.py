@@ -119,8 +119,24 @@ class AlpacaInterface(CurrencyInterface):
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
-    def limit_order(self, product_id, side, price, size) -> LimitOrder:
-        pass
+    def limit_order(self, product_id: str, side: str, price: float, quantity: int) -> LimitOrder:
+        if quantity is not int:
+            warnings.warn("Alpaca limit orders must have quantity parameter of type int")
+            return
+
+        needed = self.needed['limit_order']
+
+        order = {
+            'quantity': quantity,
+            'side': side,
+            'price': price,
+            'product_id': product_id,
+            'type': 'limit'
+        }
+        response = self.calls.submit_order(product_id, side=side, type='limit', time_in_force='day', qty=quantity)
+        response['created_at'] = parser.isoparse(response['created_at']).timestamp()
+        response = utils.isolate_specific(needed, response)
+        return LimitOrder(order, response, self)
 
     def cancel_order(self, currency_id, order_id) -> dict:
         assert isinstance(self.calls, alpaca_trade_api.REST)
@@ -174,17 +190,17 @@ class AlpacaInterface(CurrencyInterface):
             warnings.warn("Granularity is not an accepted granularity...didnt have a chance to implement more yet, returning empty df")
             return pd.DataFrame()
 
-        if accepted_grans == 1:
+        if granularity == 1:
             time_interval = TimeFrame.Minute
-        elif accepted_grans == 60:
+        elif granularity == 60:
             time_interval = TimeFrame.Hour
         else:
             time_interval = TimeFrame.Day
-        # '2020-08-28 9:30' <- this is how it should look
+
+        # '2020-08-28' <- this is how it should look
         formatting_str = "%Y-%m-%d"
         epoch_start_str = epoch_start.strftime(formatting_str)
         epoch_stop_str = epoch_stop.strftime(formatting_str)
-
 
         return self.calls.get_bars(product_id, time_interval, epoch_start_str, epoch_stop_str,adjustment='raw').df
 
