@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from Blankly.utils.purchases.order import Order
+from Blankly.utils.utils import pretty_print_JSON
 
 
 class LimitOrder(Order):
@@ -87,11 +88,33 @@ class LimitOrder(Order):
         """
         return self.__response["price"]
 
+    def get_time_in_force(self) -> str:
+        """
+        Get the exchange's set time_in_force value.
+        """
+        return self.__response["time_in_force"]
+
     def get_quantity(self) -> float:
         """
         Get the quantity of order, Ex: .004 bitcoin
         """
         return self.__response["size"]
+
+    def __str__(self):
+        return_string = super().__str__()
+
+        return_string = self.add_new_line(return_string, "Limit Order Parameters: ")
+
+        return_string = self.add_new_line(return_string, "Time In Force: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_time_in_force())
+
+        return_string = self.add_new_line(return_string, "Price: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_price())
+
+        return_string = self.add_new_line(return_string, "Quantity: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_quantity())
+
+        return return_string
 
     """ This is something that should be implemented in the future """
     # """ Returns true if the buy order can be sold at a profit or the sell order didn't loose money """

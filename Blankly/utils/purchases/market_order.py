@@ -71,6 +71,16 @@ class MarketOrder(Order):
         """
         return self.__response["funds"]
 
+    def __str__(self):
+        return_string = super().__str__()
+
+        return_string = self.add_new_line(return_string, "Market Order Parameters: ")
+
+        return_string = self.add_new_line(return_string, "Funds: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_funds())
+
+        return return_string
+
     """ This is something that should be implemented in the future """
     # """ Returns true if the buy order can be sold at a profit or the sell order didn't loose money """
     # def is_profitable(self, show=False):

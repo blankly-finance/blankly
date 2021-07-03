@@ -16,6 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+from Blankly.utils.utils import pretty_print_JSON
+
 
 class Order:
     def __init__(self, response, order, interface):
@@ -47,6 +49,40 @@ class Order:
         self.__response = response
         self.__order = order
         self.Interface = interface
+
+    def add_new_line(self, input_string, new_line, newline=True):
+        input_string += str(new_line)
+        if newline:
+            input_string += "\n"
+        return input_string
+
+    def __str__(self):
+        return_string = ""
+        return_string = self.add_new_line(return_string, "General Order Parameters: ")
+
+        return_string = self.add_new_line(return_string, "Response: ")
+        return_string = self.add_new_line(return_string, pretty_print_JSON(self.get_response(), actually_print=False))
+
+        return_string = self.add_new_line(return_string, "Full Status: ")
+        return_string = self.add_new_line(return_string, pretty_print_JSON(self.get_status(full=True),
+                                                                           actually_print=False))
+
+        return_string = self.add_new_line(return_string, "ID: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_id())
+
+        return_string = self.add_new_line(return_string, "Product ID: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_product_id())
+
+        return_string = self.add_new_line(return_string, "Purchase Time: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_purchase_time())
+
+        return_string = self.add_new_line(return_string, "Type: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_type())
+
+        return_string = self.add_new_line(return_string, "Side: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_side())
+
+        return return_string
 
     def get_response(self) -> dict:
         """
@@ -84,12 +120,6 @@ class Order:
             return self.Interface.get_order(self.__order["product_id"], self.get_id())
         else:
             return {"status": self.Interface.get_order(self.__order["product_id"], self.get_id())["status"]}
-
-    def get_time_in_force(self) -> str:
-        """
-        Get the exchange's set time_in_force value.
-        """
-        return self.__response["time_in_force"]
 
     def get_type(self) -> str:
         """
