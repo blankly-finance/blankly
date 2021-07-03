@@ -281,7 +281,7 @@ class CoinbaseProInterface(CurrencyInterface):
             dict: Containing the order_id of cancelled order. Example::
             { "order_id": "c5ab5eae-76be-480e-8961-00792dc7e138" }
         """
-        return {"order_id": self.calls.cancel_order(order_id)[0]}
+        return {"order_id": self.calls.cancel_order(order_id)}
 
     def get_open_orders(self, product_id=None):
         """
@@ -368,6 +368,21 @@ class CoinbaseProInterface(CurrencyInterface):
         }
         """
         response = self.calls.get_order(order_id)
+        if 'message' in response:
+            # This part will run through all orders if the user enables the setting
+            # Leaving this commented because its useful in getting all orders if we add that
+            # if self.user_preferences['settings']['coinbase_pro']['search_all_fills']:
+            #     all_orders = list(self.calls.get_orders(product_id=currency_id, status='all'))
+            #     found = False
+            #     for i in all_orders:
+            #         if i['id'] == order_id:
+            #             found = True
+            #             response = i
+            #
+            #     if not found:
+            #         raise APIException("Invalid: " + str(response['message']) + ", was the order canceled?")
+            # else:
+            raise APIException("Invalid: " + str(response['message']) + ", was the order canceled?")
         response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
 
         if response['type'] == 'market':

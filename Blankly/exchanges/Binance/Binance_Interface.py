@@ -325,7 +325,7 @@ class BinanceInterface(CurrencyInterface):
         response = self.calls.order_market(symbol=modified_product_id, side=side, quoteOrderQty=funds)
         response['side'] = response['side'].lower()
         response['type'] = response['type'].lower()
-        response['status'] = response['status'].lower()
+        response['status'] = super().homogenize_order_status('binance', response['status'].lower())
         response["transactTime"] = response["transactTime"] / 1000
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
@@ -391,6 +391,7 @@ class BinanceInterface(CurrencyInterface):
         ]
         response['side'] = response['side'].lower()
         response['type'] = response['type'].lower()
+        response['status'] = super().homogenize_order_status('binance', response['status'].lower())
         response['symbol'] = utils.to_blankly_coin_id(response['symbol'], 'binance')
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
@@ -479,7 +480,7 @@ class BinanceInterface(CurrencyInterface):
             orders[i] = utils.rename_to(renames, orders[i])
             orders[i]['type'] = orders[i]['type'].lower()
             orders[i]['side'] = orders[i]['side'].lower()
-            orders[i]['status'] = orders[i]['status'].lower()
+            orders[i]['status'] = super().homogenize_order_status('binance', orders[i]['status'].lower())
             orders[i]['created_at'] = orders[i]['created_at'] / 1000
             needed = self.choose_order_specificity(orders[i]['type'])
             orders[i] = utils.isolate_specific(needed, orders[i])
@@ -529,7 +530,7 @@ class BinanceInterface(CurrencyInterface):
         response = utils.rename_to(renames, response)
         response['type'] = response['type'].lower()
         response['side'] = response['side'].lower()
-        response['status'] = response['status'].lower()
+        response['status'] = super().homogenize_order_status('binance', response['status'].lower())
         response['created_at'] = response['created_at']/1000
         response['product_id'] = utils.to_blankly_coin_id(response['product_id'], 'binance')
         needed = self.choose_order_specificity(response['type'])
