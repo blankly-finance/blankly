@@ -158,12 +158,13 @@ def load_user_preferences(override_path=None) -> dict:
         return settings_cache
 
 
-def pretty_print_JSON(json_object):
+def pretty_print_JSON(json_object, actually_print=True):
     """
     Json pretty printer for general string usage
     """
     out = json.dumps(json_object, indent=2)
-    print(out)
+    if actually_print:
+        print(out)
     return out
 
 

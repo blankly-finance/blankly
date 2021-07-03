@@ -95,3 +95,31 @@ class StopLimit(Order):
         Get the amount of base currency set in the triggered stop limit order
         """
         return self.__response["size"]
+
+    def get_time_in_force(self) -> str:
+        """
+        Get the exchange's set time_in_force value.
+        """
+        return self.__response["time_in_force"]
+
+    def __str__(self):
+        return_string = super().__str__()
+
+        return_string = self.add_new_line(return_string, "Stop Order Parameters: ")
+
+        return_string = self.add_new_line(return_string, "Time In Force: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_time_in_force())
+
+        return_string = self.add_new_line(return_string, "Stop Price: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_stop_price())
+
+        return_string = self.add_new_line(return_string, "Stop Limit Price: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_limit_price())
+
+        return_string = self.add_new_line(return_string, "Stop Type: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_stop_type())
+
+        return_string = self.add_new_line(return_string, "Get Size: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_size())
+
+        return return_string
