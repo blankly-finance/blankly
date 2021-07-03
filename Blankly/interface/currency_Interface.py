@@ -196,3 +196,10 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
             return self.needed['limit_order']
         else:
             return self.needed['market_order']
+
+    def homogenize_order_status(self, exchange, status):
+        if exchange == "binance":
+            if status == "new":
+                return "open"
+
+        return status

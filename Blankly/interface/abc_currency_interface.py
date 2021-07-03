@@ -21,6 +21,7 @@ import abc
 from Blankly.utils.purchases.limit_order import LimitOrder
 from Blankly.utils.purchases.market_order import MarketOrder
 import pandas
+from typing import Union
 
 
 class ICurrencyInterface(abc.ABC):
@@ -153,7 +154,7 @@ class ICurrencyInterface(abc.ABC):
 
     @abc.abstractmethod
     def get_open_orders(self,
-                        product_id: str = None):
+                        product_id: str = None) -> list:
         """
         List open orders.
         Args:
@@ -193,8 +194,8 @@ class ICurrencyInterface(abc.ABC):
     @abc.abstractmethod
     def history(self,
                 product_id: str,
-                to: str or int or float,
-                granularity: str or  float) -> pandas.DataFrame:
+                to: Union[str, int, float],
+                granularity: Union[str, float]) -> pandas.DataFrame:
         """
         Wrapper for .get_product_history() which allows users to more easily get product history from right now.
         Args:
@@ -212,7 +213,7 @@ class ICurrencyInterface(abc.ABC):
                             product_id: str,
                             epoch_start: float,
                             epoch_stop: float,
-                            granularity: str or float) -> pandas.DataFrame:
+                            granularity: Union[str, float]) -> pandas.DataFrame:
         """
         Returns the product history from an exchange
         Args:
