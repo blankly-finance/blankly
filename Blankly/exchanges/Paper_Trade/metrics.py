@@ -1,20 +1,35 @@
-from datetime import datetime
-import pytz
-from dateutil.relativedelta import relativedelta
+"""
+    Metrics wrapper for backtesting
+    Copyright (C) 2021  Brandon Fan, Emerson Dove
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
+
 import Blankly.metrics as metrics
+from Blankly.utils.time_builder import build_year
 
 
 def cagr(backtest_data):
     account_values = backtest_data['resampled_account_value']
-    start = datetime.fromtimestamp(account_values[0]['time'], tz=pytz.utc)
-    end = datetime.fromtimestamp(account_values[-1]['time'], tz=pytz.utc)
-    years = relativedelta(start, end).years
-    return metrics.cagr(account_values[0], account_values[-1], years)
+    years = (account_values['time'].iloc[-1] - account_values['time'][0])/build_year()
+    return metrics.cagr(account_values['time'][0], account_values['time'].iloc[-1], years)
 
 
 def cum_returns(backtest_data):
     account_values = backtest_data['resampled_account_value']
-    return metrics.cum_returns(account_values[0], account_values[-1])
+    return metrics.cum_returns(account_values['value'][0], account_values['value'].iloc[-1])
 
 
 def sortino(backtest_data):
@@ -57,16 +72,17 @@ def beta(backtest_data):
     returns = backtest_data['returns']['value']
     return metrics.beta(returns)
 
+
 def var(backtest_data):
     returns = backtest_data['returns']['value']
     account_values = backtest_data['resampled_account_value']
-    return metrics.var(account_values[0], returns, 0.95)
+    return metrics.var(account_values['value'][0], returns, 0.95)
 
 
 def cvar(backtest_data):
     returns = backtest_data['returns']['value']
     account_values = backtest_data['resampled_account_value']
-    return metrics.cvar(account_values[0], returns, 0.95)
+    return metrics.cvar(account_values['value'][0], returns, 0.95)
 
 
 def max_drawdown(backtest_data):
