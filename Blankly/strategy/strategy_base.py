@@ -19,6 +19,7 @@ import warnings
 
 from Blankly.strategy.strategy_state import StrategyState
 from Blankly.utils.utils import AttributeDict
+from Blankly.exchanges.Paper_Trade.backtest_result import BacktestResult
 import typing
 import time
 
@@ -26,7 +27,6 @@ import pandas as pd
 import datetime
 import Blankly
 from Blankly.exchanges.Paper_Trade.backtest_controller import BackTestController
-from uuid import uuid4
 from Blankly.exchanges.exchange import Exchange
 from Blankly.utils.time_builder import time_interval_to_seconds
 
@@ -196,7 +196,7 @@ class Strategy:
                  settings_path: str = None,
                  callbacks: list = None,
                  **kwargs
-                 ):
+                 ) -> BacktestResult:
         """
         Turn this strategy into a backtest.
 

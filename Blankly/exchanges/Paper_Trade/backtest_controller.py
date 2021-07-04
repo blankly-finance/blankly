@@ -22,6 +22,7 @@ from Blankly.exchanges.Paper_Trade.Paper_Trade_Interface import PaperTradeInterf
 from Blankly.utils.time_builder import time_interval_to_seconds
 from Blankly.utils.utils import load_backtest_preferences, write_backtest_preferences, update_progress
 import Blankly.exchanges.Paper_Trade.metrics as metrics
+from Blankly.exchanges.Paper_Trade.backtest_result import BacktestResult
 
 import typing
 import pandas as pd
@@ -230,7 +231,7 @@ class BackTestController:
         available_dict['Account Value (USD)'] = value_total
         return available_dict
 
-    def run(self):
+    def run(self) -> BacktestResult:
         """
         Setup
         """
@@ -405,9 +406,11 @@ class BackTestController:
             except ValueError:
                 return False
 
-        return_dict = {
+        dataframes = {
             'history': cycle_status
         }
+        metrics_indicators = {}
+        user_callbacks = {}
 
         # Check if it needs resampling
         resample_setting = self.preferences['settings']['resample_account_value_for_metrics']
@@ -442,7 +445,7 @@ class BackTestController:
             resampled_returns = resampled_returns.append(resampled_backing_array, ignore_index=True)
 
             # This is the resampled version
-            return_dict['resampled_account_value'] = resampled_returns
+            dataframes['resampled_account_value'] = resampled_returns
 
             # Now we need to copy it and find the differences
             returns = resampled_returns.copy(deep=True)
@@ -451,25 +454,27 @@ class BackTestController:
             returns['value'] = returns['value'].diff()
 
             # Now write it to our dictionary
-            return_dict['returns'] = returns
+            dataframes['returns'] = returns
 
             # -----=====*****=====----- I thought I stopped doing these comments when I actually learned to code
-            return_dict['cagr'] = metrics.cagr(return_dict)
-            return_dict['cum_returns'] = metrics.cum_returns(return_dict)
-            return_dict['sortino'] = metrics.sortino(return_dict)
-            return_dict['sharpe'] = metrics.sharpe(return_dict)
-            return_dict['calmar'] = metrics.calmar(return_dict)
-            return_dict['volatility'] = metrics.volatility(return_dict)
-            return_dict['variance'] = metrics.variance(return_dict)
+            metrics_indicators['cagr'] = metrics.cagr(dataframes)
+            metrics_indicators['cum_returns'] = metrics.cum_returns(dataframes)
+            metrics_indicators['sortino'] = metrics.sortino(dataframes)
+            metrics_indicators['sharpe'] = metrics.sharpe(dataframes)
+            metrics_indicators['calmar'] = metrics.calmar(dataframes)
+            metrics_indicators['volatility'] = metrics.volatility(dataframes)
+            metrics_indicators['variance'] = metrics.variance(dataframes)
             # return_dict['beta'] = metrics.beta(return_dict)
-            return_dict['var'] = metrics.var(return_dict)
-            return_dict['cvar'] = metrics.cvar(return_dict)
+            metrics_indicators['var'] = metrics.var(dataframes)
+            metrics_indicators['cvar'] = metrics.cvar(dataframes)
             # return_dict['max_drawdown'] = metrics.cagr(return_dict)
             # -----=====*****=====-----
 
         # Run this last so that the user can override what they want
         for callback in self.callbacks:
-            return_dict[callback.__name__] = callback(cycle_status)
+            user_callbacks[callback.__name__] = callback(cycle_status)
+
+        result_object = BacktestResult(dataframes, metrics_indicators, user_callbacks)
 
         self.interface.set_backtesting(False)
-        return return_dict
+        return result_object
