@@ -21,6 +21,7 @@ from Blankly.exchanges.Paper_Trade.Paper_Trade import PaperTrade
 from Blankly.exchanges.Paper_Trade.Paper_Trade_Interface import PaperTradeInterface
 from Blankly.utils.time_builder import time_interval_to_seconds
 from Blankly.utils.utils import load_backtest_preferences, write_backtest_preferences, update_progress
+import Blankly.exchanges.Paper_Trade.metrics as metrics
 
 import typing
 import pandas as pd
@@ -451,6 +452,20 @@ class BackTestController:
 
             # Now write it to our dictionary
             return_dict['returns'] = returns
+
+            # -----=====*****=====----- I thought I stopped doing these comments when I actually learned to code
+            return_dict['cagr'] = metrics.cagr(return_dict)
+            return_dict['cum_returns'] = metrics.cum_returns(return_dict)
+            return_dict['sortino'] = metrics.sortino(return_dict)
+            return_dict['sharpe'] = metrics.sharpe(return_dict)
+            return_dict['calmar'] = metrics.calmar(return_dict)
+            return_dict['volatility'] = metrics.volatility(return_dict)
+            return_dict['variance'] = metrics.variance(return_dict)
+            # return_dict['beta'] = metrics.beta(return_dict)
+            return_dict['var'] = metrics.var(return_dict)
+            return_dict['cvar'] = metrics.cvar(return_dict)
+            # return_dict['max_drawdown'] = metrics.cagr(return_dict)
+            # -----=====*****=====-----
 
         # Run this last so that the user can override what they want
         for callback in self.callbacks:
