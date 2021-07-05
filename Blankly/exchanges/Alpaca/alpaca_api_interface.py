@@ -75,10 +75,17 @@ class AlpacaInterface(CurrencyInterface):
         needed = self.needed['get_products']
         assets = self.calls.list_assets(status=None, asset_class=None)
 
+        renames = [
+            ["symbol", "currency_id"],
+        ]
+        for i in range(len(assets)):
+            assets[i] = utils.rename_to(renames, assets[i])
+
         for asset in assets:
-            asset['currency_id'] = asset.pop('id')
-            asset['base_currency'] = asset.pop('symbol')
-            asset['quote_currency'] = 'usd'
+            base_currency = asset['currency_id']
+            asset['currency_id'] += "-USD"
+            asset['base_currency'] = base_currency
+            asset['quote_currency'] = 'USD'
             asset['base_min_size'] = -1  # TODO: Take a look at this
             asset['base_max_size'] = -1
             asset['base_increment'] = -1
@@ -202,18 +209,18 @@ class AlpacaInterface(CurrencyInterface):
             'taker_fee_rate': 0
         }
 
-    def get_product_history(self, product_id: str, epoch_start: dt, epoch_stop: dt, granularity: int):
+    def get_product_history(self, product_id: str, epoch_start: dt, epoch_stop: dt, resolution: int):
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
         accepted_grans = [1, 60, 3600]
-        if granularity not in accepted_grans:
+        if resolution not in accepted_grans:
             warnings.warn("Granularity is not an accepted granularity...didnt have a chance to implement more yet, "
                           "returning empty df")
             return pd.DataFrame()
 
-        if granularity == 1:
+        if resolution == 1:
             time_interval = TimeFrame.Minute
-        elif granularity == 60:
+        elif resolution == 60:
             time_interval = TimeFrame.Hour
         else:
             time_interval = TimeFrame.Day

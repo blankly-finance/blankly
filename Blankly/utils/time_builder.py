@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+from typing import Union
 
 def build_second() -> int:
     return 1
@@ -57,7 +58,7 @@ def build_millennium() -> int:
     return build_century() * 10
 
 
-def time_interval_to_seconds(interval: str) -> float:
+def time_interval_to_seconds(interval: Union[str, float]) -> float:
     """
     Extract the number of seconds in an interval string
     """

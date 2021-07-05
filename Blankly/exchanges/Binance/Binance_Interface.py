@@ -589,31 +589,31 @@ class BinanceInterface(CurrencyInterface):
 
     """
 
-    def get_product_history(self, product_id, epoch_start, epoch_stop, granularity):
+    def get_product_history(self, product_id, epoch_start, epoch_stop, resolution):
         """
         Returns the product history from an exchange
         Args:
             product_id: Blankly product ID format (BTC-USD)
             epoch_start: Time to begin download
             epoch_stop: Time to stop download
-            granularity: Resolution in seconds between tick (ex: 60 = 1 per minute)
+            resolution: Resolution in seconds between tick (ex: 60 = 1 per minute)
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
         """
 
-        granularity = Blankly.time_builder.time_interval_to_seconds(granularity)
+        resolution = Blankly.time_builder.time_interval_to_seconds(resolution)
 
-        epoch_start, epoch_stop = super().get_product_history(product_id, epoch_start, epoch_stop, granularity)
+        epoch_start, epoch_stop = super().get_product_history(product_id, epoch_start, epoch_stop, resolution)
 
         epoch_start = int(epoch_start)
         epoch_stop = int(epoch_stop)
 
         accepted_grans = [60, 180, 300, 900, 1800, 3600, 7200, 14400,
                           21600, 28800, 43200, 86400, 259200, 604800, 2592000]
-        if granularity not in accepted_grans:
+        if resolution not in accepted_grans:
             warnings.warn("Granularity is not an accepted granularity...rounding to nearest valid value.")
-            granularity = accepted_grans[min(range(len(accepted_grans)),
-                                             key=lambda i: abs(accepted_grans[i] - granularity))]
+            resolution = accepted_grans[min(range(len(accepted_grans)),
+                                            key=lambda i: abs(accepted_grans[i] - resolution))]
         lookup_dict = {
             60: "1m",
             180: "3m",
@@ -631,10 +631,10 @@ class BinanceInterface(CurrencyInterface):
             604800: "1w",
             2592000: "1M"
         }
-        gran_string = lookup_dict[granularity]
+        gran_string = lookup_dict[resolution]
 
         # Figure out how many points are needed
-        need = int((epoch_stop - epoch_start) / granularity)
+        need = int((epoch_stop - epoch_start) / resolution)
         initial_need = need
         window_open = epoch_start
         history = []
@@ -643,7 +643,7 @@ class BinanceInterface(CurrencyInterface):
         product_id = utils.to_exchange_coin_id(product_id, 'binance')
         while need > 1000:
             # Close is always 300 points ahead
-            window_close = int(window_open + 1000 * granularity)
+            window_close = int(window_open + 1000 * resolution)
             history = history + self.calls.get_klines(symbol=product_id, startTime=window_open * 1000,
                                                       endTime=window_close * 1000, interval=gran_string,
                                                       limit=1000)

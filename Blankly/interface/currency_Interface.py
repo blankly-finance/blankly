@@ -164,10 +164,10 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
         using_setting = self.user_preferences['settings'][self.exchange_name]['cash']
         return self.get_account(using_setting)
 
-    def history(self, product_id, to, granularity):
+    def history(self, product_id, to, resolution):
         epoch_stop = time.time()
         epoch_start = epoch_stop - time_interval_to_seconds(to)
-        return self.get_product_history(product_id, epoch_start, epoch_stop, granularity)
+        return self.get_product_history(product_id, epoch_start, epoch_stop, resolution)
 
     def get_account(self, currency=None):
         """
@@ -184,7 +184,7 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
 
         return currency
 
-    def get_product_history(self, product_id, epoch_start, epoch_stop, granularity):
+    def get_product_history(self, product_id, epoch_start, epoch_stop, resolution):
         return utils.convert_epochs(epoch_start), utils.convert_epochs(epoch_stop)
 
     def choose_order_specificity(self, order_type):

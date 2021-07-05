@@ -418,42 +418,42 @@ class CoinbaseProInterface(CurrencyInterface):
 
     """
 
-    def get_product_history(self, product_id, epoch_start, epoch_stop, granularity):
+    def get_product_history(self, product_id, epoch_start, epoch_stop, resolution):
         """
         Returns the product history from an exchange
         Args:
             product_id: Blankly product ID format (BTC-USD)
             epoch_start: Time to begin download
             epoch_stop: Time to stop download
-            granularity: Resolution in seconds between tick (ex: 60 = 1 per minute)
+            resolution: Resolution in seconds between tick (ex: 60 = 1 per minute)
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
         """
 
-        granularity = Blankly.time_builder.time_interval_to_seconds(granularity)
+        resolution = Blankly.time_builder.time_interval_to_seconds(resolution)
 
-        epoch_start, epoch_stop = super().get_product_history(product_id, epoch_start, epoch_stop, granularity)
+        epoch_start, epoch_stop = super().get_product_history(product_id, epoch_start, epoch_stop, resolution)
 
         accepted_grans = [60, 300, 900, 3600, 21600, 86400]
-        if granularity not in accepted_grans:
+        if resolution not in accepted_grans:
             warnings.warn("Granularity is not an accepted granularity...rounding to nearest valid value.")
-            granularity = accepted_grans[min(range(len(accepted_grans)),
-                                             key=lambda i: abs(accepted_grans[i] - granularity))]
+            resolution = accepted_grans[min(range(len(accepted_grans)),
+                                            key=lambda i: abs(accepted_grans[i] - resolution))]
 
-        granularity = int(granularity)
+        resolution = int(resolution)
 
         # Figure out how many points are needed
-        need = int((epoch_stop - epoch_start) / granularity)
+        need = int((epoch_stop - epoch_start) / resolution)
         initial_need = need
         window_open = epoch_start
         history = []
         # Iterate while its more than max
         while need > 300:
             # Close is always 300 points ahead
-            window_close = window_open + 300 * granularity
+            window_close = window_open + 300 * resolution
             open_iso = utils.ISO8601_from_epoch(window_open)
             close_iso = utils.ISO8601_from_epoch(window_close)
-            response = self.calls.get_product_historic_rates(product_id, open_iso, close_iso, granularity)
+            response = self.calls.get_product_historic_rates(product_id, open_iso, close_iso, resolution)
             if isinstance(response, dict):
                 raise APIException(response['message'])
             history = history + response
@@ -466,7 +466,7 @@ class CoinbaseProInterface(CurrencyInterface):
         # Fill the remainder
         open_iso = utils.ISO8601_from_epoch(window_open)
         close_iso = utils.ISO8601_from_epoch(epoch_stop)
-        response = self.calls.get_product_historic_rates(product_id, open_iso, close_iso, granularity)
+        response = self.calls.get_product_historic_rates(product_id, open_iso, close_iso, resolution)
         if isinstance(response, dict):
             raise APIException(response['message'])
         history_block = history + response
