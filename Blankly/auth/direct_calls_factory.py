@@ -27,7 +27,7 @@ from Blankly.exchanges.Binance.Binance_Interface import BinanceInterface
 import Blankly.utils.utils as utils
 
 
-class InterfaceFactory:
+class DirectCallsFactory:
     @staticmethod
     def create(exchange_name: str, auth: AuthInterface, preferences_path: str = None):
         preferences = utils.load_user_preferences(preferences_path)

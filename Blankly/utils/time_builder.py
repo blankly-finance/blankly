@@ -18,6 +18,7 @@
 
 from typing import Union
 
+
 def build_second() -> int:
     return 1
 

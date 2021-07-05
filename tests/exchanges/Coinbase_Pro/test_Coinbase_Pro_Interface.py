@@ -22,7 +22,7 @@ import pytest
 from pathlib import Path
 
 from Blankly.auth.Coinbase.auth import CoinbaseAuth
-from Blankly.auth.direct_calls_factory import InterfaceFactory
+from Blankly.auth.direct_calls_factory import DirectCallsFactory
 from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Interface import CoinbaseProInterface
 
 
@@ -45,7 +45,7 @@ def coinbase_interface():
     settings_file_path = Path("tests/config/settings.json").resolve()
 
     auth_obj = CoinbaseAuth(str(keys_file_path), "Sandbox Portfolio")
-    _, coinbase_interface = InterfaceFactory.create("coinbase_pro", auth_obj, str(settings_file_path))
+    _, coinbase_interface = DirectCallsFactory.create("coinbase_pro", auth_obj, str(settings_file_path))
     return coinbase_interface
 
 
