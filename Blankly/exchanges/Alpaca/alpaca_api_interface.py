@@ -239,5 +239,5 @@ class AlpacaInterface(CurrencyInterface):
 
     def get_price(self, currency_pair) -> float:
         assert isinstance(self.calls, alpaca_trade_api.REST)
-        response = self.calls.get_last_trade()
-        return float(response['p'])
+        response = self.calls.get_last_trade(symbol=currency_pair)
+        return float(response['price'])
