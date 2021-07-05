@@ -147,10 +147,6 @@ class AlpacaInterface(CurrencyInterface):
         return MarketOrder(order, response, self)
 
     def limit_order(self, product_id: str, side: str, price: float, quantity: int) -> LimitOrder:
-        if quantity is not int:
-            warnings.warn("Alpaca limit orders must have quantity parameter of type int")
-            return
-
         needed = self.needed['limit_order']
 
         order = {
@@ -160,7 +156,7 @@ class AlpacaInterface(CurrencyInterface):
             'product_id': product_id,
             'type': 'limit'
         }
-        response = self.calls.submit_order(product_id, side=side, type='limit', time_in_force='day', qty=quantity, limit_price=price)
+        response = self.calls.submit_order(product_id, side=side, type='limit', time_in_force='gtc', qty=quantity, limit_price=price)
         response['created_at'] = parser.isoparse(response['created_at']).timestamp()
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
