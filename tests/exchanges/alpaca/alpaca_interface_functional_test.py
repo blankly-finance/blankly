@@ -80,3 +80,7 @@ def test_get_product_history(alpaca_interface: AlpacaInterface) -> None:
     return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
 
     assert(len(return_df) > 5)
+
+def test_get_price(alpaca_interface: AlpacaInterface) -> None:
+    price = alpaca_interface.get_price("AAPL")
+    assert isinstance(price, float)
