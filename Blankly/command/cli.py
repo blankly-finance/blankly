@@ -1,6 +1,6 @@
 """
-    Alpaca exchange definitions and setup
-    Copyright (C) 2021 Arun Annamalai, Emerson Dove, Brandon Fan
+    CLI for interacting with and uploading Blankly models.
+    Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -17,19 +17,5 @@
 """
 
 
-from Blankly.exchanges.exchange import Exchange
-import alpaca_trade_api
-
-
-class Alpaca(Exchange):
-    def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
-        Exchange.__init__(self, 'alpaca', portfolio_name, keys_path, settings_path)
-
-    def get_exchange_state(self):
-        return self.Interface.get_fees()
-
-    def get_currency_state(self, currency):
-        return self.Interface.get_account(currency)
-
-    def get_direct_calls(self) -> alpaca_trade_api.REST:
-        return self.calls
+def main():
+    print("Blankly deployment is coming soon!")

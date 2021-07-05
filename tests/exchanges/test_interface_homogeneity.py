@@ -43,19 +43,31 @@ class InterfaceHomogeneity(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.Interfaces = []
 
+        # Coinbase Pro definition and appending
         cls.Coinbase_Pro = Blankly.Coinbase_Pro(portfolio_name="Sandbox Portfolio",
                                                 keys_path='./tests/config/keys.json',
                                                 settings_path="./tests/config/settings.json")
         cls.Coinbase_Pro_Interface = cls.Coinbase_Pro.get_interface()
         cls.Interfaces.append(cls.Coinbase_Pro_Interface)
 
+        # Binance definition and appending
         cls.Binance = Blankly.Binance(portfolio_name="Spot Test Key",
                                       keys_path='./tests/config/keys.json',
                                       settings_path="./tests/config/settings.json")
         cls.Binance_Interface = cls.Binance.get_interface()
         cls.Interfaces.append(cls.Binance_Interface)
 
+        # Alpaca definition and appending
+        cls.Alpaca = Blankly.Alpaca(portfolio_name="Spot Test Key",
+                                    keys_path='./tests/config/keys.json',
+                                    settings_path="./tests/config/settings.json")
+        cls.Alpaca_Interface = cls.Alpaca.get_interface()
+        cls.Interfaces.append(cls.Alpaca_Interface)
+
+        # Paper trade wraps binance
         cls.Paper_Trade = Blankly.PaperTrade(cls.Binance)
+
+        # Paper trade append
         cls.Paper_Trade_Interface = cls.Paper_Trade.get_interface()
         cls.Interfaces.append(cls.Paper_Trade_Interface)
 
