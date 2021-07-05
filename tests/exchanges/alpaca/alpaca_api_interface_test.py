@@ -1,5 +1,5 @@
 from Blankly.auth.Alpaca.auth import AlpacaAuth
-from Blankly.auth.direct_calls_factory import InterfaceFactory
+from Blankly.auth.direct_calls_factory import DirectCallsFactory
 import pytest
 from pytest_mock import MockerFixture
 
@@ -94,7 +94,7 @@ def alpaca_mock_interface(mocker: MockerFixture) -> None:
 
     auth_obj = AlpacaAuth(keys_file_path, "alpaca test portfolio")
     mocker.patch("alpaca_trade_api.REST", new=mock_alpaca_direct_calls)
-    _, alpaca_interface = InterfaceFactory.create("alpaca", auth_obj, settings_file_path)
+    _, alpaca_interface = DirectCallsFactory.create("alpaca", auth_obj, settings_file_path)
 
     return alpaca_interface
 
@@ -105,7 +105,7 @@ def alpaca_mock_interface(mocker: MockerFixture) -> None:
 #     settings_file_path = Path("tests/config/settings.json").resolve()
 #
 #     auth_obj = alpaca_auth(keys_file_path, "alpaca test portfolio")
-#     alpaca_interface = InterfaceFactory.create_interface("alpaca", auth_obj, settings_file_path)
+#     alpaca_interface = DirectCallsFactory.create_interface("alpaca", auth_obj, settings_file_path)
 #     return alpaca_interface
 #
 #
