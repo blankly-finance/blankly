@@ -57,13 +57,15 @@ def build_millennium() -> int:
     return build_century() * 10
 
 
-def time_interval_to_seconds(interval) -> float:
+def time_interval_to_seconds(interval: str) -> float:
     """
     Extract the number of seconds in an interval string
     """
     if isinstance(interval, float) or isinstance(interval, int):
         return float(interval)
     # Extract intervals
+    if 'mo' in interval:
+        interval = interval.replace('mo', 'M')
     try:
         magnitude = int(interval[:-1])
     except ValueError:
