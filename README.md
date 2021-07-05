@@ -85,18 +85,19 @@ def price_event(price: float, ticker: str, state: StrategyState):
 
    # buy or sell based on that decision
    if decision:
-      interface.market_order(ticker, 'buy', int(.025 * interface.cash['available']))
+      interface.market_order(ticker, 'buy', interface.cash)
       state.variables['has_buy_order'] = True
    elif state.variables['has_buy_order'] and not decision:
-      amt = interface.account[ticker]['available']
-      interface.market_order(ticker, 'sell', int(amt))
+      amt = interface.account[ticker].available
+      interface.market_order(ticker, 'sell', amt)
       state.variables['has_buy_order'] = False
 
 
 # Easily run setup code
 def strategy_init(currency_pair, state: StrategyState):
+   # get 500 points worth of data at given resolution of strategy
    state.variables['history'] =
-   state.interface.get_product_history(currency_pair, time.time() - 10000, time.time(), '1h')['close'].tolist()
+      state.interface.history(currency_pair, 500, state.resolution)['close']
 
 
 if __name__ == "__main__":
@@ -109,7 +110,7 @@ if __name__ == "__main__":
    # Run the code above with a new price once a day
    strategy.add_price_event(price_event,
                             currency_pair='BTC-USD',
-                            resolution='10s',
+                            resolution='1h',
                             init=strategy_init)
 
    # Run the code above with a new price once every thirty minutes
