@@ -21,6 +21,7 @@ import abc
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 import pandas
+from datetime import datetime
 from typing import Union
 
 
@@ -192,16 +193,21 @@ class ABCExchangeInterface(abc.ABC):
 
     """
     @abc.abstractmethod
-    def history(self,
-                symbol: str,
-                to: Union[str, int, float],
-                resolution: Union[str, float]) -> pandas.DataFrame:
+    def history(self, 
+                symbol: str, 
+                to: Union[str, int]=200, 
+                resolution: str='1d', 
+                start_date: Union[str, datetime]=None, 
+                end_date: Union[str, datetime]=None) -> pandas.DataFrame:
         """
         Wrapper for .get_product_history() which allows users to more easily get product history from right now.
         Args:
-            symbol: The asset such as (BTC-USD, or MSFT)
-            to (str or number): The amount of time before now to get product history
-            resolution: Resolution in seconds between tick (ex: 60 = 1 per minute)
+            product_id: Blankly product ID format (BTC-USD)
+            to (str or int): The number of data points back in time either expressed as a string ("1y" meaning 1 year back") 
+                or int of points (300 points at specified resolution)
+            resolution: Resolution as a string (i.e. "1d", "4h", "1y")
+            start_date (str or datetime): Start Date for data gathering
+            end_date (str or datetime): End Date for data gathering
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
             TODO add return example
