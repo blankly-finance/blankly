@@ -212,25 +212,33 @@ class AlpacaInterface(CurrencyInterface):
     def get_product_history(self, product_id: str, epoch_start: dt, epoch_stop: dt, resolution: int):
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
-        accepted_grans = [1, 60, 3600]
-        if resolution not in accepted_grans:
-            warnings.warn("Granularity is not an accepted granularity...didnt have a chance to implement more yet, "
-                          "returning empty df")
-            return pd.DataFrame()
-
-        if resolution == 1:
+        supported_multiples = [60, 3600, 86400]
+        if resolution < 60:
+            raise ValueError("Alpaca does not support sub-minute candlesticks")
+        
+        found_multiple = -1
+        for multiple in supported_multiples:
+            if resolution % multiple == 0:
+                found_multiple = multiple
+                break
+        if found_multiple < 0:
+            raise ValueError("Alpaca currently does not support this specific resolution, please make the resolution a multiple of 1 minute, 1 hour or 1 day")
+        
+        if found_multiple == 60:
             time_interval = TimeFrame.Minute
-        elif resolution == 60:
+        if found_multiple == 3600:
             time_interval = TimeFrame.Hour
         else:
             time_interval = TimeFrame.Day
+
+        row_divisor = resolution / multiple
 
         # '2020-08-28' <- this is how it should look
         formatting_str = "%Y-%m-%d"
         epoch_start_str = epoch_start.strftime(formatting_str)
         epoch_stop_str = epoch_stop.strftime(formatting_str)
 
-        return self.calls.get_bars(product_id, time_interval, epoch_start_str, epoch_stop_str,adjustment='raw').df
+        return self.calls.get_bars(product_id, time_interval, epoch_start_str, epoch_stop_str,adjustment='raw').df.iloc[::row_divisor, :]
 
     # TODO: tbh not sure how this one works or if it applies to Alpaca
     def get_market_limits(self, product_id):
