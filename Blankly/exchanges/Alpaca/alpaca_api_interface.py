@@ -160,7 +160,7 @@ class AlpacaInterface(CurrencyInterface):
             'product_id': product_id,
             'type': 'limit'
         }
-        response = self.calls.submit_order(product_id, side=side, type='limit', time_in_force='day', qty=quantity)
+        response = self.calls.submit_order(product_id, side=side, type='limit', time_in_force='day', qty=quantity, limit_price=price)
         response['created_at'] = parser.isoparse(response['created_at']).timestamp()
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
