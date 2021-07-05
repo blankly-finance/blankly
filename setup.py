@@ -20,6 +20,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Blankly',
+    entry_points={'console_scripts': ['blankly = Blankly.command.cli:main']},
     author_email='contact@blankly.finance',
     url='https://github.com/Blankly-Finance/Blankly',  # Could be github or website
     # download_url='https://github.com/EmersonDove/Blankly/archive/v0.1.1-alpha.tar.gz',

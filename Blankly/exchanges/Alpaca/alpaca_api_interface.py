@@ -55,7 +55,7 @@ class AlpacaInterface(CurrencyInterface):
         }
 
     def get_products(self) -> dict:
-        '''
+        """
         [
             {
               "id": "904837e3-3b76-47ec-b432-046db621571b",
@@ -71,7 +71,7 @@ class AlpacaInterface(CurrencyInterface):
             },
             ...
         ]
-        '''
+        """
         needed = self.needed['get_products']
         assets = self.calls.list_assets(status=None, asset_class=None)
 
@@ -79,7 +79,7 @@ class AlpacaInterface(CurrencyInterface):
             asset['currency_id'] = asset.pop('id')
             asset['base_currency'] = asset.pop('symbol')
             asset['quote_currency'] = 'usd'
-            asset['base_min_size'] = -1 # TODO: Take a look at this
+            asset['base_min_size'] = -1  # TODO: Take a look at this
             asset['base_max_size'] = -1
             asset['base_increment'] = -1
 
@@ -88,7 +88,7 @@ class AlpacaInterface(CurrencyInterface):
 
         return assets
 
-    def get_account(self, currency=None, override_paper_trading=False):
+    def get_account(self, currency=None):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         needed = self.needed['get_account']
 
