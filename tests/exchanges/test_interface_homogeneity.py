@@ -58,7 +58,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.Interfaces.append(cls.Binance_Interface)
 
         # Alpaca definition and appending
-        cls.Alpaca = Blankly.Alpaca(portfolio_name="Spot Test Key",
+        cls.Alpaca = Blankly.Alpaca(portfolio_name="alpaca test portfolio",
                                     keys_path='./tests/config/keys.json',
                                     settings_path="./tests/config/settings.json")
         cls.Alpaca_Interface = cls.Alpaca.get_interface()
