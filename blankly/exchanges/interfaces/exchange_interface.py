@@ -166,10 +166,22 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         using_setting = self.user_preferences['settings'][self.exchange_name]['cash']
         return self.get_account(using_setting)['available']
 
-    def history(self, symbol, to, resolution):
-        epoch_stop = time.time()
-        epoch_start = epoch_stop - time_interval_to_seconds(to)
-        return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+    def history(self, symbol, num_points=200, resolution='1d', start_date=None, end_date=None):
+        if end_date is None:
+            epoch_stop = time.time()
+        else:
+            epoch_stop = utils.convert_input_to_epoch(end_date)
+
+        # convert resolution into epoch seconds    
+        resolution_seconds = time_interval_to_seconds(resolution)
+
+        if start_date is None:
+            # use number of points to calculate the start epoch
+            epoch_start = epoch_stop - num_points * resolution_seconds
+        else:
+            epoch_start = utils.convert_input_to_epoch(start_date)
+
+        return self.get_product_history(symbol, epoch_start, epoch_stop, resolution_seconds)
 
     def get_account(self, symbol=None):
         """
