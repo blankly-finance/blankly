@@ -29,8 +29,7 @@ def test_get_exchange(alpaca_interface: AlpacaInterface) -> None:
     assert alpaca_interface.get_exchange_type() == 'alpaca'
 
 def test_get_buy_sell(alpaca_interface: AlpacaInterface) -> None:
-    ny_time = datetime.datetime.now(timeZ_Ny).time()
-    if ny_time > MARKET_CLOSE or ny_time < MARKET_OPEN:
+    if not alpaca_interface.get_calls().get_clock()['is_open']:
         return
 
     known_apple_info = {
@@ -52,7 +51,7 @@ def test_get_buy_sell(alpaca_interface: AlpacaInterface) -> None:
 
     for product in products:
         if product['base_currency'] == 'AAPL':
-            apple_id = product['currency_id']
+            apple_id = product['exchange_specific']['id']
 
     assert apple_id
 
