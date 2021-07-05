@@ -195,13 +195,13 @@ class ICurrencyInterface(abc.ABC):
     def history(self,
                 product_id: str,
                 to: Union[str, int, float],
-                granularity: Union[str, float]) -> pandas.DataFrame:
+                resolution: Union[str, float]) -> pandas.DataFrame:
         """
         Wrapper for .get_product_history() which allows users to more easily get product history from right now.
         Args:
             product_id: Blankly product ID format (BTC-USD)
             to (str or number): The amount of time before now to get product history
-            granularity: Resolution in seconds between tick (ex: 60 = 1 per minute)
+            resolution: Resolution in seconds between tick (ex: 60 = 1 per minute)
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
             TODO add return example
@@ -213,14 +213,14 @@ class ICurrencyInterface(abc.ABC):
                             product_id: str,
                             epoch_start: float,
                             epoch_stop: float,
-                            granularity: Union[str, float]) -> pandas.DataFrame:
+                            resolution: Union[str, float]) -> pandas.DataFrame:
         """
         Returns the product history from an exchange
         Args:
             product_id: Blankly product ID format (BTC-USD)
             epoch_start: Time to begin download
             epoch_stop: Time to stop download
-            granularity: Resolution in seconds between tick (ex: 60 = 1 per minute)
+            resolution: Resolution in seconds between tick (ex: 60 = 1 per minute)
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
             TODO add return example

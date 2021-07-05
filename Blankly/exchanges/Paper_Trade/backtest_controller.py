@@ -107,9 +107,7 @@ class BackTestController:
                 if tuple(identifier) not in self.price_dictionary.keys():
                     print("No exact cache exists for " + str(identifier[0]) + " from " + str(identifier[1]) + " to " +
                           str(identifier[2]) + " at " + str(identifier[3]) + "s resolution. Downloading...")
-                    download = self.interface.get_product_history(identifier[0],
-                                                                  identifier[1],
-                                                                  identifier[2],
+                    download = self.interface.get_product_history(identifier[0], identifier[1], identifier[2],
                                                                   identifier[3])
                     self.price_dictionary[tuple(identifier)] = download
                     if save:

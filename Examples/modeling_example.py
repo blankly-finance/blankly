@@ -13,8 +13,7 @@ if __name__ == "__main__":
 
     # Download market data
     print("Downloading...")
-    history = interface.get_product_history(market, time.time() - Blankly.time_builder.build_day() * 300,
-                                            time.time(),
+    history = interface.get_product_history(market, time.time() - Blankly.time_builder.build_day() * 300, time.time(),
                                             Blankly.time_builder.build_day())
     # Create X-axis
     x = range(len(history['close']))

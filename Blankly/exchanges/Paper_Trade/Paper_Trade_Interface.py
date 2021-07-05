@@ -444,11 +444,11 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
         else:
             return self.calls.get_fees()
 
-    def get_product_history(self, product_id, epoch_start, epoch_stop, granularity):
+    def get_product_history(self, product_id, epoch_start, epoch_stop, resolution):
         if self.backtesting:
             raise APIException("Cannot download product history during a backtest")
         else:
-            return self.calls.get_product_history(product_id, epoch_start, epoch_stop, granularity)
+            return self.calls.get_product_history(product_id, epoch_start, epoch_stop, resolution)
 
     def get_market_limits(self, product_id):
         if self.backtesting:
