@@ -171,6 +171,13 @@ def pretty_print_JSON(json_object, actually_print=True):
 def epoch_from_ISO8601(ISO8601) -> float:
     return dp.parse(ISO8601).timestamp()
 
+def convert_input_to_epoch(value) -> float:
+    if isinstance(value, str):
+        return dp.parse(value).timestamp()
+    elif isinstance(value, dt.datetime):
+        return value.timestamp()
+    
+    raise ValueError("Incorrect value input given, expected string or value but got: {}".format(type(value)))
 
 def ISO8601_from_epoch(epoch) -> str:
     return dt.datetime.utcfromtimestamp(epoch).isoformat() + 'Z'
