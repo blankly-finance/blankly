@@ -18,11 +18,15 @@
 
 
 import pandas as pd
+import warnings
 import numpy as np
 
 
 def cagr(start_value, end_value, years):
-    return (end_value / start_value) ** (1 / years)
+    if end_value < start_value:
+        warnings.warn('End Value less than Start Value makes CAGR meaningless, returning 0')
+        return 0.0
+    return (end_value / start_value) ** (1 / years) - 1
 
 
 def cum_returns(start_value, end_value):
