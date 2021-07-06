@@ -22,11 +22,11 @@ from Blankly.exchanges.exchange import Exchange
 
 
 class PaperTrade(Exchange):
-    def __init__(self, authenticated_exchange: Exchange):
+    def __init__(self, authenticated_exchange: Exchange, initial_account_values: dict = None):
         # Giving the preferences path as none allows us to create a default
         Exchange.__init__(self, "paper_trade", "", None, None)
 
-        self.Interface = PaperTradeInterface(authenticated_exchange.get_interface())
+        self.Interface = PaperTradeInterface(authenticated_exchange.get_interface(), initial_account_values)
         self.calls = authenticated_exchange.get_direct_calls()
 
     """

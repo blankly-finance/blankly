@@ -146,7 +146,7 @@ class ICurrencyInterface(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def cash(self) -> dict:
+    def cash(self) -> float:
         """
         Get the amount of cash in a portfolio. The cash default is set in the settings .json file
         """
