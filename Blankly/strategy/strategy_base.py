@@ -19,7 +19,7 @@ import warnings
 
 from Blankly.strategy.strategy_state import StrategyState
 from Blankly.utils.utils import AttributeDict
-from Blankly.exchanges.interfaces.Paper_Trade import BacktestResult
+from Blankly.exchanges.interfaces.Paper_Trade.backtest_result import BacktestResult
 import typing
 import time
 

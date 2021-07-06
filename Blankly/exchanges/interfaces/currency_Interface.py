@@ -18,7 +18,7 @@
 
 import Blankly.utils.utils as utils
 from Blankly.utils.time_builder import time_interval_to_seconds
-from Blankly.interface.abc_currency_interface import ICurrencyInterface
+from Blankly.exchanges.interfaces.abc_currency_interface import ICurrencyInterface
 import abc
 import time
 

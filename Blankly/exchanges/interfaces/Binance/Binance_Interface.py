@@ -26,7 +26,7 @@ import Blankly.utils.utils
 import Blankly.utils.utils as utils
 from Blankly.exchanges.orders.limit_order import LimitOrder
 from Blankly.exchanges.orders.market_order import MarketOrder
-from Blankly.interface.currency_Interface import CurrencyInterface
+from Blankly.exchanges.interfaces.currency_Interface import CurrencyInterface
 
 
 class BinanceInterface(CurrencyInterface):

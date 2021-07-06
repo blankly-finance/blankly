@@ -23,7 +23,7 @@ import warnings
 
 from Blankly.exchanges.managers.orderbook_manager import OrderbookManger
 from Blankly.exchanges.managers.ticker_manager import TickerManager
-from Blankly.interface.abc_currency_interface import ICurrencyInterface
+from Blankly.exchanges.interfaces.abc_currency_interface import ICurrencyInterface
 from Blankly.exchanges.interfaces.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
 from binance.client import Client as Binance_API
 
