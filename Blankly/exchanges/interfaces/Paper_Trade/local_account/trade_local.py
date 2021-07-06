@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import Blankly.utils.paper_trading.local_account.local_account as local_account
+import Blankly.exchanges.interfaces.Paper_Trade.local_account.local_account as local_account
 import Blankly.utils.utils as utils
 from Blankly.utils.exceptions import InvalidOrder
 
