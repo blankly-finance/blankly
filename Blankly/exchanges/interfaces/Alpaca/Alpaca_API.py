@@ -28,8 +28,3 @@ class API:
 
 api = os.getenv("ALPACA_PUBLIC")
 secret = os.getenv("ALPACA_PRIVATE")
-
-if __name__ == "__main__":
-    # TODO: Update this main test
-    client = API(api, secret, True)
-    print(client.alp_client.list_assets())
