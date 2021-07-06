@@ -17,8 +17,8 @@
 """
 
 
-from Blankly.interface.currency_Interface import CurrencyInterface
-from Blankly.interface.abc_currency_interface import ICurrencyInterface
+from Blankly.exchanges.interfaces.currency_Interface import CurrencyInterface
+from Blankly.exchanges.interfaces.abc_currency_interface import ICurrencyInterface
 from Blankly.exchanges.interfaces.Paper_Trade.backtesting_wrapper import BacktestingWrapper
 
 

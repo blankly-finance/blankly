@@ -23,7 +23,7 @@ from pathlib import Path
 
 from Blankly.exchanges.interfaces.Coinbase_Pro.coinbase_pro_auth import CoinbaseAuth
 from Blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
-from Blankly.exchanges.interfaces.Coinbase_Pro import CoinbaseProInterface
+from Blankly.exchanges.interfaces.Coinbase_Pro.Coinbase_Pro_Interface import CoinbaseProInterface
 
 
 class CoinbaseInterface2(unittest.TestCase):

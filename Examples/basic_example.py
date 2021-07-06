@@ -1,7 +1,7 @@
 import Blankly
 
 
-def price_event(price, currency_pair):
+def price_event(price, currency_pair, state):
     """
     This function will run every time we check for a new price - defined below
     """

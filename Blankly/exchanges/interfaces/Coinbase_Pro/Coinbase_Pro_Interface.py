@@ -30,7 +30,7 @@ from Blankly.exchanges.orders.market_order import MarketOrder
 from Blankly.exchanges.orders.stop_limit import StopLimit
 
 
-from Blankly.interface.currency_Interface import CurrencyInterface
+from Blankly.exchanges.interfaces.currency_Interface import CurrencyInterface
 
 
 class CoinbaseProInterface(CurrencyInterface):
