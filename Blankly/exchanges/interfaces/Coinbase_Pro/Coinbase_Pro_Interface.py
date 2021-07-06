@@ -522,7 +522,7 @@ class CoinbaseProInterface(CurrencyInterface):
         # These don't really exist on this exchange
         products["max_price"] = 9999999999  # This is actually the max price
         products["max_orders"] = 1000000000000  # there is no limit
-        products["fractional_limit"] = False
+        products["fractional_limit"] = True
         return utils.isolate_specific(needed, products)
 
     def get_price(self, currency_pair) -> float:

@@ -18,7 +18,7 @@
 
 
 from Blankly.utils.utils import AttributeDict
-from Blankly import Interface
+from Blankly.exchanges.interfaces.abc_currency_interface import ICurrencyInterface as Interface
 
 
 class StrategyState:
