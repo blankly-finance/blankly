@@ -17,10 +17,10 @@
 """
 import Blankly
 from Blankly.exchanges.IExchange import IExchange
-from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Interface import CoinbaseProInterface
-from Blankly.exchanges.Binance.Binance_Interface import BinanceInterface
-from Blankly.auth.auth_factory import AuthFactory
-from Blankly.auth.direct_calls_factory import DirectCallsFactory
+from Blankly.exchanges.interfaces.Coinbase_Pro import CoinbaseProInterface
+from Blankly.exchanges.interfaces.Binance.Binance_Interface import BinanceInterface
+from Blankly.exchanges.auth.auth_factory import AuthFactory
+from Blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 
 from Blankly.interface.abc_currency_interface import ICurrencyInterface
 import time

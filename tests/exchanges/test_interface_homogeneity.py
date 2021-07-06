@@ -22,8 +22,8 @@ from Blankly.utils.utils import compare_dictionaries
 import unittest
 import time
 
-from Blankly.utils.purchases.market_order import MarketOrder
-from Blankly.utils.purchases.limit_order import LimitOrder
+from Blankly.exchanges.orders.market_order import MarketOrder
+from Blankly.exchanges.orders.limit_order import LimitOrder
 
 
 def compare_responses(response_list, force_exchange_specific=True):

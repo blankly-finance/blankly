@@ -20,10 +20,10 @@ import pytest
 import Blankly
 import unittest
 
-from Blankly.auth.Binance.auth import BinanceAuth
-from Blankly.auth.direct_calls_factory import DirectCallsFactory
-from Blankly.exchanges.Binance.Binance_Interface import BinanceInterface
-from Blankly.utils.utils import compare_dictionaries, AttributeDict
+from Blankly.exchanges.interfaces.Binance.binance_auth import BinanceAuth
+from Blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
+from Blankly.exchanges.interfaces.Binance.Binance_Interface import BinanceInterface
+from Blankly.utils.utils import AttributeDict
 from pathlib import Path
 import time
 

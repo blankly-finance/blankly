@@ -21,9 +21,9 @@ import pytest
 
 from pathlib import Path
 
-from Blankly.auth.Coinbase.auth import CoinbaseAuth
-from Blankly.auth.direct_calls_factory import DirectCallsFactory
-from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_Interface import CoinbaseProInterface
+from Blankly.exchanges.interfaces.Coinbase_Pro.coinbase_pro_auth import CoinbaseAuth
+from Blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
+from Blankly.exchanges.interfaces.Coinbase_Pro import CoinbaseProInterface
 
 
 class CoinbaseInterface2(unittest.TestCase):
