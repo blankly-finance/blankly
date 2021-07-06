@@ -17,7 +17,7 @@
 """
 
 from Blankly.exchanges.interfaces.Alpaca.Alpaca import Alpaca as Alpaca
-from Blankly.blankly_bot import BlanklyBot
+from Blankly.strategy.blankly_bot import BlanklyBot
 
 from Blankly.exchanges.managers.orderbook_manager import OrderbookManger as OrderbookManager
 import Blankly.utils.utils as utils

@@ -25,8 +25,8 @@ from Blankly.exchanges.interfaces.Paper_Trade.backtesting_wrapper import Backtes
 from Blankly.utils.exceptions import InvalidOrder
 from Blankly.utils.exceptions import APIException
 
-import Blankly.utils.paper_trading.local_account.trade_local as trade_local
-import Blankly.utils.paper_trading.utils as paper_trade
+import Blankly.exchanges.interfaces.Paper_Trade.local_account.trade_local as trade_local
+import Blankly.exchanges.interfaces.Paper_Trade.utils as paper_trade
 import Blankly.utils.utils as utils
 
 
@@ -386,11 +386,11 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
         if side == "buy":
             available = trade_local.get_account(quote)['available']
             # Loose the funds when buying
-            trade_local.update_available(quote, available - (size*price))
+            trade_local.update_available(quote, available - (size * price))
 
             # Gain the funds on hold when buying
             hold = trade_local.get_account(quote)['hold']
-            trade_local.update_hold(quote, hold + (size*price))
+            trade_local.update_hold(quote, hold + (size * price))
         elif side == "sell":
             available = trade_local.get_account(base)['available']
             # Loose the size when selling
