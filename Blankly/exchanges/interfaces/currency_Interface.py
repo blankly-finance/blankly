@@ -123,6 +123,8 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
                 ["quote_increment", float],  # Specifies the min order price as well as the price increment.
                 ["base_increment", float],  # Specifies the minimum increment for the base_currency.
                 ["max_orders", int],
+                ["min_market_funds", float],
+                ["max_market_funds", float],
                 ["min_price", float],
                 ["max_price", float],
                 ["fractional_limit", bool]
