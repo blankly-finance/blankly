@@ -19,7 +19,9 @@
 from Blankly.exchanges.interfaces.Coinbase_Pro.Coinbase_Pro import Coinbase_Pro as Coinbase_Pro
 from Blankly.exchanges.interfaces.Binance.Binance import Binance as Binance
 from Blankly.exchanges.interfaces.Alpaca.Alpaca import Alpaca as Alpaca
-from Blankly.exchanges.interfaces.Paper_Trade.Paper_Trade import PaperTrade
+from Blankly.exchanges.interfaces.Paper_Trade.Paper_Trade import PaperTrade as PaperTrade
+from Blankly.strategy import Strategy as Strategy
+from Blankly.strategy import StrategyState as StrategyState
 
 from Blankly.exchanges.managers.ticker_manager import TickerManager as TickerManager
 from Blankly.exchanges.managers.orderbook_manager import OrderbookManger as OrderbookManager
@@ -31,4 +33,3 @@ from Blankly.utils.scheduler import Scheduler
 import Blankly.indicators as indicators
 from Blankly.utils import time_builder
 
-from Blankly.strategy.strategy_base import Strategy
