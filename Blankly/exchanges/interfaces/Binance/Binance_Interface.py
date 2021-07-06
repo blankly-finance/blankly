@@ -777,7 +777,7 @@ class BinanceInterface(CurrencyInterface):
         max_quantity = float(filters[2]["maxQty"])
         base_increment = float(filters[2]["stepSize"])
 
-        min_market_notational = float(filters[3]['minNotational'])
+        min_market_notational = float(filters[3]['minNotional'])
         max_market_notational = 92233720368.547752  # For some reason equal to the first *11 digits* of 2^63 then
         # it gets weird past the decimal
 

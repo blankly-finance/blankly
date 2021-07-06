@@ -152,6 +152,7 @@ def test_get_account(alpaca_mock_interface) -> None:
     assert return_val['cash'] == float(1500)
     # assert "exchange_specific" in return_val[0]
 
+
 def test_get_fees(alpaca_mock_interface) -> None:
     fee_response = alpaca_mock_interface.get_fees()
     assert fee_response['maker_fee_rate'] == 0
