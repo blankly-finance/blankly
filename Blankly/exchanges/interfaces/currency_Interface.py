@@ -162,7 +162,7 @@ class CurrencyInterface(ICurrencyInterface, abc.ABC):
     @property
     def cash(self):
         using_setting = self.user_preferences['settings'][self.exchange_name]['cash']
-        return self.get_account(using_setting).available
+        return self.get_account(using_setting)['available']
 
     def history(self, product_id, to, resolution):
         epoch_stop = time.time()

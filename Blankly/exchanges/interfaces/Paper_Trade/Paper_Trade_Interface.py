@@ -40,7 +40,7 @@ import traceback
 
 
 class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
-    def __init__(self, derived_interface: ICurrencyInterface):
+    def __init__(self, derived_interface: ICurrencyInterface, initial_account_values: dict = None):
         self.paper_trade_orders = []
 
         self.get_products_cache = None
@@ -59,6 +59,21 @@ class PaperTradeInterface(CurrencyInterface, BacktestingWrapper):
 
         # Write in the accounts to our local account. This involves getting the values directly from the exchange
         accounts = self.calls.get_account()
+
+        # If it's given an initial account value dictionary, write all the account values that we passed in to the
+        # function to the account, then default everything else to zero.
+        if initial_account_values is not None:
+            for i in accounts.keys():
+                if i in initial_account_values.keys():
+                    accounts[i] = {
+                        'available': initial_account_values[i],
+                        'hold': 0.0
+                    }
+                else:
+                    accounts[i] = {
+                        'available': 0.0,
+                        'hold': 0.0
+                    }
 
         # Initialize the local account
         trade_local.init_local_account(accounts)
