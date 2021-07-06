@@ -146,6 +146,13 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertEqual(limit_order.get_product_id(), product_id)
 
     def test_limit_order(self):
+        """
+        This function tests a few components of market orders:
+        - Opening market orders
+        - Monitoring market orders using the order status function
+        - Comparing with open orders
+        - Canceling orders
+        """
         binance_limits = self.Binance_Interface.get_market_limits('BTC-USDT')
 
         binance_buy = self.Binance_Interface.limit_order('BTC-USDT', 'buy', int(binance_limits['min_price']+30), .01)
@@ -166,6 +173,23 @@ class InterfaceHomogeneity(unittest.TestCase):
         status = []
 
         cancels = []
+
+        coinbase_open = self.Coinbase_Pro_Interface.get_open_orders('BTC-USD')
+        for i in [coinbase_buy, coinbase_sell]:
+            found = False
+            for j in coinbase_open:
+                if i.get_id() == j['id']:
+                    found = True
+            self.assertTrue(found)
+
+        binance_open = self.Binance_Interface.get_open_orders('BTC-USDT')
+        for i in [binance_buy, binance_sell]:
+            found = False
+            for j in binance_open:
+                if i.get_id() == j['id']:
+                    found = True
+                    compare_dictionaries(i.get_response(), j)
+            self.assertTrue(found)
 
         for i in limits:
             responses.append(i.get_response())
