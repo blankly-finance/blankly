@@ -1,11 +1,9 @@
-from Blankly.auth.Alpaca.auth import AlpacaAuth
-from Blankly.auth.direct_calls_factory import DirectCallsFactory
+from Blankly.exchanges.interfaces.Alpaca.alpaca_auth import AlpacaAuth
+from Blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 import pytest
 
-from Blankly.exchanges.Alpaca.alpaca_api_interface import AlpacaInterface
-from tests.helpers.comparisons import is_sub_dict
+from Blankly.exchanges.interfaces.Alpaca.alpaca_api_interface import AlpacaInterface
 from pathlib import Path
-import logging
 import datetime
 import time
 import pytz

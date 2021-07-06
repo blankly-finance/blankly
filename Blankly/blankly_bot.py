@@ -21,10 +21,10 @@ import Blankly
 import copy
 import warnings
 
-from Blankly.exchanges.orderbook_manager import OrderbookManger
-from Blankly.exchanges.ticker_manager import TickerManager
+from Blankly.exchanges.managers.orderbook_manager import OrderbookManger
+from Blankly.exchanges.managers.ticker_manager import TickerManager
 from Blankly.interface.abc_currency_interface import ICurrencyInterface
-from Blankly.exchanges.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
+from Blankly.exchanges.interfaces.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
 from binance.client import Client as Binance_API
 
 

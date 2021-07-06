@@ -19,14 +19,14 @@ import warnings
 
 from Blankly.strategy.strategy_state import StrategyState
 from Blankly.utils.utils import AttributeDict
-from Blankly.exchanges.Paper_Trade.backtest_result import BacktestResult
+from Blankly.exchanges.interfaces.Paper_Trade import BacktestResult
 import typing
 import time
 
 import pandas as pd
 import datetime
 import Blankly
-from Blankly.exchanges.Paper_Trade.backtest_controller import BackTestController
+from Blankly.exchanges.interfaces.Paper_Trade.backtest_controller import BackTestController
 from Blankly.exchanges.exchange import Exchange
 from Blankly.utils.time_builder import time_interval_to_seconds
 
