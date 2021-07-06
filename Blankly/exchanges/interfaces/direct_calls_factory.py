@@ -22,7 +22,7 @@ from Blankly.exchanges.interfaces.Alpaca.alpaca_api_interface import AlpacaInter
 from Blankly.exchanges.interfaces.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
 from binance.client import Client
 from Blankly.exchanges.interfaces.Alpaca.Alpaca_API import create_alpaca_client
-from Blankly.exchanges.interfaces.Coinbase_Pro import CoinbaseProInterface
+from Blankly.exchanges.interfaces.Coinbase_Pro.Coinbase_Pro_Interface import CoinbaseProInterface
 from Blankly.exchanges.interfaces.Binance.Binance_Interface import BinanceInterface
 import Blankly.utils.utils as utils
 

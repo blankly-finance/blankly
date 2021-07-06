@@ -23,7 +23,7 @@ from alpaca_trade_api.rest import TimeFrame
 
 from Blankly.utils import utils as utils
 from Blankly.exchanges.interfaces.Alpaca.Alpaca_API import API
-from Blankly.interface.currency_Interface import CurrencyInterface
+from Blankly.exchanges.interfaces.currency_Interface import CurrencyInterface
 import alpaca_trade_api
 
 from Blankly.exchanges.orders.limit_order import LimitOrder
