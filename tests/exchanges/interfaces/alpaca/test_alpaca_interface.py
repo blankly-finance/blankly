@@ -119,8 +119,8 @@ def test_get_products(alpaca_mock_interface) -> None:
 
     expected_answer = {
         "currency_id": "AAPL-USD",
-        "base_currency": "AAPL",
-        "quote_currency": "USD",
+        "base_asset": "AAPL",
+        "quote_asset": "USD",
         "base_min_size": -1,
         "base_max_size": -1,
         "base_increment": -1,
@@ -150,6 +150,10 @@ def test_get_account(alpaca_mock_interface) -> None:
         assert found, "expected return element not found: %r" % answer
     # assert "exchange_specific" in return_val[0]
 
+def test_get_cash(alpaca_mock_interface) -> None:
+    expected_answer = 1500
+    return_val = alpaca_mock_interface.cash
+    assert(return_val == expected_answer)
 
 def test_get_fees(alpaca_mock_interface) -> None:
     fee_response = alpaca_mock_interface.get_fees()

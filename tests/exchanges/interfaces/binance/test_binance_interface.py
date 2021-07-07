@@ -76,8 +76,8 @@ def test_get_buy_sell_order(binance_interface: BinanceInterface) -> None:
     btc_usd_id = None
 
     for i in products:
-        if i['currency_id'] == 'BTC-USDT':
-            btc_usd_id = i['currency_id']
+        if i['symbol'] == 'BTC-USDT':
+            btc_usd_id = i['symbol']
             break
     print(btc_usd_id)
     assert btc_usd_id
