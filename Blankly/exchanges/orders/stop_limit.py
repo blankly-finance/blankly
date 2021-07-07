@@ -52,7 +52,7 @@ class StopLimit(Order):
 
         Guaranteed:
         needed = [
-                ["product_id", str],
+                ["symbol", str],
                 ["id", str],  <-- Handled by order
                 ["created_at", float],  <-- Handled by order
                 ["stop_price", float],
