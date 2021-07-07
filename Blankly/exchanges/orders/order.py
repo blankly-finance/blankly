@@ -70,7 +70,7 @@ class Order:
         return_string = self.add_new_line(return_string, self.get_id())
 
         return_string = self.add_new_line(return_string, "Product ID: ", newline=False)
-        return_string = self.add_new_line(return_string, self.get_product_id())
+        return_string = self.add_new_line(return_string, self.get_asset_id())
 
         return_string = self.add_new_line(return_string, "Purchase Time: ", newline=False)
         return_string = self.add_new_line(return_string, self.get_purchase_time())
@@ -95,11 +95,11 @@ class Order:
         """
         return self.__response["id"]
 
-    def get_product_id(self) -> str:
+    def get_asset_id(self) -> str:
         """
         Get the asset id of the exchange
         """
-        return self.__response["product_id"]
+        return self.__response["symbol"]
 
     def get_purchase_time(self) -> float:
         """

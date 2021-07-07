@@ -143,7 +143,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         # TODO fix status homogeneity
         # self.assertEqual(limit_order.get_status(), {'status': 'new'})
         self.assertEqual(limit_order.get_quantity(), size)
-        self.assertEqual(limit_order.get_product_id(), product_id)
+        self.assertEqual(limit_order.get_asset_id(), product_id)
 
     def test_limit_order(self):
         """
