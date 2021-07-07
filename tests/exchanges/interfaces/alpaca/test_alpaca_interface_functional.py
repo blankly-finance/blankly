@@ -48,7 +48,7 @@ def test_get_buy_sell(alpaca_interface: AlpacaInterface) -> None:
     apple_id = None
 
     for product in products:
-        if product['base_currency'] == 'AAPL':
+        if product['base_asset'] == 'AAPL':
             apple_id = product['exchange_specific']['id']
 
     assert apple_id
