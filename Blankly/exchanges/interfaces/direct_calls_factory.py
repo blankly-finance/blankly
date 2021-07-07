@@ -19,7 +19,7 @@
 
 from Blankly.exchanges.auth.abc_auth import ABCAuth
 from Blankly.exchanges.interfaces.alpaca.alpaca_interface import AlpacaInterface
-from Blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as Coinbase_Pro_API
+from Blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as CoinbaseProAPI
 from binance.client import Client
 from Blankly.exchanges.interfaces.alpaca.alpaca_api import create_alpaca_client
 from Blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
@@ -33,10 +33,10 @@ class DirectCallsFactory:
         preferences = utils.load_user_preferences(preferences_path)
         if exchange_name == 'coinbase_pro':
             if preferences["settings"]["use_sandbox"]:
-                calls = Coinbase_Pro_API(auth, API_URL="https://api-public.sandbox.pro.coinbase.com/")
+                calls = CoinbaseProAPI(auth, API_URL="https://api-public.sandbox.pro.coinbase.com/")
             else:
                 # Create the authenticated object
-                calls = Coinbase_Pro_API(auth)
+                calls = CoinbaseProAPI(auth)
 
             return calls, CoinbaseProInterface(exchange_name, calls)
 
