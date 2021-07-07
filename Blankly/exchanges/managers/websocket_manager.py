@@ -16,10 +16,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import Blankly.utils.utils
-from Blankly.exchanges.IExchange_Websocket import IExchangeWebsocket
+from Blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
 
 
-class WebsocketManager(IExchangeWebsocket):
+class WebsocketManager(ABCExchangeWebsocket):
     def __init__(self, websockets, default_currency, default_exchange):
         self.websockets = websockets
         self.__default_currency = default_currency
@@ -157,6 +157,6 @@ class WebsocketManager(IExchangeWebsocket):
         Get the most recent tick received
         """
         websocket = self.__evaluate_overrides(override_currency, override_exchange)
-        # TODO fix the returned value below, really this needs a class like in Binance that can create a callback to
+        # TODO fix the returned value below, really this needs a class like in binance that can create a callback to
         #  allow a pointer to be subbed in for whichever exchange/currency/websocket type is overridden
         return websocket.get_most_recent_tick()

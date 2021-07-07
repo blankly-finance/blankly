@@ -45,7 +45,7 @@ class LimitOrder(Order):
             "settled": false
         }
 
-        Binance Response:
+        binance Response:
         {
             "symbol": "BTCUSDT",
             "orderId": 28,

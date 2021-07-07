@@ -44,7 +44,7 @@ class MarketOrder(Order):
             'settled': False
         }
 
-        Binance Response:
+        binance Response:
         TODO add this
 
         Guaranteed:

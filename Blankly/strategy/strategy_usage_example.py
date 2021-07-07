@@ -41,7 +41,7 @@ def rsi(price, ticker, interface: Blankly.Interface, state: StrategyState):
 
 
 if __name__ == "__main__":
-    coinbase_pro = Blankly.Coinbase_Pro()
+    coinbase_pro = Blankly.CoinbasePro()
     alpaca = Blankly.Alpaca()
 
     coinbase_strategy = Strategy(coinbase_pro)
