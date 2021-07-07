@@ -91,7 +91,7 @@ class Exchange(ABCExchange, abc.ABC):
 
     def get_model_state(self, currency):
         """
-        Returns JUST the model state, as opposed to all the data returned by get_currency_state()
+        Returns JUST the model state, as opposed to all the data returned by get_asset_state()
 
         Args:
             currency: Currency that the selected model is running on.
@@ -106,7 +106,7 @@ class Exchange(ABCExchange, abc.ABC):
         Args:
             currency: Currency to filter for. This filters model information and the exchange information.
         """
-        state = self.get_currency_state(currency)
+        state = self.get_asset_state(currency)
 
         return {
             "account": state,
@@ -141,7 +141,7 @@ class Exchange(ABCExchange, abc.ABC):
                     self.Interface)
 
     @abc.abstractmethod
-    def get_currency_state(self, currency):
+    def get_asset_state(self, symbol):
         pass
 
     @abc.abstractmethod
