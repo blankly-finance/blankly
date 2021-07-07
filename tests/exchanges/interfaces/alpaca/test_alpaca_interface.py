@@ -144,6 +144,7 @@ def test_get_account(alpaca_mock_interface) -> None:
     for answer in expected_answer:
         found = False
         for result in return_val:
+            
             if is_sub_dict(expected_answer[answer], return_val[result]):
                 found = True
 
@@ -151,7 +152,7 @@ def test_get_account(alpaca_mock_interface) -> None:
     # assert "exchange_specific" in return_val[0]
 
 def test_get_cash(alpaca_mock_interface) -> None:
-    expected_answer = 1500
+    expected_answer = 262113.632
     return_val = alpaca_mock_interface.cash
     assert(return_val == expected_answer)
 
