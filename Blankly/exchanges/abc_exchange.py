@@ -29,15 +29,15 @@ class ABCExchange(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_full_state(self, currency):
+    def get_full_state(self, symbol):
         pass
 
     @abc.abstractmethod
-    def get_model_state(self, currency):
+    def get_model_state(self, symbol):
         pass
 
     @abc.abstractmethod
-    def get_currency_state(self, currency):
+    def get_asset_state(self, symbol):
         pass
 
     def get_exchange_state(self):
