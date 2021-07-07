@@ -62,7 +62,7 @@ class LimitOrder(Order):
 
         Guaranteed:
         needed = [
-            ["product_id", str],
+            ["symbol", str],
             ["id", str],
             ["created_at", float],
             ["price", float],
