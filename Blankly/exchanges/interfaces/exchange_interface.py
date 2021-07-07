@@ -44,8 +44,8 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
             ],
             'get_products': [
                 ["symbol", str],
-                ["base_currency", str],
-                ["quote_currency", str],
+                ["base_asset", str],
+                ["quote_asset", str],
                 ["base_min_size", float],
                 ["base_max_size", float],
                 ["base_increment", float]
@@ -116,12 +116,12 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
             ],
             'get_market_limits': [
                 ["market", str],
-                ["base_currency", str],
-                ["quote_currency", str],
+                ["base_asset", str],
+                ["quote_asset", str],
                 ["base_min_size", float],  # Minimum size to buy
                 ["base_max_size", float],  # Maximum size to buy
                 ["quote_increment", float],  # Specifies the min order price as well as the price increment.
-                ["base_increment", float],  # Specifies the minimum increment for the base_currency.
+                ["base_increment", float],  # Specifies the minimum increment for the base_asset.
                 ["max_orders", int],
                 ["min_market_funds", float],
                 ["max_market_funds", float],
@@ -173,16 +173,16 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
 
     def get_account(self, symbol=None):
         """
-        Get all currencies in an account, or sort by currency/account_id
+        Get all assets in an account, or sort by assets/account_id
         Args:
-            currency (Optional): Filter by particular currency
+            symbol (Optional): Filter by particular symbol
 
         Coinbase Pro: get_account
         binance: get_account["balances"]
         """
 
         if symbol is not None:
-            symbol = utils.get_base_currency(symbol)
+            symbol = utils.get_base_asset(symbol)
 
         return symbol
 
