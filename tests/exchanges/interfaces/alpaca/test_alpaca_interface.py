@@ -144,12 +144,10 @@ def test_get_account(alpaca_mock_interface) -> None:
     for answer in expected_answer:
         found = False
         for result in return_val:
-            if result != 'cash':
-                if is_sub_dict(expected_answer[answer], return_val[result]):
-                    found = True
+            if is_sub_dict(expected_answer[answer], return_val[result]):
+                found = True
 
         assert found, "expected return element not found: %r" % answer
-    assert return_val['cash'] == float(1500)
     # assert "exchange_specific" in return_val[0]
 
 
