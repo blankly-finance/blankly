@@ -28,7 +28,7 @@ class ABCExchangeInterface(abc.ABC):
     @abc.abstractmethod
     def __init__(self, exchange_name, authenticated_API):
         """
-        Create a currency interface
+        Create an abstract exchange interface
         Args:
             exchange_name (str): Define exchange name ex: 'binance' or 'coinbase_pro'
             authenticated_API (obj): Authenticated direct calls object
@@ -71,7 +71,7 @@ class ABCExchangeInterface(abc.ABC):
     def get_account(self,
                     symbol: str = None) -> dict:
         """
-        Get all currencies in an account, or sort by symbol/account_id
+        Get all assets in an account, or sort by symbol/account_id
         Args:
             symbol (Optional): Filter by particular symbol
 
@@ -91,7 +91,7 @@ class ABCExchangeInterface(abc.ABC):
         Args:
             symbol: asset to buy
             side: buy/sell
-            funds: desired amount of quote currency to use
+            funds: desired amount of quote asset to use
         """
         pass
 
@@ -116,7 +116,7 @@ class ABCExchangeInterface(abc.ABC):
                      symbol: str,
                      order_id: str) -> dict:
         """
-        Cancel an order on a particular currency id & order id
+        Cancel an order on a particular symbol & order id
 
         Args:
             symbol: This is the asset id that the order is under
@@ -129,7 +129,7 @@ class ABCExchangeInterface(abc.ABC):
     @abc.abstractmethod
     def account(self) -> dict:
         """
-        Get all currencies in an account, or sort by currency/account_id
+        Get all assets in an account, or sort by assets/account_id
 
         TODO add return example
         """
@@ -241,7 +241,7 @@ class ABCExchangeInterface(abc.ABC):
     def get_price(self,
                   symbol: str) -> float:
         """
-        Returns just the price of a currency pair.
+        Returns just the price of a symbol.
         Args:
             symbol: The asset such as (BTC-USD, or MSFT)
             TODO add return example
