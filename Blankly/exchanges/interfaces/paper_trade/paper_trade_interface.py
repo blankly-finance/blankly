@@ -179,7 +179,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                     if index['price'] > current_price:
                         # Take everything off hold
                         asset_id = index['product_id']
-                        quote = utils.get_quote_currency(asset_id)
+                        quote = utils.get_quote_asset(asset_id)
 
                         available = trade_local.get_account(quote)['available']
                         # Put it back into available
@@ -203,7 +203,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                         # Take everything off hold
 
                         asset_id = index['product_id']
-                        base = utils.get_base_currency(asset_id)
+                        base = utils.get_base_asset(asset_id)
 
                         available = trade_local.get_account(base)['available']
                         # Put it back into available
@@ -395,8 +395,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
 
-        base = utils.get_base_currency(product_id)
-        quote = utils.get_quote_currency(product_id)
+        base = utils.get_base_asset(product_id)
+        quote = utils.get_quote_asset(product_id)
 
         if side == "buy":
             available = trade_local.get_account(quote)['available']
