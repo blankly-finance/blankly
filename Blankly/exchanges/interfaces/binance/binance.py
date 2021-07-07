@@ -18,6 +18,7 @@
 
 
 from Blankly.exchanges.exchange import Exchange
+from Blankly.utils import utils
 import Blankly.exchanges.auth.auth_constructor
 
 from binance.client import Client
@@ -28,15 +29,15 @@ class Binance(Exchange):
         Exchange.__init__(self, "binance", portfolio_name, keys_path, settings_path)
 
     """
-    Builds information about the currency on this exchange by making particular API calls
+    Builds information about the symbol on this exchange by making particular API calls
     """
-    def get_currency_state(self, currency):
+    def get_asset_state(self, symbol):
         """
         Portfolio state is the internal properties for the exchange block.
         """
         # TODO Populate this with useful information
-        currency = Blankly.utils.get_base_currency(currency)
-        account = self.Interface.get_account(currency=currency)
+        symbol = utils.get_base_asset(symbol)
+        account = self.Interface.get_account(symbol=symbol)
         return account
 
     def get_exchange_state(self):

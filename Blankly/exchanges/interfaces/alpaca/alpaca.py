@@ -28,8 +28,8 @@ class Alpaca(Exchange):
     def get_exchange_state(self):
         return self.Interface.get_fees()
 
-    def get_currency_state(self, currency):
-        return self.Interface.get_account(currency)
+    def get_asset_state(self, symbol):
+        return self.Interface.get_account(symbol)
 
     def get_direct_calls(self) -> alpaca_trade_api.REST:
         return self.calls
