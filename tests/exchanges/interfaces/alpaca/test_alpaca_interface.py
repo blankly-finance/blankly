@@ -118,7 +118,7 @@ def test_get_products(alpaca_mock_interface) -> None:
     return_val = alpaca_mock_interface.get_products()
 
     expected_answer = {
-        "currency_id": "AAPL-USD",
+        "symbol": "AAPL-USD",
         "base_asset": "AAPL",
         "quote_asset": "USD",
         "base_min_size": -1,
