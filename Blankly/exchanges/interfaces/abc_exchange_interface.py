@@ -69,11 +69,11 @@ class ABCExchangeInterface(abc.ABC):
 
     @abc.abstractmethod
     def get_account(self,
-                    currency: str = None) -> dict:
+                    symbol: str = None) -> dict:
         """
-        Get all currencies in an account, or sort by currency/account_id
+        Get all currencies in an account, or sort by symbol/account_id
         Args:
-            currency (Optional): Filter by particular currency
+            symbol (Optional): Filter by particular symbol
 
             These arguments are mutually exclusive
 
@@ -83,13 +83,13 @@ class ABCExchangeInterface(abc.ABC):
 
     @abc.abstractmethod
     def market_order(self,
-                     product_id: str,
+                     symbol: str,
                      side: str,
                      funds: float) -> MarketOrder:
         """
         Used for buying or selling market orders
         Args:
-            product_id: currency to buy
+            symbol: asset to buy
             side: buy/sell
             funds: desired amount of quote currency to use
         """
@@ -97,29 +97,29 @@ class ABCExchangeInterface(abc.ABC):
 
     @abc.abstractmethod
     def limit_order(self,
-                    product_id: str,
+                    symbol: str,
                     side: str,
                     price: float,
                     size: float) -> LimitOrder:
         """
         Used for buying or selling limit orders
         Args:
-            product_id: currency to buy
+            symbol: asset to buy
             side: buy/sell
             price: price to set limit order
-            size: amount of currency (like BTC) for the limit to be valued
+            size: amount of asset (like BTC) for the limit to be valued
         """
         pass
 
     @abc.abstractmethod
     def cancel_order(self,
-                     currency_id: str,
+                     symbol: str,
                      order_id: str) -> dict:
         """
         Cancel an order on a particular currency id & order id
 
         Args:
-            currency_id: This is the currency id that the order is under
+            symbol: This is the asset id that the order is under
             order_id: The unique ID of the order.
 
         TODO add return example
@@ -154,23 +154,23 @@ class ABCExchangeInterface(abc.ABC):
 
     @abc.abstractmethod
     def get_open_orders(self,
-                        product_id: str = None) -> list:
+                        symbol: str = None) -> list:
         """
         List open orders.
         Args:
-            product_id (optional) (str): Currency pair such as BTC-USD
+            symbol (optional) (str): Asset such as BTC-USD
         TODO add return example
         """
         pass
 
     @abc.abstractmethod
     def get_order(self,
-                  currency_id: str,
+                  symbol: str,
                   order_id: str) -> dict:
         """
         Get a certain order
         Args:
-            currency_id: This is the currency id that the order is under
+            symbol: Asset that the order is under
             order_id: The unique ID of the order.
         TODO add return example
         """
@@ -193,13 +193,13 @@ class ABCExchangeInterface(abc.ABC):
     """
     @abc.abstractmethod
     def history(self,
-                product_id: str,
+                symbol: str,
                 to: Union[str, int, float],
                 resolution: Union[str, float]) -> pandas.DataFrame:
         """
         Wrapper for .get_product_history() which allows users to more easily get product history from right now.
         Args:
-            product_id: Blankly product ID format (BTC-USD)
+            symbol: The asset such as (BTC-USD, or MSFT)
             to (str or number): The amount of time before now to get product history
             resolution: Resolution in seconds between tick (ex: 60 = 1 per minute)
         Returns:
@@ -210,14 +210,14 @@ class ABCExchangeInterface(abc.ABC):
 
     @abc.abstractmethod
     def get_product_history(self,
-                            product_id: str,
+                            symbol: str,
                             epoch_start: float,
                             epoch_stop: float,
                             resolution: Union[str, float]) -> pandas.DataFrame:
         """
         Returns the product history from an exchange
         Args:
-            product_id: Blankly product ID format (BTC-USD)
+            symbol: The asset such as (BTC-USD, or MSFT)
             epoch_start: Time to begin download
             epoch_stop: Time to stop download
             resolution: Resolution in seconds between tick (ex: 60 = 1 per minute)
@@ -228,22 +228,22 @@ class ABCExchangeInterface(abc.ABC):
 
     @abc.abstractmethod
     def get_market_limits(self,
-                          product_id: str):
+                          symbol: str):
         """
         Find order limits for the exchange
         Args:
-            product_id: Blankly product ID format (BTC-USD)
+            symbol: The asset such as (BTC-USD, or MSFT)
             TODO add return example
         """
         pass
 
     @abc.abstractmethod
     def get_price(self,
-                  currency_pair: str) -> float:
+                  symbol: str) -> float:
         """
         Returns just the price of a currency pair.
         Args:
-            currency_pair: Blankly product ID ex: BTC-USD
+            symbol: The asset such as (BTC-USD, or MSFT)
             TODO add return example
         """
         pass
