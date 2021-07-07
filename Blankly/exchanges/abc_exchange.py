@@ -1,6 +1,6 @@
 """
-    Class to pass in the current Strategy State
-    Copyright (C) 2021  Emerson Dove, Brandon Fan
+    Interface for exchange objects.
+    Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -16,23 +16,29 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
-from Blankly.utils.utils import AttributeDict
-from Blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface as Interface
+import abc
 
 
-class StrategyState:
-    interface: Interface
-    variables: AttributeDict
-    resolution: float
+class ABCExchange(abc.ABC):
+    """
+    Functions required for easy interaction with the GUI/main
+    """
 
-    """Strategy State"""
-    def __init__(self, strategy, variables: AttributeDict, resolution: float = None):
-        self.strategy = strategy
-        self.variables = variables
-        self.resolution = resolution
+    @abc.abstractmethod
+    def append_model(self, model, coin, args):
+        pass
 
-    @property
-    def interface(self) -> Interface:
-        return self.strategy.Interface
+    @abc.abstractmethod
+    def get_full_state(self, currency):
+        pass
 
+    @abc.abstractmethod
+    def get_model_state(self, currency):
+        pass
+
+    @abc.abstractmethod
+    def get_currency_state(self, currency):
+        pass
+
+    def get_exchange_state(self):
+        pass

@@ -1,6 +1,6 @@
 """
-    Class to pass in the current Strategy State
-    Copyright (C) 2021  Emerson Dove, Brandon Fan
+    binance authentication base class
+    Copyright (C) 2021  Arun Annamalai, Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -17,22 +17,11 @@
 """
 
 
-from Blankly.utils.utils import AttributeDict
-from Blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface as Interface
+from Blankly.exchanges.auth.abc_auth import ABCAuth
 
 
-class StrategyState:
-    interface: Interface
-    variables: AttributeDict
-    resolution: float
-
-    """Strategy State"""
-    def __init__(self, strategy, variables: AttributeDict, resolution: float = None):
-        self.strategy = strategy
-        self.variables = variables
-        self.resolution = resolution
-
-    @property
-    def interface(self) -> Interface:
-        return self.strategy.Interface
-
+class BinanceAuth(ABCAuth):
+    def __init__(self, keys_file, portfolio_name):
+        super().__init__(keys_file, portfolio_name, 'binance')
+        needed_keys = ['API_KEY', 'API_SECRET']
+        self.validate_credentials(needed_keys)

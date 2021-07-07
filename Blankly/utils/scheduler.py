@@ -30,7 +30,7 @@ class Scheduler:
         Args:
             function: Function reference to create the scheduler on ex: self.price_event
             interval: int of delay between calls in seconds, or a string that takes units s, m, h, d w, M, y (second,
-            minute, hour, day, week, month, year) after a magnitude. Examples: "4s", "6h", "10d".
+            minute, hour, day, week, month, year) after a magnitude. examples: "4s", "6h", "10d".
         """
         if isinstance(interval, str):
             interval = time_interval_to_seconds(interval)

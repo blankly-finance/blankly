@@ -16,20 +16,19 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from Blankly.exchanges.interfaces.Coinbase_Pro.Coinbase_Pro import Coinbase_Pro as Coinbase_Pro
-from Blankly.exchanges.interfaces.Binance.Binance import Binance as Binance
-from Blankly.exchanges.interfaces.Alpaca.Alpaca import Alpaca as Alpaca
-from Blankly.exchanges.interfaces.Paper_Trade.Paper_Trade import PaperTrade as PaperTrade
+from Blankly.exchanges.interfaces.coinbase_pro.coinbase_pro import CoinbasePro
+from Blankly.exchanges.interfaces.Binance.Binance import Binance
+from Blankly.exchanges.interfaces.Alpaca.alpaca import Alpaca
+from Blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from Blankly.strategy import Strategy as Strategy
 from Blankly.strategy import StrategyState as StrategyState
 
-from Blankly.exchanges.managers.ticker_manager import TickerManager as TickerManager
-from Blankly.exchanges.managers.orderbook_manager import OrderbookManger as OrderbookManager
-from Blankly.exchanges.managers.general_stream_manager import GeneralManager as GeneralManager
-from Blankly.exchanges.interfaces.abc_currency_interface import ICurrencyInterface as Interface
+from Blankly.exchanges.managers.ticker_manager import TickerManager
+from Blankly.exchanges.managers.orderbook_manager import OrderbookManger
+from Blankly.exchanges.managers.general_stream_manager import GeneralManager
+from Blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface as Interface
 from Blankly.strategy.blankly_bot import BlanklyBot
 import Blankly.utils.utils as utils
 from Blankly.utils.scheduler import Scheduler
 import Blankly.indicators as indicators
 from Blankly.utils import time_builder
-
