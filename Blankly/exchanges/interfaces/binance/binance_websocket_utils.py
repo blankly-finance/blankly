@@ -53,7 +53,7 @@ def trade(message):
 def trade_interface(message):
     """
     Homogenizing with coinbase's return:
-    {'type': 'ticker', 'sequence': 24587251151, 'product_id': 'BTC-USD', 'price': '56178.52', 'open_24h': '56881.78',
+    {'type': 'ticker', 'sequence': 24587251151, 'symbol': 'BTC-USD', 'price': '56178.52', 'open_24h': '56881.78',
     'volume_24h': '17606.23228984', 'low_24h': '55288', 'high_24h': '58400', 'volume_30d': '506611.70878868',
     'best_bid': '56171.12', 'best_ask': '56178.53', 'side': 'sell', 'time': 1620331254.43236, 'trade_id': 165659167,
     'last_size': '0.04'}
@@ -76,7 +76,7 @@ def trade_interface(message):
     Similar ticks with coinbase pro
     {
         'type': 'ticker',
-        'product_id': 'BTC-USD',
+        'symbol': 'BTC-USD',
         'price': '50141.55',
         'time': 1619286924.397969,
         'trade_id': 160775277,
@@ -84,14 +84,14 @@ def trade_interface(message):
     """
     renames = [
         ["e", "type"],
-        ["s", "product_id"],
+        ["s", "symbol"],
         ["p", "price"],
         ["T", "time"],
         ["t", "trade_id"],
     ]
     message = utils.rename_to(renames, message)
     needed = [
-        ["product_id", str],
+        ["symbol", str],
         ["price", float],
         ["time", int],
         ["trade_id", int]
