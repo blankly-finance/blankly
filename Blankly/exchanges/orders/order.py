@@ -23,7 +23,7 @@ class Order:
         """
         Limit Order:
         needed = [
-            ["product_id", str],    <- similar
+            ["symbol", str],    <- similar
             ["id", str],    <- similar
             ["created_at", float],  <- similar
             ["price", float],
@@ -36,7 +36,7 @@ class Order:
 
         Market Order:
         needed = [
-            ["product_id", str],
+            ["symbol", str],
             ["id", str],
             ["created_at", float],
             ["funds", float],
@@ -116,9 +116,9 @@ class Order:
             field as (example) {"status:" "NEW"}
         """
         if full:
-            return self.Interface.get_order(self.__order["product_id"], self.get_id())
+            return self.Interface.get_order(self.__order["symbol"], self.get_id())
         else:
-            return {"status": self.Interface.get_order(self.__order["product_id"], self.get_id())["status"]}
+            return {"status": self.Interface.get_order(self.__order["symbol"], self.get_id())["status"]}
 
     def get_type(self) -> str:
         """
