@@ -43,7 +43,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 ['taker_fee_rate', float]
             ],
             'get_products': [
-                ["currency_id", str],
+                ["symbol", str],
                 ["base_currency", str],
                 ["quote_currency", str],
                 ["base_min_size", float],
@@ -51,12 +51,12 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 ["base_increment", float]
             ],
             'get_account': [
-                ["currency", str],
+                ["symbol", str],
                 ["available", float],
                 ["hold", float]
             ],
             'market_order': [
-                ["product_id", str],
+                ["symbol", str],
                 ["id", str],
                 ["created_at", float],
                 ["funds", float],
@@ -65,7 +65,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 ["side", str]
             ],
             'limit_order': [
-                ["product_id", str],
+                ["symbol", str],
                 ["id", str],
                 ["created_at", float],
                 ["price", float],
@@ -76,7 +76,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 ["side", str]
             ],
             'stop_limit': [
-                ["product_id", str],
+                ["symbol", str],
                 ["id", str],
                 ["created_at", float],
                 ["stop_price", float],
@@ -166,12 +166,12 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         using_setting = self.user_preferences['settings'][self.exchange_name]['cash']
         return self.get_account(using_setting)['available']
 
-    def history(self, product_id, to, resolution):
+    def history(self, symbol, to, resolution):
         epoch_stop = time.time()
         epoch_start = epoch_stop - time_interval_to_seconds(to)
-        return self.get_product_history(product_id, epoch_start, epoch_stop, resolution)
+        return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
-    def get_account(self, currency=None):
+    def get_account(self, symbol=None):
         """
         Get all currencies in an account, or sort by currency/account_id
         Args:
@@ -181,13 +181,14 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         binance: get_account["balances"]
         """
 
-        if currency is not None:
-            currency = utils.get_base_currency(currency)
+        if symbol is not None:
+            symbol = utils.get_base_currency(symbol)
 
-        return currency
+        return symbol
 
-    def get_product_history(self, product_id, epoch_start, epoch_stop, resolution):
-        return utils.convert_epochs(epoch_start), utils.convert_epochs(epoch_stop)
+    @abc.abstractmethod
+    def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
+        pass
 
     def choose_order_specificity(self, order_type):
         # This lower should not be necessary if everything is truly homogeneous
