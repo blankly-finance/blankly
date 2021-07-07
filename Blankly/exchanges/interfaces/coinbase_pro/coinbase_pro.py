@@ -27,15 +27,15 @@ class CoinbasePro(Exchange):
         Exchange.__init__(self, "coinbase_pro", portfolio_name, keys_path, settings_path)
 
     """
-    Builds information about the currency on this exchange by making particular API calls
+    Builds information about the asset on this exchange by making particular API calls
     """
-    def get_currency_state(self, currency):
+    def get_asset_state(self, symbol):
         """
         This determines the internal properties of the exchange block.
         Should be implemented per-class because it requires different types of interaction with each exchange.
         """
         # TODO Populate this with useful information
-        return self.Interface.get_account(currency)
+        return self.Interface.get_account(symbol)
 
     def get_exchange_state(self):
         """
