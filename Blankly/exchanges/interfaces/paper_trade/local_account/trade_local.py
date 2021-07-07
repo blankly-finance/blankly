@@ -34,8 +34,8 @@ def trade_local(currency_pair, side, base_delta, quote_delta) -> None:
     """
 
     # Extract the base and quote pairs of the currency
-    base = utils.get_base_currency(currency_pair)
-    quote = utils.get_quote_currency(currency_pair)
+    base = utils.get_base_asset(currency_pair)
+    quote = utils.get_quote_asset(currency_pair)
 
     # Push these abstracted deltas to the local account
     try:
@@ -70,7 +70,7 @@ def test_trade(currency_pair, side, qty, quote_price) -> bool:
         quote_price (float): Price of the base currency in the currency pair - (1 BTC is valued at 40,245 in BTC-USD)
     """
     if side == 'buy':
-        quote = utils.get_quote_currency(currency_pair)
+        quote = utils.get_quote_asset(currency_pair)
         account = local_account.account[quote]
         current_funds = account['available']
         purchase_funds = quote_price * qty
@@ -87,7 +87,7 @@ def test_trade(currency_pair, side, qty, quote_price) -> bool:
                                str(qty) + ".")
 
     elif side == 'sell':
-        base = utils.get_base_currency(currency_pair)
+        base = utils.get_base_asset(currency_pair)
         account = local_account.account[base]
         current_base = account['available']
 
