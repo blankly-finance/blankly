@@ -18,12 +18,12 @@
 
 
 from Blankly.exchanges.auth.abc_auth import ABCAuth
-from Blankly.exchanges.interfaces.Alpaca.alpaca_api_interface import AlpacaInterface
-from Blankly.exchanges.interfaces.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
+from Blankly.exchanges.interfaces.alpaca.alpaca_interface import AlpacaInterface
+from Blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as Coinbase_Pro_API
 from binance.client import Client
-from Blankly.exchanges.interfaces.Alpaca.alpaca_api import create_alpaca_client
-from Blankly.exchanges.interfaces.Coinbase_Pro.Coinbase_Pro_Interface import CoinbaseProInterface
-from Blankly.exchanges.interfaces.Binance.Binance_Interface import BinanceInterface
+from Blankly.exchanges.interfaces.alpaca.alpaca_api import create_alpaca_client
+from Blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
+from Blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
 import Blankly.utils.utils as utils
 
 

@@ -23,7 +23,7 @@ import ssl
 import time
 import traceback
 from Blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
-import Blankly.exchanges.interfaces.Coinbase_Pro.websocket_utils as websocket_utils
+import Blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket_utils as websocket_utils
 import collections
 
 from websocket import create_connection

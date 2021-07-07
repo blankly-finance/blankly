@@ -21,10 +21,10 @@ import Blankly
 import copy
 import warnings
 
-from Blankly.exchanges.managers.orderbook_manager import OrderbookManger
+from Blankly.exchanges.managers.orderbook_manager import OrderbookManager
 from Blankly.exchanges.managers.ticker_manager import TickerManager
 from Blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
-from Blankly.exchanges.interfaces.Coinbase_Pro.Coinbase_Pro_API import API as Coinbase_Pro_API
+from Blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as Coinbase_Pro_API
 from binance.client import Client as Binance_API
 
 
@@ -34,7 +34,7 @@ class BlanklyBot:
     exchange_type: str
     initial_state: dict
     # Define the given types for the user
-    Orderbook_Manager: OrderbookManger
+    Orderbook_Manager: OrderbookManager
     Ticker_Manager: TickerManager
     Interface: ABCExchangeInterface
     coinbase_pro_direct: Coinbase_Pro_API

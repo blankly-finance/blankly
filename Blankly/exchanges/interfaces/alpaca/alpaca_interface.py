@@ -22,7 +22,7 @@ import warnings
 from alpaca_trade_api.rest import TimeFrame
 
 from Blankly.utils import utils as utils
-from Blankly.exchanges.interfaces.Alpaca.alpaca_api import API
+from Blankly.exchanges.interfaces.alpaca.alpaca_api import API
 from Blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 import alpaca_trade_api
 
