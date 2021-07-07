@@ -16,18 +16,18 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import Blankly
-from Blankly.exchanges.IExchange import IExchange
+from Blankly.exchanges.abc_exchange import ABCExchange
 from Blankly.exchanges.interfaces.Coinbase_Pro.Coinbase_Pro_Interface import CoinbaseProInterface
 from Blankly.exchanges.interfaces.Binance.Binance_Interface import BinanceInterface
 from Blankly.exchanges.auth.auth_factory import AuthFactory
 from Blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 
-from Blankly.exchanges.interfaces.abc_currency_interface import ICurrencyInterface
+from Blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 import time
 import abc
 
 
-class Exchange(IExchange, abc.ABC):
+class Exchange(ABCExchange, abc.ABC):
 
     def __init__(self, exchange_type, portfolio_name, keys_path, preferences_path):
         self.__type = exchange_type  # coinbase_pro, binance, alpaca
@@ -58,7 +58,7 @@ class Exchange(IExchange, abc.ABC):
         elif self.__type == "binance":
             self.Interface = BinanceInterface(self.__type, calls)
 
-    def get_interface(self) -> ICurrencyInterface:
+    def get_interface(self) -> ABCExchangeInterface:
         """
         Get the the authenticated interface for the object. This will provide authenticated API calls.
         """

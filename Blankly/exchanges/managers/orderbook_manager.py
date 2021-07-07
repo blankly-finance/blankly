@@ -122,7 +122,7 @@ class OrderbookManger(WebsocketManager):
             websocket = Binance_Orderbook(specific_currency_id, "depth", initially_stopped=initially_stopped)
             websocket.append_callback(self.binance_update)
 
-            # Binance returns the keys in all UPPER so the books should be created based on response
+            # binance returns the keys in all UPPER so the books should be created based on response
             specific_currency_id = specific_currency_id.upper()
             self.__websockets['binance'][specific_currency_id] = websocket
             self.__websockets_callbacks['binance'][specific_currency_id] = callback

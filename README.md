@@ -74,52 +74,52 @@ import time
 
 
 def price_event(price: float, ticker: str, state: StrategyState):
-   interface = state.interface
+    interface = state.interface
 
-   # Add this most recent price to be stored for this particular price event
-   history = state.variables['history']
-   history.append(price)
+    # Add this most recent price to be stored for this particular price event
+    history = state.variables['history']
+    history.append(price)
 
-   # easily integrate your model
-   decision = my_awesome_model(history)
+    # easily integrate your model
+    decision = my_awesome_model(history)
 
-   # buy or sell based on that decision
-   if decision:
-      interface.market_order(ticker, 'buy', interface.cash)
-      state.variables['has_buy_order'] = True
-   elif state.variables['has_buy_order'] and not decision:
-      amt = interface.account[ticker].available
-      interface.market_order(ticker, 'sell', amt)
-      state.variables['has_buy_order'] = False
+    # buy or sell based on that decision
+    if decision:
+        interface.market_order(ticker, 'buy', interface.cash)
+        state.variables['has_buy_order'] = True
+    elif state.variables['has_buy_order'] and not decision:
+        amt = interface.account[ticker].available
+        interface.market_order(ticker, 'sell', amt)
+        state.variables['has_buy_order'] = False
 
 
 # Easily run setup code
 def strategy_init(currency_pair, state: StrategyState):
-   # get 500 points worth of data at given resolution of strategy
-   state.variables['history'] =
-      state.interface.history(currency_pair, 500, state.resolution)['close']
+    # get 500 points worth of data at given resolution of strategy
+    state.variables['history'] =
+    state.interface.history(currency_pair, 500, state.resolution)['close']
 
 
 if __name__ == "__main__":
-   # All authentication is done in this line
-   exchange = Blankly.Coinbase_Pro()
+    # All authentication is done in this line
+    exchange = Blankly.CoinbasePro()
 
-   # Now just wrap it into a strategy to gain a huge amount of functionality
-   strategy = Strategy(exchange)
+    # Now just wrap it into a strategy to gain a huge amount of functionality
+    strategy = Strategy(exchange)
 
-   # Run the code above with a new price once a day
-   strategy.add_price_event(price_event,
-                            currency_pair='BTC-USD',
-                            resolution='1h',
-                            init=strategy_init)
+    # Run the code above with a new price once a day
+    strategy.add_price_event(price_event,
+                             currency_pair='BTC-USD',
+                             resolution='1h',
+                             init=strategy_init)
 
-   # Run the code above with a new price once every thirty minutes
-   strategy.add_price_event(price_event,
-                            currency_pair='LINK-USD',
-                            resolution='30m',
-                            init=strategy_init)
+    # Run the code above with a new price once every thirty minutes
+    strategy.add_price_event(price_event,
+                             currency_pair='LINK-USD',
+                             resolution='30m',
+                             init=strategy_init)
 
-   strategy.start()
+    strategy.start()
 
 ```
 

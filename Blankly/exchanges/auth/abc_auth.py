@@ -23,7 +23,7 @@ import warnings
 from Blankly.utils.exceptions import AuthError
 
 
-class AuthInterface(abc.ABC):
+class ABCAuth(abc.ABC):
     def __init__(self, keys_file: str, portfolio_name: str, exchange: str):
         """
         Create a auth interface

@@ -1,5 +1,5 @@
 """
-    Unit tests for Binance.
+    Unit tests for binance.
     Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify

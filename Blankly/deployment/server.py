@@ -47,9 +47,9 @@ class TradeInterface:
 
     def create_portfolio(self, exchange_type, portfolio_name):
         if exchange_type == "coinbase_pro":
-            self.__exchanges.append(Blankly.Coinbase_Pro(portfolio_name=portfolio_name,
-                                                         auth_path=self.__auth_path,
-                                                         preferences_path=self.__preferences_path))
+            self.__exchanges.append(Blankly.CoinbasePro(portfolio_name=portfolio_name,
+                                                        auth_path=self.__auth_path,
+                                                        preferences_path=self.__preferences_path))
         elif exchange_type == "binance":
             self.__exchanges.append(Blankly.Binance(portfolio_name=portfolio_name,
                                                     auth_path=self.__auth_path,
