@@ -56,8 +56,8 @@ def test_get_exchange(coinbase_interface: CoinbaseProInterface) -> None:
     btc_usd_id = None
 
     for product in products:
-        if product['base_currency'] == 'BTC' and product['quote_currency'] == 'USD':
-            btc_usd_id = product['currency_id']
+        if product['base_asset'] == 'BTC' and product['quote_asset'] == 'USD':
+            btc_usd_id = product['symbol']
 
     assert btc_usd_id
 

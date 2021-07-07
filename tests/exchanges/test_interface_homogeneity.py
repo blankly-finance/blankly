@@ -98,7 +98,7 @@ class InterfaceHomogeneity(unittest.TestCase):
 
     def test_market_order(self):
         # Make sure to buy back the funds we're loosing from fees - minimum balance of .1 bitcoin
-        btc_account = self.Binance_Interface.get_account(currency="BTC")['available']
+        btc_account = self.Binance_Interface.get_account(symbol="BTC")['available']
         if btc_account < .1:
             price = self.Binance_Interface.get_price("BTC-USDT")
             self.Binance_Interface.market_order("BTC-USDT", "buy", price * .1)
