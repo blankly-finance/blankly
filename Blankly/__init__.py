@@ -17,14 +17,14 @@
 """
 
 from Blankly.exchanges.interfaces.coinbase_pro.coinbase_pro import CoinbasePro
-from Blankly.exchanges.interfaces.Binance.Binance import Binance
-from Blankly.exchanges.interfaces.Alpaca.alpaca import Alpaca
+from Blankly.exchanges.interfaces.binance.binance import Binance
+from Blankly.exchanges.interfaces.alpaca.alpaca import Alpaca
 from Blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from Blankly.strategy import Strategy as Strategy
 from Blankly.strategy import StrategyState as StrategyState
 
 from Blankly.exchanges.managers.ticker_manager import TickerManager
-from Blankly.exchanges.managers.orderbook_manager import OrderbookManger
+from Blankly.exchanges.managers.orderbook_manager import OrderbookManager
 from Blankly.exchanges.managers.general_stream_manager import GeneralManager
 from Blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface as Interface
 from Blankly.strategy.blankly_bot import BlanklyBot

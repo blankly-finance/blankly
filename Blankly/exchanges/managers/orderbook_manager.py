@@ -19,8 +19,8 @@ import Blankly.utils.utils
 import Blankly.exchanges.auth.auth_constructor
 import requests
 
-from Blankly.exchanges.interfaces.Coinbase_Pro.Coinbase_Pro_Websocket import Tickers as Coinbase_Pro_Orderbook
-from Blankly.exchanges.interfaces.Binance.Binance_Websocket import Tickers as Binance_Orderbook
+from Blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tickers as Coinbase_Pro_Orderbook
+from Blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Binance_Orderbook
 
 from Blankly.exchanges.managers.websocket_manager import WebsocketManager
 
@@ -47,7 +47,7 @@ def binance_snapshot(symbol, limit):
     return buys, sells
 
 
-class OrderbookManger(WebsocketManager):
+class OrderbookManager(WebsocketManager):
     def __init__(self, default_exchange, default_currency):
         """
         Create a new orderbook manager

@@ -18,6 +18,7 @@
 
 from pandas import DataFrame
 
+
 class BacktestResult:
     def __init__(self, dataframes: dict, metrics: dict, user_callbacks: dict):
         self.dataframes = dataframes

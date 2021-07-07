@@ -18,7 +18,7 @@
 
 import websocket
 from Blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
-import Blankly.exchanges.interfaces.Binance.websocket_utils as websocket_utils
+import Blankly.exchanges.interfaces.binance.binance_websocket_utils as websocket_utils
 import collections
 import json
 import Blankly

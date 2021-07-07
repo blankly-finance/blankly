@@ -25,7 +25,7 @@ from collections import OrderedDict
 
 
 # Create custom authentication for Exchange
-from Blankly.exchanges.interfaces.Binance.binance_auth import BinanceAuth
+from Blankly.exchanges.interfaces.binance.binance_auth import BinanceAuth
 
 
 class BinanceExchangeAuth(AuthBase):
