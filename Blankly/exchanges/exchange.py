@@ -17,8 +17,8 @@
 """
 import Blankly
 from Blankly.exchanges.abc_exchange import ABCExchange
-from Blankly.exchanges.interfaces.Coinbase_Pro.Coinbase_Pro_Interface import CoinbaseProInterface
-from Blankly.exchanges.interfaces.Binance.Binance_Interface import BinanceInterface
+from Blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
+from Blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
 from Blankly.exchanges.auth.auth_factory import AuthFactory
 from Blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 
