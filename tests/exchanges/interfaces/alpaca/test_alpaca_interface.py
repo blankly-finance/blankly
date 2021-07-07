@@ -1,4 +1,4 @@
-from Blankly.exchanges.interfaces.Alpaca.alpaca_auth import AlpacaAuth
+from Blankly.exchanges.interfaces.alpaca.alpaca_auth import AlpacaAuth
 from Blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 import pytest
 from pytest_mock import MockerFixture
