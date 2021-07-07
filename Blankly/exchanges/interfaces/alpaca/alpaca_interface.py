@@ -74,17 +74,11 @@ class AlpacaInterface(ExchangeInterface):
         needed = self.needed['get_products']
         assets = self.calls.list_assets(status=None, asset_class=None)
 
-        renames = [
-            ["symbol", "currency_id"],
-        ]
-        for i in range(len(assets)):
-            assets[i] = utils.rename_to(renames, assets[i])
-
         for asset in assets:
-            base_currency = asset['currency_id']
-            asset['currency_id'] += "-USD"
-            asset['base_currency'] = base_currency
-            asset['quote_currency'] = 'USD'
+            base_asset = asset['symbol']
+            asset['symbol'] += "-USD"
+            asset['base_asset'] = base_asset
+            asset['quote_asset'] = 'USD'
             asset['base_min_size'] = -1  # TODO: Take a look at this
             asset['base_max_size'] = -1
             asset['base_increment'] = -1
@@ -94,7 +88,12 @@ class AlpacaInterface(ExchangeInterface):
 
         return assets
 
-    def get_account(self, currency=None):
+    @property
+    def cash(self):
+        account_dict = self.calls.get_account()
+        return float(account_dict['buying_power'])
+
+    def get_account(self, symbol=None):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         needed = self.needed['get_account']
 
@@ -105,13 +104,13 @@ class AlpacaInterface(ExchangeInterface):
         positions_dict = utils.AttributeDict({})
 
         for position in positions:
-            symbol = position.pop('symbol')
-            if currency is not None and currency == symbol:
+            curr_symbol = position.pop('symbol')
+            if symbol is not None and curr_symbol == symbol:
                 return utils.AttributeDict({
                     'available': position.pop('qty'),
                     'hold': 0  # TODO: Calculate value on hold
                 })
-            positions_dict[symbol] = utils.AttributeDict({
+            positions_dict[curr_symbol] = utils.AttributeDict({
                 'available': position.pop('qty'),
                 'hold': 0  # TODO: Calculate value on hold
             })
@@ -119,7 +118,7 @@ class AlpacaInterface(ExchangeInterface):
         for key in positions_dict:
             positions_dict[key] = utils.isolate_specific(needed, positions_dict[key])
 
-        if currency is not None:
+        if symbol is not None:
             # if we haven't found the currency, then we'll end up here
             utils.AttributeDict({
                 'available': 0,
@@ -128,37 +127,37 @@ class AlpacaInterface(ExchangeInterface):
         
         return positions_dict
 
-    def market_order(self, product_id, side, funds) -> MarketOrder:
+    def market_order(self, symbol, side, funds) -> MarketOrder:
         assert isinstance(self.calls, alpaca_trade_api.REST)
         needed = self.needed['market_order']
 
         order = {
             'funds': funds,
             'side': side,
-            'product_id': product_id,
+            'symbol': symbol,
             'type': 'market'
         }
-        response = self.calls.submit_order(product_id, side=side, type='market', time_in_force='day', notional=funds)
+        response = self.calls.submit_order(symbol, side=side, type='market', time_in_force='day', notional=funds)
         response['created_at'] = parser.isoparse(response['created_at']).timestamp()
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
-    def limit_order(self, product_id: str, side: str, price: float, quantity: int) -> LimitOrder:
+    def limit_order(self, symbol: str, side: str, price: float, quantity: int) -> LimitOrder:
         needed = self.needed['limit_order']
 
         order = {
             'quantity': quantity,
             'side': side,
             'price': price,
-            'product_id': product_id,
+            'symbol': symbol,
             'type': 'limit'
         }
-        response = self.calls.submit_order(product_id, side=side, type='limit', time_in_force='gtc', qty=quantity, limit_price=price)
+        response = self.calls.submit_order(symbol, side=side, type='limit', time_in_force='gtc', qty=quantity, limit_price=price)
         response['created_at'] = parser.isoparse(response['created_at']).timestamp()
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
 
-    def cancel_order(self, currency_id, order_id) -> dict:
+    def cancel_order(self, symbol, order_id) -> dict:
         assert isinstance(self.calls, alpaca_trade_api.REST)
         self.calls.cancel_order(order_id)
 
@@ -166,11 +165,11 @@ class AlpacaInterface(ExchangeInterface):
         return {'order_id': order_id}
 
     # TODO: this doesnt exactly fit
-    def get_open_orders(self, product_id=None):
+    def get_open_orders(self, symbol=None):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         orders = self.calls.list_orders()
         renames = [
-            ["asset_id", "product_id"],
+            ["asset_id", "symbol"],
             ["filled_at", "price"],
             ["qty", "size"],
             ["notional", "funds"]
@@ -181,12 +180,12 @@ class AlpacaInterface(ExchangeInterface):
             order = utils.isolate_specific(needed, order)
         return orders
 
-    def get_order(self, currency_id, order_id) -> dict:
+    def get_order(self, symbol, order_id) -> dict:
         assert isinstance(self.calls, alpaca_trade_api.REST)
         order = self.calls.get_order(order_id)
         needed = self.choose_order_specificity(order['type'])
         renames = [
-            ["asset_id", "product_id"],
+            ["asset_id", "symbol"],
             ["filled_at", "price"],
             ["qty", "size"],
             ["notional", "funds"]
@@ -202,7 +201,7 @@ class AlpacaInterface(ExchangeInterface):
             'taker_fee_rate': 0
         }
 
-    def get_product_history(self, product_id: str, epoch_start: dt, epoch_stop: dt, resolution: int):
+    def get_product_history(self, symbol: str, epoch_start: dt, epoch_stop: dt, resolution: int):
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
         supported_multiples = [60, 3600, 86400]
@@ -219,26 +218,26 @@ class AlpacaInterface(ExchangeInterface):
         
         if found_multiple == 60:
             time_interval = TimeFrame.Minute
-        if found_multiple == 3600:
+        elif found_multiple == 3600:
             time_interval = TimeFrame.Hour
         else:
             time_interval = TimeFrame.Day
 
-        row_divisor = resolution / multiple
+        row_divisor = resolution // multiple
 
         # '2020-08-28' <- this is how it should look
         formatting_str = "%Y-%m-%d"
         epoch_start_str = epoch_start.strftime(formatting_str)
         epoch_stop_str = epoch_stop.strftime(formatting_str)
 
-        return self.calls.get_bars(product_id, time_interval, epoch_start_str, epoch_stop_str,adjustment='raw').df.iloc[::row_divisor, :]
+        return self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str,adjustment='raw').df.iloc[::row_divisor, :]
 
     # TODO: tbh not sure how this one works or if it applies to alpaca
-    def get_market_limits(self, product_id):
+    def get_market_limits(self, symbol):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         pass
 
-    def get_price(self, currency_pair) -> float:
+    def get_price(self, symbol) -> float:
         assert isinstance(self.calls, alpaca_trade_api.REST)
-        response = self.calls.get_last_trade(symbol=currency_pair)
+        response = self.calls.get_last_trade(symbol=symbol)
         return float(response['price'])

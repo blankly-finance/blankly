@@ -72,12 +72,13 @@ def test_get_buy_sell(alpaca_interface: AlpacaInterface) -> None:
     # place sell order
 
 def test_get_product_history(alpaca_interface: AlpacaInterface) -> None:
-    start = dt.strptime("2021-02-08", "%Y-%m-%d")
-    end = dt.strptime("2021-02-08", "%Y-%m-%d")
+    start = dt.strptime("2021-02-04", "%Y-%m-%d")
+    end = dt.strptime("2021-02-05", "%Y-%m-%d")
 
     return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
-
-    assert(len(return_df) > 5)
+    return_df_2 = alpaca_interface.get_product_history("AAPL", start, end, 120)
+    assert len(return_df) > 0
+    assert len(return_df) > len(return_df_2)
 
 def test_get_price(alpaca_interface: AlpacaInterface) -> None:
     price = alpaca_interface.get_price("AAPL")
