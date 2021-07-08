@@ -1,4 +1,4 @@
-import Blankly
+import blankly
 
 
 def price_event(price, currency_pair, state):
@@ -10,13 +10,13 @@ def price_event(price, currency_pair, state):
 
 if __name__ == "__main__":
     # Authenticate coinbase pro strategy
-    coinbase_pro = Blankly.CoinbasePro()
+    coinbase_pro = blankly.CoinbasePro()
 
     # Define our interface in case we want to make our own API calls
     interface = coinbase_pro.get_interface()
 
     # Use our strategy helper on coinbase pro
-    coinbase_strategy = Blankly.Strategy(coinbase_pro)
+    coinbase_strategy = blankly.Strategy(coinbase_pro)
 
     # Run the price event function every time we check for a new price - by default that is 15 seconds
     coinbase_strategy.add_price_event(price_event, currency_pair='BTC-USD', resolution='15s')

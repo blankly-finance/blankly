@@ -1,4 +1,4 @@
-import Blankly
+import blankly
 
 
 def price_event(price, product_id, state):
@@ -22,10 +22,10 @@ if __name__ == "__main__":
     """
     print("Authenticating...")
     # Create an authenticated coinbase pro object
-    coinbase_pro = Blankly.CoinbasePro()
+    coinbase_pro = blankly.CoinbasePro()
 
     # Create a strategy object
-    strategy = Blankly.Strategy(coinbase_pro)
+    strategy = blankly.Strategy(coinbase_pro)
 
     """
     Backtest

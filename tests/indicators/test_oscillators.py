@@ -2,7 +2,7 @@ import numpy as np
 import pickle
 from pathlib import Path
 import unittest
-from Blankly.indicators import rsi, stochastic_oscillator, percentage_price_oscillator, absolute_price_oscillator, chande_momentum_oscillator, aroon_oscillator
+from blankly.indicators import rsi, stochastic_oscillator, percentage_price_oscillator, absolute_price_oscillator, chande_momentum_oscillator, aroon_oscillator
 
 def compare_equal(a, b):
     # compares two numpy arrays

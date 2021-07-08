@@ -1,9 +1,9 @@
 import time
-import Blankly
+import blankly
 # Have feedback? Use this: https://forms.gle/4oAjG9MKRTYKX2hP9
 
 
-class Bot(Blankly.BlanklyBot):
+class Bot(blankly.BlanklyBot):
     def main(self, args):
         """
         Main function to write any general analysis or bot management logic
@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     # This creates an authenticated exchange and chooses the first portfolio in the keys.json file
     # You can use portfolio_name="my cool portfolio" if want a certain one
-    portfolio = Blankly.CoinbasePro()  # You could also use Blankly.binance()
+    portfolio = blankly.CoinbasePro()  # You could also use blankly.binance()
 
     # Create the bot and add it to run as a coinbase_pro bitcoin model.
     bot = Bot()
@@ -62,5 +62,5 @@ if __name__ == "__main__":
     while True:
         # Print the state from the model we just started every second
         state = portfolio.get_full_state("BTC-USD")
-        Blankly.utils.pretty_print_JSON(state)
+        blankly.utils.pretty_print_JSON(state)
         time.sleep(1)
