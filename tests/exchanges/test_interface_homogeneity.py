@@ -19,8 +19,11 @@
 
 import Blankly
 from Blankly.utils.utils import compare_dictionaries
+from Blankly.utils.time_builder import build_hour
 import unittest
 import time
+import pandas as pd
+import numpy
 
 from Blankly.exchanges.orders.market_order import MarketOrder
 from Blankly.exchanges.orders.limit_order import LimitOrder
@@ -41,21 +44,21 @@ class InterfaceHomogeneity(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.Interfaces = []
+        cls.interfaces = []
 
         # Coinbase Pro definition and appending
         cls.Coinbase_Pro = Blankly.CoinbasePro(portfolio_name="Sandbox Portfolio",
                                                keys_path='./tests/config/keys.json',
                                                settings_path="./tests/config/settings.json")
         cls.Coinbase_Pro_Interface = cls.Coinbase_Pro.get_interface()
-        cls.Interfaces.append(cls.Coinbase_Pro_Interface)
+        cls.interfaces.append(cls.Coinbase_Pro_Interface)
 
         # binance definition and appending
         cls.Binance = Blankly.Binance(portfolio_name="Spot Test Key",
                                       keys_path='./tests/config/keys.json',
                                       settings_path="./tests/config/settings.json")
         cls.Binance_Interface = cls.Binance.get_interface()
-        cls.Interfaces.append(cls.Binance_Interface)
+        cls.interfaces.append(cls.Binance_Interface)
 
         # alpaca definition and appending
         # cls.alpaca = Blankly.alpaca(portfolio_name="alpaca test portfolio",
@@ -65,23 +68,26 @@ class InterfaceHomogeneity(unittest.TestCase):
         # cls.Interfaces.append(cls.Alpaca_Interface)
 
         # Paper trade wraps binance
-        cls.Paper_Trade = Blankly.PaperTrade(cls.Binance)
+        cls.paper_trade_binance = Blankly.PaperTrade(cls.Binance)
+        cls.paper_trade_binance_interface = cls.paper_trade_binance.get_interface()
+        cls.interfaces.append(cls.paper_trade_binance_interface)
 
-        # Paper trade append
-        cls.Paper_Trade_Interface = cls.Paper_Trade.get_interface()
-        cls.Interfaces.append(cls.Paper_Trade_Interface)
+        # Another wraps coinbase pro
+        cls.paper_trade_coinbase_pro = Blankly.PaperTrade(cls.Coinbase_Pro)
+        cls.paper_trade_coinbase_pro_interface = cls.paper_trade_coinbase_pro.get_interface()
+        cls.interfaces.append(cls.paper_trade_coinbase_pro_interface)
 
     def test_get_products(self):
         responses = []
-        for i in range(len(self.Interfaces)):
-            responses.append(self.Interfaces[i].get_products()[0])
+        for i in range(len(self.interfaces)):
+            responses.append(self.interfaces[i].get_products()[0])
 
         self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
     def test_get_account(self):
         responses = []
-        for i in range(len(self.Interfaces)):
-            responses.append(self.Interfaces[i].get_account()['BTC'])
+        for i in range(len(self.interfaces)):
+            responses.append(self.interfaces[i].get_account()['BTC'])
         self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
     def check_market_order(self, order1: MarketOrder, side, funds):
@@ -205,3 +211,66 @@ class InterfaceHomogeneity(unittest.TestCase):
         cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_buy.get_id()))
 
         self.assertTrue(compare_responses(cancels, force_exchange_specific=False))
+
+    def test_get_keys(self):
+        responses = []
+        for i in self.interfaces:
+            responses.append(i.get_fees())
+
+        self.assertTrue(compare_responses(responses))
+
+    def test_get_product_history(self):
+        # Setting for number of hours to test backwards to
+        test_intervals = 100
+
+        current_time = time.time()
+        intervals_ago = time.time() - (build_hour() * test_intervals)
+
+        responses = []
+        for i in self.interfaces:
+            if i.get_exchange_type() == "binance":
+                responses.append(i.get_product_history('BTC-USDT', intervals_ago, current_time, 3600))
+            else:
+                responses.append(i.get_product_history('BTC-USD', intervals_ago, current_time, 3600))
+
+        print(responses)
+
+        for i in responses:
+            self.assertTrue(isinstance(i['time'], pd.Series))
+            self.assertTrue(isinstance(i['low'], pd.Series))
+            self.assertTrue(isinstance(i['high'], pd.Series))
+            self.assertTrue(isinstance(i['open'], pd.Series))
+            self.assertTrue(isinstance(i['close'], pd.Series))
+            self.assertTrue(isinstance(i['volume'], pd.Series))
+
+            self.assertTrue(len(i) == test_intervals)
+
+            self.assertTrue(isinstance(i['time'][0], numpy.int64))
+            self.assertTrue(isinstance(i['low'][0], float))
+            self.assertTrue(isinstance(i['high'][0], float))
+            self.assertTrue(isinstance(i['open'][0], float))
+            self.assertTrue(isinstance(i['close'][0], float))
+            self.assertTrue(isinstance(i['volume'][0], float))
+
+    def test_get_asset_limits(self):
+        responses = []
+
+        for i in self.interfaces:
+            if i.get_exchange_type() == "binance":
+                responses.append(i.get_asset_limits('BTC-USDT'))
+            else:
+                responses.append(i.get_asset_limits('BTC-USD'))
+
+        self.assertTrue(compare_responses(responses))
+
+    def get_price(self):
+        responses = []
+
+        for i in self.interfaces:
+            if i.get_exchange_type() == "binance":
+                responses.append(i.get_price('BTC-USDT'))
+            else:
+                responses.append(i.get_price('BTC-USD'))
+
+        for i in responses:
+            self.assertTrue(isinstance(i, float))

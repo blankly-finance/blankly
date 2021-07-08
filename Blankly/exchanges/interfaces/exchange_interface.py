@@ -186,9 +186,8 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
 
         return symbol
 
-    @abc.abstractmethod
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
-        pass
+        return utils.convert_epochs(epoch_start), utils.convert_epochs(epoch_stop)
 
     def choose_order_specificity(self, order_type):
         # This lower should not be necessary if everything is truly homogeneous

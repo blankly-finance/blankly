@@ -673,8 +673,7 @@ class BinanceInterface(ExchangeInterface):
                                         })
 
         # Convert time to seconds
-        data_frame['time'] = data_frame['time'].div(1000)
-
+        data_frame['time'] = data_frame['time'].div(1000).astype(int)
         return data_frame.reindex(columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 
     """
