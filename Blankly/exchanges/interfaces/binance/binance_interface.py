@@ -687,7 +687,7 @@ class BinanceInterface(ExchangeInterface):
     binance: get_products
     """
 
-    def get_market_limits(self, symbol):
+    def get_asset_limits(self, symbol):
         """
         Optimally we'll just remove the filter section and make the returns accurate
         {
