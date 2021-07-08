@@ -109,13 +109,14 @@ class InterfaceHomogeneity(unittest.TestCase):
             price = self.Binance_Interface.get_price("BTC-USDT")
             self.Binance_Interface.market_order("BTC-USDT", "buy", price * .1)
 
-        binance_buy = self.Binance_Interface.market_order('BTC-USDT', 'buy', 20)
-        binance_sell = self.Binance_Interface.market_order('BTC-USDT', 'sell', 20)
+        binance_buy = self.Binance_Interface.market_order('BTC-USDT', 'buy', 25)
+        binance_sell = self.Binance_Interface.market_order('BTC-USDT', 'sell', 25)
 
-        self.check_market_order(binance_buy, 'buy', 20)
-        self.check_market_order(binance_sell, 'sell', 20)
+        self.check_market_order(binance_buy, 'buy', 25)
+        self.check_market_order(binance_sell, 'sell', 25)
 
         self.assertTrue(compare_dictionaries(binance_buy.get_response(), binance_sell.get_response()))
+        time.sleep(.5)
         self.assertTrue(compare_dictionaries(binance_buy.get_status(full=True), binance_sell.get_status(full=True)))
 
         coinbase_buy = self.Coinbase_Pro_Interface.market_order('BTC-USD', 'buy', 20)
@@ -263,7 +264,7 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         self.assertTrue(compare_responses(responses))
 
-    def get_price(self):
+    def test_get_price(self):
         responses = []
 
         for i in self.interfaces:
