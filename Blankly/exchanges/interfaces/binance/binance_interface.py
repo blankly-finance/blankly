@@ -60,12 +60,7 @@ class BinanceInterface(ExchangeInterface):
         self.__available_currencies = filtered_base_assets
 
     def get_products(self):
-        needed = [["symbol", str],
-                  ["base_asset", str],
-                  ["quote_asset", str],
-                  ["base_min_size", float],
-                  ["base_max_size", float],
-                  ["base_increment", float]]
+        needed = self.needed['get_products']
         """
         This is a section of the symbols array
         [
@@ -791,7 +786,7 @@ class BinanceInterface(ExchangeInterface):
             max_price = percent_max_price
 
         return {
-            "market": symbol,
+            "symbol": symbol,
             "base_asset": symbol_data["baseAsset"],
             "quote_asset": symbol_data["quoteAsset"],
             "base_min_size": min_quantity,  # Minimum size to buy
