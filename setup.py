@@ -11,16 +11,16 @@ twine upload dist/*
 """
 
 setup(
-    name='Blankly',  # How you named your package folder (MyLib)
+    name='blankly',  # How you named your package folder (MyLib)
     packages=find_packages(),
-    # packages=['Blankly'],  # Potentially should be the same thing as name
+    # packages=['blankly'],  # Potentially should be the same thing as name
     version='v0.1.12-alpha',
     license='lgpl-3.0',  # Licenses: https://help.github.com/articles/licensing-a-repository
     description='Rapidly build trading bots that run on any exchange',  # Give a short description about your library
     long_description=long_description,
     long_description_content_type='text/markdown',
-    author='Blankly',
-    entry_points={'console_scripts': ['blankly = Blankly.command.cli:main']},
+    author='blankly',
+    entry_points={'console_scripts': ['blankly = blankly.command.cli:main']},
     author_email='contact@blankly.finance',
     url='https://github.com/Blankly-Finance/Blankly',  # Could be github or website
     # download_url='https://github.com/EmersonDove/Blankly/archive/v0.1.1-alpha.tar.gz',

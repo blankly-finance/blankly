@@ -17,16 +17,16 @@
 """
 
 
-import Blankly
-from Blankly.utils.utils import compare_dictionaries
-from Blankly.utils.time_builder import build_hour
+import blankly
+from blankly.utils.utils import compare_dictionaries
+from blankly.utils.time_builder import build_hour
 import unittest
 import time
 import pandas as pd
 import numpy
 
-from Blankly.exchanges.orders.market_order import MarketOrder
-from Blankly.exchanges.orders.limit_order import LimitOrder
+from blankly.exchanges.orders.market_order import MarketOrder
+from blankly.exchanges.orders.limit_order import LimitOrder
 
 
 def compare_responses(response_list, force_exchange_specific=True):
@@ -47,33 +47,33 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.interfaces = []
 
         # Coinbase Pro definition and appending
-        cls.Coinbase_Pro = Blankly.CoinbasePro(portfolio_name="Sandbox Portfolio",
+        cls.Coinbase_Pro = blankly.CoinbasePro(portfolio_name="Sandbox Portfolio",
                                                keys_path='./tests/config/keys.json',
                                                settings_path="./tests/config/settings.json")
         cls.Coinbase_Pro_Interface = cls.Coinbase_Pro.get_interface()
         cls.interfaces.append(cls.Coinbase_Pro_Interface)
 
         # binance definition and appending
-        cls.Binance = Blankly.Binance(portfolio_name="Spot Test Key",
+        cls.Binance = blankly.Binance(portfolio_name="Spot Test Key",
                                       keys_path='./tests/config/keys.json',
                                       settings_path="./tests/config/settings.json")
         cls.Binance_Interface = cls.Binance.get_interface()
         cls.interfaces.append(cls.Binance_Interface)
 
         # alpaca definition and appending
-        # cls.alpaca = Blankly.alpaca(portfolio_name="alpaca test portfolio",
+        # cls.alpaca = blankly.alpaca(portfolio_name="alpaca test portfolio",
         #                             keys_path='./tests/config/keys.json',
         #                             settings_path="./tests/config/settings.json")
         # cls.Alpaca_Interface = cls.alpaca.get_interface()
         # cls.Interfaces.append(cls.Alpaca_Interface)
 
         # Paper trade wraps binance
-        cls.paper_trade_binance = Blankly.PaperTrade(cls.Binance)
+        cls.paper_trade_binance = blankly.PaperTrade(cls.Binance)
         cls.paper_trade_binance_interface = cls.paper_trade_binance.get_interface()
         cls.interfaces.append(cls.paper_trade_binance_interface)
 
         # Another wraps coinbase pro
-        cls.paper_trade_coinbase_pro = Blankly.PaperTrade(cls.Coinbase_Pro)
+        cls.paper_trade_coinbase_pro = blankly.PaperTrade(cls.Coinbase_Pro)
         cls.paper_trade_coinbase_pro_interface = cls.paper_trade_coinbase_pro.get_interface()
         cls.interfaces.append(cls.paper_trade_coinbase_pro_interface)
 

@@ -17,13 +17,13 @@
 """
 import pytest
 
-import Blankly
+import blankly
 import unittest
 
-from Blankly.exchanges.interfaces.binance.binance_auth import BinanceAuth
-from Blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
-from Blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
-from Blankly.utils.utils import AttributeDict
+from blankly.exchanges.interfaces.binance.binance_auth import BinanceAuth
+from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
+from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
+from blankly.utils.utils import AttributeDict
 from pathlib import Path
 import time
 
@@ -31,7 +31,7 @@ import time
 class BinanceInterface_test(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.Binance = Blankly.Binance(portfolio_name="Spot Test Key",
+        cls.Binance = blankly.Binance(portfolio_name="Spot Test Key",
                                       keys_path="./tests/config/keys.json",
                                       settings_path="./tests/config/settings.json")
         cls.Binance_Interface = cls.Binance.get_interface()

@@ -15,21 +15,21 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import Blankly
+import blankly
 import unittest
 import pytest
 
 from pathlib import Path
 
-from Blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_auth import CoinbaseProAuth
-from Blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
-from Blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
+from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_auth import CoinbaseProAuth
+from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
+from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
 
 
 class CoinbaseInterface2(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.Coinbase_Pro = Blankly.CoinbasePro(portfolio_name="Sandbox Portfolio",
+        cls.Coinbase_Pro = blankly.CoinbasePro(portfolio_name="Sandbox Portfolio",
                                                keys_path='./tests/config/keys.json',
                                                settings_path="./tests/config/settings.json")
         cls.Coinbase_Pro_Interface = cls.Coinbase_Pro.get_interface()
