@@ -1,7 +1,8 @@
+<br />
 <div style="text-align: center; margin-top: 25px" align="center">
-   <img style="margin: 0 auto; padding-bottom: 15px; padding-top: 30px" width="50%" src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/blankly-github-logo.png?alt=media&token=8f436cd2-3d28-432c-867a-afef780f4260">
+   <img style="margin: 0 auto; padding-bottom: 15px; padding-top: 30px" width=70%" src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/blankly-github-logo.png?alt=media&token=8f436cd2-3d28-432c-867a-afef780f4260">
 </div>
-
+<br />
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=security_rating)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=alert_status)](https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly)
