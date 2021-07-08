@@ -25,13 +25,12 @@
 
 Blankly is an elegant python library for interacting with many crypto and stock exchanges for automated portfolios in a consistent way. Blankly offers a powerful feature-set, optimized for speed and ease of use. 
 
-We abstract away all the code related to connecting to exchanges (i.e. Coinbase Pro, Binance, and Stock Exchanges), order submission (Limit, Market, and Stop), and order book and price data (historical and real-time at your designated resolution) so that you can focus on building your models. 
+We abstract away all the code related to connecting to exchanges (i.e. Coinbase Pro, Binance, and Stock Exchanges), order submission (Limit, Market, and Stop Limit), order book, and price data (historical and real-time at your designated resolution) so that you can focus on building your models. 
 
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
 
 ## Getting Started
 
-For more info, and ways to do more advanced things, check out our [getting started docs](https://docs.blankly.finance).
 ### Installation
 
 First install Blankly using `pip`. Blankly is hosted on [PyPi](https://pypi.org/project/Blankly/).
@@ -59,6 +58,10 @@ Project
    |-keys.json
    |-settings.json
 ```
+
+### Additional Info
+
+For more info, and ways to do more advanced things, check out our [getting started docs](https://docs.blankly.finance).
 ## Example Use
 
 We have a pre-built cookbook examples that implement strategies such as RSI, MACD, and the Golden Cross found in our [examples](https://docs.blankly.finance/examples).
