@@ -45,7 +45,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         self.get_products_cache = None
         self.get_fees_cache = None
-        self.get_market_limits_cache = None
+        self.get_asset_limits_cache = None
 
         self.__exchange_properties = None
 
@@ -141,8 +141,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         """
         used_currencies = []
         for i in self.paper_trade_orders:
-            if i["product_id"] not in used_currencies:
-                used_currencies.append(i['product_id'])
+            if i["symbol"] not in used_currencies:
+                used_currencies.append(i['symbol'])
         prices = {}
 
         for i in used_currencies:
@@ -173,12 +173,12 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             }
             """
             if index['type'] == 'limit' and index['status'] == 'pending':
-                current_price = prices[index['product_id']]
+                current_price = prices[index['symbol']]
 
                 if index['side'] == 'buy':
                     if index['price'] > current_price:
                         # Take everything off hold
-                        asset_id = index['product_id']
+                        asset_id = index['symbol']
                         quote = utils.get_quote_asset(asset_id)
 
                         available = trade_local.get_account(quote)['available']
@@ -190,7 +190,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                         trade_local.update_hold(quote, hold - (index['size'] * index['price']))
 
                         order, funds = self.evaluate_paper_trade(index, index['price'])
-                        trade_local.trade_local(currency_pair=index['product_id'],
+                        trade_local.trade_local(symbol=index['symbol'],
                                                 side='buy',
                                                 base_delta=float(order['filled_size']),  # Gain filled size after fees
                                                 quote_delta=funds * -1)  # Loose the original fund amount
@@ -199,10 +199,10 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
                         self.paper_trade_orders[i] = order
                 elif index['side'] == 'sell':
-                    if index['price'] < prices[index['product_id']]:
+                    if index['price'] < prices[index['symbol']]:
                         # Take everything off hold
 
-                        asset_id = index['product_id']
+                        asset_id = index['symbol']
                         base = utils.get_base_asset(asset_id)
 
                         available = trade_local.get_account(base)['available']
@@ -214,7 +214,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                         trade_local.update_hold(base, hold - index['size'])
 
                         order, funds = self.evaluate_paper_trade(index, index['price'])
-                        trade_local.trade_local(currency_pair=index['product_id'],
+                        trade_local.trade_local(symbol=index['symbol'],
                                                 side='sell',
                                                 base_delta=float(order['size'] * - 1),  # Loose size before any fees
                                                 quote_delta=float(order['executed_value']))  # Executed value after fees
@@ -241,7 +241,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         return order, funds
 
-    def get_account(self, currency=None) -> dict:
+    def get_account(self, symbol=None) -> dict:
         needed = self.needed['get_account']
 
         # TODO this can be optimized
@@ -254,29 +254,29 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             }
 
         # We have to sort through it if the accounts are none
-        if currency is not None:
-            if currency in accounts.keys():
-                return local_account[currency]
-            warnings.warn("Currency not found")
+        if symbol is not None:
+            if symbol in accounts.keys():
+                return local_account[symbol]
+            warnings.warn("Asset not found")
 
         for k, v in local_account.items():
             local_account[k] = utils.isolate_specific(needed, accounts[k])
         return accounts
 
-    def market_order(self, product_id, side, funds) -> MarketOrder:
+    def market_order(self, symbol, side, funds) -> MarketOrder:
         if not self.backtesting:
             print("Paper Trading...")
         needed = self.needed['market_order']
         order = {
             'funds': funds,
             'side': side,
-            'product_id': product_id,
+            'symbol': symbol,
             'type': 'market'
         }
         creation_time = self.time()
-        price = self.get_price(product_id)
+        price = self.get_price(symbol)
 
-        market_limits = self.get_market_limits(product_id)
+        market_limits = self.get_asset_limits(symbol)
         if "min_market_funds" in market_limits['exchange_specific']:
             min_funds = float(market_limits["exchange_specific"]["min_market_funds"])
         else:
@@ -288,7 +288,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         qty = funds / price
 
         # Test the purchase
-        trade_local.test_trade(product_id, side, qty, price)
+        trade_local.test_trade(symbol, side, qty, price)
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
         # TODO the force typing here isn't strictly necessary because its run int the isolate_specific anyway
@@ -297,7 +297,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             'side': str(side),
             'type': 'market',
             'status': 'done',
-            'product_id': str(product_id),
+            'symbol': str(symbol),
             'funds': str(funds - funds * float((self.__exchange_properties["maker_fee_rate"]))),
             'specified_funds': str(funds),
             'post_only': 'false',
@@ -312,14 +312,14 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
         if side == "buy":
-            trade_local.trade_local(currency_pair=product_id,
+            trade_local.trade_local(symbol=symbol,
                                     side=side,
                                     base_delta=qty - qty * float((self.__exchange_properties["maker_fee_rate"])),
                                     # Gain filled size after fees
                                     quote_delta=funds * -1  # Loose the original fund amount
                                     )
         elif side == "sell":
-            trade_local.trade_local(currency_pair=product_id,
+            trade_local.trade_local(symbol=symbol,
                                     side=side,
                                     base_delta=float(qty * -1),  # Loose size before any fees
                                     quote_delta=funds - funds * float((self.__exchange_properties["maker_fee_rate"]))
@@ -329,11 +329,11 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             raise APIException("Invalid trade side: " + str(side))
         return MarketOrder(order, response, self)
 
-    def limit_order(self, product_id, side, price, size) -> LimitOrder:
+    def limit_order(self, symbol, side, price, size) -> LimitOrder:
         """
         Used for buying or selling limit orders
         Args:
-            product_id: currency to buy
+            symbol: currency to buy
             side: buy/sell
             price: price to set limit order
             size: amount of currency (like BTC) for the limit to be valued
@@ -362,16 +362,16 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             'size': size,
             'side': side,
             'price': price,
-            'product_id': product_id,
+            'symbol': symbol,
             'type': 'limit'
         }
         creation_time = self.time()
-        min_base = float(self.get_market_limits(product_id)["base_min_size"])
+        min_base = float(self.get_asset_limits(symbol)["base_min_size"])
         if size < min_base:
             raise InvalidOrder("Invalid Order: Order quantity is too small. Minimum is: " + str(min_base))
 
         # Test the trade
-        trade_local.test_trade(product_id, side, size, price)
+        trade_local.test_trade(symbol, side, size, price)
 
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
@@ -379,7 +379,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             'id': str(coinbase_pro_id),
             'price': str(price),
             'size': str(size),
-            'product_id': str(product_id),
+            'symbol': str(symbol),
             'side': str(side),
             'stp': 'dc',
             'type': 'limit',
@@ -395,8 +395,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
 
-        base = utils.get_base_asset(product_id)
-        quote = utils.get_quote_asset(product_id)
+        base = utils.get_base_asset(symbol)
+        quote = utils.get_quote_asset(symbol)
 
         if side == "buy":
             available = trade_local.get_account(quote)['available']
@@ -416,7 +416,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             trade_local.update_hold(base, hold + size)
         return LimitOrder(order, response, self)
 
-    def cancel_order(self, currency_id, order_id) -> dict:
+    def cancel_order(self, symbol, order_id) -> dict:
         """
         This block could potentially work for both exchanges
         """
@@ -431,14 +431,14 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             del self.paper_trade_orders[order_index]
             return {"order_id": order_id}
 
-    def get_open_orders(self, product_id=None):
+    def get_open_orders(self, symbol=None):
         open_orders = []
         for i in self.paper_trade_orders:
             if i["status"] == "pending":
                 open_orders.append(i)
         return open_orders
 
-    def get_order(self, currency_id, order_id) -> dict:
+    def get_order(self, symbol, order_id) -> dict:
         for i in self.paper_trade_orders:
             if i["id"] == order_id:
                 return i
@@ -459,22 +459,22 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         else:
             return self.calls.get_fees()
 
-    def get_product_history(self, product_id, epoch_start, epoch_stop, resolution):
+    def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
         if self.backtesting:
             raise APIException("Cannot download product history during a backtest")
         else:
-            return self.calls.get_product_history(product_id, epoch_start, epoch_stop, resolution)
+            return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
-    def get_asset_limits(self, product_id):
+    def get_asset_limits(self, symbol):
         if self.backtesting:
-            if self.get_market_limits_cache is None:
-                self.get_market_limits_cache = self.calls.get_market_limits(product_id)
-            return self.get_market_limits_cache
+            if self.get_asset_limits_cache is None:
+                self.get_asset_limits_cache = self.calls.get_asset_limits(symbol)
+            return self.get_asset_limits_cache
         else:
-            return self.calls.get_market_limits(product_id)
+            return self.calls.get_asset_limits(symbol)
 
-    def get_price(self, currency_pair) -> float:
+    def get_price(self, symbol) -> float:
         if self.backtesting:
-            return self.get_backtesting_price(currency_pair)
+            return self.get_backtesting_price(symbol)
         else:
-            return self.calls.get_price(currency_pair)
+            return self.calls.get_price(symbol)

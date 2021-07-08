@@ -477,7 +477,11 @@ class CoinbaseProInterface(ExchangeInterface):
             raise APIException(response['message'])
         history_block = history + response
         history_block.sort(key=lambda x: x[0])
-        return pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
+
+        df = pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
+        # df[['time']] = df[['time']].astype(int)
+        # df[['low', 'high', 'open', 'close', 'volume']] = df[['low', 'high', 'open', 'close', 'volume']].astype(float)
+        return df
 
     """
     Coinbase Pro: Get Currencies
@@ -485,9 +489,11 @@ class CoinbaseProInterface(ExchangeInterface):
     """
 
     def get_asset_limits(self, symbol: str):
-        needed = self.needed['get_market_limits']
+        needed = self.needed['get_asset_limits']
         renames = [
-            ["id", "market"]
+            ["id", "symbol"],
+            ["base_currency", "base_asset"],
+            ["quote_currency", "quote_asset"]
         ]
         """
         Returns:
@@ -519,6 +525,7 @@ class CoinbaseProInterface(ExchangeInterface):
         for i in response:
             if i["id"] == symbol:
                 products = i
+                break
 
         if products is None:
             raise LookupError("Specified market not found")
@@ -529,9 +536,6 @@ class CoinbaseProInterface(ExchangeInterface):
         products["max_price"] = 9999999999  # This is actually the max price
         products["max_orders"] = 1000000000000  # there is no limit
         products["fractional_limit"] = True
-        response["symbol"] = response.pop('product_id')
-        response["base_asset"] = response.pop('base_currency')
-        response["quote_asset"] = response.pop('quote_currency')
         return utils.isolate_specific(needed, products)
 
     def get_price(self, symbol) -> float:
