@@ -47,20 +47,15 @@ Check out our [website](https://blankly.finance) and our [docs](https://docs.bla
 
 3. **Insert your API keys** from your exchange into the renamed `keys.json` file.
 
-   1. **You can add multiple portfolios**! You can specify the name of the portfolio to load when you construct the exchange.
+The working directory format should look similar to this:
+```
+Project
+   |-script.py
+   |-keys.json
+   |-settings.json
+```
 
-   ```python
-   Blankly.Coinbase_Pro(portfolio_name="my cool portfolio")
-   ``` 
-
-   The working directory format should look similar to this:
-   ```
-   Project
-    |-script.py
-    |-keys.json
-    |-settings.json
-   ```
-6. **Everything should work!**. Check out some examples in our docs or see some basic usage below.
+4. **Everything should work!**. Check out some examples in our docs or see some basic usage below.
 
 For more info, and ways to do more advanced things, check our [getting started docs](https://docs.blankly.finance).
 ## Example Use
