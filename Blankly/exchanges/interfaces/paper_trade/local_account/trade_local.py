@@ -20,12 +20,12 @@ import Blankly.utils.utils as utils
 from Blankly.utils.exceptions import InvalidOrder
 
 
-def trade_local(currency_pair, side, base_delta, quote_delta) -> None:
+def trade_local(symbol, side, base_delta, quote_delta) -> None:
     """
     Trade on the local & static account
 
     Args:
-        currency_pair (string): Pair such as 'BTC-USD'
+        symbol (string): Pair such as 'BTC-USD'
         side (string): Purchase side such as 'buy' or 'sell' (currently unused but required)
         base_delta (float): A number specifying the change in base currency, such as -2.4 BTC by selling or
          +1.2 BTC by buying
@@ -34,8 +34,8 @@ def trade_local(currency_pair, side, base_delta, quote_delta) -> None:
     """
 
     # Extract the base and quote pairs of the currency
-    base = utils.get_base_asset(currency_pair)
-    quote = utils.get_quote_asset(currency_pair)
+    base = utils.get_base_asset(symbol)
+    quote = utils.get_quote_asset(symbol)
 
     # Push these abstracted deltas to the local account
     try:
