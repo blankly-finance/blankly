@@ -70,7 +70,6 @@ We have made Blankly extremely easy to integrate with any existing models and pr
 import Blankly
 from Blankly.strategy import Strategy, StrategyState
 from model import my_awesome_model
-import time
 
 
 def price_event(price: float, ticker: str, state: StrategyState):
@@ -85,19 +84,21 @@ def price_event(price: float, ticker: str, state: StrategyState):
 
     # buy or sell based on that decision
     if decision:
-        interface.market_order(ticker, 'buy', interface.cash)
-        state.variables['has_buy_order'] = True
+        buy_order = int(.025 * interface.cash)
+        if buy_order > 10:
+            interface.market_order(ticker, 'buy', int(.025 * interface.cash))
+            state.variables['has_buy_order'] = True
     elif state.variables['has_buy_order'] and not decision:
-        amt = interface.account[ticker].available
-        interface.market_order(ticker, 'sell', amt)
+        amt = interface.account[ticker]['available']
+        interface.market_order(ticker, 'sell', int(amt))
         state.variables['has_buy_order'] = False
 
 
 # Easily run setup code
 def strategy_init(currency_pair, state: StrategyState):
-    # get 500 points worth of data at given resolution of strategy
-    state.variables['history'] =
-    state.interface.history(currency_pair, 500, state.resolution)['close']
+    state.variables['history'] = state.interface.history(product_id=currency_pair,
+                                                         to='4w',
+                                                         resolution='1h')['close'].tolist()
 
 
 if __name__ == "__main__":
@@ -111,12 +112,13 @@ if __name__ == "__main__":
     strategy.add_price_event(price_event,
                              currency_pair='BTC-USD',
                              resolution='1h',
+                             # Pass an init function to run before any price events
                              init=strategy_init)
 
     # Run the code above with a new price once every thirty minutes
     strategy.add_price_event(price_event,
                              currency_pair='LINK-USD',
-                             resolution='30m',
+                             resolution='1h',
                              init=strategy_init)
 
     strategy.start()

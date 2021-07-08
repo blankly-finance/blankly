@@ -240,7 +240,7 @@ class AlpacaInterface(ExchangeInterface):
         return self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str, adjustment='raw').df.iloc[::row_divisor, :]
 
     # TODO: tbh not sure how this one works or if it applies to alpaca
-    def get_market_limits(self, symbol):
+    def get_asset_limits(self, symbol: str):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         pass
 
