@@ -1,6 +1,6 @@
-# This runs all Blankly Module Tests
+# This runs all blankly Module Tests
 
-name: Blankly Module Tests
+name: blankly Module Tests
 
 on: [push, pull_request, workflow_dispatch]
 
