@@ -31,6 +31,7 @@ Check out our [website](https://blankly.finance) and our [docs](https://docs.bla
 
 ## Getting Started
 
+For more info, and ways to do more advanced things, check our [getting started docs](https://docs.blankly.finance).
 ### Installation
 
 First install Blankly using `pip`. Blankly is hosted on [PyPi](https://pypi.org/project/Blankly/).
@@ -58,8 +59,6 @@ Project
    |-keys.json
    |-settings.json
 ```
-
-For more info, and ways to do more advanced things, check our [getting started docs](https://docs.blankly.finance).
 ## Example Use
 
 We have a pre-built cookbook examples that implement strategies such as RSI, MACD, and the Golden Cross found in our [examples](https://docs.blankly.finance/examples).
