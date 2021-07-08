@@ -22,7 +22,6 @@
 </p>
 
 ---
-## What is it?
 
 Blankly is an elegant python library for interacting with many crypto and stock exchanges for automated portfolios in a consistent way. Blankly offers a powerful feature-set, optimized for speed and ease of use. 
 
@@ -30,22 +29,22 @@ We abstract away all the code related to connecting to exchanges (i.e. Coinbase 
 
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
 
-## Quick Start
+## Getting Started
 
-1. First install Blankly using `pip`. Blankly is hosted on [PyPi](https://pypi.org/project/Blankly/)
+First install Blankly using `pip`. Blankly is hosted on [PyPi](https://pypi.org/project/Blankly/)
 
-    ```bash
-    $ pip install blankly
-    ```
+```bash
+$ pip install blankly
+```
 
-    Make sure you're using a supported version of python. The module is currently tested on these versions:
+Make sure you're using a supported version of python. The module is currently tested on these versions:
 
-    - [Python](https://www.python.org/) 3.7+
+- [Python](https://www.python.org/) 3.7+
 
 
-2. Add [`settings.json`](https://github.com/Blankly-Finance/Blankly/blob/development/Examples/settings.json) and [`keys.json`](https://github.com/Blankly-Finance/Blankly/blob/development/Examples/keys_example.json) to your root project directory. More information can be found on our [docs](https://docs.blankly.finance)
+Next, add [`settings.json`](https://github.com/Blankly-Finance/Blankly/blob/development/Examples/settings.json) and [`keys.json`](https://github.com/Blankly-Finance/Blankly/blob/development/Examples/keys_example.json) to your root project directory. More information can be found on our [docs](https://docs.blankly.finance)
 
-3. **Insert your API keys** from your exchange into the renamed `keys.json` file.
+From there, **insert your API keys** from your exchange into your `keys.json` file.
 
 The working directory format should look similar to this:
 ```
@@ -54,8 +53,6 @@ Project
    |-keys.json
    |-settings.json
 ```
-
-4. **Everything should work!**. Check out some examples in our docs or see some basic usage below.
 
 For more info, and ways to do more advanced things, check our [getting started docs](https://docs.blankly.finance).
 ## Example Use
