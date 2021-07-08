@@ -63,10 +63,12 @@ def test_get_exchange(coinbase_interface: CoinbaseProInterface) -> None:
 
     #market_buy_order = coinbase_interface.market_order(btc_usd_id, 'buy', 200)
 
-def test_get_price(coinbase_interface: CoinbaseProInterface) -> None:
-    return
-    # todo: just call a couple of popular coins and see if they all return floats
-    btcusd = 'BTC-USDT'
-    resp = coinbase_interface.get_price(btcusd)
-    assert type(resp) is float
 
+def test_get_price(coinbase_interface: CoinbaseProInterface) -> None:
+    responses = []
+    responses.append(coinbase_interface.get_price('BTC-USD'))
+    responses.append(coinbase_interface.get_price('BTC-EUR'))
+    responses.append(coinbase_interface.get_price('BTC-GBP'))
+    responses.append(coinbase_interface.get_price('ETH-BTC'))
+    for resp in responses:
+        assert type(resp) is float
