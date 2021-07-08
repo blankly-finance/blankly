@@ -8,10 +8,12 @@ import datetime
 import time
 import pytz
 from datetime import datetime as dt
-timeZ_Ny = pytz.timezone('America/New_York')
+import dateparser
 
+timeZ_Ny = pytz.timezone('America/New_York')
 MARKET_OPEN = datetime.time(hour=9, minute=0, second=0, tzinfo=timeZ_Ny)
 MARKET_CLOSE = datetime.time(hour=17, minute=0, second=0, tzinfo=timeZ_Ny)
+
 
 @pytest.fixture
 def alpaca_interface():
@@ -26,22 +28,23 @@ def alpaca_interface():
 def test_get_exchange(alpaca_interface: AlpacaInterface) -> None:
     assert alpaca_interface.get_exchange_type() == 'alpaca'
 
+
 def test_get_buy_sell(alpaca_interface: AlpacaInterface) -> None:
     if not alpaca_interface.get_calls().get_clock()['is_open']:
         return
 
     known_apple_info = {
-              "id": "904837e3-3b76-47ec-b432-046db621571b",
-              "class": "us_equity",
-              "exchange": "NASDAQ",
-              "symbol": "AAPL",
-              "status": "active",
-              "tradable": True,
-              "marginable": True,
-              "shortable": True,
-              "easy_to_borrow": True,
-              "fractionable": True
-            }
+        "id": "904837e3-3b76-47ec-b432-046db621571b",
+        "class": "us_equity",
+        "exchange": "NASDAQ",
+        "symbol": "AAPL",
+        "status": "active",
+        "tradable": True,
+        "marginable": True,
+        "shortable": True,
+        "easy_to_borrow": True,
+        "fractionable": True
+    }
 
     # query for the unique ID of AAPL
     products = alpaca_interface.get_products()
@@ -71,14 +74,39 @@ def test_get_buy_sell(alpaca_interface: AlpacaInterface) -> None:
 
     # place sell order
 
+
 def test_get_product_history(alpaca_interface: AlpacaInterface) -> None:
     start = dt.strptime("2021-02-04", "%Y-%m-%d")
     end = dt.strptime("2021-02-05", "%Y-%m-%d")
 
     return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
+    print(return_df)
+    assert False
     return_df_2 = alpaca_interface.get_product_history("AAPL", start, end, 120)
     assert len(return_df) > 0
     assert len(return_df) > len(return_df_2)
+
+
+def test_get_product_history_est_timezone(alpaca_interface: AlpacaInterface) -> None:
+    start = dateparser.parse("2021-02-04 9:30AM EST")
+    end = dateparser.parse("2021-02-04 9:35AM EST")
+
+    return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
+
+    assert str(return_df.index[0]) == "2021-02-04 14:30:00+00:00"
+    assert (len(return_df) == 6)
+
+
+def test_get_product_history_default_timezone(alpaca_interface: AlpacaInterface) -> None:
+    # UTC is 5 hours ahead of EST
+    start = dateparser.parse("2021-02-04 14:30AM")
+    end = dateparser.parse("2021-02-04 14:35AM")
+
+    return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
+
+    assert str(return_df.index[0]) == "2021-02-04 14:30:00+00:00"
+    assert (len(return_df) == 6)
+
 
 def test_get_price(alpaca_interface: AlpacaInterface) -> None:
     price = alpaca_interface.get_price("AAPL")

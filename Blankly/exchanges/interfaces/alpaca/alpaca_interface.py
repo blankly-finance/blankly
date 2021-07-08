@@ -19,6 +19,7 @@
 
 import warnings
 
+import pytz
 from alpaca_trade_api.rest import TimeFrame
 
 from Blankly.utils import utils as utils
@@ -30,6 +31,8 @@ from Blankly.exchanges.orders.limit_order import LimitOrder
 from Blankly.exchanges.orders.market_order import MarketOrder
 from dateutil import parser
 from datetime import datetime as dt
+
+from Blankly.utils.time import is_datetime_naive
 
 NY = 'America/New_York'
 
@@ -204,6 +207,12 @@ class AlpacaInterface(ExchangeInterface):
     def get_product_history(self, symbol: str, epoch_start: dt, epoch_stop: dt, resolution: int):
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
+        if is_datetime_naive(epoch_start):
+            epoch_start = epoch_start.replace(tzinfo=pytz.UTC)
+
+        if is_datetime_naive(epoch_stop):
+            epoch_stop = epoch_stop.replace(tzinfo=pytz.UTC)
+
         supported_multiples = [60, 3600, 86400]
         if resolution < 60:
             raise ValueError("alpaca does not support sub-minute candlesticks")
@@ -225,12 +234,10 @@ class AlpacaInterface(ExchangeInterface):
 
         row_divisor = resolution // multiple
 
-        # '2020-08-28' <- this is how it should look
-        formatting_str = "%Y-%m-%d"
-        epoch_start_str = epoch_start.strftime(formatting_str)
-        epoch_stop_str = epoch_stop.strftime(formatting_str)
+        epoch_start_str = epoch_start.isoformat()
+        epoch_stop_str = epoch_stop.isoformat()
 
-        return self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str,adjustment='raw').df.iloc[::row_divisor, :]
+        return self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str, adjustment='raw').df.iloc[::row_divisor, :]
 
     # TODO: tbh not sure how this one works or if it applies to alpaca
     def get_market_limits(self, symbol):
