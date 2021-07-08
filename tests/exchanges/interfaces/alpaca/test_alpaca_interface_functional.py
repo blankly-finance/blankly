@@ -80,8 +80,6 @@ def test_get_product_history(alpaca_interface: AlpacaInterface) -> None:
     end = dt.strptime("2021-02-05", "%Y-%m-%d")
 
     return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
-    print(return_df)
-    assert False
     return_df_2 = alpaca_interface.get_product_history("AAPL", start, end, 120)
     assert len(return_df) > 0
     assert len(return_df) > len(return_df_2)
