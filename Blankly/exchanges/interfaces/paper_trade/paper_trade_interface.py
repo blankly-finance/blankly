@@ -465,7 +465,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         else:
             return self.calls.get_product_history(product_id, epoch_start, epoch_stop, resolution)
 
-    def get_market_limits(self, product_id):
+    def get_asset_limits(self, product_id):
         if self.backtesting:
             if self.get_market_limits_cache is None:
                 self.get_market_limits_cache = self.calls.get_market_limits(product_id)

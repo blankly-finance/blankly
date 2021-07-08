@@ -78,20 +78,22 @@ class CoinbaseProInterface(ExchangeInterface):
         products = self.calls.get_products()
         for i in range(len(products)):
             # Rename needed
-            products[i]["currency_id"] = products[i].pop("id")
+            products[i]["symbol"] = products[i].pop("id")
+            products[i]["base_asset"] = products[i].pop("base_currency")
+            products[i]["quote_asset"] = products[i].pop("quote_currency")
             products[i] = utils.isolate_specific(needed, products[i])
         return products
 
-    def get_account(self, currency=None) -> utils.AttributeDict:
+    def get_account(self, symbol=None) -> utils.AttributeDict:
         """
-        Get all currencies in an account, or sort by currency/account_id
+        Get all currencies in an account, or sort by symbol/account_id
         Args:
-            currency (Optional): Filter by particular currency
+            symbol (Optional): Filter by particular symbol
 
             These arguments are mutually exclusive
         Coinbase Pro: get_account
         """
-        currency = super().get_account(currency=currency)
+        symbol = super().get_account(symbol=symbol)
 
         needed = self.needed['get_account']
         """
@@ -114,30 +116,28 @@ class CoinbaseProInterface(ExchangeInterface):
         parsed_dictionary = {}
 
         # We have to sort through it if the accounts are none
-        if currency is not None:
+        if symbol is not None:
             for i in accounts:
-                if i["currency"] == currency:
+                if i["currency"] == symbol:
                     parsed_value = utils.isolate_specific(needed, i)
                     return utils.AttributeDict({
                         'available': parsed_value['available'],
                         'hold': parsed_value['hold']
                     })
-            raise ValueError("Currency not found")
+            raise ValueError("Symbol not found")
         for i in range(len(accounts)):
-            account = utils.isolate_specific(needed, accounts[i])
-
-            parsed_dictionary[account['currency']] = utils.AttributeDict({
-                'available': account['available'],
-                'hold': account['hold']
+            parsed_dictionary[accounts[i]['currency']] = utils.AttributeDict({
+                'available': float(accounts[i]['available']),
+                'hold': float(accounts[i]['hold'])
             })
 
         return utils.AttributeDict(parsed_dictionary)
 
-    def market_order(self, product_id, side, funds) -> MarketOrder:
+    def market_order(self, symbol, side, funds) -> MarketOrder:
         """
         Used for buying or selling market orders
         Args:
-            product_id: currency to buy
+            symbol: currency to buy
             side: buy/sell
             funds: desired amount of quote currency to use
         """
@@ -163,13 +163,14 @@ class CoinbaseProInterface(ExchangeInterface):
         order = {
             'funds': funds,
             'side': side,
-            'product_id': product_id,
+            'symbol': symbol,
             'type': 'market'
         }
-        response = self.calls.place_market_order(product_id, side, funds=funds)
+        response = self.calls.place_market_order(symbol, side, funds=funds)
         if "message" in response:
             raise InvalidOrder("Invalid Order: " + response["message"])
         response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
+        response["symbol"] = response.pop('product_id')
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
@@ -206,13 +207,14 @@ class CoinbaseProInterface(ExchangeInterface):
             'size': size,
             'side': side,
             'price': price,
-            'product_id': product_id,
+            'symbol': product_id,
             'type': 'limit'
         }
         response = self.calls.place_limit_order(product_id, side, price, size=size)
         if "message" in response:
             raise InvalidOrder("Invalid Order: " + response["message"])
         response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
+        response["symbol"] = response.pop('product_id')
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
 
@@ -222,11 +224,11 @@ class CoinbaseProInterface(ExchangeInterface):
     If you want to use this function you can, just do interface.stop_limit(args) if you're using a coinbase pro 
     interface
     """
-    def stop_limit(self, product_id, side, stop_price, limit_price, size, stop='loss') -> StopLimit:
+    def stop_limit(self, symbol, side, stop_price, limit_price, size, stop='loss') -> StopLimit:
         """
         Used for placing stop orders
         Args:
-            product_id (str): currency to buy
+            symbol (str): currency to buy
             side (str): buy/sell
             stop_price (float): Price to trigger the stop order at
             limit_price (float): Price to set the stop limit
@@ -256,7 +258,7 @@ class CoinbaseProInterface(ExchangeInterface):
         }
         """
         order = {
-            'product_id': product_id,
+            'symbol': symbol,
             'side': side,
             'type': 'stop',
             'stop': stop,
@@ -264,7 +266,7 @@ class CoinbaseProInterface(ExchangeInterface):
             'size': size,
             'price': limit_price
         }
-        response = self.calls.place_order(product_id=product_id,
+        response = self.calls.place_order(product_id=symbol,
                                           order_type='limit',
                                           side=side,
                                           stop=stop,  # loss
@@ -273,9 +275,10 @@ class CoinbaseProInterface(ExchangeInterface):
                                           price=limit_price
                                           )
         response['limit_price'] = response.pop('price')
+        response["symbol"] = response.pop('product_id')
         return StopLimit(order, response, self)
 
-    def cancel_order(self, currency_id, order_id) -> dict:
+    def cancel_order(self, symbol, order_id) -> dict:
         """
         Returns:
             dict: Containing the order_id of cancelled order. Example::
@@ -283,7 +286,7 @@ class CoinbaseProInterface(ExchangeInterface):
         """
         return {"order_id": self.calls.cancel_order(order_id)}
 
-    def get_open_orders(self, product_id=None):
+    def get_open_orders(self, symbol=None):
         """
         List open orders.
         """
@@ -311,10 +314,10 @@ class CoinbaseProInterface(ExchangeInterface):
             }
         ]
         """
-        if product_id is None:
+        if symbol is None:
             orders = list(self.calls.get_orders())
         else:
-            orders = list(self.calls.get_orders(product_id=product_id))
+            orders = list(self.calls.get_orders(product_id=symbol))
 
         if len(orders) == 0:
             return []
@@ -324,11 +327,12 @@ class CoinbaseProInterface(ExchangeInterface):
         for i in range(len(orders)):
             orders[i]["created_at"] = utils.epoch_from_ISO8601(orders[i]["created_at"])
             needed = self.choose_order_specificity(orders[i]['type'])
+            orders[i]["symbol"] = orders[i].pop('product_id')
             orders[i] = utils.isolate_specific(needed, orders[i])
 
         return orders
 
-    def get_order(self, currency_id, order_id) -> dict:
+    def get_order(self, symbol, order_id) -> dict:
         """
         {
             "created_at": "2017-06-18T00:27:42.920136Z",
@@ -391,6 +395,8 @@ class CoinbaseProInterface(ExchangeInterface):
             needed = self.needed['limit_order']
         else:
             needed = self.needed['market_order']
+
+        response["symbol"] = response.pop('product_id')
         return utils.isolate_specific(needed, response)
 
     """
@@ -418,11 +424,11 @@ class CoinbaseProInterface(ExchangeInterface):
 
     """
 
-    def get_product_history(self, product_id, epoch_start, epoch_stop, resolution):
+    def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
         """
         Returns the product history from an exchange
         Args:
-            product_id: Blankly product ID format (BTC-USD)
+            symbol: Blankly product ID format (BTC-USD)
             epoch_start: Time to begin download
             epoch_stop: Time to stop download
             resolution: Resolution in seconds between tick (ex: 60 = 1 per minute)
@@ -432,7 +438,7 @@ class CoinbaseProInterface(ExchangeInterface):
 
         resolution = Blankly.time_builder.time_interval_to_seconds(resolution)
 
-        epoch_start, epoch_stop = super().get_product_history(product_id, epoch_start, epoch_stop, resolution)
+        epoch_start, epoch_stop = super().get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
         accepted_grans = [60, 300, 900, 3600, 21600, 86400]
         if resolution not in accepted_grans:
@@ -453,7 +459,7 @@ class CoinbaseProInterface(ExchangeInterface):
             window_close = window_open + 300 * resolution
             open_iso = utils.ISO8601_from_epoch(window_open)
             close_iso = utils.ISO8601_from_epoch(window_close)
-            response = self.calls.get_product_historic_rates(product_id, open_iso, close_iso, resolution)
+            response = self.calls.get_product_historic_rates(symbol, open_iso, close_iso, resolution)
             if isinstance(response, dict):
                 raise APIException(response['message'])
             history = history + response
@@ -466,7 +472,7 @@ class CoinbaseProInterface(ExchangeInterface):
         # Fill the remainder
         open_iso = utils.ISO8601_from_epoch(window_open)
         close_iso = utils.ISO8601_from_epoch(epoch_stop)
-        response = self.calls.get_product_historic_rates(product_id, open_iso, close_iso, resolution)
+        response = self.calls.get_product_historic_rates(symbol, open_iso, close_iso, resolution)
         if isinstance(response, dict):
             raise APIException(response['message'])
         history_block = history + response
@@ -478,7 +484,7 @@ class CoinbaseProInterface(ExchangeInterface):
     binance: get_products
     """
 
-    def get_market_limits(self, product_id):
+    def get_asset_limits(self, symbol: str):
         needed = self.needed['get_market_limits']
         renames = [
             ["id", "market"]
@@ -511,7 +517,7 @@ class CoinbaseProInterface(ExchangeInterface):
         response = self.calls.get_products()
         products = None
         for i in response:
-            if i["id"] == product_id:
+            if i["id"] == symbol:
                 products = i
 
         if products is None:
@@ -523,9 +529,12 @@ class CoinbaseProInterface(ExchangeInterface):
         products["max_price"] = 9999999999  # This is actually the max price
         products["max_orders"] = 1000000000000  # there is no limit
         products["fractional_limit"] = True
+        response["symbol"] = response.pop('product_id')
+        response["base_asset"] = response.pop('base_currency')
+        response["quote_asset"] = response.pop('quote_currency')
         return utils.isolate_specific(needed, products)
 
-    def get_price(self, currency_pair) -> float:
+    def get_price(self, symbol) -> float:
         """
         Returns just the price of a currency pair.
         """
@@ -540,7 +549,7 @@ class CoinbaseProInterface(ExchangeInterface):
             'volume': '31137.51184419'
         }
         """
-        response = self.calls.get_product_ticker(currency_pair)
+        response = self.calls.get_product_ticker(symbol)
         if 'message' in response:
             raise APIException("Error: " + response['message'])
         return float(response['price'])

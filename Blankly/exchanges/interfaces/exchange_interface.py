@@ -115,7 +115,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 ['taker_fee_rate', float]
             ],
             'get_asset_limits': [
-                ["market", str],
+                ["symbol", str],
                 ["base_asset", str],
                 ["quote_asset", str],
                 ["base_min_size", float],  # Minimum size to buy
