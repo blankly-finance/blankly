@@ -127,8 +127,8 @@ if __name__ == "__main__":
 | Exchange     | REST Support | Ticker Websocket | Order Book | Interface |
 | ------------ | ------------ | ---------------- | ---------- | --------- |
 | Coinbase Pro | 🟢           | 🟢               | 🟢        | 🟢        |
-| Binance      | 🟢           | 🟢               | 🟢        | 🟡        |
-| Alpaca       | 🟢         | 🟡             | 🟡      | 🟡        |
+| Binance      | 🟢           | 🟢               | 🟢        | 🟢       |
+| Alpaca       | 🟢         | 🟡             | 🟡      | 🟢        |
 | OANDA | 🔴 | 🔴 | 🔴 | 🔴 |
 
 🟢  = working
