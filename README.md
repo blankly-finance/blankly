@@ -31,7 +31,7 @@ Check out our [website](https://blankly.finance) and our [docs](https://docs.bla
 
 ## Getting Started
 
-First install Blankly using `pip`. Blankly is hosted on [PyPi](https://pypi.org/project/Blankly/)
+First install Blankly using `pip`. Blankly is hosted on [PyPi](https://pypi.org/project/Blankly/).
 
 ```bash
 $ pip install blankly
@@ -39,7 +39,7 @@ $ pip install blankly
 
 Make sure you're using a supported version of python. The module is currently tested on these versions:
 
-- [Python](https://www.python.org/) 3.7+
+- Python 3.7+
 
 
 Next, add [`settings.json`](https://github.com/Blankly-Finance/Blankly/blob/development/Examples/settings.json) and [`keys.json`](https://github.com/Blankly-Finance/Blankly/blob/development/Examples/keys_example.json) to your root project directory. More information can be found on our [docs](https://docs.blankly.finance)
@@ -47,6 +47,7 @@ Next, add [`settings.json`](https://github.com/Blankly-Finance/Blankly/blob/deve
 From there, **insert your API keys** from your exchange into your `keys.json` file.
 
 The working directory format should look similar to this:
+
 ```
 Project
    |-script.py
