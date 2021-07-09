@@ -173,7 +173,7 @@ class AlpacaInterface(ExchangeInterface):
         orders = self.calls.list_orders()
         renames = [
             ["asset_id", "symbol"],
-            ["filled_at", "price"],
+            ["filled_avg_price", "price"],
             ["qty", "size"],
             ["notional", "funds"]
         ]
@@ -189,11 +189,12 @@ class AlpacaInterface(ExchangeInterface):
         needed = self.choose_order_specificity(order['type'])
         renames = [
             ["asset_id", "symbol"],
-            ["filled_at", "price"],
+            ["filled_avg_price", "price"],
             ["qty", "size"],
             ["notional", "funds"]
         ]
         order = utils.rename_to(renames, order)
+        order['created_at'] = parser.isoparse(order['created_at']).timestamp()
         order = utils.isolate_specific(needed, order)
         return order
 
