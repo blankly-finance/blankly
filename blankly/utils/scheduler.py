@@ -18,7 +18,7 @@
 import warnings
 
 from blankly.utils.time_builder import time_interval_to_seconds
-from blankly.utils import ceil_date
+from blankly.utils.utils import ceil_date
 from datetime import datetime
 import threading
 import time
