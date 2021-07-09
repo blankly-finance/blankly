@@ -435,6 +435,7 @@ def compare_dictionaries(dict1, dict2, force_exchange_specific=True) -> bool:
 
 
 def update_progress(progress):
+    # From this great post: https://stackoverflow.com/a/15860757/8087739
     # update_progress() : Displays or updates a console progress bar
     # Accepts a float between 0 and 1. Any int will be converted to a float.
     # A value under 0 represents a 'halt'.
@@ -461,7 +462,8 @@ def update_progress(progress):
 
 def get_ohlcv(candles, n):
     if len(candles) < n:
-        raise ValueError("Not enough candles provided, required at least {} candles, but only received {}".format(n, len(candles)))
+        raise ValueError("Not enough candles provided, required at least {} candles, "
+                         "but only received {}".format(n, len(candles)))
     new_candles = pd.DataFrame()
     new_candles['low'] = min_period(candles['low'], n, True)
     new_candles['high'] = max_period(candles['high'], n, True)
@@ -474,6 +476,7 @@ def get_ohlcv(candles, n):
 def ceil_date(date, **kwargs):
     secs = dt.timedelta(**kwargs).total_seconds()
     return dt.datetime.fromtimestamp(date.timestamp() + secs - date.timestamp() % secs)
+
 
 class AttributeDict(dict):
     def __getattr__(self, attr):
