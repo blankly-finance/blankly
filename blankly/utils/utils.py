@@ -471,6 +471,10 @@ def get_ohlcv(candles, n):
     new_candles['timestamp'] = candles.index.to_series().iloc[::n].reset_index(drop=True)
     return new_candles.set_index('timestamp')
 
+def ceil_date(date, **kwargs):
+    secs = dt.timedelta(**kwargs).total_seconds()
+    return dt.datetime.fromtimestamp(date.timestamp() + secs - date.timestamp() % secs)
+
 class AttributeDict(dict):
     def __getattr__(self, attr):
         return self[attr]
