@@ -128,7 +128,7 @@ class Strategy:
         state.resolution = resolution
 
         if ohlc:
-            data = self.Interface.history(symbol, 1, resolution).to_dict()
+            data = self.Interface.history(symbol, 1, resolution).iloc[0].to_dict()
             data['price'] = self.Interface.get_price(symbol)
         else:
             data = self.Interface.get_price(symbol)
