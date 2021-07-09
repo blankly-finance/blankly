@@ -180,6 +180,7 @@ class AlpacaInterface(ExchangeInterface):
         for order in orders:
             order = utils.rename_to(renames, order)
             needed = self.choose_order_specificity(order['type'])
+            order['created_at'] = parser.isoparse(order['created_at']).timestamp()
             order = utils.isolate_specific(needed, order)
         return orders
 
@@ -219,7 +220,7 @@ class AlpacaInterface(ExchangeInterface):
             raise ValueError("alpaca does not support sub-minute candlesticks")
         
         found_multiple = -1
-        for multiple in supported_multiples:
+        for multiple in reversed(supported_multiples):
             if resolution % multiple == 0:
                 found_multiple = multiple
                 break
