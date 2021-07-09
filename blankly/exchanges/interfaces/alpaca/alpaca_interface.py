@@ -236,8 +236,9 @@ class AlpacaInterface(ExchangeInterface):
 
         epoch_start_str = epoch_start.isoformat()
         epoch_stop_str = epoch_stop.isoformat()
-
-        return utils.get_ohlcv(self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str, adjustment='raw').df, row_divisor)
+        bars = self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str, adjustment='raw').df
+        bars.rename(columns={"o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"})
+        return utils.get_ohlcv(bars, row_divisor)
 
     # TODO: tbh not sure how this one works or if it applies to alpaca
     def get_asset_limits(self, symbol: str):
