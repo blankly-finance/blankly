@@ -177,7 +177,8 @@ def convert_input_to_epoch(value: Union[str, dt.datetime]) -> float:
         return dp.parse(value).timestamp()
     elif isinstance(value, dt.datetime):
         return value.timestamp()
-    
+    elif isinstance(value, float):
+        return value
     raise ValueError("Incorrect value input given, expected string or value but got: {}".format(type(value)))
 
 def ISO8601_from_epoch(epoch) -> str:
