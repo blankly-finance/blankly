@@ -295,7 +295,7 @@ class Strategy:
         for i in self.__schedulers:
             kwargs = i.get_kwargs()
             backtesting_controller.append_backtest_price_event(callback=kwargs['callback'],
-                                                               asset_id=kwargs['currency_pair'],
+                                                               asset_id=kwargs['symbol'],
                                                                time_interval=i.get_interval(),
                                                                state_object=kwargs['state_object']
                                                                )
