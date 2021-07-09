@@ -6,9 +6,8 @@ import pandas as pd
 import tulipy as ti
 
 
-def rsi(data: Any, period: int = 14, round_rsi: bool = False) -> np.array:
+def rsi(data: Any, period: int = 14, round_rsi: bool = False, use_series=False) -> np.array:
     """ Implements RSI Indicator """
-    use_series = False
     if check_series(data):
         use_series = True
     data = convert_to_numpy(data)
@@ -75,8 +74,8 @@ def stochastic_rsi(data, period=14, smooth_pct_k=3, smooth_pct_d=3):
 
     # Calculate StochRSI
     rsi_values = pd.Series(rsi_values)
-    stochrsi = (rsi - rsi.rolling(period).min()) / (rsi.rolling(period).max() - rsi.rolling(period).min())
+    stochrsi = (rsi_values - rsi_values.rolling(period).min()) / (rsi_values.rolling(period).max() - rsi_values.rolling(period).min())
     stochrsi_K = stochrsi.rolling(smooth_pct_k).mean()
     stochrsi_D = stochrsi_K.rolling(smooth_pct_d).mean()
 
-    return round(rsi_values, 2).tolist(), round(stochrsi_K * 100, 2).tolist(), round(stochrsi_D * 100, 2).tolist()
+    return round(rsi_values, 2), round(stochrsi_K * 100, 2), round(stochrsi_D * 100, 2)
