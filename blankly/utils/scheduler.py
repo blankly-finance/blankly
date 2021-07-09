@@ -26,7 +26,7 @@ import traceback
 
 
 class Scheduler:
-    def __init__(self, function, interval, initially_stopped=False, **kwargs):
+    def __init__(self, function, interval, initially_stopped=False, synced=True, **kwargs):
         """
         Wrapper for functions that run at a set interval
         Args:
@@ -40,6 +40,7 @@ class Scheduler:
         # Stop flag
         self.__stop = False
         self.__thread = None
+        self.synced = synced
 
         self.__interval = interval
         self.__kwargs = kwargs
@@ -101,9 +102,11 @@ class Scheduler:
         """
         This function is used with the scheduler decorator
         """
-        base_time = ceil_date(datetime.now(), seconds=interval).timestamp()
-        offset = base_time - time.time()
-        time.sleep(offset)
+        base_time = time.time()
+        if self.synced:
+            base_time = ceil_date(datetime.now(), seconds=interval).timestamp()
+            offset = base_time - time.time()
+            time.sleep(offset)
         while True:
             if self.__stop:
                 break

@@ -47,9 +47,9 @@ if __name__ == "__main__":
     coinbase_strategy = Strategy(coinbase_pro)
     alpaca_strategy = Strategy(alpaca)
 
-    coinbase_strategy.add_price_event(golden_cross, currency_pair='BTC-USD', resolution='15m')
-    coinbase_strategy.add_price_event(rsi, currency_pair='XLM-USD', resolution='15m')
+    coinbase_strategy.add_price_event(golden_cross, symbol='BTC-USD', resolution='15m')
+    coinbase_strategy.add_price_event(rsi, symbol='XLM-USD', resolution='15m')
 
-    alpaca_strategy.add_price_event(golden_cross, currency_pair='MSFT', resolution='15m')
-    alpaca_strategy.add_price_event(rsi, currency_pair='AAPL', resolution='15m')
+    alpaca_strategy.add_price_event(golden_cross, symbol='MSFT', resolution='15m')
+    alpaca_strategy.add_price_event(rsi, symbol='AAPL', resolution='15m')
     
