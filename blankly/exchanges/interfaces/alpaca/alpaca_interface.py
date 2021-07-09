@@ -227,6 +227,12 @@ class AlpacaInterface(ExchangeInterface):
         if found_multiple < 0:
             raise ValueError("alpaca currently does not support this specific resolution, please make the resolution a multiple of 1 minute, 1 hour or 1 day")
         
+        row_divisor = resolution // multiple
+
+        if row_divisor > 100:
+            raise Warning("The resolution you requested is an extremely high of the base resolutions supported and may slow down the performance of your model: {} * {}"
+                .format(found_multiple, row_divisor))
+
         if found_multiple == 60:
             time_interval = TimeFrame.Minute
         elif found_multiple == 3600:
@@ -234,7 +240,6 @@ class AlpacaInterface(ExchangeInterface):
         else:
             time_interval = TimeFrame.Day
 
-        row_divisor = resolution // multiple
 
         epoch_start_str = epoch_start.isoformat()
         epoch_stop_str = epoch_stop.isoformat()
