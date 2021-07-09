@@ -18,6 +18,8 @@
 import warnings
 
 from blankly.utils.time_builder import time_interval_to_seconds
+from blankly.utils import ceil_date
+from datetime import datetime
 import threading
 import time
 import traceback
@@ -99,7 +101,9 @@ class Scheduler:
         """
         This function is used with the scheduler decorator
         """
-        base_time = time.time()
+        base_time = ceil_date(datetime.now(), seconds=interval).timestamp()
+        offset = base_time - time.time()
+        time.sleep(offset)
         while True:
             if self.__stop:
                 break
@@ -110,7 +114,7 @@ class Scheduler:
                     func(**kwargs)
             except Exception:
                 traceback.print_exc()
-            base_time = base_time + interval
+            base_time += interval
 
             # The downside of this is that it keeps the thread running while waiting to stop
             # It's dependent on delay if its more efficient to just check more
