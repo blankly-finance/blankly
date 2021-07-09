@@ -151,10 +151,12 @@ def test_get_account(alpaca_mock_interface) -> None:
         assert found, "expected return element not found: %r" % answer
     # assert "exchange_specific" in return_val[0]
 
+
 def test_get_cash(alpaca_mock_interface) -> None:
     expected_answer = 262113.632
     return_val = alpaca_mock_interface.cash
     assert(return_val == expected_answer)
+
 
 def test_get_fees(alpaca_mock_interface) -> None:
     fee_response = alpaca_mock_interface.get_fees()
