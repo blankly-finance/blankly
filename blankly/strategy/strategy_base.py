@@ -85,7 +85,7 @@ class Strategy:
 
         if resolution < 10:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
-            self.Ticker_Manager.create_ticker(self.__idle_event, currency_id=currency_pair)
+            self.Ticker_Manager.create_ticker(self.__idle_event, override_symbol=currency_pair)
             self.__schedulers.append(
                 blankly.Scheduler(self.__price_event_websocket, resolution,
                                   initially_stopped=True,
@@ -133,7 +133,7 @@ class Strategy:
         variables = kwargs['variables']
         state = kwargs['state_object']  # type: StrategyState
 
-        price = self.Ticker_Manager.get_most_recent_tick(override_currency=currency_pair)
+        price = self.Ticker_Manager.get_most_recent_tick(override_symbol=currency_pair)
 
         state.variables = variables
         state.resolution = resolution
@@ -169,7 +169,7 @@ class Strategy:
 
         # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
         self.Orderbook_Manager.create_orderbook(self.__orderbook_event, initially_stopped=True,
-                                                currency_id=currency_pair,
+                                                override_symbol=currency_pair,
                                                 currency_pair=currency_pair,
                                                 user_callback=callback,
                                                 variables=variables,

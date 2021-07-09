@@ -19,39 +19,43 @@ import blankly.utils.utils
 
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tickers as Coinbase_Pro_Ticker
 from blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Binance_Ticker
+from blankly.exchanges.interfaces.alpaca.alpaca_websocket import Tickers as Alpaca_Ticker
 
 from blankly.exchanges.managers.websocket_manager import WebsocketManager
 
 
 class TickerManager(WebsocketManager):
-    def __init__(self, default_exchange, default_currency):
+    def __init__(self, default_exchange: str, default_symbol: str):
         """
         Create a new manager.
         Args:
             default_exchange: Add an exchange name for the manager to favor
-            default_currency: Add a default currency for the manager to favor
+            default_symbol: Add a default currency for the manager to favor
         """
         self.__default_exchange = default_exchange
         if default_exchange == "binance":
-            default_currency = blankly.utils.to_exchange_coin_id(default_currency, "binance").lower()
-        self.__default_currency = default_currency
+            default_symbol = blankly.utils.to_exchange_coin_id(default_symbol, "binance").lower()
+        elif default_exchange == "alpaca":
+            default_symbol = blankly.utils.to_exchange_coin_id(default_symbol, "alpaca")
+
+        self.__default_symbol = default_symbol
 
         self.__tickers = {}
         self.__tickers[default_exchange] = {}
 
         # Create abstraction for writing many different managers
-        super().__init__(self.__tickers, default_currency, default_exchange)
+        super().__init__(self.__tickers, default_symbol, default_exchange)
 
     """ 
     Manager Functions 
     """
-    def create_ticker(self, callback, log=None, currency_id=None, override_exchange=None):
+    def create_ticker(self, callback, log: str = None, override_symbol: str = None, override_exchange: str = None):
         """
         Create a ticker on a given exchange.
         Args:
             callback: Callback object for the function. Should be something like self.price_event
             log: Fill this with a path to log the price updates.
-            currency_id: The currency to create a ticker for.
+            override_symbol: The currency to create a ticker for.
             override_exchange: Override the default exchange.
         Returns:
             Direct ticker object
@@ -68,30 +72,54 @@ class TickerManager(WebsocketManager):
             exchange_name = override_exchange
 
         if exchange_name == "coinbase_pro":
-            if currency_id is None:
-                currency_id = self.__default_currency
+            if override_symbol is None:
+                override_symbol = self.__default_symbol
 
             if sandbox_mode:
-                ticker = Coinbase_Pro_Ticker(currency_id, "ticker", log=log,
+                ticker = Coinbase_Pro_Ticker(override_symbol, "ticker", log=log,
                                              WEBSOCKET_URL="wss://ws-feed-public.sandbox.pro.coinbase.com")
             else:
-                ticker = Coinbase_Pro_Ticker(currency_id, "ticker", log=log)
+                ticker = Coinbase_Pro_Ticker(override_symbol, "ticker", log=log)
 
             ticker.append_callback(callback)
             # Store this object
-            self.__tickers['coinbase_pro'][currency_id] = ticker
+            self.__tickers['coinbase_pro'][override_symbol] = ticker
             return ticker
         elif exchange_name == "binance":
-            if currency_id is None:
-                currency_id = self.__default_currency
+            if override_symbol is None:
+                override_symbol = self.__default_symbol
 
-            currency_id = blankly.utils.to_exchange_coin_id(currency_id, "binance").lower()
+            override_symbol = blankly.utils.to_exchange_coin_id(override_symbol, "binance").lower()
             if sandbox_mode:
-                ticker = Binance_Ticker(currency_id, "trade", log=log, WEBSOCKET_URL="wss://testnet.binance.vision/ws")
+                ticker = Binance_Ticker(override_symbol,
+                                        "trade",
+                                        log=log,
+                                        WEBSOCKET_URL="wss://testnet.binance.vision/ws")
             else:
-                ticker = Binance_Ticker(currency_id, "trade", log=log)
+                ticker = Binance_Ticker(override_symbol,
+                                        "trade",
+                                        log=log)
             ticker.append_callback(callback)
-            self.__tickers['binance'][currency_id] = ticker
+            self.__tickers['binance'][override_symbol] = ticker
             return ticker
+        elif exchange_name == "alpaca":
+            if override_symbol is None:
+                override_symbol = self.__default_symbol
+
+            override_symbol = blankly.utils.to_exchange_coin_id(override_symbol, "alpaca")
+            if sandbox_mode:
+                # TODO fix the trade stream
+                ticker = Alpaca_Ticker(override_symbol,
+                                       "trade_updates",
+                                       log=log,
+                                       WEBSOCKET_URL="wss://paper-api.alpaca.markets/stream")
+            else:
+                ticker = Alpaca_Ticker(override_symbol,
+                                       "trade_updates",
+                                       log=log)
+            ticker.append_callback(callback)
+            self.__tickers['alpaca'][override_symbol] = ticker
+            return ticker
+
         else:
             print(exchange_name + " ticker not supported, skipping creation")

@@ -29,7 +29,7 @@ def switch_type(stream):
     elif stream == "depth":
         return depth, depth_interface, ""
     else:
-        return no_callback, no_callback
+        return no_callback, no_callback, ""
 
 
 def no_callback(message):
