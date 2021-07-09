@@ -468,8 +468,8 @@ def get_ohlcv(candles, n):
     new_candles['volume'] = sum_period(candles['volume'].astype(float), n, True)
     new_candles['close'] = candles['close'].iloc[::n].reset_index(drop=True)
     new_candles['open'] = candles['open'].iloc[::n].reset_index(drop=True)
-    new_candles['timestamp'] = candles.index.to_series().iloc[::n].reset_index(drop=True)
-    return new_candles.set_index('timestamp')
+    new_candles['time'] = candles.index.to_series().iloc[::n].reset_index(drop=True)
+    return new_candles.set_index('time')
 
 def ceil_date(date, **kwargs):
     secs = dt.timedelta(**kwargs).total_seconds()
