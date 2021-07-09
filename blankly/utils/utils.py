@@ -22,7 +22,9 @@ import json
 import numpy
 import warnings
 import sys
+import pandas as pd
 from typing import Union
+from blankly.indicators.statistics import min_period, max_period, sum_period
 
 from sklearn.linear_model import LinearRegression
 
@@ -456,6 +458,17 @@ def update_progress(progress):
     sys.stdout.write(text)
     sys.stdout.flush()
 
+
+def get_ohlcv(candles, n):
+    if len(candles) < n:
+        raise ValueError("Not enough candles provided, required at least {} candles, but only received {}".format(n, len(candles)))
+    new_candles = pd.DataFrame()
+    new_candles['low'] = min_period(candles['low'], n, True)
+    new_candles['high'] = max_period(candles['high'], n, True)
+    new_candles['volume'] = sum_period(candles['volume'], n, True)
+    new_candles['close'] = candles['close'].iloc[::n, :]
+    new_candles['open'] = candles['open'].iloc[::n, :]
+    return new_candles
 
 class AttributeDict(dict):
     def __getattr__(self, attr):
