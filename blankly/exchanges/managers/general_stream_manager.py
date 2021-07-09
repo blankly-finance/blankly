@@ -23,23 +23,23 @@ from blankly.exchanges.managers.websocket_manager import WebsocketManager
 
 
 class GeneralManager(WebsocketManager):
-    def __init__(self, default_exchange, default_currency):
+    def __init__(self, default_exchange, default_symbol):
         self.__default_exchange = default_exchange
-        self.__default_currency = default_currency
+        self.__default_currency = default_symbol
 
         self.__websockets = {}
 
-        super().__init__(self.__websockets, default_currency, default_exchange)
+        super().__init__(self.__websockets, default_symbol, default_exchange)
 
-    def create_general_connection(self, callback, channel, log=None, asset_id=None, override_exchange=None):
+    def create_general_connection(self, callback, channel, log=None, override_symbol=None, override_exchange=None):
         """
         Create a channel on any given stream on any exchange. This is not stored in the manager object, only returned.
         """
         asset_id_cache = self.__default_currency
         exchange_cache = self.__default_exchange
 
-        if asset_id is not None:
-            asset_id_cache = asset_id
+        if override_symbol is not None:
+            asset_id_cache = override_symbol
 
         if override_exchange is not None:
             exchange_cache = override_exchange
@@ -84,38 +84,38 @@ class GeneralManager(WebsocketManager):
     """
     Create overriden method signatures
     """
-    def append_callback(self, callback_object, channel, override_currency=None, override_exchange=None):
+    def append_callback(self, callback_object, channel, override_symbol=None, override_exchange=None):
         self.websockets = self.__websockets[channel]
-        super().append_callback(callback_object, override_currency, override_exchange)
+        super().append_callback(callback_object, override_symbol, override_exchange)
 
-    def is_websocket_open(self, channel, override_currency=None, override_exchange=None):
+    def is_websocket_open(self, channel, override_symbol=None, override_exchange=None):
         self.websockets = self.__websockets[channel]
-        return super().is_websocket_open(override_currency, override_exchange)
+        return super().is_websocket_open(override_symbol, override_exchange)
 
-    def get_most_recent_time(self, channel, override_currency=None, override_exchange=None):
+    def get_most_recent_time(self, channel, override_symbol=None, override_exchange=None):
         self.websockets = self.__websockets[channel]
-        return super().get_most_recent_time(override_currency, override_exchange)
+        return super().get_most_recent_time(override_symbol, override_exchange)
 
-    def get_time_feed(self, channel, override_currency=None, override_exchange=None):
+    def get_time_feed(self, channel, override_symbol=None, override_exchange=None):
         self.websockets = self.__websockets[channel]
-        return super().get_time_feed(override_currency, override_exchange)
+        return super().get_time_feed(override_symbol, override_exchange)
 
-    def get_feed(self, channel, override_currency=None, override_exchange=None):
+    def get_feed(self, channel, override_symbol=None, override_exchange=None):
         self.websockets = self.__websockets[channel]
-        return super().get_feed(override_currency, override_exchange)
+        return super().get_feed(override_symbol, override_exchange)
 
-    def get_response(self, channel, override_currency=None, override_exchange=None):
+    def get_response(self, channel, override_symbol=None, override_exchange=None):
         self.websockets = self.__websockets[channel]
-        return super().get_response(override_currency, override_exchange)
+        return super().get_response(override_symbol, override_exchange)
 
-    def close_websocket(self, channel, override_currency=None, override_exchange=None):
+    def close_websocket(self, channel, override_symbol=None, override_exchange=None):
         self.websockets = self.__websockets[channel]
-        return super().close_websocket(override_currency, override_exchange)
+        return super().close_websocket(override_symbol, override_exchange)
 
-    def restart_ticker(self, channel, override_currency=None, override_exchange=None):
+    def restart_ticker(self, channel, override_symbol=None, override_exchange=None):
         self.websockets = self.__websockets[channel]
-        return super().restart_ticker(override_currency, override_exchange)
+        return super().restart_ticker(override_symbol, override_exchange)
 
-    def get_most_recent_tick(self, channel, override_currency=None, override_exchange=None):
+    def get_most_recent_tick(self, channel, override_symbol=None, override_exchange=None):
         self.websockets = self.__websockets[channel]
-        return super().get_most_recent_tick(override_currency, override_exchange)
+        return super().get_most_recent_tick(override_symbol, override_exchange)

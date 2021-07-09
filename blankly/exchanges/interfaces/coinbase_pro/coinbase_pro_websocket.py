@@ -53,16 +53,16 @@ def create_ticker_connection(id, url, channel):
 
 
 class Tickers(ABCExchangeWebsocket):
-    def __init__(self, currency_id, stream, log=None,
+    def __init__(self, symbol, stream, log=None,
                  pre_event_callback=None, initially_stopped=False, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
         """
         Create and initialize the ticker
         Args:
-            currency_id: Currency to initialize on such as "BTC-USD"
+            symbol: Currency to initialize on such as "BTC-USD"
             log: Fill this with a path to a log file that should be created
             WEBSOCKET_URL: Default websocket URL feed.
         """
-        self.__id = currency_id
+        self.__id = symbol
         self.__stream = stream
         self.__logging_callback, self.__interface_callback, log_message = websocket_utils.switch_type(stream)
 

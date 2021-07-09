@@ -48,15 +48,15 @@ def binance_snapshot(symbol, limit):
 
 
 class OrderbookManager(WebsocketManager):
-    def __init__(self, default_exchange, default_currency):
+    def __init__(self, default_exchange, default_symbol):
         """
         Create a new orderbook manager
         Args:
             default_exchange: Add an exchange name for the manager to favor
-            default_currency: Add a default currency for the manager to favor
+            default_symbol: Add a default currency for the manager to favor
         """
         self.__default_exchange = default_exchange
-        self.__default_currency = default_currency
+        self.__default_currency = default_symbol
 
         self.__orderbooks = {}
         self.__orderbooks[default_exchange] = {}
@@ -71,14 +71,18 @@ class OrderbookManager(WebsocketManager):
         self.__websockets_kwargs[default_exchange] = {}
 
         # Create the abstraction for adding many managers
-        super().__init__(self.__websockets, default_currency, default_exchange)
+        super().__init__(self.__websockets, default_symbol, default_exchange)
 
-    def create_orderbook(self, callback, currency_id=None, override_exchange=None, initially_stopped=False, **kwargs):
+    def create_orderbook(self, callback,
+                         override_symbol=None,
+                         override_exchange=None,
+                         initially_stopped=False,
+                         **kwargs):
         """
         Create an orderbook for a given exchange
         Args:
             callback: Callback object for the function. Should be something like self.price_event
-            currency_id: Override the default currency id
+            override_symbol: Override the default currency id
             override_exchange: Override the default exchange
             initially_stopped: Keep the websocket stopped when created
             kwargs: Add any other parameters that should be passed into a callback function to identify
@@ -95,9 +99,9 @@ class OrderbookManager(WebsocketManager):
             exchange_name = override_exchange
 
         if exchange_name == "coinbase_pro":
-            if currency_id is None:
-                currency_id = self.__default_currency
-            websocket = Coinbase_Pro_Orderbook(currency_id, "level2",
+            if override_symbol is None:
+                override_symbol = self.__default_currency
+            websocket = Coinbase_Pro_Orderbook(override_symbol, "level2",
                                                pre_event_callback=self.coinbase_snapshot_update,
                                                initially_stopped=initially_stopped
                                                )
@@ -105,20 +109,20 @@ class OrderbookManager(WebsocketManager):
             websocket.append_callback(self.coinbase_update)
 
             # Store this object
-            self.__websockets['coinbase_pro'][currency_id] = websocket
-            self.__websockets_callbacks['coinbase_pro'][currency_id] = callback
-            self.__websockets_kwargs['coinbase_pro'][currency_id] = kwargs
-            self.__orderbooks['coinbase_pro'][currency_id] = {
+            self.__websockets['coinbase_pro'][override_symbol] = websocket
+            self.__websockets_callbacks['coinbase_pro'][override_symbol] = callback
+            self.__websockets_kwargs['coinbase_pro'][override_symbol] = kwargs
+            self.__orderbooks['coinbase_pro'][override_symbol] = {
                 "buy": {},
                 "sell": {}
             }
             return websocket
         elif exchange_name == "binance":
-            if currency_id is None:
-                currency_id = self.__default_currency
+            if override_symbol is None:
+                override_symbol = self.__default_currency
 
             # Lower the keys to subscribe
-            specific_currency_id = blankly.utils.to_exchange_coin_id(currency_id, "binance").lower()
+            specific_currency_id = blankly.utils.to_exchange_coin_id(override_symbol, "binance").lower()
             websocket = Binance_Orderbook(specific_currency_id, "depth", initially_stopped=initially_stopped)
             websocket.append_callback(self.binance_update)
 
@@ -215,36 +219,36 @@ class OrderbookManager(WebsocketManager):
         self.__websockets_callbacks['binance'][symbol](self.__orderbooks['binance'][symbol],
                                                        **self.__websockets_kwargs['binance'][symbol])
 
-    def append_orderbook_callback(self, callback_object, override_currency_id=None, override_exchange=None):
+    def append_orderbook_callback(self, callback_object, override_symbol=None, override_exchange=None):
         """
         These are appended calls to a sorted orderbook. Functions added to this will be fired every time the orderbook
         changes.
         Args:
             callback_object: Reference for the callback function. The price_event(self, tick)
                 function would be passed in as just self.price_event -- no parenthesis or arguments, just the reference
-            override_currency_id: Ticker id, such as "BTC-USD" or exchange equivalents.
+            override_symbol: Ticker id, such as "BTC-USD" or exchange equivalents.
             override_exchange: Forces the manager to use a different supported exchange.
         """
-        if override_currency_id is None:
-            override_currency_id = self.__default_currency
+        if override_symbol is None:
+            override_symbol = self.__default_currency
 
         if override_exchange is None:
             override_exchange = self.__default_exchange
 
-        self.__websockets_callbacks[override_exchange][override_currency_id] = callback_object
+        self.__websockets_callbacks[override_exchange][override_symbol] = callback_object
 
-    def get_most_recent_orderbook(self, override_currency_id=None, override_exchange=None):
+    def get_most_recent_orderbook(self, override_symbol=None, override_exchange=None):
         """
         Get the most recent orderbook under a currency and exchange.
 
         Args:
-            override_currency_id: Ticker id, such as "BTC-USD" or exchange equivalents.
+            override_symbol: Ticker id, such as "BTC-USD" or exchange equivalents.
             override_exchange: Forces the manager to use a different supported exchange.
         """
-        if override_currency_id is None:
-            override_currency_id = self.__default_currency
+        if override_symbol is None:
+            override_symbol = self.__default_currency
 
         if override_exchange is None:
             override_exchange = self.__default_exchange
 
-        return self.__orderbooks[override_exchange][override_currency_id]
+        return self.__orderbooks[override_exchange][override_symbol]

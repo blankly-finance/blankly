@@ -258,6 +258,8 @@ def __check_ending(full_string, checked_ending) -> bool:
 def to_exchange_coin_id(blankly_coin_id, exchange):
     if exchange == "binance":
         return blankly_coin_id.replace('-', '')
+    if exchange == "alpaca":
+        return get_base_asset(blankly_coin_id)
     if exchange == "coinbase_pro":
         return blankly_coin_id
 
