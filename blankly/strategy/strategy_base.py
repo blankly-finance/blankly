@@ -57,7 +57,7 @@ class Strategy:
         self.__variables[hashed][key] = value
 
     def add_price_event(self, callback: typing.Callable, symbol: str, resolution: str,
-                        init: typing.Callable = None, synced: bool = True, ohlc: bool = False, **kwargs):
+                        init: typing.Callable = None, synced: bool = False, ohlc: bool = False, **kwargs):
         """
         Add Price Event
         Args:
@@ -79,6 +79,8 @@ class Strategy:
         self.__variables[callback_hash] = AttributeDict({})
         state = StrategyState(self, self.__variables[callback_hash], resolution)
 
+        if ohlc:
+            synced = True
         # run init
         if init:
             init(symbol, state)
