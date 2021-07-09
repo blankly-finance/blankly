@@ -43,3 +43,10 @@ def max_period(data, period, use_series=False) -> Any:
     data = convert_to_numpy(data)
     maximum = ti.max(data, period)
     return pd.Series(maximum) if use_series else maximum
+
+def sum_period(data, period, use_series=False) -> Any:
+    if check_series(data):
+        use_series = True
+    data = convert_to_numpy(data)
+    maximum = ti.sum(data, period)
+    return pd.Series(maximum) if use_series else maximum
