@@ -20,6 +20,7 @@
 import blankly
 from blankly.utils.utils import compare_dictionaries
 from blankly.utils.time_builder import build_hour
+from datetime import datetime
 import unittest
 import time
 import pandas as pd
@@ -219,20 +220,135 @@ class InterfaceHomogeneity(unittest.TestCase):
             responses.append(i.get_fees())
 
         self.assertTrue(compare_responses(responses))
+    
+    def test_single_point_history(self):
+        responses = []
+        for i in self.interfaces:
+            if i.get_exchange_type() == "binance":
+                responses.append(i.history('BTC-USDT', 1))
+            elif i.get_exchange_type() == "alpaca":
+                responses.append(i.history('MSFT', 1))
+            else:
+                responses.append(i.history('BTC-USD', 1))
+        for i in responses:
+            self.assertTrue(isinstance(i['time'], pd.Series))
+            self.assertTrue(isinstance(i['low'], pd.Series))
+            self.assertTrue(isinstance(i['high'], pd.Series))
+            self.assertTrue(isinstance(i['open'], pd.Series))
+            self.assertTrue(isinstance(i['close'], pd.Series))
+            self.assertTrue(isinstance(i['volume'], pd.Series))
+
+            self.assertTrue(len(i) == 1)
+
+            self.assertTrue(isinstance(i['time'][0], numpy.int64))
+            self.assertTrue(isinstance(i['low'][0], float))
+            self.assertTrue(isinstance(i['high'][0], float))
+            self.assertTrue(isinstance(i['open'][0], float))
+            self.assertTrue(isinstance(i['close'][0], float))
+            self.assertTrue(isinstance(i['volume'][0], float))
+
+    def test_point_based_history(self):
+        responses = []
+        for i in self.interfaces:
+            if i.get_exchange_type() == "binance":
+                responses.append(i.history('BTC-USDT', 300, resolution='2m'))
+            elif i.get_exchange_type() == "alpaca":
+                responses.append(i.history('MSFT', 300, resolution='2m'))
+            else:
+                responses.append(i.history('BTC-USD', 300, resolution='2m'))
+        for i in responses:
+            self.assertTrue(isinstance(i['time'], pd.Series))
+            self.assertTrue(isinstance(i['low'], pd.Series))
+            self.assertTrue(isinstance(i['high'], pd.Series))
+            self.assertTrue(isinstance(i['open'], pd.Series))
+            self.assertTrue(isinstance(i['close'], pd.Series))
+            self.assertTrue(isinstance(i['volume'], pd.Series))
+
+            self.assertTrue(len(i) == 300)
+
+            self.assertTrue(isinstance(i['time'][0], numpy.int64))
+            self.assertTrue(isinstance(i['low'][0], float))
+            self.assertTrue(isinstance(i['high'][0], float))
+            self.assertTrue(isinstance(i['open'][0], float))
+            self.assertTrue(isinstance(i['close'][0], float))
+            self.assertTrue(isinstance(i['volume'][0], float))
+
+    def test_point_with_end_history(self):
+        responses = []
+        for i in self.interfaces:
+            if i.get_exchange_type() == "binance":
+                responses.append(i.history('BTC-USDT', 300, resolution='2m', end_date='2021-06-07', ))
+            elif i.get_exchange_type() == "alpaca":
+                responses.append(i.history('MSFT', 300, resolution='2m', end_date='2021-06-07'))
+            else:
+                responses.append(i.history('BTC-USD', 300, resolution='2m', end_date='2021-06-07'))
+        for i in responses:
+            self.assertTrue(isinstance(i['time'], pd.Series))
+            self.assertTrue(isinstance(i['low'], pd.Series))
+            self.assertTrue(isinstance(i['high'], pd.Series))
+            self.assertTrue(isinstance(i['open'], pd.Series))
+            self.assertTrue(isinstance(i['close'], pd.Series))
+            self.assertTrue(isinstance(i['volume'], pd.Series))
+
+            self.assertTrue(len(i) == 300)
+            last_date = datetime.fromtimestamp(i['time'][-1]).strftime('%y-%m-%d')
+            self.assertEqual(last_date, '2021-06-07')
+
+            self.assertTrue(isinstance(i['time'][0], numpy.int64))
+            self.assertTrue(isinstance(i['low'][0], float))
+            self.assertTrue(isinstance(i['high'][0], float))
+            self.assertTrue(isinstance(i['open'][0], float))
+            self.assertTrue(isinstance(i['close'][0], float))
+            self.assertTrue(isinstance(i['volume'][0], float))
+
+    def test_start_with_end_history(self):
+        responses = []
+        start = '2021-05-07'
+        stop = '2021-06-07'
+        for i in self.interfaces:
+            if i.get_exchange_type() == "binance":
+                responses.append(i.history('BTC-USDT', resolution='1d', start_date=start, end_date=stop))
+            elif i.get_exchange_type() == "alpaca":
+                responses.append(i.history('MSFT', resolution='1d', start_date=start, end_date=stop))
+            else:
+                responses.append(i.history('BTC-USD', resolution='1d', start_date=start, end_date=stop))
+        for i in responses:
+            self.assertTrue(isinstance(i['time'], pd.Series))
+            self.assertTrue(isinstance(i['low'], pd.Series))
+            self.assertTrue(isinstance(i['high'], pd.Series))
+            self.assertTrue(isinstance(i['open'], pd.Series))
+            self.assertTrue(isinstance(i['close'], pd.Series))
+            self.assertTrue(isinstance(i['volume'], pd.Series))
+
+            start_date = datetime.fromtimestamp(i['time'][0]).strftime('%y-%m-%d')
+            end_date = datetime.fromtimestamp(i['time'][-1]).strftime('%y-%m-%d')
+            self.assertEqual(start_date, start)
+            self.assertEqual(end_date, stop)
+
+            self.assertTrue(isinstance(i['time'][0], numpy.int64))
+            self.assertTrue(isinstance(i['low'][0], float))
+            self.assertTrue(isinstance(i['high'][0], float))
+            self.assertTrue(isinstance(i['open'][0], float))
+            self.assertTrue(isinstance(i['close'][0], float))
+            self.assertTrue(isinstance(i['volume'][0], float))
 
     def test_get_product_history(self):
         # Setting for number of hours to test backwards to
         test_intervals = 100
 
         current_time = time.time()
+        current_date = datetime.fromtimestamp(current_time).strftime('%y-%m-%d')
         intervals_ago = time.time() - (build_hour() * test_intervals)
+        intervals_ago_date = datetime.fromtimestamp(intervals_ago).strftime('%y-%m-%d')
 
         responses = []
         for i in self.interfaces:
             if i.get_exchange_type() == "binance":
-                responses.append(i.get_product_history('BTC-USDT', intervals_ago, current_time, 3600))
+                responses.append(i.get_product_history('BTC-USDT', intervals_ago, current_time, 7200))
+            elif i.get_exchange_type() == "alpaca":
+                responses.append(i.get_product_history('MSFT', intervals_ago, current_time, 7200))
             else:
-                responses.append(i.get_product_history('BTC-USD', intervals_ago, current_time, 3600))
+                responses.append(i.get_product_history('BTC-USD', intervals_ago, current_time, 7200))
 
         print(responses)
 
@@ -245,6 +361,11 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.assertTrue(isinstance(i['volume'], pd.Series))
 
             self.assertTrue(len(i) == test_intervals)
+            start_date = datetime.fromtimestamp(i['time'][0]).strftime('%y-%m-%d')
+            end_date = datetime.fromtimestamp(i['time'][-1]).strftime('%y-%m-%d')
+
+            self.assertEqual(start_date, current_date)
+            self.assertEqual(end_date, intervals_ago_date)
 
             self.assertTrue(isinstance(i['time'][0], numpy.int64))
             self.assertTrue(isinstance(i['low'][0], float))
