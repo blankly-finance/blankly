@@ -35,6 +35,7 @@ class Tickers(ABCExchangeWebsocket):
             symbol: Currency to initialize on such as "btcusdt"
             stream: Stream to use, such as "depth" or "trade"
             log: Fill this with a path to a log file that should be created
+            initially_stopped: Keep the websocket closed when the websocket is created
             WEBSOCKET_URL: Default websocket URL feed.
         """
         self.__id = symbol

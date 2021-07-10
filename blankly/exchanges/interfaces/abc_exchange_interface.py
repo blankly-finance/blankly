@@ -195,19 +195,21 @@ class ABCExchangeInterface(abc.ABC):
     @abc.abstractmethod
     def history(self, 
                 symbol: str, 
-                to: Union[str, int]=200, 
-                resolution: str='1d', 
-                start_date: Union[str, datetime, float]=None, 
-                end_date: Union[str, datetime, float]=None) -> pandas.DataFrame:
+                to: Union[str, int] = 200,
+                resolution: str = '1d',
+                start_date: Union[str, datetime, float] = None,
+                end_date: Union[str, datetime, float] = None) -> pandas.DataFrame:
         """
         Wrapper for .get_product_history() which allows users to more easily get product history from right now.
         Args:
-            product_id: Blankly product ID format (BTC-USD)
-            to (str or int): The number of data points back in time either expressed as a string ("1y" meaning 1 year back") 
-                or int of points (300 points at specified resolution)
+            symbol: Blankly product ID format (BTC-USD)
+            to (str or int): The number of data points back in time either expressed as a string
+                ("1y" meaning 1 year back") or int of points (300 points at specified resolution)
             resolution: Resolution as a string (i.e. "1d", "4h", "1y")
-            start_date (str or datetime or float): Start Date for data gathering (in either string, datetime or epoch timestamp)
-            end_date (str or datetime or float): End Date for data gathering (in either string, datetime or epoch timestamp)
+            start_date (str or datetime or float): Start Date for data gathering (in either string, datetime or epoch
+                timestamp)
+            end_date (str or datetime or float): End Date for data gathering (in either string, datetime or epoch
+                timestamp)
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
             TODO add return example
