@@ -107,17 +107,16 @@ class Scheduler:
             base_time = ceil_date(datetime.now(), seconds=interval).timestamp()
             offset = base_time - time.time()
             time.sleep(offset)
+            kwargs['ohlcv_time'] = base_time
         while True:
             if self.__stop:
                 break
             try:
-                if kwargs == {}:
-                    func()
-                else:
-                    func(**kwargs)
+                func(**kwargs)
             except Exception:
                 traceback.print_exc()
             base_time += interval
+            kwargs['ohlcv_time'] += interval
 
             # The downside of this is that it keeps the thread running while waiting to stop
             # It's dependent on delay if its more efficient to just check more
