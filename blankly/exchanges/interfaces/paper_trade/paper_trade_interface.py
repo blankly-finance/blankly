@@ -277,10 +277,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         price = self.get_price(symbol)
 
         market_limits = self.get_asset_limits(symbol)
-        if "min_market_funds" in market_limits['exchange_specific']:
-            min_funds = float(market_limits["exchange_specific"]["min_market_funds"])
-        else:
-            min_funds = float(market_limits["base_min_size"]) * price
+
+        min_funds = float(market_limits["min_market_funds"])
 
         if funds < min_funds:
             raise InvalidOrder("Invalid Order: funds is too small. Minimum is: " + str(min_funds))

@@ -15,6 +15,8 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
+
 import warnings
 
 from blankly.strategy.strategy_state import StrategyState
@@ -56,20 +58,52 @@ class Strategy:
         hashed = hash(callable)
         self.__variables[hashed][key] = value
 
-    def add_price_event(self, callback: typing.Callable, symbol: str, resolution: str,
-                        init: typing.Callable = None, synced: bool = False, ohlc: bool = False, **kwargs):
+    def add_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
+                        init: typing.Callable = None, synced: bool = False, **kwargs):
         """
         Add Price Event
         Args:
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
-            currency_pair: Currency pair to create the price event for
+            symbol: Currency pair to create the price event for
+            resolution: The resolution that the callback will be run - in seconds
+            init: Callback function to allow a setup for the strategy variable. This
+                can be used for accumulating price data
+            synced: Sync the function to
+        """
+        self.__custom_price_event(callback, symbol, resolution, init, synced, kwargs=kwargs)
+
+    def add_bar_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
+                      init: typing.Callable = None, **kwargs):
+        """
+        Add Price Event
+        Args:
+            callback: The price event callback that will be added to the current ticker and run at the proper resolution
+            symbol: Currency pair to create the price event for
             resolution: The resolution that the callback will be run - in seconds
             init: Callback function to allow a setup for the strategy variable. This
                 can be used for accumulating price data
         """
+        self.__custom_price_event(callback, symbol, resolution, init, synced=True, bar=True, kwargs=kwargs)
+
+    def __custom_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
+                             init: typing.Callable = None, synced: bool = False, bar: bool = False, **kwargs):
+        """
+        Add Price Event
+        Args:
+            callback: The price event callback that will be added to the current ticker and run at the proper resolution
+            symbol: Currency pair to create the price event for
+            resolution: The resolution that the callback will be run - in seconds
+            init: Callback function to allow a setup for the strategy variable. This
+                can be used for accumulating price data
+            synced: Sync the function to
+            bar: Get the OHLCV data for a valid exchange interval
+        """
         resolution = time_interval_to_seconds(resolution)
-        
-        self.__scheduling_pair.append([symbol, resolution])
+
+        if bar:
+            self.__scheduling_pair.append([symbol, resolution, 'bar'])
+        else:
+            self.__scheduling_pair.append([symbol, resolution, 'price_event'])
         callback_hash = hash((callback, hash((symbol, resolution))))
         if callback_hash in self.__hashes:
             raise ValueError("A callback of the same type and resolution has already been made for "
@@ -79,8 +113,6 @@ class Strategy:
         self.__variables[callback_hash] = AttributeDict({})
         state = StrategyState(self, self.__variables[callback_hash], resolution)
 
-        if ohlc:
-            synced = True
         # run init
         if init:
             init(symbol, state)
@@ -108,7 +140,7 @@ class Strategy:
                                   variables=self.__variables[callback_hash],
                                   state_object=state,
                                   synced=synced,
-                                  ohlc=ohlc,
+                                  ohlc=bar,
                                   symbol=symbol, **kwargs)
             )
 
@@ -125,13 +157,19 @@ class Strategy:
         variables = kwargs['variables']
         ohlc = kwargs['ohlc']
         state = kwargs['state_object']  # type: StrategyState
+        ohlcv_time = kwargs['ohlcv_time']
 
         state.variables = variables
         state.resolution = resolution
 
         if ohlc:
-            data = self.Interface.history(symbol, 1, resolution).iloc[0].to_dict()
-            data['price'] = self.Interface.get_price(symbol)
+            while True:
+                data = self.Interface.history(symbol, 1, resolution)  # .iloc[-1].to_dict()
+                data = data.iloc[-1].to_dict()
+                data['price'] = self.Interface.get_price(symbol)
+                if data['time'] + resolution == ohlcv_time:
+                    break
+                time.sleep(1)
         else:
             data = self.Interface.get_price(symbol)
 
@@ -143,7 +181,7 @@ class Strategy:
         resolution = kwargs['resolution']
         variables = kwargs['variables']
         state = kwargs['state_object']  # type: StrategyState
-        
+
         price = self.Ticker_Manager.get_most_recent_tick(override_symbol=symbol)
 
         state.variables = variables
