@@ -206,14 +206,8 @@ class AlpacaInterface(ExchangeInterface):
             'taker_fee_rate': 0
         }
 
-    def get_product_history(self, symbol: str, epoch_start: dt, epoch_stop: dt, resolution: int):
+    def get_product_history(self, symbol: str, epoch_start: int, epoch_stop: int, resolution: int):
         assert isinstance(self.calls, alpaca_trade_api.REST)
-
-        if is_datetime_naive(epoch_start):
-            epoch_start = epoch_start.replace(tzinfo=pytz.UTC)
-
-        if is_datetime_naive(epoch_stop):
-            epoch_stop = epoch_stop.replace(tzinfo=pytz.UTC)
 
         supported_multiples = [60, 3600, 86400]
         if resolution < 60:
@@ -241,8 +235,8 @@ class AlpacaInterface(ExchangeInterface):
             time_interval = TimeFrame.Day
 
 
-        epoch_start_str = epoch_start.isoformat()
-        epoch_stop_str = epoch_stop.isoformat()
+        epoch_start_str = dt.utcfromtimestamp(epoch_start).isoformat()
+        epoch_stop_str = dt.utcfromtimestamp(epoch_stop).isoformat()
         bars = self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str, adjustment='raw').df
         bars.rename(columns={"o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"})
         return utils.get_ohlcv(bars, row_divisor)
