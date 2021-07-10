@@ -76,8 +76,8 @@ def test_get_buy_sell(alpaca_interface: AlpacaInterface) -> None:
 
 
 def test_get_product_history(alpaca_interface: AlpacaInterface) -> None:
-    start = dt.strptime("2021-02-04", "%Y-%m-%d")
-    end = dt.strptime("2021-02-05", "%Y-%m-%d")
+    start = dt.strptime("2021-02-04", "%Y-%m-%d").timestamp()
+    end = dt.strptime("2021-02-05", "%Y-%m-%d").timestamp()
 
     return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
     return_df_2 = alpaca_interface.get_product_history("AAPL", start, end, 120)
@@ -86,8 +86,8 @@ def test_get_product_history(alpaca_interface: AlpacaInterface) -> None:
 
 
 def test_get_product_history_est_timezone(alpaca_interface: AlpacaInterface) -> None:
-    start = dateparser.parse("2021-02-04 9:30AM EST")
-    end = dateparser.parse("2021-02-04 9:35AM EST")
+    start = dateparser.parse("2021-02-04 9:30AM EST").timestamp()
+    end = dateparser.parse("2021-02-04 9:35AM EST").timestamp()
 
     return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
 
@@ -97,8 +97,8 @@ def test_get_product_history_est_timezone(alpaca_interface: AlpacaInterface) -> 
 
 def test_get_product_history_default_timezone(alpaca_interface: AlpacaInterface) -> None:
     # UTC is 5 hours ahead of EST
-    start = dateparser.parse("2021-02-04 14:30AM")
-    end = dateparser.parse("2021-02-04 14:35AM")
+    start = dateparser.parse("2021-02-04 14:30AM").timestamp()
+    end = dateparser.parse("2021-02-04 14:35AM").timestamp()
 
     return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
 
