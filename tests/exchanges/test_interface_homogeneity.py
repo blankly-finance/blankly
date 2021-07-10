@@ -238,7 +238,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.assertTrue(isinstance(i['close'], pd.Series))
             self.assertTrue(isinstance(i['volume'], pd.Series))
 
-            self.assertTrue(len(i) == 1)
+            self.assertEqual(len(i), 1)
 
             self.assertTrue(isinstance(i['time'][0], numpy.int64))
             self.assertTrue(isinstance(i['low'][0], float))
@@ -251,11 +251,11 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
         for i in self.interfaces:
             if i.get_exchange_type() == "binance":
-                responses.append(i.history('BTC-USDT', 300, resolution='2m'))
+                responses.append(i.history('BTC-USDT', 150, resolution='1m'))
             elif i.get_exchange_type() == "alpaca":
-                responses.append(i.history('MSFT', 300, resolution='2m'))
+                responses.append(i.history('MSFT', 150, resolution='1m'))
             else:
-                responses.append(i.history('BTC-USD', 300, resolution='2m'))
+                responses.append(i.history('BTC-USD', 150, resolution='1m'))
         for i in responses:
             self.assertTrue(isinstance(i['time'], pd.Series))
             self.assertTrue(isinstance(i['low'], pd.Series))
@@ -264,7 +264,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.assertTrue(isinstance(i['close'], pd.Series))
             self.assertTrue(isinstance(i['volume'], pd.Series))
 
-            self.assertTrue(len(i) == 300)
+            self.assertEqual(len(i), 150)
 
             self.assertTrue(isinstance(i['time'][0], numpy.int64))
             self.assertTrue(isinstance(i['low'][0], float))
@@ -277,11 +277,11 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
         for i in self.interfaces:
             if i.get_exchange_type() == "binance":
-                responses.append(i.history('BTC-USDT', 300, resolution='2m', end_date='2021-06-07', ))
+                responses.append(i.history('BTC-USDT', 300, resolution='1h', end_date='2021-06-07', ))
             elif i.get_exchange_type() == "alpaca":
-                responses.append(i.history('MSFT', 300, resolution='2m', end_date='2021-06-07'))
+                responses.append(i.history('MSFT', 300, resolution='1h', end_date='2021-06-07'))
             else:
-                responses.append(i.history('BTC-USD', 300, resolution='2m', end_date='2021-06-07'))
+                responses.append(i.history('BTC-USD', 300, resolution='1h', end_date='2021-06-07'))
         for i in responses:
             self.assertTrue(isinstance(i['time'], pd.Series))
             self.assertTrue(isinstance(i['low'], pd.Series))
@@ -289,9 +289,9 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.assertTrue(isinstance(i['open'], pd.Series))
             self.assertTrue(isinstance(i['close'], pd.Series))
             self.assertTrue(isinstance(i['volume'], pd.Series))
-
-            self.assertTrue(len(i) == 300)
-            last_date = datetime.fromtimestamp(i['time'][-1]).strftime('%y-%m-%d')
+            print(i)
+            self.assertEqual(len(i), 300)
+            last_date = datetime.fromtimestamp(i['time'].iloc[-1]).strftime('%Y-%m-%d')
             self.assertEqual(last_date, '2021-06-07')
 
             self.assertTrue(isinstance(i['time'][0], numpy.int64))
@@ -320,8 +320,9 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.assertTrue(isinstance(i['close'], pd.Series))
             self.assertTrue(isinstance(i['volume'], pd.Series))
 
-            start_date = datetime.fromtimestamp(i['time'][0]).strftime('%y-%m-%d')
-            end_date = datetime.fromtimestamp(i['time'][-1]).strftime('%y-%m-%d')
+            start_date = datetime.fromtimestamp(i['time'][0]).strftime('%Y-%m-%d')
+            end_date = datetime.fromtimestamp(i['time'].iloc[-1]).strftime('%Y-%m-%d')
+            print(i)
             self.assertEqual(start_date, start)
             self.assertEqual(end_date, stop)
 
@@ -337,9 +338,9 @@ class InterfaceHomogeneity(unittest.TestCase):
         test_intervals = 100
 
         current_time = time.time()
-        current_date = datetime.fromtimestamp(current_time).strftime('%y-%m-%d')
+        current_date = datetime.fromtimestamp(current_time).strftime('%Y-%m-%d')
         intervals_ago = time.time() - (build_hour() * test_intervals)
-        intervals_ago_date = datetime.fromtimestamp(intervals_ago).strftime('%y-%m-%d')
+        intervals_ago_date = datetime.fromtimestamp(intervals_ago).strftime('%Y-%m-%d')
 
         responses = []
         for i in self.interfaces:
@@ -360,9 +361,9 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.assertTrue(isinstance(i['close'], pd.Series))
             self.assertTrue(isinstance(i['volume'], pd.Series))
 
-            self.assertTrue(len(i) == test_intervals)
-            start_date = datetime.fromtimestamp(i['time'][0]).strftime('%y-%m-%d')
-            end_date = datetime.fromtimestamp(i['time'][-1]).strftime('%y-%m-%d')
+            self.assertEqual(len(i), test_intervals)
+            start_date = datetime.fromtimestamp(i['time'][0]).strftime('%Y-%m-%d')
+            end_date = datetime.fromtimestamp(i['time'].iloc[-1]).strftime('%Y-%m-%d')
 
             self.assertEqual(start_date, current_date)
             self.assertEqual(end_date, intervals_ago_date)

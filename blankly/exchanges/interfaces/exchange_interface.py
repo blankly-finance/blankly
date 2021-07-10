@@ -183,7 +183,6 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 epoch_start = epoch_stop - time_interval_to_seconds(to)
         else:
             epoch_start = utils.convert_input_to_epoch(start_date)
-
         return self.get_product_history(symbol, epoch_start, epoch_stop, resolution_seconds)
 
     def get_account(self, symbol=None):
