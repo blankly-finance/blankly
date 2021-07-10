@@ -82,6 +82,9 @@ def macd(data: Any, short_period: int = 12, long_period: int = 26, signal_period
     use_series = False
     if check_series(data):
         use_series = True
-    convert_to_numpy(data)
-    macd = ti.macd(data, short_period, long_period, signal_period)
-    return pd.Series(macd) if use_series else macd
+    data = convert_to_numpy(data)
+    macd, macd_signal, macd_histogram = ti.macd(data, short_period, long_period, signal_period)
+    if use_series:
+        df = pd.DataFrame({'macd': macd, 'macd_signal': macd_signal, 'macd_histogram': macd_histogram})
+        return df
+    return macd, macd_signal, macd_histogram
