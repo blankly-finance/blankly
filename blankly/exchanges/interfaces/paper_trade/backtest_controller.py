@@ -470,7 +470,7 @@ class BackTestController:
 
         # Run this last so that the user can override what they want
         for callback in self.callbacks:
-            user_callbacks[callback.__name__] = callback(cycle_status)
+            user_callbacks[callback.__name__] = callback(dataframes)
 
         result_object = BacktestResult(dataframes, metrics_indicators, user_callbacks)
 
