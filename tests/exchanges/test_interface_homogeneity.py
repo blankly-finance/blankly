@@ -62,11 +62,11 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.interfaces.append(cls.Binance_Interface)
 
         # alpaca definition and appending
-        # cls.alpaca = blankly.alpaca(portfolio_name="alpaca test portfolio",
+        # cls.alpaca = blankly.Alpaca(portfolio_name="alpaca test portfolio",
         #                             keys_path='./tests/config/keys.json',
         #                             settings_path="./tests/config/settings.json")
         # cls.Alpaca_Interface = cls.alpaca.get_interface()
-        # cls.Interfaces.append(cls.Alpaca_Interface)
+        # cls.interfaces.append(cls.Alpaca_Interface)
 
         # Paper trade wraps binance
         cls.paper_trade_binance = blankly.PaperTrade(cls.Binance)
@@ -220,6 +220,22 @@ class InterfaceHomogeneity(unittest.TestCase):
             responses.append(i.get_fees())
 
         self.assertTrue(compare_responses(responses))
+
+    def check_product_history_types(self, df: pd.DataFrame):
+        self.assertTrue(isinstance(df['time'][0], numpy.int64))
+        self.assertTrue(isinstance(df['low'][0], float))
+        self.assertTrue(isinstance(df['high'][0], float))
+        self.assertTrue(isinstance(df['open'][0], float))
+        self.assertTrue(isinstance(df['close'][0], float))
+        self.assertTrue(isinstance(df['volume'][0], float))
+
+    def check_product_history_columns(self, df: pd.DataFrame):
+        self.assertTrue(isinstance(df['time'], pd.Series))
+        self.assertTrue(isinstance(df['low'], pd.Series))
+        self.assertTrue(isinstance(df['high'], pd.Series))
+        self.assertTrue(isinstance(df['open'], pd.Series))
+        self.assertTrue(isinstance(df['close'], pd.Series))
+        self.assertTrue(isinstance(df['volume'], pd.Series))
     
     def test_single_point_history(self):
         responses = []
@@ -231,21 +247,11 @@ class InterfaceHomogeneity(unittest.TestCase):
             else:
                 responses.append(i.history('BTC-USD', 1))
         for i in responses:
-            self.assertTrue(isinstance(i['time'], pd.Series))
-            self.assertTrue(isinstance(i['low'], pd.Series))
-            self.assertTrue(isinstance(i['high'], pd.Series))
-            self.assertTrue(isinstance(i['open'], pd.Series))
-            self.assertTrue(isinstance(i['close'], pd.Series))
-            self.assertTrue(isinstance(i['volume'], pd.Series))
+            self.check_product_history_columns(i)
 
             self.assertEqual(len(i), 1)
 
-            self.assertTrue(isinstance(i['time'][0], numpy.int64))
-            self.assertTrue(isinstance(i['low'][0], float))
-            self.assertTrue(isinstance(i['high'][0], float))
-            self.assertTrue(isinstance(i['open'][0], float))
-            self.assertTrue(isinstance(i['close'][0], float))
-            self.assertTrue(isinstance(i['volume'][0], float))
+            self.check_product_history_types(i)
 
     def test_point_based_history(self):
         responses = []
@@ -257,21 +263,11 @@ class InterfaceHomogeneity(unittest.TestCase):
             else:
                 responses.append(i.history('BTC-USD', 150, resolution='1m'))
         for i in responses:
-            self.assertTrue(isinstance(i['time'], pd.Series))
-            self.assertTrue(isinstance(i['low'], pd.Series))
-            self.assertTrue(isinstance(i['high'], pd.Series))
-            self.assertTrue(isinstance(i['open'], pd.Series))
-            self.assertTrue(isinstance(i['close'], pd.Series))
-            self.assertTrue(isinstance(i['volume'], pd.Series))
+            self.check_product_history_columns(i)
 
             self.assertEqual(len(i), 150)
 
-            self.assertTrue(isinstance(i['time'][0], numpy.int64))
-            self.assertTrue(isinstance(i['low'][0], float))
-            self.assertTrue(isinstance(i['high'][0], float))
-            self.assertTrue(isinstance(i['open'][0], float))
-            self.assertTrue(isinstance(i['close'][0], float))
-            self.assertTrue(isinstance(i['volume'][0], float))
+            self.check_product_history_types(i)
 
     def test_point_with_end_history(self):
         responses = []
@@ -283,23 +279,13 @@ class InterfaceHomogeneity(unittest.TestCase):
             else:
                 responses.append(i.history('BTC-USD', 300, resolution='1h', end_date='2021-06-07'))
         for i in responses:
-            self.assertTrue(isinstance(i['time'], pd.Series))
-            self.assertTrue(isinstance(i['low'], pd.Series))
-            self.assertTrue(isinstance(i['high'], pd.Series))
-            self.assertTrue(isinstance(i['open'], pd.Series))
-            self.assertTrue(isinstance(i['close'], pd.Series))
-            self.assertTrue(isinstance(i['volume'], pd.Series))
-            print(i)
+            self.check_product_history_columns(i)
+
             self.assertEqual(len(i), 300)
             last_date = datetime.fromtimestamp(i['time'].iloc[-1]).strftime('%Y-%m-%d')
             self.assertEqual(last_date, '2021-06-07')
 
-            self.assertTrue(isinstance(i['time'][0], numpy.int64))
-            self.assertTrue(isinstance(i['low'][0], float))
-            self.assertTrue(isinstance(i['high'][0], float))
-            self.assertTrue(isinstance(i['open'][0], float))
-            self.assertTrue(isinstance(i['close'][0], float))
-            self.assertTrue(isinstance(i['volume'][0], float))
+            self.check_product_history_types(i)
 
     def test_start_with_end_history(self):
         responses = []
@@ -313,12 +299,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             else:
                 responses.append(i.history('BTC-USD', resolution='1d', start_date=start, end_date=stop))
         for i in responses:
-            self.assertTrue(isinstance(i['time'], pd.Series))
-            self.assertTrue(isinstance(i['low'], pd.Series))
-            self.assertTrue(isinstance(i['high'], pd.Series))
-            self.assertTrue(isinstance(i['open'], pd.Series))
-            self.assertTrue(isinstance(i['close'], pd.Series))
-            self.assertTrue(isinstance(i['volume'], pd.Series))
+            self.check_product_history_columns(i)
 
             start_date = datetime.fromtimestamp(i['time'][0]).strftime('%Y-%m-%d')
             end_date = datetime.fromtimestamp(i['time'].iloc[-1]).strftime('%Y-%m-%d')
@@ -326,12 +307,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.assertEqual(start_date, start)
             self.assertEqual(end_date, stop)
 
-            self.assertTrue(isinstance(i['time'][0], numpy.int64))
-            self.assertTrue(isinstance(i['low'][0], float))
-            self.assertTrue(isinstance(i['high'][0], float))
-            self.assertTrue(isinstance(i['open'][0], float))
-            self.assertTrue(isinstance(i['close'][0], float))
-            self.assertTrue(isinstance(i['volume'][0], float))
+            self.check_product_history_types(i)
 
     def test_get_product_history(self):
         # Setting for number of hours to test backwards to
@@ -345,35 +321,23 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
         for i in self.interfaces:
             if i.get_exchange_type() == "binance":
-                responses.append(i.get_product_history('BTC-USDT', intervals_ago, current_time, 7200))
+                responses.append(i.get_product_history('BTC-USDT', intervals_ago, current_time, 3600))
             elif i.get_exchange_type() == "alpaca":
-                responses.append(i.get_product_history('MSFT', intervals_ago, current_time, 7200))
+                responses.append(i.get_product_history('MSFT', intervals_ago, current_time, 3600))
             else:
-                responses.append(i.get_product_history('BTC-USD', intervals_ago, current_time, 7200))
-
-        print(responses)
+                responses.append(i.get_product_history('BTC-USD', intervals_ago, current_time, 3600))
 
         for i in responses:
-            self.assertTrue(isinstance(i['time'], pd.Series))
-            self.assertTrue(isinstance(i['low'], pd.Series))
-            self.assertTrue(isinstance(i['high'], pd.Series))
-            self.assertTrue(isinstance(i['open'], pd.Series))
-            self.assertTrue(isinstance(i['close'], pd.Series))
-            self.assertTrue(isinstance(i['volume'], pd.Series))
+            self.check_product_history_columns(i)
 
             self.assertEqual(len(i), test_intervals)
             start_date = datetime.fromtimestamp(i['time'][0]).strftime('%Y-%m-%d')
             end_date = datetime.fromtimestamp(i['time'].iloc[-1]).strftime('%Y-%m-%d')
 
-            self.assertEqual(start_date, current_date)
-            self.assertEqual(end_date, intervals_ago_date)
+            self.assertEqual(start_date, intervals_ago_date)
+            self.assertEqual(end_date, current_date)
 
-            self.assertTrue(isinstance(i['time'][0], numpy.int64))
-            self.assertTrue(isinstance(i['low'][0], float))
-            self.assertTrue(isinstance(i['high'][0], float))
-            self.assertTrue(isinstance(i['open'][0], float))
-            self.assertTrue(isinstance(i['close'][0], float))
-            self.assertTrue(isinstance(i['volume'][0], float))
+            self.check_product_history_types(i)
 
     def test_get_asset_limits(self):
         responses = []

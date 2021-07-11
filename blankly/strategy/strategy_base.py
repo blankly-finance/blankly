@@ -164,8 +164,7 @@ class Strategy:
 
         if ohlc:
             while True:
-                data = self.Interface.history(symbol, 1, resolution)  # .iloc[-1].to_dict()
-                data = data.iloc[-1].to_dict()
+                data = self.Interface.history(symbol, 1, resolution).iloc[-1].to_dict()
                 data['price'] = self.Interface.get_price(symbol)
                 if data['time'] + resolution == ohlcv_time:
                     break
@@ -198,7 +197,7 @@ class Strategy:
         Add Orderbook Event
         Args:
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
-            currency_pair: Currency pair to create the orderbook for
+            symbol: Currency pair to create the orderbook for
             init: Callback function to allow a setup for the strategy variable. This
                 can be used for accumulating price data
         """

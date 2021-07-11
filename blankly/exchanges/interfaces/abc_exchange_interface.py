@@ -196,7 +196,7 @@ class ABCExchangeInterface(abc.ABC):
     def history(self, 
                 symbol: str, 
                 to: Union[str, int] = 200,
-                resolution: str = '1d',
+                resolution: Union[str, float] = '1d',
                 start_date: Union[str, datetime, float] = None,
                 end_date: Union[str, datetime, float] = None) -> pandas.DataFrame:
         """

@@ -174,14 +174,16 @@ def pretty_print_JSON(json_object, actually_print=True):
 def epoch_from_ISO8601(ISO8601) -> float:
     return dp.parse(ISO8601).timestamp()
 
+
 def convert_input_to_epoch(value: Union[str, dt.datetime]) -> float:
     if isinstance(value, str):
-        return dp.parse(value).timestamp()
+        return epoch_from_ISO8601(value)
     elif isinstance(value, dt.datetime):
         return value.timestamp()
     elif isinstance(value, float):
         return value
     raise ValueError("Incorrect value input given, expected string or value but got: {}".format(type(value)))
+
 
 def ISO8601_from_epoch(epoch) -> str:
     return dt.datetime.utcfromtimestamp(epoch).isoformat() + 'Z'
@@ -472,6 +474,7 @@ def get_ohlcv(candles, n):
     new_candles['open'] = candles['open'].iloc[::n].reset_index(drop=True)
     new_candles['time'] = candles.index.to_series().iloc[::n].reset_index(drop=True)
     return new_candles.set_index('time')
+
 
 def ceil_date(date, **kwargs):
     secs = dt.timedelta(**kwargs).total_seconds()
