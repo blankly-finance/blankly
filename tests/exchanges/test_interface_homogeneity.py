@@ -272,19 +272,30 @@ class InterfaceHomogeneity(unittest.TestCase):
 
     def test_point_with_end_history(self):
         responses = []
+
+        today = datetime.today()
+
+        # This won't work at the start of the month
+        end_date = datetime.today().replace(day=today.day-2)
+        close_stop = str(datetime.today().replace(day=datetime.today().day-3).date())
+
+        expected_hours = end_date.day * 24 - (24*2)
+
+        end_date_str = str(end_date.date())
+
         for i in self.interfaces:
             if i.get_exchange_type() == "binance":
-                responses.append(i.history('BTC-USDT', 300, resolution='1h', end_date='2021-06-07', ))
+                responses.append(i.history('BTC-USDT', to=expected_hours, resolution='1h', end_date=end_date_str))
             elif i.get_exchange_type() == "alpaca":
-                responses.append(i.history('MSFT', 300, resolution='1h', end_date='2021-06-07'))
+                responses.append(i.history('MSFT', to=expected_hours, resolution='1h', end_date=end_date_str))
             else:
-                responses.append(i.history('BTC-USD', 300, resolution='1h', end_date='2021-06-07'))
+                responses.append(i.history('BTC-USD', to=expected_hours, resolution='1h', end_date=end_date_str))
         for i in responses:
             self.check_product_history_columns(i)
 
-            self.assertEqual(len(i), 300)
+            self.assertEqual(len(i), expected_hours)
             last_date = datetime.fromtimestamp(i['time'].iloc[-1]).strftime('%Y-%m-%d')
-            self.assertEqual(last_date, '2021-06-07')
+            self.assertEqual(last_date, close_stop)
 
             self.check_product_history_types(i)
 
@@ -300,14 +311,13 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         for i in self.interfaces:
             if i.get_exchange_type() == "binance":
-                responses.append(i.history('BTC-USDT', resolution='1d', start_date=start, end_date=stop))
+                responses.append(i.history('BTC-USDT', resolution='1h', start_date=start, end_date=stop))
             elif i.get_exchange_type() == "alpaca":
-                responses.append(i.history('MSFT', resolution='1d', start_date=start, end_date=stop))
+                responses.append(i.history('MSFT', resolution='1h', start_date=start, end_date=stop))
             else:
-                responses.append(i.history('BTC-USD', resolution='1d', start_date=start, end_date=stop))
+                responses.append(i.history('BTC-USD', resolution='1h', start_date=start, end_date=stop))
 
         for i in responses:
-            print(i)
             self.check_product_history_columns(i)
 
             start_date = datetime.fromtimestamp(i['time'][0]).strftime('%Y-%m-%d')
@@ -317,7 +327,6 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.assertEqual(end_date, close_stop)
 
             self.check_product_history_types(i)
-            print("passed")
 
     def test_get_product_history(self):
         # Setting for number of hours to test backwards to
