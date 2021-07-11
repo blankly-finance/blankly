@@ -2,6 +2,7 @@
   "settings": {
     "account_update_time": 5000,
     "use_sandbox": true,
+    "paper_trade": false,
     "use_sandbox_websockets": false,
     "websocket_buffer_size": 10000,
 

@@ -4,3 +4,4 @@
 - Update currency_id to symbol across the interface key docs
 - Rename all `Blankly` imports to `blankly`
 - Change websocket arguments to include symbol
+- Alpaca `get_clock` in the exchange class

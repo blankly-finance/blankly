@@ -178,22 +178,26 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         # convert resolution into epoch seconds
         resolution_seconds = time_interval_to_seconds(resolution)
 
-        most_recent_valid_minute = utils.ceil_date(datetime.now(),
-                                                   seconds=resolution_seconds).timestamp() - resolution_seconds
+        # Figure out the next point and then subtract to the last stamp
+        most_recent_valid_resolution = utils.ceil_date(datetime.now(),
+                                                       seconds=resolution_seconds).timestamp() - resolution_seconds
 
         if end_date is None:
-            epoch_stop = most_recent_valid_minute
+            epoch_stop = time.time()
+            count_from = most_recent_valid_resolution
         else:
             epoch_stop = utils.convert_input_to_epoch(end_date)
+            count_from = epoch_stop
 
         if start_date is None:
-            if isinstance(to, int) or isinstance(to, float):
+            if isinstance(to, int):
                 # use number of points to calculate the start epoch
-                epoch_start = epoch_stop - (to * resolution_seconds)
+                epoch_start = count_from - (to * resolution_seconds)
             else:
-                epoch_start = epoch_stop - time_interval_to_seconds(to)
+                epoch_start = count_from - time_interval_to_seconds(to)
         else:
             epoch_start = utils.convert_input_to_epoch(start_date)
+
         return self.get_product_history(symbol, epoch_start, epoch_stop, resolution_seconds)
 
     def get_account(self, symbol=None):

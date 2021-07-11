@@ -33,3 +33,6 @@ class Alpaca(Exchange):
 
     def get_direct_calls(self) -> alpaca_trade_api.REST:
         return self.calls
+
+    def get_market_clock(self):
+        return self.calls.get_clock()
