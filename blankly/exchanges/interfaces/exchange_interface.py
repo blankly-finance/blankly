@@ -21,6 +21,8 @@ from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 import abc
 import time
+from typing import Union
+from datetime import datetime
 
 
 # TODO: need to add a cancel all orders function
@@ -166,19 +168,28 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         using_setting = self.user_preferences['settings'][self.exchange_name]['cash']
         return self.get_account(using_setting)['available']
 
-    def history(self, symbol: str, to=200, resolution: str = '1d', start_date=None, end_date=None):
-        if end_date is None:
-            epoch_stop = time.time()
-        else:
-            epoch_stop = utils.convert_input_to_epoch(end_date)
+    def history(self,
+                symbol: str,
+                to: Union[str, int] = 200,
+                resolution: Union[str, float] = '1d',
+                start_date: Union[str, datetime, float] = None,
+                end_date: Union[str, datetime, float] = None):
 
         # convert resolution into epoch seconds
         resolution_seconds = time_interval_to_seconds(resolution)
 
+        most_recent_valid_minute = utils.ceil_date(datetime.now(),
+                                                   seconds=resolution_seconds).timestamp() - resolution_seconds
+
+        if end_date is None:
+            epoch_stop = most_recent_valid_minute
+        else:
+            epoch_stop = utils.convert_input_to_epoch(end_date)
+
         if start_date is None:
             if isinstance(to, int) or isinstance(to, float):
                 # use number of points to calculate the start epoch
-                epoch_start = epoch_stop - ((to+1) * resolution_seconds)
+                epoch_start = epoch_stop - (to * resolution_seconds)
             else:
                 epoch_start = epoch_stop - time_interval_to_seconds(to)
         else:
