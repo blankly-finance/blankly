@@ -183,7 +183,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                                                        seconds=resolution_seconds).timestamp() - resolution_seconds
 
         if end_date is None:
-            epoch_stop = time.time()
+            epoch_stop = most_recent_valid_resolution - resolution_seconds
             count_from = most_recent_valid_resolution
         else:
             epoch_stop = utils.convert_input_to_epoch(end_date)

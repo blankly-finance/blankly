@@ -246,6 +246,7 @@ class InterfaceHomogeneity(unittest.TestCase):
                 responses.append(i.history('MSFT', 1))
             else:
                 responses.append(i.history('BTC-USD', 1))
+
         for i in responses:
             self.check_product_history_columns(i)
 
