@@ -289,8 +289,14 @@ class InterfaceHomogeneity(unittest.TestCase):
 
     def test_start_with_end_history(self):
         responses = []
-        start = '2021-05-07'
-        stop = '2021-06-07'
+
+        # This initial selection could fail because of the slightly random day that they delete their data
+        start = str(datetime.today().replace(day=1).date())
+        stop = str(datetime.today().date())
+
+        # The dates are offset by one because the time is the open time
+        close_stop = str(datetime.today().replace(day=datetime.today().day-1).date())
+
         for i in self.interfaces:
             if i.get_exchange_type() == "binance":
                 responses.append(i.history('BTC-USDT', resolution='1d', start_date=start, end_date=stop))
@@ -298,16 +304,19 @@ class InterfaceHomogeneity(unittest.TestCase):
                 responses.append(i.history('MSFT', resolution='1d', start_date=start, end_date=stop))
             else:
                 responses.append(i.history('BTC-USD', resolution='1d', start_date=start, end_date=stop))
+
         for i in responses:
+            print(i)
             self.check_product_history_columns(i)
 
             start_date = datetime.fromtimestamp(i['time'][0]).strftime('%Y-%m-%d')
             end_date = datetime.fromtimestamp(i['time'].iloc[-1]).strftime('%Y-%m-%d')
-            print(i)
+
             self.assertEqual(start_date, start)
-            self.assertEqual(end_date, stop)
+            self.assertEqual(end_date, close_stop)
 
             self.check_product_history_types(i)
+            print("passed")
 
     def test_get_product_history(self):
         # Setting for number of hours to test backwards to

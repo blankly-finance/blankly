@@ -585,7 +585,7 @@ class BinanceInterface(ExchangeInterface):
         """
         Returns the product history from an exchange
         Args:
-            product_id: blankly product ID format (BTC-USD)
+            symbol: blankly product ID format (BTC-USD)
             epoch_start: Time to begin download
             epoch_stop: Time to stop download
             resolution: Resolution in seconds between tick (ex: 60 = 1 per minute)
