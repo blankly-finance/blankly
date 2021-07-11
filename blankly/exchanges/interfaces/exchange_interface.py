@@ -22,6 +22,7 @@ from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInter
 import abc
 import time
 from typing import Union
+from dateutil import parser
 from datetime import datetime
 
 
@@ -178,20 +179,34 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         # convert resolution into epoch seconds
         resolution_seconds = time_interval_to_seconds(resolution)
 
-        # Figure out the next point and then subtract to the last stamp
-        most_recent_valid_resolution = utils.ceil_date(datetime.now(),
-                                                       seconds=resolution_seconds).timestamp() - resolution_seconds
-
         if end_date is None:
+            # Figure out the next point and then subtract to the last stamp
+            most_recent_valid_resolution = utils.ceil_date(datetime.now(),
+                                                           seconds=resolution_seconds).timestamp() - resolution_seconds
+            # Binance is nice enough to update OHLCV data so we have to exclude that by subtracting a resolution
             epoch_stop = most_recent_valid_resolution - resolution_seconds
             count_from = most_recent_valid_resolution
         else:
-            epoch_stop = utils.convert_input_to_epoch(end_date)
-            count_from = epoch_stop
+            if isinstance(end_date, str):
+                parsed_date = parser.parse(end_date)
+                print(parsed_date.timestamp())
+            elif isinstance(end_date, float):
+                parsed_date = datetime.fromtimestamp(end_date)
+            else:
+                parsed_date = end_date
+            valid_time_in_past = utils.ceil_date(parsed_date,
+                                                 seconds=resolution_seconds).timestamp() - resolution_seconds
+            epoch_stop = valid_time_in_past - resolution_seconds
+            count_from = valid_time_in_past
 
-        if start_date is None:
+        if start_date is None and end_date is None:
             if isinstance(to, int):
                 # use number of points to calculate the start epoch
+                epoch_start = count_from - (to * resolution_seconds)
+            else:
+                epoch_start = count_from - time_interval_to_seconds(to)
+        elif start_date is None and end_date is not None:
+            if isinstance(to, int):
                 epoch_start = count_from - (to * resolution_seconds)
             else:
                 epoch_start = count_from - time_interval_to_seconds(to)
