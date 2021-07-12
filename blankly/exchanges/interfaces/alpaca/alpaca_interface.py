@@ -111,7 +111,7 @@ class AlpacaInterface(ExchangeInterface):
             curr_symbol = position.pop('symbol')
             positions_dict[curr_symbol] = utils.AttributeDict({
                 'available': float(position.pop('qty')),
-                'hold': 0  # TODO: Calculate value on hold
+                'hold': 0
             })
 
         symbols = positions_dict.keys()
@@ -119,6 +119,9 @@ class AlpacaInterface(ExchangeInterface):
         snapshot_price = self.calls.get_snapshots(symbols=symbols)
 
         for order in open_orders:
+            if order['side'] != 'sell':
+                continue
+
             curr_symbol = order['symbol']
             if order['qty']:
                 qty = float(order['qty'])
@@ -131,7 +134,7 @@ class AlpacaInterface(ExchangeInterface):
             if symbol is not None and curr_symbol == symbol:
                 return utils.AttributeDict({
                     'available': positions_dict[curr_symbol]['available'],
-                    'hold': positions_dict[curr_symbol]['hold']  # TODO: Calculate value on hold
+                    'hold': positions_dict[curr_symbol]['hold']
                 })
 
         if symbol is not None:
