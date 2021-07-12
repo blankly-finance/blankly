@@ -146,6 +146,10 @@ class AlpacaInterface(ExchangeInterface):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         needed = self.needed['market_order']
 
+        renames = [
+            ['notional', 'funds']
+        ]
+
         order = {
             'funds': funds,
             'side': side,
@@ -154,6 +158,7 @@ class AlpacaInterface(ExchangeInterface):
         }
         response = self.calls.submit_order(symbol, side=side, type='market', time_in_force='day', notional=funds)
         response['created_at'] = parser.isoparse(response['created_at']).timestamp()
+        response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
