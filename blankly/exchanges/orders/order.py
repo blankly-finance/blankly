@@ -69,7 +69,7 @@ class Order:
         return_string = self.add_new_line(return_string, "ID: ", newline=False)
         return_string = self.add_new_line(return_string, self.get_id())
 
-        return_string = self.add_new_line(return_string, "Product ID: ", newline=False)
+        return_string = self.add_new_line(return_string, "Symbol: ", newline=False)
         return_string = self.add_new_line(return_string, self.get_asset_id())
 
         return_string = self.add_new_line(return_string, "Purchase Time: ", newline=False)

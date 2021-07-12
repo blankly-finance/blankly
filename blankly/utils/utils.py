@@ -55,7 +55,7 @@ settings_cache = None
 settings_path_override = None
 
 backtest_cache = None
-backteset_path_override = None
+backtest_path_override = None
 
 # Copy of settings to compare defaults vs overrides
 default_global_settings = {
@@ -100,13 +100,13 @@ def load_json_file(override_path=None):
 
 def load_backtest_preferences(override_path=None) -> dict:
     global backtest_cache
-    global backteset_path_override
+    global backtest_path_override
 
     # Allow this override to be evaluated anywhere
-    if override_path is None and backteset_path_override is not None:
-        override_path = backteset_path_override
+    if override_path is None and backtest_path_override is not None:
+        override_path = backtest_path_override
     elif override_path is not None:
-        backteset_path_override = override_path
+        backtest_path_override = override_path
 
     if backtest_cache is None:
         try:

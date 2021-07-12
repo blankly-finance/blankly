@@ -243,9 +243,18 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         else:
             return self.needed['market_order']
 
+    """
+    Order lifecycle should be:
+    Accepted -> live -> done -> settled
+    """
     def homogenize_order_status(self, exchange, status):
         if exchange == "binance":
             if status == "new":
                 return "open"
+        elif exchange == 'alpaca':
+            if status == 'accepted':
+                return 'accepted'
+            if status == 'new':
+                return 'new'
 
         return status
