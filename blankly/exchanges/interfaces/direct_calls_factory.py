@@ -41,7 +41,7 @@ class DirectCallsFactory:
             return calls, CoinbaseProInterface(exchange_name, calls)
 
         elif exchange_name == 'binance':
-            if preferences["settings"]["use_sandbox"] or preferences["settings"]["paper_trade"]:
+            if preferences["settings"]["use_sandbox"]:
                 calls = Client(api_key=auth.keys['API_KEY'], api_secret=auth.keys['API_SECRET'],
                                tld=preferences["settings"]['binance']["binance_tld"],
                                testnet=True)
