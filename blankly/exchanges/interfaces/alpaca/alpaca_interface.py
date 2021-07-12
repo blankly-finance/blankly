@@ -82,9 +82,13 @@ class AlpacaInterface(ExchangeInterface):
             asset['symbol'] += "-USD"
             asset['base_asset'] = base_asset
             asset['quote_asset'] = 'USD'
-            asset['base_min_size'] = -1  # TODO: Take a look at this
-            asset['base_max_size'] = -1
-            asset['base_increment'] = -1
+            if asset['fractionable']:
+                asset['base_min_size'] = .000000001
+                asset['base_increment'] = .000000001
+            else:
+                asset['base_min_size'] = 1
+                asset['base_increment'] = 1
+            asset['base_max_size'] = 10000000000
 
         for i in range(len(assets)):
             assets[i] = utils.isolate_specific(needed, assets[i])
@@ -249,13 +253,14 @@ class AlpacaInterface(ExchangeInterface):
                 found_multiple = multiple
                 break
         if found_multiple < 0:
-            raise ValueError("alpaca currently does not support this specific resolution, please make the resolution a multiple of 1 minute, 1 hour or 1 day")
+            raise ValueError("alpaca currently does not support this specific resolution, please make the resolution a "
+                             "multiple of 1 minute, 1 hour or 1 day")
         
         row_divisor = resolution // multiple
 
         if row_divisor > 100:
-            raise Warning("The resolution you requested is an extremely high of the base resolutions supported and may slow down the performance of your model: {} * {}"
-                .format(found_multiple, row_divisor))
+            raise Warning("The resolution you requested is an extremely high of the base resolutions supported and may "
+                          "slow down the performance of your model: {} * {}".format(found_multiple, row_divisor))
 
         if found_multiple == 60:
             time_interval = TimeFrame.Minute
