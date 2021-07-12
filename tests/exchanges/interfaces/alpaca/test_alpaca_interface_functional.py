@@ -28,6 +28,21 @@ def alpaca_interface():
 def test_get_exchange(alpaca_interface: AlpacaInterface) -> None:
     assert alpaca_interface.get_exchange_type() == 'alpaca'
 
+def test_get_products(alpaca_interface: AlpacaInterface) -> None:
+    return_val = alpaca_interface.get_products()
+
+    expected_answer = {
+        "symbol": "AAPL-USD",
+        "base_asset": "AAPL",
+        "quote_asset": "USD",
+        "base_min_size": -1,
+        "base_max_size": -1,
+        "base_increment": -1,
+    }
+    for k, v in expected_answer.items():
+        assert return_val[0][k] == v
+
+    assert "exchange_specific" in return_val[0]
 
 def test_get_buy_sell(alpaca_interface: AlpacaInterface) -> None:
     if not alpaca_interface.get_calls().get_clock()['is_open']:
