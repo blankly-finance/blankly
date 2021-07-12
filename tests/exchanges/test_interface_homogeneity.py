@@ -222,7 +222,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         for i in self.interfaces:
             responses.append(i.get_fees())
 
-        self.assertTrue(compare_responses(responses))
+        self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
     def check_product_history_types(self, df: pd.DataFrame):
         self.assertTrue(isinstance(df['time'][0], numpy.int64))
@@ -345,7 +345,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             if i.get_exchange_type() == "binance":
                 responses.append(i.get_product_history('BTC-USDT', intervals_ago, current_time, 3600))
             elif i.get_exchange_type() == "alpaca":
-                responses.append(i.get_product_history('MSFT', intervals_ago, current_time, 3600))
+                responses.append(i.get_produrct_history('MSFT', intervals_ago, current_time, 3600))
             else:
                 responses.append(i.get_product_history('BTC-USD', intervals_ago, current_time, 3600))
 
