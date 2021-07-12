@@ -105,6 +105,10 @@ def test_get_product_history_default_timezone(alpaca_interface: AlpacaInterface)
     assert str(return_df.index[0]) == "2021-02-04 14:30:00+00:00"
     assert (len(return_df) == 6)
 
+def test_get_account(alpaca_interface: AlpacaInterface) -> None:
+    products = alpaca_interface.get_account()
+    # todo: figure out how to iterate over an attribute dictionary
+
 
 def test_get_price(alpaca_interface: AlpacaInterface) -> None:
     price = alpaca_interface.get_price("AAPL")
