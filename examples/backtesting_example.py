@@ -35,7 +35,7 @@ if __name__ == "__main__":
     strategy.add_price_event(price_event, 'BTC-USD', resolution='1h')
 
     # The backtest function will now turn our strategy class into a class that can be backtested
-    print(strategy.backtest(  # to='1y',
+    print(strategy.backtest(to='1y',
                             initial_values={
                                             'BTC': 100000,
                                             'USD': 100000

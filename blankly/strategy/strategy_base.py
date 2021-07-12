@@ -128,6 +128,7 @@ class Strategy:
                                   variables=self.__variables[callback_hash],
                                   state_object=state,
                                   synced=synced,
+                                  ohlc=bar,
                                   symbol=symbol, **kwargs)
             )
         else:
@@ -291,6 +292,11 @@ class Strategy:
                         recalculated at consistent intervals for use in metrics & indicators.
                         This setting allows the specification of that consistent interval.
                         The value can be set to `False` to skip any recalculation.
+
+                quote_account_value_in: str = 'USD'
+                    Manually set what valuation should be used when calculating account value.
+                        Multiple types of quote currency (ex: USD and EUR) are not supported because
+                        there is no datasource for quoting pairs such as EUR-USD until forex integration.
         """
 
         start = None
@@ -336,7 +342,8 @@ class Strategy:
             backtesting_controller.append_backtest_price_event(callback=kwargs['callback'],
                                                                asset_id=kwargs['symbol'],
                                                                time_interval=i.get_interval(),
-                                                               state_object=kwargs['state_object']
+                                                               state_object=kwargs['state_object'],
+                                                               ohlc=kwargs['ohlc']
                                                                )
 
         # Run the backtest & return results

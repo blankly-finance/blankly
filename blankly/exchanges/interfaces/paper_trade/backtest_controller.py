@@ -73,6 +73,10 @@ class BackTestController:
 
         self.queue_backtest_write = False
 
+        self.quote_currency = self.preferences['settings']['quote_account_value_in']
+
+        self.initial_account = {}
+
     def sync_prices(self, save=True) -> dict:
         cache_folder = self.preferences['settings']["cache_location"]
         # Make sure the cache folder exists and read files
@@ -138,10 +142,10 @@ class BackTestController:
         # Ensure everything is up to date
         self.sync_prices(save)
 
-    def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval, state_object):
+    def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval, state_object, ohlc):
         if isinstance(time_interval, str):
             time_interval = time_interval_to_seconds(time_interval)
-        self.price_events.append([callback, asset_id, time_interval, state_object])
+        self.price_events.append([callback, asset_id, time_interval, state_object, ohlc])
 
     def __determine_price(self, asset_id, epoch):
 
@@ -203,43 +207,66 @@ class BackTestController:
         """
         self.interface.override_local_account(account_dictionary)
 
-    def format_account_data(self, local_time) -> dict:
-        available_dict = {}
+    def format_account_data(self, local_time) -> typing.Tuple[typing.Dict[typing.Union[str, typing.Any],
+                                                                          typing.Union[int, typing.Any]],
+                                                              typing.Dict[typing.Union[str, typing.Any],
+                                                                          typing.Union[int, typing.Any]]]:
+        true_available = {}
         # Grab the account status
-        account_status = self.interface.get_account()
+        true_account = self.interface.get_account()
 
         # Create an account total value
         value_total = 0
 
-        for i in account_status.keys():
+        no_trade_available = {}
+        # No trade account total
+        no_trade_value = 0
+
+        for i in true_account.keys():
             # Funds on hold are still added
-            available_dict[i] = account_status[i]['available'] + account_status[i]['hold']
+            true_available[i] = true_account[i]['available'] + true_account[i]['hold']
+            no_trade_available[i] = self.initial_account[i]['available'] + self.initial_account[i]['hold']
             currency_pair = i
 
-            # Convert to quote
-            currency_pair += '-USD'
+            # Convert to quote (this could be optimized a bit)
+            currency_pair += '-'
+            currency_pair += self.quote_currency
 
             # Get price at time
-            value_total += self.__determine_price(currency_pair, local_time) * available_dict[i]
+            price = self.__determine_price(currency_pair, local_time)
+            value_total += price * true_available[i]
+            no_trade_value += price * no_trade_available[i]
+
         # Make sure to add the time key in
-        available_dict['time'] = local_time
+        true_available['time'] = local_time
+        no_trade_available['time'] = local_time
 
-        value_total += account_status['USD']['available']
+        value_total += true_account[self.quote_currency]['available'] + true_account[self.quote_currency]['hold']
 
-        available_dict['Account Value (USD)'] = value_total
-        return available_dict
+        no_trade_value += self.initial_account[self.quote_currency]['available'] + \
+                          self.initial_account[self.quote_currency]['hold']
+
+        true_available['Account Value (' + self.quote_currency + ')'] = value_total
+
+        no_trade_available['Account Value (No Trades)'] = no_trade_value
+
+        return true_available, no_trade_available
 
     def run(self) -> BacktestResult:
         """
         Setup
         """
+
+        # Create this initial so that we can compare how our strategy performs
+        self.initial_account = self.interface.get_account()
+
         # Write our queued edits to the file
         if self.queue_backtest_write:
             write_backtest_preferences(self.preferences, self.backtest_settings_path)
 
         prices = self.sync_prices(False)
 
-        # Organize each price into this structure: [epoch, "BTC-USD", price]
+        # Organize each price into this structure: [epoch, "BTC-USD", price, open, high, low, close, volume]
         use_price = self.preferences['settings']['use_price']
         self.use_price = use_price
 
@@ -248,7 +275,6 @@ class BackTestController:
             prices[column] = prices[column].sort_values('time')
 
         self.pd_prices = {**prices}
-        # sys.exit()
 
         for k, v in prices.items():
             frame = v  # type: pd.DataFrame
@@ -258,7 +284,12 @@ class BackTestController:
 
             for index, row in frame.iterrows():
                 # TODO iterrows() is allegedly pretty slow
-                self.prices.append([row.time, k, row[use_price]])
+                self.prices.append([row.time, k, row[use_price],
+                                    row['open'],  # (index) 3
+                                    row['high'],  # 4
+                                    row['low'],  # 5
+                                    row['close'],  # 6
+                                    row['volume']])  # 7
 
         self.current_time = self.prices[0][0]
         self.initial_time = self.current_time
@@ -270,7 +301,8 @@ class BackTestController:
                 'asset_id': self.price_events[i][1],
                 'interval': self.price_events[i][2],
                 'state_object': self.price_events[i][3],
-                'next_run': self.initial_time
+                'next_run': self.initial_time,
+                'ohlc': self.price_events[i][4]
             }
 
         if prices == {} or self.price_events == []:
@@ -291,8 +323,13 @@ class BackTestController:
 
         cycle_status = pd.DataFrame(columns=column_keys)
 
+        no_trade_cycle_status = pd.DataFrame(columns=column_keys)
+
         # Append dictionaries to this to make the pandas dataframe
         price_data = []
+
+        # Append dictionaries to this to make the no trade dataframe
+        no_trade = []
 
         # Add an initial account row here
         if self.preferences['settings']['save_initial_account_value']:
@@ -317,19 +354,34 @@ class BackTestController:
                     while function_dict['next_run'] <= self.current_time:
                         local_time = function_dict['next_run']
                         # This is the actual callback to the user space
-                        function_dict['function'](self.interface.get_price(function_dict['asset_id']),
-                                                  function_dict['asset_id'], function_dict['state_object'])
+                        if function_dict['ohlc']:
+                            # This pulls all the price data out of the price array defined on line 260
+                            function_dict['function']({'open': price_array[3],
+                                                       'high': price_array[4],
+                                                       'low': price_array[5],
+                                                       'close': price_array[6],
+                                                       'volume': price_array[7]},
+
+                                                      function_dict['asset_id'],
+                                                      function_dict['state_object'])
+                        else:
+                            function_dict['function'](self.interface.get_price(function_dict['asset_id']),
+                                                      function_dict['asset_id'], function_dict['state_object'])
 
                         # Delay the next run until after the interval
                         function_dict['next_run'] += function_dict['interval']
 
-                        available_dict = self.format_account_data(local_time)
+                        available_dict, no_trade_dict = self.format_account_data(local_time)
                         price_data.append(available_dict)
+
+                        no_trade.append(no_trade_dict)
         except Exception:
             traceback.print_exc()
 
         # Push the accounts to the dataframe
         cycle_status = cycle_status.append(price_data, ignore_index=True)
+
+        no_trade_cycle_status = no_trade_cycle_status.append(no_trade, ignore_index=True)
 
         print("Creating report...")
 
@@ -381,6 +433,19 @@ class BackTestController:
                            mode="before",
                            )
 
+                    # Replica of whats above to add the no-trade line to the backtest
+                    if column == 'Account Value (' + self.quote_currency + ')':
+                        source = ColumnDataSource(data=dict(
+                            time=time,
+                            value=no_trade_cycle_status['Account Value (No Trades)'].tolist()
+                        ))
+                        p.step('time', 'value',
+                               source=source,
+                               line_width=2,
+                               color=next(color),
+                               legend_label='Account Value (No Trades)',
+                               mode="before")
+
                     p.add_tools(hover)
 
                     # Format graph
@@ -425,15 +490,17 @@ class BackTestController:
             epoch_max = epoch_backup[len(epoch_backup)-1]
 
             # Going to push this in as a single column version of our price data so that __determine_price can handle it
-            self.pd_prices['Account Value (USD)'] = pd.DataFrame()
-            self.pd_prices['Account Value (USD)'][use_price] = cycle_status['Account Value (USD)']
-            self.pd_prices['Account Value (USD)']['time'] = cycle_status['time']
+            self.pd_prices['Account Value (' + self.quote_currency + ')'] = pd.DataFrame()
+            self.pd_prices['Account Value (' + self.quote_currency + ')'][use_price] = \
+                cycle_status['Account Value (' + self.quote_currency + ')']
+
+            self.pd_prices['Account Value (' + self.quote_currency + ')']['time'] = cycle_status['time']
 
             while epoch_start <= epoch_max:
                 # Append this dict to the array
                 resampled_backing_array.append({
                     'time': epoch_start,
-                    'value': self.__determine_price('Account Value (USD)', epoch_start)
+                    'value': self.__determine_price('Account Value (' + self.quote_currency + ')', epoch_start)
                 })
 
                 # Increase the epoch value
@@ -456,7 +523,11 @@ class BackTestController:
 
             # -----=====*****=====----- I thought I stopped doing these comments when I actually learned to code
             metrics_indicators['cagr'] = metrics.cagr(dataframes)
-            metrics_indicators['cum_returns'] = metrics.cum_returns(dataframes)
+            try:
+                metrics_indicators['cum_returns'] = metrics.cum_returns(dataframes)
+            except ZeroDivisionError:
+                raise ZeroDivisionError("Division by zero when calculating cum returns. "
+                                        "Are there valid account datapoints?")
             metrics_indicators['sortino'] = metrics.sortino(dataframes)
             metrics_indicators['sharpe'] = metrics.sharpe(dataframes)
             metrics_indicators['calmar'] = metrics.calmar(dataframes)

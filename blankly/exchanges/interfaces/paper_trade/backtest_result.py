@@ -42,17 +42,6 @@ class BacktestResult:
 
     def __str__(self):
         return_string = "\n"
-        return_string += "blankly Metrics: \n"
-        for i in self.metrics.keys():
-            return_string += i + ": " + str(self.metrics[i]) + "\n"
-
-        if self.user_callbacks != {}:
-            return_string += "\n"
-            return_string += "User Callbacks: \n"
-            for i in self.user_callbacks.keys():
-                return_string += i + ": " + str(self.user_callbacks[i]) + "\n"
-
-        return_string += "\n"
         return_string += "Historical Dataframes: \n"
 
         return_string += "Account History: \n"
@@ -66,5 +55,15 @@ class BacktestResult:
         return_string += "Resampled Account Value: \n"
         return_string += self.dataframes['resampled_account_value'].__str__()
         return_string += "\n"
+
+        return_string += "blankly Metrics: \n"
+        for i in self.metrics.keys():
+            return_string += i + ": " + str(self.metrics[i]) + "\n"
+
+        if self.user_callbacks != {}:
+            return_string += "\n"
+            return_string += "User Callbacks: \n"
+            for i in self.user_callbacks.keys():
+                return_string += i + ": " + str(self.user_callbacks[i]) + "\n"
 
         return return_string
