@@ -239,8 +239,8 @@ class AlpacaInterface(ExchangeInterface):
     def get_fees(self):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         return {
-            'maker_fee_rate': 0,
-            'taker_fee_rate': 0
+            'maker_fee_rate': 0.0,
+            'taker_fee_rate': 0.0
         }
 
     def get_product_history(self, symbol: str, epoch_start: int, epoch_stop: int, resolution: int):
