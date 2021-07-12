@@ -107,7 +107,9 @@ def test_get_product_history_default_timezone(alpaca_interface: AlpacaInterface)
 
 def test_get_account(alpaca_interface: AlpacaInterface) -> None:
     products = alpaca_interface.get_account()
-    # todo: figure out how to iterate over an attribute dictionary
+    for _, val in products.items():
+        assert 'available' in val
+        assert 'hold' in val
 
 
 def test_get_price(alpaca_interface: AlpacaInterface) -> None:
