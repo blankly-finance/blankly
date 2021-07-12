@@ -100,33 +100,45 @@ class AlpacaInterface(ExchangeInterface):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         needed = self.needed['get_account']
 
-        account_dict = self.calls.get_account()
-
         positions = self.calls.list_positions()
-
         positions_dict = utils.AttributeDict({})
 
         for position in positions:
             curr_symbol = position.pop('symbol')
+            positions_dict[curr_symbol] = utils.AttributeDict({
+                'available': float(position.pop('qty')),
+                'hold': 0  # TODO: Calculate value on hold
+            })
+
+        symbols = positions_dict.keys()
+        open_orders = self.calls.list_orders(symbols=symbols)
+        snapshot_price = self.calls.get_snapshots(symbols=symbols)
+
+        for order in open_orders:
+            curr_symbol = order['symbol']
+            if order['qty']:
+                qty = float(order['qty'])
+            else:  # this is the case for notional trades, calculate the qty with cash/price
+                qty = float(order['notional']) / snapshot_price[curr_symbol]['latestTrade']['p']
+
+            positions_dict[curr_symbol]['available'] -= qty
+            positions_dict[curr_symbol]['hold'] += qty
+
             if symbol is not None and curr_symbol == symbol:
                 return utils.AttributeDict({
-                    'available': position.pop('qty'),
-                    'hold': 0  # TODO: Calculate value on hold
+                    'available': positions_dict[curr_symbol]['available'],
+                    'hold': positions_dict[curr_symbol]['hold']  # TODO: Calculate value on hold
                 })
-            positions_dict[curr_symbol] = utils.AttributeDict({
-                'available': position.pop('qty'),
-                'hold': 0  # TODO: Calculate value on hold
+
+        if symbol is not None:
+            # if we haven't found the currency, then we'll end up here
+            return utils.AttributeDict({
+                'available': 0,
+                'hold': 0
             })
 
         for key in positions_dict:
             positions_dict[key] = utils.isolate_specific(needed, positions_dict[key])
-
-        if symbol is not None:
-            # if we haven't found the currency, then we'll end up here
-            utils.AttributeDict({
-                'available': 0,
-                'hold': 0
-            })
         
         return positions_dict
 
