@@ -208,22 +208,6 @@ def alpaca_mock_interface(mocker: MockerFixture) -> None:
 #     assert alpaca_interface.get_exchange_type() == 'alpaca'
 
 
-def test_get_products(alpaca_mock_interface) -> None:
-    return_val = alpaca_mock_interface.get_products()
-
-    expected_answer = {
-        "symbol": "AAPL-USD",
-        "base_asset": "AAPL",
-        "quote_asset": "USD",
-        "base_min_size": -1,
-        "base_max_size": -1,
-        "base_increment": -1,
-    }
-    for k, v in expected_answer.items():
-        assert return_val[0][k] == v
-
-    assert "exchange_specific" in return_val[0]
-
 # TODO: make this test better
 def test_get_account(alpaca_mock_interface) -> None:
     return_val = alpaca_mock_interface.get_account()
