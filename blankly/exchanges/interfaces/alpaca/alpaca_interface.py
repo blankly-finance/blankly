@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import warnings
 
 import pytz
@@ -31,6 +30,7 @@ from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 from dateutil import parser
 from datetime import datetime as dt
+from datetime import timezone
 
 from blankly.utils.time import is_datetime_naive
 
@@ -146,7 +146,7 @@ class AlpacaInterface(ExchangeInterface):
 
         for key in positions_dict:
             positions_dict[key] = utils.isolate_specific(needed, positions_dict[key])
-        
+
         return positions_dict
 
     def market_order(self, symbol, side, funds) -> MarketOrder:
@@ -201,7 +201,7 @@ class AlpacaInterface(ExchangeInterface):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         self.calls.cancel_order(order_id)
 
-        #TODO: handle the different response codes
+        # TODO: handle the different response codes
         return {'order_id': order_id}
 
     # TODO: this doesnt exactly fit
@@ -249,7 +249,7 @@ class AlpacaInterface(ExchangeInterface):
         supported_multiples = [60, 3600, 86400]
         if resolution < 60:
             raise ValueError("alpaca does not support sub-minute candlesticks")
-        
+
         found_multiple = -1
         for multiple in reversed(supported_multiples):
             if resolution % multiple == 0:
@@ -258,7 +258,7 @@ class AlpacaInterface(ExchangeInterface):
         if found_multiple < 0:
             raise ValueError("alpaca currently does not support this specific resolution, please make the resolution a "
                              "multiple of 1 minute, 1 hour or 1 day")
-        
+
         row_divisor = resolution // multiple
 
         if row_divisor > 100:
@@ -272,9 +272,9 @@ class AlpacaInterface(ExchangeInterface):
         else:
             time_interval = TimeFrame.Day
 
+        epoch_start_str = dt.fromtimestamp(epoch_start, tz=timezone.utc).isoformat()
+        epoch_stop_str = dt.fromtimestamp(epoch_stop, tz=timezone.utc).isoformat()
 
-        epoch_start_str = dt.utcfromtimestamp(epoch_start).isoformat()
-        epoch_stop_str = dt.utcfromtimestamp(epoch_stop).isoformat()
         bars = self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str, adjustment='raw').df
         bars.rename(columns={"o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"})
         return utils.get_ohlcv(bars, row_divisor)

@@ -94,17 +94,6 @@ def test_get_product_history_est_timezone(alpaca_interface: AlpacaInterface) -> 
     assert str(return_df.index[0]) == "2021-02-04 14:30:00+00:00"
     assert (len(return_df) == 6)
 
-
-def test_get_product_history_default_timezone(alpaca_interface: AlpacaInterface) -> None:
-    # UTC is 5 hours ahead of EST
-    start = dateparser.parse("2021-02-04 14:30AM").timestamp()
-    end = dateparser.parse("2021-02-04 14:35AM").timestamp()
-
-    return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
-
-    assert str(return_df.index[0]) == "2021-02-04 14:30:00+00:00"
-    assert (len(return_df) == 6)
-
 def test_get_account(alpaca_interface: AlpacaInterface) -> None:
     products = alpaca_interface.get_account()
     for _, val in products.items():

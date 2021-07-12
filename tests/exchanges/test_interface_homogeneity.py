@@ -62,11 +62,11 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.interfaces.append(cls.Binance_Interface)
 
         # alpaca definition and appending
-        # cls.alpaca = blankly.Alpaca(portfolio_name="alpaca test portfolio",
-        #                             keys_path='./tests/config/keys.json',
-        #                             settings_path="./tests/config/settings.json")
-        # cls.Alpaca_Interface = cls.alpaca.get_interface()
-        # cls.interfaces.append(cls.Alpaca_Interface)
+        cls.alpaca = blankly.Alpaca(portfolio_name="alpaca test portfolio",
+                                    keys_path='./tests/config/keys.json',
+                                    settings_path="./tests/config/settings.json")
+        cls.Alpaca_Interface = cls.alpaca.get_interface()
+        cls.interfaces.append(cls.Alpaca_Interface)
 
         # Paper trade wraps binance
         cls.paper_trade_binance = blankly.PaperTrade(cls.Binance)
@@ -88,7 +88,10 @@ class InterfaceHomogeneity(unittest.TestCase):
     def test_get_account(self):
         responses = []
         for i in range(len(self.interfaces)):
-            responses.append(self.interfaces[i].get_account()['BTC'])
+            if self.interfaces[i].get_exchange_type() == "alpaca":
+                responses.append(self.interfaces[i].get_account()['AAPL'])
+            else:
+                responses.append(self.interfaces[i].get_account()['BTC'])
         self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
     def check_market_order(self, order1: MarketOrder, side, funds):
@@ -375,6 +378,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         for i in self.interfaces:
             if i.get_exchange_type() == "binance":
                 responses.append(i.get_price('BTC-USDT'))
+            elif i.get_exchange_type() == "alpaca":
+                responses.append(i.get_price('MSFT'))
             else:
                 responses.append(i.get_price('BTC-USD'))
 

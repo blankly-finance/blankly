@@ -42,6 +42,99 @@ class mock_alpaca_direct_calls:
         }
         return mock_account_response
 
+    def list_orders(self, symbols):
+        mock_orders_response = [{
+            "id": "61e69015-8549-4bfd-b9c3-01e75843f47d",
+            "client_order_id": "eb9e2aaa-f71a-4f51-b5b4-52a6c565dad4",
+            "created_at": "2021-03-16T18:38:01.942282Z",
+            "updated_at": "2021-03-16T18:38:01.942282Z",
+            "submitted_at": "2021-03-16T18:38:01.937734Z",
+            "filled_at": None,
+            "expired_at": None,
+            "canceled_at": None,
+            "failed_at": None,
+            "replaced_at": None,
+            "replaced_by": None,
+            "replaces": None,
+            "asset_id": "b0b6dd9d-8b9b-48a9-ba46-b9d54906e415",
+            "symbol": "AAPL",
+            "asset_class": "us_equity",
+            "notional": None,
+            "qty": 1,
+            "filled_qty": "0",
+            "filled_avg_price": None,
+            "order_class": "",
+            "order_type": "market",
+            "type": "market",
+            "side": "sell",
+            "time_in_force": "day",
+            "limit_price": None,
+            "stop_price": None,
+            "status": "accepted",
+            "extended_hours": False,
+            "legs": None,
+            "trail_percent": None,
+            "trail_price": None,
+            "hwm": None
+        }]
+
+        return mock_orders_response
+
+    def get_snapshots(self, symbols):
+        mock_snapshots = [{
+            "symbol": "AAPL",
+            "latestTrade": {
+                "t": "2021-05-11T20:00:00.435997104Z",
+                "x": "Q",
+                "p": 125.91,
+                "s": 5589631,
+                "c": [
+                    "@",
+                    "M"
+                ],
+                "i": 179430,
+                "z": "C"
+            },
+            "latestQuote": {
+                "t": "2021-05-11T22:05:02.307304704Z",
+                "ax": "P",
+                "ap": 125.68,
+                "as": 12,
+                "bx": "P",
+                "bp": 125.6,
+                "bs": 4,
+                "c": [
+                    "R"
+                ]
+            },
+            "minuteBar": {
+                "t": "2021-05-11T22:02:00Z",
+                "o": 125.66,
+                "h": 125.66,
+                "l": 125.66,
+                "c": 125.66,
+                "v": 396
+            },
+            "dailyBar": {
+                "t": "2021-05-11T04:00:00Z",
+                "o": 123.5,
+                "h": 126.27,
+                "l": 122.77,
+                "c": 125.91,
+                "v": 125863164
+            },
+            "prevDailyBar": {
+                "t": "2021-05-10T04:00:00Z",
+                "o": 129.41,
+                "h": 129.54,
+                "l": 126.81,
+                "c": 126.85,
+                "v": 79569305
+            }
+        }]
+
+        return mock_snapshots
+
     def list_positions(self):
         mock_positions_response = [{
             "asset_id": "904837e3-3b76-47ec-b432-046db621571b",
@@ -98,6 +191,7 @@ def alpaca_mock_interface(mocker: MockerFixture) -> None:
 
     return alpaca_interface
 
+
 # TODO: Need to create a functional testing package
 # @pytest.fixture
 # def alpaca_interface(mocker: MockerFixture) -> None:
@@ -130,32 +224,26 @@ def test_get_products(alpaca_mock_interface) -> None:
 
     assert "exchange_specific" in return_val[0]
 
-
+# TODO: make this test better
 def test_get_account(alpaca_mock_interface) -> None:
     return_val = alpaca_mock_interface.get_account()
 
     expected_answer = {
         "AAPL": {
-            "available": 5,
-            "hold": 0,
+            "available": 4,
+            "hold": 1,
         }
     }
-    print(return_val)
-    for answer in expected_answer:
-        found = False
-        for result in return_val:
-            
-            if is_sub_dict(expected_answer[answer], return_val[result]):
-                found = True
 
-        assert found, "expected return element not found: %r" % answer
-    # assert "exchange_specific" in return_val[0]
+    assert 'AAPL' in return_val
+    assert return_val['AAPL']['available'] == 4
+    assert return_val['AAPL']['hold'] == 1
 
 
 def test_get_cash(alpaca_mock_interface) -> None:
     expected_answer = 262113.632
     return_val = alpaca_mock_interface.cash
-    assert(return_val == expected_answer)
+    assert return_val == expected_answer
 
 
 def test_get_fees(alpaca_mock_interface) -> None:
