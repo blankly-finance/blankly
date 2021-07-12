@@ -160,6 +160,11 @@ class AlpacaInterface(ExchangeInterface):
     def limit_order(self, symbol: str, side: str, price: float, quantity: int) -> LimitOrder:
         needed = self.needed['limit_order']
 
+        renames = [
+            ['limit_price', 'price'],
+            ['qty', 'size']
+        ]
+
         order = {
             'quantity': quantity,
             'side': side,
@@ -167,9 +172,17 @@ class AlpacaInterface(ExchangeInterface):
             'symbol': symbol,
             'type': 'limit'
         }
-        response = self.calls.submit_order(symbol, side=side, type='limit', time_in_force='gtc', qty=quantity, limit_price=price)
+        response = self.calls.submit_order(symbol,
+                                           side=side,
+                                           type='limit',
+                                           time_in_force='gtc',
+                                           qty=quantity,
+                                           limit_price=price)
+
         response['created_at'] = parser.isoparse(response['created_at']).timestamp()
+        response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
+        response['time_in_force'] = response['time_in_force'].upper()
         return LimitOrder(order, response, self)
 
     def cancel_order(self, symbol, order_id) -> dict:
