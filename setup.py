@@ -37,7 +37,8 @@ setup(
         'alpaca-trade-api',
         'pytest',
         'bokeh',
-        'pytest-mock'
+        'pytest-mock',
+        'pandas_market_calendars'
     ],
     classifiers=[
         # Possible: "3 - Alpha", "4 - Beta" or "5 - Production/Stable"

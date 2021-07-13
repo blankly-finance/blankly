@@ -37,6 +37,7 @@ import warnings
 import time
 import threading
 import traceback
+import decimal
 
 
 class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
@@ -45,7 +46,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         self.get_products_cache = None
         self.get_fees_cache = None
-        self.get_asset_limits_cache = None
+        self.get_order_filter_cache = None
 
         self.__exchange_properties = None
 
@@ -278,10 +279,22 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         market_limits = self.get_order_filter(symbol)
 
-        min_funds = float(market_limits["min_market_funds"])
+        min_funds = market_limits['market_order'][side]["min_funds"]
+
+        max_funds = market_limits['market_order'][side]["max_funds"]
 
         if funds < min_funds:
-            raise InvalidOrder("Invalid Order: funds is too small. Minimum is: " + str(min_funds))
+            raise InvalidOrder("Funds is too small. Minimum is: " + str(min_funds))
+
+        if funds > max_funds:
+            raise InvalidOrder("Funds is too large. Maximum is: " + str(max_funds))
+
+        quote_increment = market_limits['market_order']['quote_increment']
+
+        # Test if funds has more decimals than the increment. The increment is the maximum resolution of the quote.
+        if abs(decimal.Decimal(
+                str(funds)).as_tuple().exponent) > abs(decimal.Decimal(str(quote_increment)).as_tuple().exponent):
+            raise InvalidOrder("Fund resolution is too high, maximum resolution is: " + str(quote_increment))
 
         qty = funds / price
 
@@ -364,9 +377,38 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             'type': 'limit'
         }
         creation_time = self.time()
-        min_base = float(self.get_order_filter(symbol)["base_min_size"])
+
+        order_filter = self.get_order_filter(symbol)
+
+        min_base = float(order_filter['limit_order']["base_min_size"])
+        max_base = float(order_filter['limit_order']["base_max_size"])
+
         if size < min_base:
-            raise InvalidOrder("Invalid Order: Order quantity is too small. Minimum is: " + str(min_base))
+            raise InvalidOrder("Order quantity is too small. Minimum is: " + str(min_base))
+
+        if size > max_base:
+            raise InvalidOrder("Order quantity is too large. Maximum is: " + str(max_base))
+
+        min_price = float(order_filter['limit_order']["min_price"])
+        max_price = float(order_filter['limit_order']["max_price"])
+
+        if price < min_price:
+            raise InvalidOrder("Order quantity is too small. Minimum is: " + str(min_price))
+
+        if price > max_price:
+            raise InvalidOrder("Order quantity is too large. Maximum is: " + str(max_price))
+
+        # Check if the passed parameters are more accurate than either of the max base resolution or max price
+        # resolution
+        price_increment = order_filter['limit_order']['price_increment']
+        if abs(decimal.Decimal(
+                str(price)).as_tuple().exponent) > abs(decimal.Decimal(str(price_increment)).as_tuple().exponent):
+            raise InvalidOrder("Fund resolution is too high, maximum resolution is: " + str(price_increment))
+
+        base_increment = order_filter['limit_order']['base_increment']
+        if abs(decimal.Decimal(
+                str(size)).as_tuple().exponent) > abs(decimal.Decimal(str(base_increment)).as_tuple().exponent):
+            raise InvalidOrder("Fund resolution is too high, maximum resolution is: " + str(base_increment))
 
         # Test the trade
         trade_local.test_trade(symbol, side, size, price)
@@ -465,9 +507,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
     def get_order_filter(self, symbol):
         if self.backtesting:
-            if self.get_asset_limits_cache is None:
-                self.get_asset_limits_cache = self.calls.get_order_filter(symbol)
-            return self.get_asset_limits_cache
+            if self.get_order_filter_cache is None:
+                self.get_order_filter_cache = self.calls.get_order_filter(symbol)
+            return self.get_order_filter_cache
         else:
             return self.calls.get_order_filter(symbol)
 

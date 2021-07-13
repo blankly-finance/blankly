@@ -784,13 +784,16 @@ class BinanceInterface(ExchangeInterface):
                 "base_min_size": min_quantity,  # Minimum size to buy
                 "base_max_size": max_quantity,  # Maximum size to buy
                 "base_increment": base_increment,  # Specifies the minimum increment for the base_asset.
+
+                "price_increment": quote_increment,
+
                 "min_price": min_price,
                 "max_price": max_price,
             },
             'market_order': {
                 "fractionable": True,
                 "quote_increment": quote_increment,  # Specifies the min order price as well as the price increment.
-                "buy:": {
+                "buy": {
                     "min_funds": min_market_notational,
                     "max_funds": max_market_notational,
                 },

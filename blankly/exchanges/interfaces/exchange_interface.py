@@ -116,7 +116,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 ['maker_fee_rate', float],
                 ['taker_fee_rate', float]
             ],
-            'get_asset_limits': [
+            'get_order_filter': [
                 ["symbol", str],
                 ["base_asset", str],
                 ["quote_asset", str],

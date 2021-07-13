@@ -329,13 +329,16 @@ class AlpacaInterface(ExchangeInterface):
                 "base_min_size": base_min_size,  # Minimum size to buy
                 "base_max_size": base_max_size,  # Maximum size to buy
                 "base_increment": base_increment,  # Specifies the minimum increment for the base_asset.
+
+                "price_increment": .01,  # TODO test this at market open
+
                 "min_price": min_price,
                 "max_price": max_price,
             },
             'market_order': {
                 "fractionable": fractionable,
                 "quote_increment": quote_increment,  # Specifies the min order price as well as the price increment.
-                "buy:": {
+                "buy": {
                     "min_funds": min_funds_buy,
                     "max_funds": max_funds,
                 },
