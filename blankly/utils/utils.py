@@ -29,7 +29,7 @@ import pytz
 from blankly.utils.time_builder import time_interval_to_seconds
 import pandas_market_calendars as mcal
 from blankly.indicators.statistics import min_period, max_period, sum_period
-
+from datetime import timezone
 from sklearn.linear_model import LinearRegression
 
 
@@ -500,8 +500,8 @@ def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_
         return end_epoch - 4 * 86400 # worst case is three day weekend at 9:30am open
 
     temp_start = end_epoch - limit * resolution * resolution_multiplier
-    end_date = dt.datetime.fromtimestamp(end_epoch).astimezone(pytz.UTC)
-    start_date = dt.datetime.fromtimestamp(temp_start).astimezone(pytz.UTC)
+    end_date = dt.datetime.fromtimestamp(end_epoch, tz=timezone.utc)
+    start_date = dt.datetime.fromtimestamp(temp_start, tz=timezone.utc)
 
     schedule = nyse.schedule(start_date=start_date, end_date=end_date)
     date_range = mcal.date_range(schedule, frequency='1D')
