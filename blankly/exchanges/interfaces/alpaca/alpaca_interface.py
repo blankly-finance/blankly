@@ -337,14 +337,24 @@ class AlpacaInterface(ExchangeInterface):
                 "quote_increment": quote_increment,  # Specifies the min order price as well as the price increment.
                 "buy:": {
                     "min_funds": min_funds_buy,
-                    "max_market_funds": max_funds,
+                    "max_funds": max_funds,
                 },
                 "sell": {
                     "min_funds": min_funds_sell,
-                    "max_market_funds": max_funds,
+                    "max_funds": max_funds,
                 },
             },
-            "exchange_specific": {}
+            "exchange_specific": {
+                "id": product['id'],
+                "class": product['class'],
+                "exchange": product['exchange'],
+                "status": product['status'],
+                "tradable": product['tradable'],
+                "marginable": product['marginable'],
+                "shortable": product['shortable'],
+                "easy_to_borrow": product['easy_to_borrow'],
+                "price": current_price
+            }
         }
 
     def get_price(self, symbol) -> float:
