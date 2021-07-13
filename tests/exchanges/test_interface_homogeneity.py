@@ -364,7 +364,7 @@ class InterfaceHomogeneity(unittest.TestCase):
 
             self.check_product_history_types(i)
 
-    def test_get_asset_limits(self):
+    def test_get_order_filter(self):
         responses = []
 
         for i in self.interfaces:

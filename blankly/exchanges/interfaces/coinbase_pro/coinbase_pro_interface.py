@@ -530,23 +530,26 @@ class CoinbaseProInterface(ExchangeInterface):
             "quote_asset": products.pop('quote_currency'),
             "max_orders": 1000000000000,
             "limit_order": {
-                "base_min_size": products.pop('base_min_size'),  # Minimum size to buy
-                "base_max_size": products.pop('base_max_size'),  # Maximum size to buy
-                "base_increment": products.pop('base_increment'),  # Specifies the minimum increment for the base_asset.
-                "min_price": products['quote_increment'],
+                "base_min_size": float(products.pop('base_min_size')),    # Minimum size to buy
+                "base_max_size": float(products.pop('base_max_size')),    # Maximum size to buy
+                "base_increment": float(products.pop('base_increment')),  # Specifies the minimum increment
+                                                                          # for the base_asset.
+                "price_increment": float(products['quote_increment']),
+
+                "min_price": float(products['quote_increment']),
                 "max_price": 9999999999,
             },
             'market_order': {
                 "fractionable": True,
-                "quote_increment": products.pop('quote_increment'),  # Specifies the min order price as well
-                                                                     # as the price increment.
-                "buy:": {
-                    "min_funds": products['min_market_funds'],
-                    "max_funds": products['max_market_funds'],
+                "quote_increment": float(products.pop('quote_increment')),  # Specifies the min order price as well
+                                                                            # as the price increment.
+                "buy": {
+                    "min_funds": float(products['min_market_funds']),
+                    "max_funds": float(products['max_market_funds']),
                 },
                 "sell": {
-                    "min_funds": products.pop('min_market_funds'),
-                    "max_funds": products.pop('max_market_funds'),
+                    "min_funds": float(products.pop('min_market_funds')),
+                    "max_funds": float(products.pop('max_market_funds')),
                 },
             },
             "exchange_specific": {**products}
