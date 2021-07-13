@@ -507,8 +507,6 @@ def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_
     return start_date.timestamp()
 
 
-
-
 class AttributeDict(dict):
     def __getattr__(self, attr):
         return self[attr]
