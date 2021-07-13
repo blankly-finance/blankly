@@ -264,6 +264,7 @@ class AlpacaInterface(ExchangeInterface):
                              "multiple of 1 minute, 1 hour or 1 day")
 
         row_divisor = resolution / found_multiple
+        row_divisor = int(row_divisor)
 
         if row_divisor > 100:
             raise Warning("The resolution you requested is an extremely high of the base resolutions supported and may "
