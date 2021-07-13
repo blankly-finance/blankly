@@ -466,6 +466,7 @@ def update_progress(progress):
     sys.stdout.write(text)
     sys.stdout.flush()
 
+
 def split_df(df, n):
     return df.groupby(np.arange(len(df)) // n)
 
@@ -486,6 +487,7 @@ def get_ohlcv(candles, n):
     print(new_candles)
     return new_candles
 
+
 # TODO: change this
 def get_ohlcv_2(candles, n):
     if len(candles) < n:
@@ -502,9 +504,11 @@ def get_ohlcv_2(candles, n):
     new_candles['time'] = new_candles['time'].apply(lambda x: np.int64(x))
     return new_candles
 
+
 def ceil_date(date, **kwargs):
     secs = dt.timedelta(**kwargs).total_seconds()
     return dt.datetime.fromtimestamp(date.timestamp() + secs - date.timestamp() % secs)
+
 
 def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_multiplier):
     OVERESTIMATE_CONSTANT = 1.5
