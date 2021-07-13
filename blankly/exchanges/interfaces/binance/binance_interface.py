@@ -483,15 +483,6 @@ class BinanceInterface(ExchangeInterface):
 
     def get_order(self, symbol, order_id) -> dict:
         """
-        :param symbol: required
-        :type symbol: str
-        :param orderId: The unique order id
-        :type orderId: int
-        :param origClientOrderId: optional
-        :type origClientOrderId: str
-        :param recvWindow: the number of milliseconds the request is valid for
-        :type recvWindow: int
-
         {
             "symbol": "LTCBTC",
             "orderId": 1,
@@ -788,16 +779,26 @@ class BinanceInterface(ExchangeInterface):
             "symbol": symbol,
             "base_asset": symbol_data["baseAsset"],
             "quote_asset": symbol_data["quoteAsset"],
-            "base_min_size": min_quantity,  # Minimum size to buy
-            "base_max_size": max_quantity,  # Maximum size to buy
-            "quote_increment": quote_increment,  # Specifies the min order price as well as the price increment.
-            "base_increment": base_increment,  # Specifies the minimum increment for the base_asset.
             "max_orders": max_orders,
-            "min_price": min_price,
-            "max_price": max_price,
-            "min_market_funds": min_market_notational,
-            "max_market_funds": max_market_notational,
-            "fractional_limit": True,
+            "limit_order": {
+                "base_min_size": min_quantity,  # Minimum size to buy
+                "base_max_size": max_quantity,  # Maximum size to buy
+                "base_increment": base_increment,  # Specifies the minimum increment for the base_asset.
+                "min_price": min_price,
+                "max_price": max_price,
+            },
+            'market_order': {
+                "fractionable": True,
+                "quote_increment": quote_increment,  # Specifies the min order price as well as the price increment.
+                "buy:": {
+                    "min_funds": min_market_notational,
+                    "max_market_funds": max_market_notational,
+                },
+                "sell": {
+                    "min_funds": min_market_notational,
+                    "max_market_funds": max_market_notational,
+                },
+            },
             "exchange_specific": {}
         }
 

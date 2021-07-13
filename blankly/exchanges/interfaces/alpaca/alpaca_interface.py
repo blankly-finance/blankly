@@ -24,10 +24,11 @@ from alpaca_trade_api.rest import TimeFrame
 from blankly.utils import utils as utils
 from blankly.exchanges.interfaces.alpaca.alpaca_api import API
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
-import alpaca_trade_api
-
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
+from blankly.utils.exceptions import APIException
+
+import alpaca_trade_api
 from dateutil import parser
 from datetime import datetime as dt
 from datetime import timezone
@@ -79,7 +80,7 @@ class AlpacaInterface(ExchangeInterface):
 
         for asset in assets:
             base_asset = asset['symbol']
-            asset['symbol'] += "-USD"
+            asset['symbol'] = base_asset
             asset['base_asset'] = base_asset
             asset['quote_asset'] = 'USD'
             if asset['fractionable']:
@@ -282,7 +283,69 @@ class AlpacaInterface(ExchangeInterface):
     # TODO: tbh not sure how this one works or if it applies to alpaca
     def get_asset_limits(self, symbol: str):
         assert isinstance(self.calls, alpaca_trade_api.REST)
-        pass
+        current_price = self.get_price(symbol)
+
+        products = self.get_products()
+
+        product = None
+        for i in products:
+            if products['symbol'] == symbol:
+                product = i
+                break
+        if product is None:
+            raise APIException("Symbol not found.")
+
+        fractionable = product['fractionable']
+
+        if fractionable:
+            quote_increment = 1e-9
+            min_funds_buy = 1
+            min_funds_sell = 1e-9 * current_price
+
+            base_min_size = 1e-9
+            base_max_size = 1000000000
+            base_increment = 1e-9
+            min_price = 0
+            max_price = 10000000000
+        else:
+            quote_increment = current_price
+            min_funds_buy = current_price
+            min_funds_sell = current_price
+
+            base_min_size = 1
+            base_max_size = 1000000000
+            base_increment = 1
+            min_price = 0
+            max_price = 10000000000
+
+        max_funds = current_price * 10000000000
+
+        return {
+            "symbol": symbol,
+            "base_asset": symbol,
+            "quote_asset": 'USD',
+            "max_orders": 500,  # More than this and we can't calculate account value (alpaca is very bad)
+            "limit_order": {
+                "base_min_size": base_min_size,  # Minimum size to buy
+                "base_max_size": base_max_size,  # Maximum size to buy
+                "base_increment": base_increment,  # Specifies the minimum increment for the base_asset.
+                "min_price": min_price,
+                "max_price": max_price,
+            },
+            'market_order': {
+                "fractionable": fractionable,
+                "quote_increment": quote_increment,  # Specifies the min order price as well as the price increment.
+                "buy:": {
+                    "min_funds": min_funds_buy,
+                    "max_market_funds": max_funds,
+                },
+                "sell": {
+                    "min_funds": min_funds_sell,
+                    "max_market_funds": max_funds,
+                },
+            },
+            "exchange_specific": {}
+        }
 
     def get_price(self, symbol) -> float:
         assert isinstance(self.calls, alpaca_trade_api.REST)
