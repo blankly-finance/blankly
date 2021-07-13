@@ -20,7 +20,6 @@ import blankly.utils.utils as utils
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 import abc
-import time
 from typing import Union
 from dateutil import parser
 from datetime import datetime
@@ -121,16 +120,9 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 ["symbol", str],
                 ["base_asset", str],
                 ["quote_asset", str],
-                ["base_min_size", float],  # Minimum size to buy
-                ["base_max_size", float],  # Maximum size to buy
-                ["quote_increment", float],  # Specifies the min order price as well as the price increment.
-                ["base_increment", float],  # Specifies the minimum increment for the base_asset.
-                ["max_orders", int],
-                ["min_market_funds", float],
-                ["max_market_funds", float],
-                ["min_price", float],
-                ["max_price", float],
-                ["fractional_limit", bool]
+                ["max_orders", float],
+                ["limit_order", dict],
+                ["market_order", dict]
             ]
         }
 
