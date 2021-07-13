@@ -792,11 +792,11 @@ class BinanceInterface(ExchangeInterface):
                 "quote_increment": quote_increment,  # Specifies the min order price as well as the price increment.
                 "buy:": {
                     "min_funds": min_market_notational,
-                    "max_market_funds": max_market_notational,
+                    "max_funds": max_market_notational,
                 },
                 "sell": {
                     "min_funds": min_market_notational,
-                    "max_market_funds": max_market_notational,
+                    "max_funds": max_market_notational,
                 },
             },
             "exchange_specific": {}

@@ -490,11 +490,6 @@ class CoinbaseProInterface(ExchangeInterface):
 
     def get_asset_limits(self, symbol: str):
         needed = self.needed['get_asset_limits']
-        renames = [
-            ["id", "symbol"],
-            ["base_currency", "base_asset"],
-            ["quote_currency", "quote_asset"]
-        ]
         """
         Returns:
         list: List of available currency pairs. Example::
@@ -530,13 +525,33 @@ class CoinbaseProInterface(ExchangeInterface):
         if products is None:
             raise LookupError("Specified market not found")
 
-        products = utils.rename_to(renames, products)
-        products["min_price"] = products['base_min_size']
-        # These don't really exist on this exchange
-        products["max_price"] = 9999999999  # This is actually the max price
-        products["max_orders"] = 1000000000000  # there is no limit
-        products["fractional_limit"] = True
-        return utils.isolate_specific(needed, products)
+        return {
+            "symbol": products.pop('id'),
+            "base_asset": products.pop('base_currency'),
+            "quote_asset": products.pop('quote_currency'),
+            "max_orders": 1000000000000,
+            "limit_order": {
+                "base_min_size": products.pop('base_min_size'),  # Minimum size to buy
+                "base_max_size": products.pop('base_max_size'),  # Maximum size to buy
+                "base_increment": products.pop('base_increment'),  # Specifies the minimum increment for the base_asset.
+                "min_price": products['quote_increment'],
+                "max_price": 9999999999,
+            },
+            'market_order': {
+                "fractionable": True,
+                "quote_increment": products.pop('quote_increment'),  # Specifies the min order price as well
+                                                                     # as the price increment.
+                "buy:": {
+                    "min_funds": products['min_market_funds'],
+                    "max_funds": products['max_market_funds'],
+                },
+                "sell": {
+                    "min_funds": products.pop('min_market_funds'),
+                    "max_funds": products.pop('max_market_funds'),
+                },
+            },
+            "exchange_specific": {**products}
+        }
 
     def get_price(self, symbol) -> float:
         """
