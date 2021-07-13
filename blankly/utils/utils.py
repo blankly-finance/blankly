@@ -474,7 +474,8 @@ def get_ohlcv(candles, n):
     new_candles['close'] = candles['close'].iloc[::n].reset_index(drop=True)
     new_candles['open'] = candles['open'].iloc[::n].reset_index(drop=True)
     new_candles['time'] = candles.index.to_series().iloc[::n].reset_index(drop=True)
-    return new_candles.set_index('time')
+    new_candles['time'] = new_candles['time'].apply(lambda x: numpy.int64(x.timestamp()))
+    return new_candles
 
 
 def ceil_date(date, **kwargs):
