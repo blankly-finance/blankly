@@ -276,7 +276,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         creation_time = self.time()
         price = self.get_price(symbol)
 
-        market_limits = self.get_asset_limits(symbol)
+        market_limits = self.get_order_filter(symbol)
 
         min_funds = float(market_limits["min_market_funds"])
 
@@ -364,7 +364,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             'type': 'limit'
         }
         creation_time = self.time()
-        min_base = float(self.get_asset_limits(symbol)["base_min_size"])
+        min_base = float(self.get_order_filter(symbol)["base_min_size"])
         if size < min_base:
             raise InvalidOrder("Invalid Order: Order quantity is too small. Minimum is: " + str(min_base))
 
@@ -463,13 +463,13 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         else:
             return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
-    def get_asset_limits(self, symbol):
+    def get_order_filter(self, symbol):
         if self.backtesting:
             if self.get_asset_limits_cache is None:
-                self.get_asset_limits_cache = self.calls.get_asset_limits(symbol)
+                self.get_asset_limits_cache = self.calls.get_order_filter(symbol)
             return self.get_asset_limits_cache
         else:
-            return self.calls.get_asset_limits(symbol)
+            return self.calls.get_order_filter(symbol)
 
     def get_price(self, symbol) -> float:
         if self.backtesting:
