@@ -288,19 +288,22 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         for i in self.interfaces:
             if i.get_exchange_type() == "binance":
-                responses.append(i.history('BTC-USDT', to=expected_hours, resolution='1h', end_date=end_date_str))
+                responses.append((i.history('BTC-USDT', to=expected_hours, resolution='1h', end_date=end_date_str), 'binance'))
             elif i.get_exchange_type() == "alpaca":
-                responses.append(i.history('MSFT', to=expected_hours, resolution='1h', end_date=end_date_str))
+                responses.append((i.history('MSFT', to=expected_hours, resolution='1h', end_date=end_date_str), 'alpaca'))
             else:
-                responses.append(i.history('BTC-USD', to=expected_hours, resolution='1h', end_date=end_date_str))
+                responses.append((i.history('BTC-USD', to=expected_hours, resolution='1h', end_date=end_date_str), 'coinbase_pro'))
         for i in responses:
-            self.check_product_history_columns(i)
+            self.check_product_history_columns(i[0])
 
-            self.assertEqual(len(i), expected_hours)
-            last_date = datetime.fromtimestamp(i['time'].iloc[-1]).strftime('%Y-%m-%d')
+            # TODO: add a seperate alpaca length check
+            if i[1] != 'alpaca':
+                self.assertEqual(len(i[0]), expected_hours)
+
+            last_date = datetime.fromtimestamp(i[0]['time'].iloc[-1]).strftime('%Y-%m-%d')
             self.assertEqual(last_date, close_stop)
 
-            self.check_product_history_types(i)
+            self.check_product_history_types(i[0])
 
     def test_start_with_end_history(self):
         responses = []
@@ -345,7 +348,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             if i.get_exchange_type() == "binance":
                 responses.append(i.get_product_history('BTC-USDT', intervals_ago, current_time, 3600))
             elif i.get_exchange_type() == "alpaca":
-                responses.append(i.get_produrct_history('MSFT', intervals_ago, current_time, 3600))
+                responses.append(i.get_product_history('MSFT', intervals_ago, current_time, 3600))
             else:
                 responses.append(i.get_product_history('BTC-USD', intervals_ago, current_time, 3600))
 
