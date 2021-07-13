@@ -25,7 +25,8 @@ from math import ceil
 import sys
 import pandas as pd
 from typing import Union
-from time_builder import time_interval_to_seconds
+import pytz
+from blankly.utils.time_builder import time_interval_to_seconds
 import pandas_market_calendars as mcal
 from blankly.indicators.statistics import min_period, max_period, sum_period
 
@@ -485,25 +486,27 @@ def ceil_date(date, **kwargs):
     secs = dt.timedelta(**kwargs).total_seconds()
     return dt.datetime.fromtimestamp(date.timestamp() + secs - date.timestamp() % secs)
 
-
 def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_multiplier):
     OVERESTIMATE_CONSTANT = 1.5
     
     nyse = mcal.get_calendar('NYSE')
     required_length = ceil(limit * OVERESTIMATE_CONSTANT)
     resolution = time_interval_to_seconds(resolution_str)
+
     temp_start = end_epoch - limit * resolution * resolution_multiplier
-    end_date = dt.datetime.fromtimestamp(end_epoch)
-    start_date = dt.datetime.fromtimestamp(temp_start)
+    end_date = dt.datetime.fromtimestamp(end_epoch).astimezone(pytz.UTC)
+    start_date = dt.datetime.fromtimestamp(temp_start).astimezone(pytz.UTC)
 
     schedule = nyse.schedule(start_date=start_date, end_date=end_date)
-    date_range = mcal.date_range(schedule, frequency=resolution_str)
+    date_range = mcal.date_range(schedule, frequency='1D')
 
+    count = 1
     while len(date_range) < required_length: 
-        temp_start -= resolution * resolution_multiplier * OVERESTIMATE_CONSTANT
+        temp_start -= 3600 * OVERESTIMATE_CONSTANT * count
         start_date = dt.datetime.fromtimestamp(temp_start)
         schedule = nyse.schedule(start_date=start_date, end_date=end_date)
-        date_range = mcal.date_range(schedule, frequency=resolution_str)
+        date_range = mcal.date_range(schedule, frequency='1D')
+        count += 1
 
     return temp_start
 
