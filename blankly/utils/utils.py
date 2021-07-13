@@ -24,6 +24,8 @@ import warnings
 import sys
 import pandas as pd
 from typing import Union
+from time_builder import time_interval_to_seconds
+import pandas_market_calendars as mcal
 from blankly.indicators.statistics import min_period, max_period, sum_period
 
 from sklearn.linear_model import LinearRegression
@@ -481,6 +483,30 @@ def get_ohlcv(candles, n):
 def ceil_date(date, **kwargs):
     secs = dt.timedelta(**kwargs).total_seconds()
     return dt.datetime.fromtimestamp(date.timestamp() + secs - date.timestamp() % secs)
+
+
+def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_multiplier):
+    OVERESTIMATE_CONSTANT = 1.5
+    
+    nyse = mcal.get_calendar('NYSE')
+    resolution = time_interval_to_seconds(resolution_str)
+    temp_start = end_epoch - limit * resolution * resolution_multiplier
+    end_date = dt.datetime.fromtimestamp(end_epoch)
+    start_date = dt.datetime.fromtimestamp(temp_start)
+
+    schedule = nyse.schedule(start_date=start_date, end_date=end_date)
+    date_range = mcal.date_range(schedule, frequency=resolution_str)
+
+    while len(date_range) < limit * OVERESTIMATE_CONSTANT: 
+        temp_start -= limit * resolution * resolution_multiplier * OVERESTIMATE_CONSTANT
+        start_date = dt.datetime.fromtimestamp(temp_start)
+
+        schedule = nyse.schedule(start_date=start_date, end_date=end_date)
+        date_range = mcal.date_range(schedule, frequency=resolution_str)
+
+    return start_date.timestamp()
+
+
 
 
 class AttributeDict(dict):
