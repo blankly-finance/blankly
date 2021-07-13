@@ -19,7 +19,7 @@
 import datetime as dt
 import dateutil.parser as dp
 import json
-import numpy
+import numpy as np
 import warnings
 from math import ceil
 import sys
@@ -198,8 +198,8 @@ def get_price_derivative(ticker, point_number):
     """
     Performs regression n points back
     """
-    feed = numpy.array(ticker.get_ticker_feed()).reshape(-1, 1)
-    times = numpy.array(ticker.get_time_feed()).reshape(-1, 1)
+    feed = np.array(ticker.get_ticker_feed()).reshape(-1, 1)
+    times = np.array(ticker.get_time_feed()).reshape(-1, 1)
     if point_number > len(feed):
         point_number = len(feed)
 
@@ -208,7 +208,7 @@ def get_price_derivative(ticker, point_number):
     prices = []
     for i in range(point_number):
         prices.append(feed[i][0]["price"])
-    prices = numpy.array(prices).reshape(-1, 1)
+    prices = np.array(prices).reshape(-1, 1)
 
     regressor = LinearRegression()
     regressor.fit(times, prices)
@@ -237,7 +237,7 @@ def fit_parabola(ticker, point_number):
     for i in range(len(prices)):
         times[i] = times[i] - latest_time
 
-    return numpy.polyfit(times, prices, 2, full=True)
+    return np.polyfit(times, prices, 2, full=True)
 
 
 def to_blankly_coin_id(asset_id, exchange, quote_guess=None) -> str:
@@ -466,19 +466,24 @@ def update_progress(progress):
     sys.stdout.write(text)
     sys.stdout.flush()
 
+def split_df(df, n):
+    return df.groupby(np.arange(len(df)) // n)
+
 
 def get_ohlcv(candles, n):
     if len(candles) < n:
         raise ValueError("Not enough candles provided, required at least {} candles, "
                          "but only received {}".format(n, len(candles)))
     new_candles = pd.DataFrame()
-    new_candles['low'] = min_period(candles['low'], n, True)
-    new_candles['high'] = max_period(candles['high'], n, True)
-    new_candles['volume'] = sum_period(candles['volume'].astype(float), n, True)
+    df = split_df(candles, n)
+    new_candles['high'] = df['high'].max().reset_index(drop=True)
+    new_candles['low'] = df['low'].min().reset_index(drop=True)
+    new_candles['volme'] = df['volume'].sum().reset_index(drop=True)
     new_candles['close'] = candles['close'].iloc[::n].reset_index(drop=True)
     new_candles['open'] = candles['open'].iloc[::n].reset_index(drop=True)
     new_candles['time'] = candles.index.to_series().iloc[::n].reset_index(drop=True)
-    new_candles['time'] = new_candles['time'].apply(lambda x: numpy.int64(x.timestamp()))
+    new_candles['time'] = new_candles['time'].apply(lambda x: np.int64(x.timestamp()))
+    print(new_candles)
     return new_candles
 
 # TODO: change this
@@ -487,13 +492,14 @@ def get_ohlcv_2(candles, n):
         raise ValueError("Not enough candles provided, required at least {} candles, "
                          "but only received {}".format(n, len(candles)))
     new_candles = pd.DataFrame()
-    new_candles['low'] = min_period(candles['low'], n, True)
-    new_candles['high'] = max_period(candles['high'], n, True)
-    new_candles['volume'] = sum_period(candles['volume'].astype(float), n, True)
+    df = split_df(candles, n)
+    new_candles['high'] = df['high'].max().reset_index(drop=True)
+    new_candles['low'] = df['low'].min().reset_index(drop=True)
+    new_candles['volme'] = df['volume'].sum().reset_index(drop=True)
     new_candles['close'] = candles['close'].iloc[0::n].reset_index(drop=True)
     new_candles['open'] = candles['open'].iloc[0::n].reset_index(drop=True)
     new_candles['time'] = candles['time'].iloc[0::n].reset_index(drop=True).astype('int64')
-    new_candles['time'] = new_candles['time'].apply(lambda x: numpy.int64(x))
+    new_candles['time'] = new_candles['time'].apply(lambda x: np.int64(x))
     return new_candles
 
 def ceil_date(date, **kwargs):

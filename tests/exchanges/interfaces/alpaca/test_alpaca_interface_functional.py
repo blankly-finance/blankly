@@ -7,6 +7,7 @@ import pytest
 from blankly.exchanges.interfaces.alpaca.alpaca_interface import AlpacaInterface
 from pathlib import Path
 import datetime
+import dateparser as dp
 import time
 import pytz
 from datetime import datetime as dt
@@ -108,8 +109,8 @@ def test_get_product_history_est_timezone(alpaca_interface: AlpacaInterface) -> 
     end = dateparser.parse("2021-02-04 9:35AM EST").timestamp()
 
     return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
-
-    assert str(return_df.index[0]) == "2021-02-04 14:30:00+00:00"
+    desired_timestamp = dp.parse("2021-02-04 14:30:00+00:00").timestamp()
+    assert return_df.iloc[0]['time'] == desired_timestamp
     assert (len(return_df) == 6)
 
 def test_get_product_history_custom(alpaca_interface: AlpacaInterface) -> None:
