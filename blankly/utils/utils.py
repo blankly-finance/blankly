@@ -481,6 +481,20 @@ def get_ohlcv(candles, n):
     new_candles['time'] = new_candles['time'].apply(lambda x: numpy.int64(x.timestamp()))
     return new_candles
 
+# TODO: change this
+def get_ohlcv_2(candles, n):
+    if len(candles) < n:
+        raise ValueError("Not enough candles provided, required at least {} candles, "
+                         "but only received {}".format(n, len(candles)))
+    new_candles = pd.DataFrame()
+    new_candles['low'] = min_period(candles['low'], n, True)
+    new_candles['high'] = max_period(candles['high'], n, True)
+    new_candles['volume'] = sum_period(candles['volume'].astype(float), n, True)
+    new_candles['close'] = candles['close'].iloc[0::n].reset_index(drop=True)
+    new_candles['open'] = candles['open'].iloc[0::n].reset_index(drop=True)
+    new_candles['time'] = candles['time'].iloc[0::n].reset_index(drop=True).astype('int64')
+    new_candles['time'] = new_candles['time'].apply(lambda x: numpy.int64(x))
+    return new_candles
 
 def ceil_date(date, **kwargs):
     secs = dt.timedelta(**kwargs).total_seconds()

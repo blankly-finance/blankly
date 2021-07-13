@@ -26,7 +26,7 @@ from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestRes
 
 import typing
 import pandas as pd
-from datetime import datetime
+from datetime import datetime as dt
 import traceback
 from bokeh.plotting import figure, show, ColumnDataSource
 from bokeh.layouts import column as bokeh_columns
@@ -414,7 +414,7 @@ class BackTestController:
 
             color = Category10_10.__iter__()
 
-            time = [datetime.fromtimestamp(ts) for ts in cycle_status['time']]
+            time = [dt.fromtimestamp(ts) for ts in cycle_status['time']]
 
             for column in cycle_status:
                 if column != 'time' and (not (cycle_status[column][0] == cycle_status[column].iloc[-1]) or

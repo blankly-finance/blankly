@@ -18,6 +18,7 @@
 
 import warnings
 
+import dateparser
 import pytz
 from alpaca_trade_api.rest import TimeFrame
 
@@ -27,13 +28,15 @@ from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.utils.exceptions import APIException
-
+import pandas as pd
 import alpaca_trade_api
 from dateutil import parser
 from datetime import datetime as dt
 from datetime import timezone
+from typing import Union
 
 from blankly.utils.time import is_datetime_naive
+from blankly.utils.time_builder import time_interval_to_seconds
 
 NY = 'America/New_York'
 
@@ -260,7 +263,7 @@ class AlpacaInterface(ExchangeInterface):
             raise ValueError("alpaca currently does not support this specific resolution, please make the resolution a "
                              "multiple of 1 minute, 1 hour or 1 day")
 
-        row_divisor = resolution // multiple
+        row_divisor = resolution / found_multiple
 
         if row_divisor > 100:
             raise Warning("The resolution you requested is an extremely high of the base resolutions supported and may "
@@ -277,8 +280,72 @@ class AlpacaInterface(ExchangeInterface):
         epoch_stop_str = dt.fromtimestamp(epoch_stop, tz=timezone.utc).isoformat()
 
         bars = self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str, adjustment='raw').df
-        bars.rename(columns={"o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"})
+        bars.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"}, inplace=True)
         return utils.get_ohlcv(bars, row_divisor)
+
+    def history(self,
+                symbol: str,
+                to: Union[str, int] = None,
+                resolution: Union[str, float] = '1d',
+                start_date: Union[str, dt, float] = None,
+                end_date: Union[str, dt, float] = None):
+
+        assert isinstance(self.calls, alpaca_trade_api.REST)
+        if not to and not start_date:
+            raise ValueError("history() call needs only 1 of {start_date, to} defined")
+        if to and start_date:
+            raise ValueError("history() call needs only 1 of {start_date, to} defined")
+
+        # convert end_date to datetime object
+        if isinstance(end_date, str):
+            end_date = dateparser.parse(end_date)
+        elif isinstance(end_date, float):
+            end_date = dt.fromtimestamp(end_date)
+
+        # end_date object is naive datetime, so need to convert
+        if end_date.tzinfo is None or end_date.tzinfo.utcoffset(end_date) is None:
+            end_date = end_date.replace(tzinfo=timezone.utc)
+
+        alpaca_v1_resolutions = [60 * 1, 60 * 5, 60 * 15, 60 * 60 * 24]
+
+        # convert resolution into epoch seconds
+        resolution_seconds = time_interval_to_seconds(resolution)
+
+        found_multiple = -1
+        for multiple in reversed(alpaca_v1_resolutions):
+            if resolution_seconds % multiple == 0:
+                found_multiple = multiple
+                break
+        if found_multiple < 0:
+            raise ValueError("alpaca currently does not support this specific resolution, please make the resolution a "
+                             "multiple of 1 minute, 1 hour or 1 day")
+
+        row_divisor = resolution_seconds / found_multiple
+        row_divisor = int(row_divisor)
+
+        if row_divisor > 100:
+            raise Warning("The resolution you requested is an extremely high of the base resolutions supported and may "
+                          "slow down the performance of your model: {} * {}".format(found_multiple, row_divisor))
+
+        if found_multiple == 60:
+            time_interval = '1Min'
+        elif found_multiple == 60 * 5:
+            time_interval = '5Min'
+        elif found_multiple == 60 * 15:
+            time_interval = '15Min'
+        elif found_multiple == 60 * 60 * 24:
+            time_interval = '1D'
+
+        if to:
+            aggregated_limit = to * row_divisor
+            bars = self.calls.get_barset(symbol, time_interval, limit=int(aggregated_limit), end=end_date.isoformat())[symbol]
+            # bars.rename(columns={"o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"})
+            # return utils.get_ohlcv(bars, row_divisor)
+
+        return_df = pd.DataFrame(bars)
+        return_df.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"}, inplace=True)
+
+        return utils.get_ohlcv_2(return_df, row_divisor)
 
     # TODO: tbh not sure how this one works or if it applies to alpaca
     def get_order_filter(self, symbol: str):
