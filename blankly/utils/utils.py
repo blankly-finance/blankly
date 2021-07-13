@@ -493,6 +493,12 @@ def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_
     required_length = ceil(limit * OVERESTIMATE_CONSTANT)
     resolution = time_interval_to_seconds(resolution_str)
 
+    if resolution == 60 and limit < (1440 / resolution_multiplier):
+        return end_epoch - 7 * 86400
+
+    if resolution == 3600 and limit < (24 / resolution_multiplier):
+        return end_epoch - 7 * 86400
+
     temp_start = end_epoch - limit * resolution * resolution_multiplier
     end_date = dt.datetime.fromtimestamp(end_epoch).astimezone(pytz.UTC)
     start_date = dt.datetime.fromtimestamp(temp_start).astimezone(pytz.UTC)
