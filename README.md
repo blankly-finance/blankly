@@ -25,7 +25,8 @@
 
 Blankly is an elegant python library for interacting with many crypto and stock exchanges for automated portfolios in a consistent way. Blankly offers a powerful feature-set, optimized for speed and ease of use. 
 
-We abstract away all the code related to connecting to exchanges (i.e. Coinbase Pro, Binance, and Stock Exchanges), order submission (Limit, Market, and Stop Limit), order book, and price data (historical and real-time at your designated resolution) so that you can focus on building your models. 
+We're bridging the gap between local development systems & live APIs by building a framework which allows backtesting, 
+paper trading, sandbox testing, and live deployment without modifying a single line of trading logic.
 
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
 
@@ -66,7 +67,7 @@ For more info, and ways to do more advanced things, check out our [getting start
 
 We have a pre-built cookbook examples that implement strategies such as RSI, MACD, and the Golden Cross found in our [examples](https://docs.blankly.finance/examples).
 
-We have made Blankly extremely easy to integrate with any existing models and price events so that you can focus on develpoing a better model.
+We have made Blankly extremely easy to integrate with any existing models and price events to make it super easy to switch.
 
 ```python
 import blankly
@@ -98,7 +99,7 @@ def price_event(price: float, ticker: str, state: StrategyState):
 
 # Easily run setup code
 def strategy_init(currency_pair, state: StrategyState):
-    state.variables['history'] = state.interface.history(product_id=currency_pair,
+    state.variables['history'] = state.interface.history(symbol=currency_pair,
                                                          to='4w',
                                                          resolution='1h')['close'].tolist()
 
@@ -112,14 +113,14 @@ if __name__ == "__main__":
 
     # Run the code above with a new price once a day
     strategy.add_price_event(price_event,
-                             currency_pair='BTC-USD',
+                             symbol='BTC-USD',
                              resolution='1h',
                              # Pass an init function to run before any price events
                              init=strategy_init)
 
     # Run the code above with a new price once every thirty minutes
     strategy.add_price_event(price_event,
-                             currency_pair='LINK-USD',
+                             symbol='LINK-USD',
                              resolution='1h',
                              init=strategy_init)
 
