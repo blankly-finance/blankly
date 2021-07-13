@@ -22,7 +22,7 @@ from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInter
 import abc
 from typing import Union
 from dateutil import parser
-from datetime import datetime
+from datetime import datetime as dt
 
 
 # TODO: need to add a cancel all orders function
@@ -165,15 +165,15 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 symbol: str,
                 to: Union[str, int] = 200,
                 resolution: Union[str, float] = '1d',
-                start_date: Union[str, datetime, float] = None,
-                end_date: Union[str, datetime, float] = None):
+                start_date: Union[str, dt, float] = None,
+                end_date: Union[str, dt, float] = None):
 
         # convert resolution into epoch seconds
         resolution_seconds = time_interval_to_seconds(resolution)
 
         if end_date is None:
             # Figure out the next point and then subtract to the last stamp
-            most_recent_valid_resolution = utils.ceil_date(datetime.now(),
+            most_recent_valid_resolution = utils.ceil_date(dt.now(),
                                                            seconds=resolution_seconds).timestamp() - resolution_seconds
             # Binance is nice enough to update OHLCV data so we have to exclude that by subtracting a resolution
             epoch_stop = most_recent_valid_resolution - resolution_seconds
@@ -183,7 +183,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 parsed_date = parser.parse(end_date)
                 print(parsed_date.timestamp())
             elif isinstance(end_date, float):
-                parsed_date = datetime.fromtimestamp(end_date)
+                parsed_date = dt.fromtimestamp(end_date)
             else:
                 parsed_date = end_date
             valid_time_in_past = utils.ceil_date(parsed_date,

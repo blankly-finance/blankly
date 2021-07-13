@@ -1,3 +1,5 @@
+import alpaca_trade_api
+
 from blankly.exchanges.interfaces.alpaca.alpaca_auth import AlpacaAuth
 from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 import pytest
@@ -109,6 +111,13 @@ def test_get_product_history_est_timezone(alpaca_interface: AlpacaInterface) -> 
 
     assert str(return_df.index[0]) == "2021-02-04 14:30:00+00:00"
     assert (len(return_df) == 6)
+
+def test_get_product_history_custom(alpaca_interface: AlpacaInterface) -> None:
+    assert isinstance(alpaca_interface.calls, alpaca_trade_api.REST)
+    end = dateparser.parse("2021-02-04 9:35AM EST")
+
+    return_df = alpaca_interface.history("AAPL", to=10, resolution='1h', end_date=end)
+    assert (len(return_df) == 10)
 
 def test_get_account(alpaca_interface: AlpacaInterface) -> None:
     products = alpaca_interface.get_account()

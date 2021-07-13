@@ -19,7 +19,7 @@ import warnings
 
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import ceil_date
-from datetime import datetime
+from datetime import datetime as dt
 import threading
 import time
 import traceback
@@ -104,7 +104,7 @@ class Scheduler:
         """
         base_time = time.time()
         if self.synced:
-            base_time = ceil_date(datetime.now(), seconds=interval).timestamp()
+            base_time = ceil_date(dt.now(), seconds=interval).timestamp()
             offset = base_time - time.time()
             time.sleep(offset)
             kwargs['ohlcv_time'] = base_time

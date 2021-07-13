@@ -20,7 +20,7 @@
 import blankly
 from blankly.utils.utils import compare_dictionaries
 from blankly.utils.time_builder import build_hour
-from datetime import datetime
+from datetime import datetime as dt
 import unittest
 import time
 import pandas as pd
@@ -276,11 +276,11 @@ class InterfaceHomogeneity(unittest.TestCase):
     def test_point_with_end_history(self):
         responses = []
 
-        today = datetime.today()
+        today = dt.today()
 
         # This won't work at the start of the month
-        end_date = datetime.today().replace(day=today.day-2)
-        close_stop = str(datetime.today().replace(day=datetime.today().day-3).date())
+        end_date = dt.today().replace(day=today.day-2)
+        close_stop = str(dt.today().replace(day=dt.today().day-3).date())
 
         expected_hours = end_date.day * 24 - (24*2)
 
@@ -300,7 +300,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             if i[1] != 'alpaca':
                 self.assertEqual(len(i[0]), expected_hours)
 
-            last_date = datetime.fromtimestamp(i[0]['time'].iloc[-1]).strftime('%Y-%m-%d')
+            last_date = dt.fromtimestamp(i[0]['time'].iloc[-1]).strftime('%Y-%m-%d')
             self.assertEqual(last_date, close_stop)
 
             self.check_product_history_types(i[0])
@@ -309,11 +309,11 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
 
         # This initial selection could fail because of the slightly random day that they delete their data
-        start = str(datetime.today().replace(day=1).date())
-        stop = str(datetime.today().date())
+        start = str(dt.today().replace(day=1).date())
+        stop = str(dt.today().date())
 
         # The dates are offset by one because the time is the open time
-        close_stop = str(datetime.today().replace(day=datetime.today().day-1).date())
+        close_stop = str(dt.today().replace(day=dt.today().day-1).date())
 
         for i in self.interfaces:
             if i.get_exchange_type() == "binance":
@@ -326,8 +326,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         for i in responses:
             self.check_product_history_columns(i)
 
-            start_date = datetime.fromtimestamp(i['time'][0]).strftime('%Y-%m-%d')
-            end_date = datetime.fromtimestamp(i['time'].iloc[-1]).strftime('%Y-%m-%d')
+            start_date = dt.fromtimestamp(i['time'][0]).strftime('%Y-%m-%d')
+            end_date = dt.fromtimestamp(i['time'].iloc[-1]).strftime('%Y-%m-%d')
 
             self.assertEqual(start_date, start)
             self.assertEqual(end_date, close_stop)
@@ -339,9 +339,9 @@ class InterfaceHomogeneity(unittest.TestCase):
         test_intervals = 100
 
         current_time = time.time()
-        current_date = datetime.fromtimestamp(current_time).strftime('%Y-%m-%d')
+        current_date = dt.fromtimestamp(current_time).strftime('%Y-%m-%d')
         intervals_ago = time.time() - (build_hour() * test_intervals)
-        intervals_ago_date = datetime.fromtimestamp(intervals_ago).strftime('%Y-%m-%d')
+        intervals_ago_date = dt.fromtimestamp(intervals_ago).strftime('%Y-%m-%d')
 
         responses = []
         for i in self.interfaces:
@@ -356,8 +356,8 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.check_product_history_columns(i)
 
             self.assertEqual(len(i), test_intervals)
-            start_date = datetime.fromtimestamp(i['time'][0]).strftime('%Y-%m-%d')
-            end_date = datetime.fromtimestamp(i['time'].iloc[-1]).strftime('%Y-%m-%d')
+            start_date = dt.fromtimestamp(i['time'][0]).strftime('%Y-%m-%d')
+            end_date = dt.fromtimestamp(i['time'].iloc[-1]).strftime('%Y-%m-%d')
 
             self.assertEqual(start_date, intervals_ago_date)
             self.assertEqual(end_date, current_date)

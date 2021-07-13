@@ -21,7 +21,7 @@ import abc
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 import pandas
-from datetime import datetime
+from datetime import datetime as dt
 from typing import Union
 
 
@@ -197,8 +197,8 @@ class ABCExchangeInterface(abc.ABC):
                 symbol: str, 
                 to: Union[str, int] = 200,
                 resolution: Union[str, float] = '1d',
-                start_date: Union[str, datetime, float] = None,
-                end_date: Union[str, datetime, float] = None) -> pandas.DataFrame:
+                start_date: Union[str, dt, float] = None,
+                end_date: Union[str, dt, float] = None) -> pandas.DataFrame:
         """
         Wrapper for .get_product_history() which allows users to more easily get product history from right now.
         Args:
