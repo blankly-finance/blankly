@@ -357,33 +357,34 @@ class AlpacaInterface(ExchangeInterface):
 
         product = None
         for i in products:
-            if products['symbol'] == symbol:
+            if i['symbol'] == symbol:
                 product = i
                 break
         if product is None:
             raise APIException("Symbol not found.")
 
-        fractionable = product['fractionable']
+        exchange_specific = product['exchange_specific']
+        fractionable = exchange_specific['fractionable']
 
         if fractionable:
             quote_increment = 1e-9
             min_funds_buy = 1
             min_funds_sell = 1e-9 * current_price
 
-            base_min_size = 1e-9
-            base_max_size = 1000000000
-            base_increment = 1e-9
-            min_price = 0
+            # base_min_size = product['base_min_size']
+            base_max_size = product['base_max_size']
+            # base_increment = product['base_increment']
+            min_price = 0.0001
             max_price = 10000000000
         else:
             quote_increment = current_price
             min_funds_buy = current_price
             min_funds_sell = current_price
 
-            base_min_size = 1
-            base_max_size = 1000000000
-            base_increment = 1
-            min_price = 0
+            # base_min_size = product['base_min_size']
+            base_max_size = product['base_max_size']
+            # base_increment = product['base_increment']
+            min_price = 0.0001
             max_price = 10000000000
 
         max_funds = current_price * 10000000000
@@ -394,11 +395,11 @@ class AlpacaInterface(ExchangeInterface):
             "quote_asset": 'USD',
             "max_orders": 500,  # More than this and we can't calculate account value (alpaca is very bad)
             "limit_order": {
-                "base_min_size": base_min_size,  # Minimum size to buy
+                "base_min_size": 1,  # Minimum size to buy
                 "base_max_size": base_max_size,  # Maximum size to buy
-                "base_increment": base_increment,  # Specifies the minimum increment for the base_asset.
+                "base_increment": 1,  # Specifies the minimum increment for the base_asset.
 
-                "price_increment": .01,  # TODO test this at market open
+                "price_increment": min_price,  # TODO test this at market open
 
                 "min_price": min_price,
                 "max_price": max_price,
@@ -416,14 +417,14 @@ class AlpacaInterface(ExchangeInterface):
                 },
             },
             "exchange_specific": {
-                "id": product['id'],
-                "class": product['class'],
-                "exchange": product['exchange'],
-                "status": product['status'],
-                "tradable": product['tradable'],
-                "marginable": product['marginable'],
-                "shortable": product['shortable'],
-                "easy_to_borrow": product['easy_to_borrow'],
+                "id": exchange_specific['id'],
+                "class": exchange_specific['class'],
+                "exchange": exchange_specific['exchange'],
+                "status": exchange_specific['status'],
+                "tradable": exchange_specific['tradable'],
+                "marginable": exchange_specific['marginable'],
+                "shortable": exchange_specific['shortable'],
+                "easy_to_borrow": exchange_specific['easy_to_borrow'],
                 "price": current_price
             }
         }
