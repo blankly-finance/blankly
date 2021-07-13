@@ -164,7 +164,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         - Comparing with open orders
         - Canceling orders
         """
-        binance_limits = self.Binance_Interface.get_asset_limits('BTC-USDT')
+        binance_limits = self.Binance_Interface.get_order_filter('BTC-USDT')
 
         binance_buy = self.Binance_Interface.limit_order('BTC-USDT', 'buy', int(binance_limits['min_price']+30), .01)
         time.sleep(3)
@@ -369,9 +369,9 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         for i in self.interfaces:
             if i.get_exchange_type() == "binance":
-                responses.append(i.get_asset_limits('BTC-USDT'))
+                responses.append(i.get_order_filter('BTC-USDT'))
             else:
-                responses.append(i.get_asset_limits('BTC-USD'))
+                responses.append(i.get_order_filter('BTC-USD'))
 
         self.assertTrue(compare_responses(responses))
 

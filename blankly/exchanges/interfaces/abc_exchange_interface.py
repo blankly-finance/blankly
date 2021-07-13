@@ -235,8 +235,8 @@ class ABCExchangeInterface(abc.ABC):
         """
 
     @abc.abstractmethod
-    def get_asset_limits(self,
-                          symbol: str):
+    def get_order_filter(self,
+                         symbol: str):
         """
         Find order limits for the exchange
         Args:

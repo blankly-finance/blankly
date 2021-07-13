@@ -281,7 +281,7 @@ class AlpacaInterface(ExchangeInterface):
         return utils.get_ohlcv(bars, row_divisor)
 
     # TODO: tbh not sure how this one works or if it applies to alpaca
-    def get_asset_limits(self, symbol: str):
+    def get_order_filter(self, symbol: str):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         current_price = self.get_price(symbol)
 

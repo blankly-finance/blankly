@@ -488,8 +488,7 @@ class CoinbaseProInterface(ExchangeInterface):
     binance: get_products
     """
 
-    def get_asset_limits(self, symbol: str):
-        needed = self.needed['get_asset_limits']
+    def get_order_filter(self, symbol: str):
         """
         Returns:
         list: List of available currency pairs. Example::
