@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import dateparser
 
 import blankly
 from blankly.utils.utils import compare_dictionaries
@@ -269,14 +269,14 @@ class InterfaceHomogeneity(unittest.TestCase):
         for i in responses:
             self.check_product_history_columns(i)
 
-            self.assertEqual(len(i), 150)
+            self.assertEqual(150, len(i))
 
             self.check_product_history_types(i)
 
     def test_point_with_end_history(self):
         responses = []
 
-        today = dt.today()
+        today = dateparser.parse("2021-07-09 9:35AM")
 
         # This won't work at the start of the month
         end_date = dt.today().replace(day=today.day-2)
@@ -296,12 +296,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         for i in responses:
             self.check_product_history_columns(i[0])
 
-            # TODO: add a seperate alpaca length check
-            if i[1] != 'alpaca':
-                self.assertEqual(len(i[0]), expected_hours)
-
             last_date = dt.fromtimestamp(i[0]['time'].iloc[-1]).strftime('%Y-%m-%d')
-            self.assertEqual(last_date, close_stop)
+            self.assertEqual(close_stop, last_date)
 
             self.check_product_history_types(i[0])
 

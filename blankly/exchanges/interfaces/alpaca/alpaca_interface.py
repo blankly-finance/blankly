@@ -31,6 +31,7 @@ from blankly.utils.exceptions import APIException
 import pandas as pd
 import alpaca_trade_api
 from dateutil import parser
+import datetime
 from datetime import datetime as dt
 from datetime import timezone
 from typing import Union
@@ -298,7 +299,7 @@ class AlpacaInterface(ExchangeInterface):
             raise ValueError("history() call needs only 1 of {start_date, to} defined")
 
         if not end_date:
-            end_date = dt.now()
+            end_date = dt.now(tz=timezone.utc)
 
         # convert end_date to datetime object
         if isinstance(end_date, str):
