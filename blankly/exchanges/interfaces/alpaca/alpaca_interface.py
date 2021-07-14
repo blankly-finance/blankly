@@ -297,6 +297,9 @@ class AlpacaInterface(ExchangeInterface):
         if to and start_date:
             raise ValueError("history() call needs only 1 of {start_date, to} defined")
 
+        if not end_date:
+            end_date = dt.now()
+
         # convert end_date to datetime object
         if isinstance(end_date, str):
             end_date = dateparser.parse(end_date)
