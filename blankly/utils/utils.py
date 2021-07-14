@@ -480,6 +480,7 @@ def get_ohlcv(candles, n):
     new_candles['high'] = df['high'].max().reset_index(drop=True)
     new_candles['low'] = df['low'].min().reset_index(drop=True)
     new_candles['volume'] = df['volume'].sum().reset_index(drop=True)
+    new_candles['volume'] = new_candles['volume'].apply(lambda x: float(x))
     new_candles['close'] = candles['close'].iloc[::n].reset_index(drop=True)
     new_candles['open'] = candles['open'].iloc[::n].reset_index(drop=True)
     new_candles['time'] = candles.index.to_series().iloc[::n].reset_index(drop=True)

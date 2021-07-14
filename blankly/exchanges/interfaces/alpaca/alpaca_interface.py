@@ -311,6 +311,17 @@ class AlpacaInterface(ExchangeInterface):
         if end_date.tzinfo is None or end_date.tzinfo.utcoffset(end_date) is None:
             end_date = end_date.replace(tzinfo=timezone.utc)
 
+        if start_date:
+            # convert start_date to datetime object
+            if isinstance(start_date, str):
+                start_date = dateparser.parse(start_date)
+            elif isinstance(start_date, float):
+                start_date = dt.fromtimestamp(start_date)
+
+            # end_date object is naive datetime, so need to convert
+            if start_date.tzinfo is None or start_date.tzinfo.utcoffset(start_date) is None:
+                start_date = start_date.replace(tzinfo=timezone.utc)
+
         alpaca_v1_resolutions = [60 * 1, 60 * 5, 60 * 15, 60 * 60 * 24]
 
         # convert resolution into epoch seconds
@@ -344,13 +355,18 @@ class AlpacaInterface(ExchangeInterface):
         if to:
             aggregated_limit = to * row_divisor
             bars = self.calls.get_barset(symbol, time_interval, limit=int(aggregated_limit), end=end_date.isoformat())[symbol]
-            # bars.rename(columns={"o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"})
-            # return utils.get_ohlcv(bars, row_divisor)
+            return_df = pd.DataFrame(bars)
+            return_df.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
+                             inplace=True)
 
-        return_df = pd.DataFrame(bars)
-        return_df.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"}, inplace=True)
-
-        return utils.get_ohlcv_2(return_df, row_divisor)
+            return utils.get_ohlcv_2(return_df, row_divisor)
+        else:
+            # bars = self.calls.get_barset(symbol, time_interval, start=start_date.isoformat(), end=end_date.isoformat())[symbol]
+            return self.get_product_history(symbol, start_date.timestamp(), end_date.timestamp(), resolution_seconds)
+        # return_df = pd.DataFrame(bars)
+        # return_df.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"}, inplace=True)
+        #
+        # return utils.get_ohlcv_2(return_df, row_divisor)
 
     # TODO: tbh not sure how this one works or if it applies to alpaca
     def get_order_filter(self, symbol: str):
