@@ -164,7 +164,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         - Comparing with open orders
         - Canceling orders
         """
-        binance_limits = self.Binance_Interface.get_order_filter('BTC-USDT')
+        binance_limits = self.Binance_Interface.get_order_filter('BTC-USDT')["limit_order"]
 
         binance_buy = self.Binance_Interface.limit_order('BTC-USDT', 'buy', int(binance_limits['min_price']+30), .01)
         time.sleep(3)
@@ -280,7 +280,7 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         # This won't work at the start of the month
         end_date = dt.today().replace(day=today.day-2)
-        close_stop = str(dt.today().replace(day=dt.today().day-3).date())
+        close_stop = str(dt.today().replace(day=today.day-3).date())
 
         expected_hours = end_date.day * 24 - (24*2)
 
@@ -366,8 +366,11 @@ class InterfaceHomogeneity(unittest.TestCase):
         for i in self.interfaces:
             if i.get_exchange_type() == "binance":
                 responses.append(i.get_order_filter('BTC-USDT'))
+            elif i.get_exchange_type() == "alpaca":
+                responses.append(i.get_order_filter('MSFT'))
             else:
                 responses.append(i.get_order_filter('BTC-USD'))
+
 
         self.assertTrue(compare_responses(responses))
 
