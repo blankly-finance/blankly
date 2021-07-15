@@ -16,34 +16,42 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
+import blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket_utils as websocket_utils
+from blankly.exchanges.auth.auth_constructor import load_auth
+
 import blankly
 import threading
 import json
 import ssl
 import msgpack
 import traceback
-from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
-import blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket_utils as websocket_utils
 import collections
-
 from websocket import create_connection
+import time
 
 
 def create_ticker_connection(symbol, url, channel):
+
     ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE}, header={'Content-Type': 'application/msgpack'})
+    _, auth = load_auth('alpaca')
 
     ws.send(msgpack.packb({
         'action': 'auth',
-        'key': '<>',
-        'secret': '<>'
+        'key': auth['API_KEY'],
+        'secret': auth['API_SECRET']
     }))
+    time.sleep(1)
+    print("00")
     print(msgpack.unpackb(ws.recv()))
+    print("000")
     ws.send(
         msgpack.packb({
             'action': 'subscribe',
             channel: tuple([symbol]),
         })
     )
+
     return ws
 
 
@@ -55,11 +63,14 @@ def create_ticker_connection(symbol, url, channel):
 
 class Tickers(ABCExchangeWebsocket):
     def __init__(self, symbol, stream, log=None,
-                 pre_event_callback=None, initially_stopped=False, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
+                 pre_event_callback=None, initially_stopped=False,
+                 WEBSOCKET_URL="wss://api.alpaca.markets/stream/v2/iex"):
         """
         Create and initialize the ticker
         Args:
             symbol: Currency to initialize on such as "BTC-USD"
+            stream: Valid exchange stream to attach to, these are:
+                trades, quotes, bars, dailyBars, statuses, lulds
             log: Fill this with a path to a log file that should be created
             WEBSOCKET_URL: Default websocket URL feed.
         """
@@ -222,8 +233,3 @@ class Tickers(ABCExchangeWebsocket):
 
 def trade_updates(update):
     print(update)
-
-
-if __name__ == "__main__":
-    ticker = Tickers('AAPL', 'trade_updates', WEBSOCKET_URL="wss://stream.data.alpaca.markets/v2/iex")
-    ticker.append_callback(trade_updates)

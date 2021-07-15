@@ -19,6 +19,11 @@
 import json
 import warnings
 
+keys_path_cache = None
+
+# This is currently unused
+auth_cache = {}
+
 
 def load_json(keys_file):
     try:
@@ -28,11 +33,7 @@ def load_json(keys_file):
         return contents
     except FileNotFoundError:
         raise FileNotFoundError("Make sure a keys.json file is placed in the same folder as the project working "
-                                "directory!")
-
-
-auth_cache = {}
-
+                                "directory (or specified in the exchange constructor)!")
 
 # def load_auth_coinbase_pro(keys_file, name):
 #     exchange_type = "coinbase_pro"
@@ -48,7 +49,21 @@ auth_cache = {}
 #     return [portfolio["API_KEY"], portfolio["API_SECRET"]], name
 
 
-def load_auth(keys_file, name, exchange_type):
+def load_auth(exchange_type, keys_file=None, name=None):
+    global keys_path_cache
+
+    if keys_file is None:
+        if keys_path_cache is None:
+            # Add a default for if info is passed in and nobody knows anything about paths
+            keys_path_cache = './keys.json'
+        else:
+            # Default to the cached path if the passed variable is wrong
+            print("using cached keys path value")
+            keys_file = keys_path_cache
+    else:
+        # If its not non then there's no problem, just write it to the cache though
+        keys_path_cache = keys_file
+
     auth_object = load_json(keys_file)
     exchange_keys = auth_object[exchange_type]
     if name is None:

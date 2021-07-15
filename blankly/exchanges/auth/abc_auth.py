@@ -36,7 +36,7 @@ class ABCAuth(abc.ABC):
         self.exchange = exchange
 
         # Load from file
-        self.portfolio_name, self.keys = load_auth(keys_file, portfolio_name, exchange)
+        self.portfolio_name, self.keys = load_auth(exchange, keys_file, portfolio_name)
 
     def validate_credentials(self, needed_keys: list):
         """
