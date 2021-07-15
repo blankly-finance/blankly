@@ -80,6 +80,7 @@ def trade_interface(message):
         'price': '50141.55',
         'time': 1619286924.397969,
         'trade_id': 160775277,
+        'size': .3432
     }
     """
     renames = [
@@ -88,13 +89,15 @@ def trade_interface(message):
         ["p", "price"],
         ["T", "time"],
         ["t", "trade_id"],
+        ['q', "size"]
     ]
     message = utils.rename_to(renames, message)
     needed = [
-        ["symbol", str],
+        ["product_id", str],
         ["price", float],
         ["time", int],
-        ["trade_id", int]
+        ["trade_id", int],
+        ["size", float]
     ]
     message["time"] = message["time"]/1000
     return utils.isolate_specific(needed, message)
