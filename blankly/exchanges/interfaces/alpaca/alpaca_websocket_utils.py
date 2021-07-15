@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import time
+
 from blankly.utils.utils import rename_to, isolate_specific
 from alpaca_trade_api.entity_v2 import trade_mapping_v2, quote_mapping_v2, bar_mapping_v2, status_mapping_v2
 
@@ -32,9 +32,13 @@ def alpaca_remapping(dictionary: dict, mapping: dict):
 
 def switch_type(stream):
     if stream == "trades":
-        return trades, \
+        return trades_logging, \
                trades_interface, \
                "id,symbol,conditions,exchange,price,size,timestamp,tape\n"
+    elif stream == "quotes":
+        return quotes_logging, \
+               no_callback, \
+               "symbol,ask_exchange,ask_price,ask_size,bid_exchange,bid_price,bid_size,conditions,timestamp,tape\n"
     else:
         return no_callback, no_callback, ""
 
@@ -43,7 +47,7 @@ def no_callback(message):
     return message
 
 
-def trades(message):
+def trades_logging(message):
     message['t'] = parse_alpaca_timestamp(message['t'])
     return str(message["i"] + "," +
                message["S"] + "," +
@@ -67,21 +71,35 @@ def trades_interface(message):
         'size': .35324
     }
     """
+    message = alpaca_remapping(message, trade_mapping_v2)
+    message['time'] = parse_alpaca_timestamp(message.pop('timestamp'))
+
     renames = [
-        ["e", "type"],
-        ["s", "symbol"],
-        ["p", "price"],
-        ["T", "time"],
-        ["t", "trade_id"],
+        ["id", "trade_id"],
+        ["timestamp", "time"]
     ]
+
     message = rename_to(renames, message)
 
     needed = [
-        ["product_id", str],
+        ["symbol", str],
         ["price", float],
-        ["time", int],
+        ["time", float],
         ["trade_id", int],
         ["size", float]
     ]
-    message["time"] = message["time"]/1000
     return isolate_specific(needed, message)
+
+
+def quotes_logging(message):
+    message['t'] = parse_alpaca_timestamp(message['t'])
+    return str(message["S"] + "," +
+               message["ax"] + "," +
+               message["ap"] + "," +
+               message["as"] + "," +
+               message["bx"] + "," +
+               message["bp"] + "," +
+               message["bs"] + "," +
+               message["c"] + "," +
+               message["t"] + "," +
+               message["z"] + "\n")

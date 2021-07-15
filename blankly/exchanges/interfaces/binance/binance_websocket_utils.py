@@ -88,14 +88,14 @@ def trade_interface(message):
         ["s", "symbol"],
         ["p", "price"],
         ["T", "time"],
-        ["t", "trade_id"],
+        ["t", "symbol"],
         ['q', "size"]
     ]
     message = utils.rename_to(renames, message)
     needed = [
-        ["product_id", str],
+        ["symbol", str],
         ["price", float],
-        ["time", int],
+        ["time", float],
         ["trade_id", int],
         ["size", float]
     ]
