@@ -51,12 +51,14 @@ def trade_interface(message):
     Homogenizing with binance's return:
 
     Args:
-        message (str): Message from the exchange.
+        message (dict): Message from the exchange.
     """
     needed = [
         ["product_id", str],
         ["price", float],
         ["time", int],
-        ["trade_id", int]
+        ["trade_id", int],
+        ["size", float]
     ]
+    message['size'] = message.pop('last_size')
     return utils.isolate_specific(needed, message)

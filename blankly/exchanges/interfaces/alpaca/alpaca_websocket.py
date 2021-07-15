@@ -27,8 +27,8 @@ import ssl
 import msgpack
 import traceback
 import collections
+import warnings
 from websocket import create_connection
-import time
 
 
 def create_ticker_connection(symbol, url, channel):
@@ -41,10 +41,11 @@ def create_ticker_connection(symbol, url, channel):
         'key': auth['API_KEY'],
         'secret': auth['API_SECRET']
     }))
-    time.sleep(1)
-    print("00")
-    print(msgpack.unpackb(ws.recv()))
-    print("000")
+    # Check if the response is valid
+    response = msgpack.unpackb(ws.recv())
+    if response[0]['msg'] != 'connected':
+        warnings.warn("Connection failed.")
+
     ws.send(
         msgpack.packb({
             'action': 'subscribe',
@@ -52,19 +53,26 @@ def create_ticker_connection(symbol, url, channel):
         })
     )
 
+    response = msgpack.unpackb(ws.recv())
+    if response[0]['msg'] != 'authenticated':
+        warnings.warn("Authentication failed.")
+
     return ws
 
 
-# 'action': 'subscribe',
+# List of valid subscriptions
 # 'trades': tuple(['AAPL']),
 # 'quotes': tuple(['AAPL']),
 # 'bars': tuple(['AAPL']),
+# 'dailyBars': tuple(['AAPL']),
+# 'statuses': tuple(['AAPL']),
+# 'lulds': tuple(['AAPL'])
 
 
 class Tickers(ABCExchangeWebsocket):
     def __init__(self, symbol, stream, log=None,
                  pre_event_callback=None, initially_stopped=False,
-                 WEBSOCKET_URL="wss://api.alpaca.markets/stream/v2/iex"):
+                 WEBSOCKET_URL="wss://stream.data.alpaca.markets/v2/iex/"):
         """
         Create and initialize the ticker
         Args:
@@ -93,6 +101,7 @@ class Tickers(ABCExchangeWebsocket):
         self.URL = WEBSOCKET_URL
         self.ws = None
         self.__response = None
+        self.__subscription_response = None
         self.__most_recent_tick = None
         self.__most_recent_time = None
         self.__callbacks = []
@@ -127,24 +136,19 @@ class Tickers(ABCExchangeWebsocket):
                 self.start_websocket()
 
     def read_websocket(self):
-        # This is unique because coinbase first sends the entire orderbook to use
-        if self.__pre_event_callback is not None and self.__stream == "level2":
-            received_string = json.loads(self.ws.recv())
-            if received_string['type'] == 'snapshot':
-                try:
-                    self.__pre_event_callback(received_string)
-                except:
-                    traceback.print_exc()
-
         counter = 0
         # TODO port this to "WebSocketApp" found in the websockets documentation
         while self.ws.connected:
             # In case the user closes while its reading from the websocket, this will let it expire
             persist_connected = self.ws.connected
-            received_string = self.ws.recv()
-            received = json.loads(received_string)
+            print("bing")
+            received = msgpack.unpackb(self.ws.recv())
             for i in self.__callbacks:
                 i(received)
+            print("bonk")
+            # received = json.loads(msgpack.unpackb(received_string))
+            # for i in self.__callbacks:
+            #     i(received)
             # try:
             #     received_string = self.ws.recv()
             #     received = json.loads(received_string)

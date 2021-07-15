@@ -58,7 +58,6 @@ def load_auth(exchange_type, keys_file=None, name=None):
             keys_path_cache = './keys.json'
         else:
             # Default to the cached path if the passed variable is wrong
-            print("using cached keys path value")
             keys_file = keys_path_cache
     else:
         # If its not non then there's no problem, just write it to the cache though
