@@ -54,11 +54,13 @@ def trade_interface(message):
         message (dict): Message from the exchange.
     """
     needed = [
-        ["product_id", str],
+        ["symbol", str],
         ["price", float],
-        ["time", int],
+        ["time", float],
         ["trade_id", int],
         ["size", float]
     ]
+
+    message['symbol'] = message.pop('product_id')
     message['size'] = message.pop('last_size')
     return utils.isolate_specific(needed, message)
