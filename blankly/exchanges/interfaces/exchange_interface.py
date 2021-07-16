@@ -20,6 +20,7 @@ import blankly.utils.utils as utils
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 import abc
+import time
 from typing import Union
 from dateutil import parser
 from datetime import datetime as dt
@@ -168,6 +169,10 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 start_date: Union[str, dt, float] = None,
                 end_date: Union[str, dt, float] = None):
 
+        to_present = False
+        if end_date is None:
+            to_present = True
+
         # convert resolution into epoch seconds
         resolution_seconds = time_interval_to_seconds(resolution)
 
@@ -205,7 +210,32 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         else:
             epoch_start = utils.convert_input_to_epoch(start_date)
 
-        return self.get_product_history(symbol, epoch_start, epoch_stop, resolution_seconds)
+        response = self.get_product_history(symbol, epoch_start, epoch_stop, resolution_seconds)
+
+        # Add a check to make sure that coinbase pro has updated
+        if to_present and self.get_exchange_type() == "coinbase_pro":
+            data_append = None
+            tries = 0
+            while True:
+                if data_append is None:
+                    if response['time'].iloc[-1] == epoch_stop:
+                        break
+                else:
+                    if data_append[0]['time'] == epoch_stop:
+                        break
+                time.sleep(.5)
+                tries += 1
+                if tries > 4:
+                    # Admit failure and return
+                    return response
+                data_append = [self.get_product_history(symbol,
+                                                        epoch_stop-resolution_seconds,
+                                                        epoch_stop,
+                                                        resolution_seconds).iloc[-1].to_dict()]
+
+            response = response.append(data_append, ignore_index=True)
+
+        return response
 
     def get_account(self, symbol=None):
         """

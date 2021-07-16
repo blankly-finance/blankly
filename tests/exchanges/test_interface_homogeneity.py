@@ -260,6 +260,7 @@ class InterfaceHomogeneity(unittest.TestCase):
     def test_point_based_history(self):
         responses = []
         for i in self.interfaces:
+            print(i.get_exchange_type())
             if i.get_exchange_type() == "binance":
                 responses.append(i.history('BTC-USDT', 150, resolution='1m'))
             elif i.get_exchange_type() == "alpaca":
@@ -272,6 +273,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.assertEqual(150, len(i))
 
             self.check_product_history_types(i)
+            print("passed")
 
     def test_point_with_end_history(self):
         responses = []
