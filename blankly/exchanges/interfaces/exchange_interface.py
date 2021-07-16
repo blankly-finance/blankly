@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import warnings
 
 import blankly.utils.utils as utils
 from blankly.utils.time_builder import time_interval_to_seconds
@@ -225,13 +226,15 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                         break
                 time.sleep(.5)
                 tries += 1
-                if tries > 4:
+                if tries > 5:
                     # Admit failure and return
+                    warnings.warn("Exchange failed to provide updated data within the timeout.")
                     return response
                 data_append = [self.get_product_history(symbol,
                                                         epoch_stop-resolution_seconds,
                                                         epoch_stop,
                                                         resolution_seconds).iloc[-1].to_dict()]
+                data_append[0]['time'] = int(data_append[0]['time'])
 
             response = response.append(data_append, ignore_index=True)
 
