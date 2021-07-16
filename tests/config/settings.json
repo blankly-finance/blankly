@@ -13,6 +13,7 @@
       "binance_tld": "us"
     },
     "alpaca": {
+      "websocket_stream": "iex",
       "cash": "USD"
     }
   }

@@ -166,10 +166,10 @@ class Strategy:
         if ohlc:
             while True:
                 data = self.Interface.history(symbol, 1, resolution).iloc[-1].to_dict()
-                data['price'] = self.Interface.get_price(symbol)
                 if data['time'] + resolution == ohlcv_time:
                     break
-                time.sleep(1)
+                time.sleep(.5)
+            data['price'] = self.Interface.get_price(symbol)
         else:
             data = self.Interface.get_price(symbol)
 
