@@ -5,3 +5,5 @@
 - Rename all `Blankly` imports to `blankly`
 - Change websocket arguments to include symbol
 - Alpaca `get_clock` in the exchange class
+- Changes in the homogeneity of the websocket trade feeds
+- Alpaca websocket streaming setting in `settings.json`

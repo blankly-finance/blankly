@@ -103,20 +103,21 @@ class TickerManager(WebsocketManager):
             self.__tickers['binance'][override_symbol] = ticker
             return ticker
         elif exchange_name == "alpaca":
+            stream = preferences['settings']['alpaca']['websocket_stream']
             if override_symbol is None:
                 override_symbol = self.__default_symbol
 
             override_symbol = blankly.utils.to_exchange_coin_id(override_symbol, "alpaca")
             if sandbox_mode:
-                # TODO fix the trade stream
                 ticker = Alpaca_Ticker(override_symbol,
                                        "trade_updates",
                                        log=log,
-                                       WEBSOCKET_URL="wss://paper-api.alpaca.markets/stream")
+                                       WEBSOCKET_URL="wss://paper-api.alpaca.markets/stream/v2/{}/".format(stream))
             else:
                 ticker = Alpaca_Ticker(override_symbol,
                                        "trade_updates",
-                                       log=log)
+                                       log=log,
+                                       WEBSOCKET_URL="wss://stream.data.alpaca.markets/v2/{}/".format(stream))
             ticker.append_callback(callback)
             self.__tickers['alpaca'][override_symbol] = ticker
             return ticker

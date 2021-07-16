@@ -22,12 +22,12 @@ from blankly.exchanges.auth.auth_constructor import load_auth
 
 import blankly
 import threading
-import json
 import ssl
 import msgpack
 import traceback
 import collections
 import warnings
+import time
 from websocket import create_connection
 
 
@@ -141,54 +141,47 @@ class Tickers(ABCExchangeWebsocket):
         while self.ws.connected:
             # In case the user closes while its reading from the websocket, this will let it expire
             persist_connected = self.ws.connected
-            print("bing")
-            received = msgpack.unpackb(self.ws.recv())
-            for i in self.__callbacks:
-                i(received)
-            print("bonk")
-            # received = json.loads(msgpack.unpackb(received_string))
-            # for i in self.__callbacks:
-            #     i(received)
-            # try:
-            #     received_string = self.ws.recv()
-            #     received = json.loads(received_string)
-            #     # Modify time to use epoch
-            #     self.__most_recent_time = blankly.utils.epoch_from_ISO8601(received["time"])
-            #     received["time"] = self.__most_recent_time
-            #     self.__time_feed.append(self.__most_recent_time)
-            #     self.__most_recent_tick = received
-            #     self.__ticker_feed.append(received)
-            #
-            #     if self.__log:
-            #         if counter % 100 == 0:
-            #             self.__file.close()
-            #             self.__file = open(self.__filePath, 'a')
-            #         line = self.__logging_callback(received)
-            #         self.__file.write(line)
-            #
-            #     # Manage price events and fire for each manager attached
-            #     interface_message = self.__interface_callback(received)
-            #     try:
-            #         for i in self.__callbacks:
-            #             i(interface_message)
-            #     except Exception:
-            #         traceback.print_exc()
-            #
-            #     counter += 1
-            # except Exception as e:
-            #     if persist_connected:
-            #         traceback.print_exc()
-            #         pass
-            #     else:
-            #         traceback.print_exc()
-            #         print("Error reading ticker websocket for " + self.__id + " on " +
-            #               self.__stream + ": attempting to re-initialize")
-            #         # Give a delay so this doesn't eat up from the main thread if it takes many tries to initialize
-            #         time.sleep(2)
-            #         self.ws.close()
-            #         self.ws = create_ticker_connection(self.__id, self.URL, self.__stream)
-            #         # Update response
-            #         self.__response = self.ws.recv()
+            try:
+                received = msgpack.unpackb(self.ws.recv())[0]
+                # Modify time to use epoch
+
+                if self.__log:
+                    if counter % 100 == 0:
+                        self.__file.close()
+                        self.__file = open(self.__filePath, 'a')
+                    line = self.__logging_callback(received)
+                    self.__file.write(line)
+
+                # Manage price events and fire for each manager attached
+                interface_message = self.__interface_callback(received)
+
+                self.__most_recent_time = blankly.utils.epoch_from_ISO8601(interface_message["time"])
+                interface_message["time"] = self.__most_recent_time
+                self.__time_feed.append(self.__most_recent_time)
+                self.__most_recent_tick = interface_message
+                self.__ticker_feed.append(interface_message)
+
+                try:
+                    for i in self.__callbacks:
+                        i(interface_message)
+                except Exception:
+                    traceback.print_exc()
+
+                counter += 1
+            except Exception as e:
+                if persist_connected:
+                    traceback.print_exc()
+                    pass
+                else:
+                    traceback.print_exc()
+                    print("Error reading ticker websocket for " + self.__symbol + " on " +
+                          self.__stream + ": attempting to re-initialize")
+                    # Give a delay so this doesn't eat up from the main thread if it takes many tries to initialize
+                    time.sleep(2)
+                    self.ws.close()
+                    self.ws = create_ticker_connection(self.__symbol, self.URL, self.__stream)
+                    # Update response
+                    self.__response = self.ws.recv()
 
     """ Required in manager """
     def is_websocket_open(self):
@@ -233,7 +226,3 @@ class Tickers(ABCExchangeWebsocket):
     """ Required in manager """
     def restart_ticker(self):
         self.start_websocket()
-
-
-def trade_updates(update):
-    print(update)
