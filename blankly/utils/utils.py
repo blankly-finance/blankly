@@ -77,7 +77,8 @@ default_global_settings = {
       "binance_tld": "us"
     },
     "alpaca": {
-      "cash": "USD"
+        "websocket_stream": "iex",
+        "cash": "USD"
     }
   }
 }

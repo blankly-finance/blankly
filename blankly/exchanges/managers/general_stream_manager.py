@@ -84,7 +84,14 @@ class GeneralManager(WebsocketManager):
 
         if exchange_cache == "alpaca":
             # Alpaca doesn't really use a sandbox websocket feed
-            websocket = Alpaca_Websocket(asset_id_cache, channel, log)
+            stream = preferences['settings']['alpaca']['websocket_stream']
+            if use_sandbox:
+                websocket = Alpaca_Websocket(asset_id_cache, channel, log,
+                                             WEBSOCKET_URL=
+                                             "wss://paper-api.alpaca.markets/stream/v2/{}/".format(stream))
+            else:
+                websocket = Alpaca_Websocket(asset_id_cache, channel, log,
+                                             WEBSOCKET_URL="wss://stream.data.alpaca.markets/v2/{}/".format(stream))
             self.__websockets[channel][exchange_cache][asset_id_cache] = websocket
 
             return websocket
