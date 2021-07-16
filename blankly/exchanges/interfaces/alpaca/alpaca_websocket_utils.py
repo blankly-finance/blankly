@@ -15,18 +15,22 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+from msgpack.ext import Timestamp
 
 from blankly.utils.utils import rename_to, isolate_specific
 from alpaca_trade_api.entity_v2 import trade_mapping_v2, quote_mapping_v2, bar_mapping_v2, status_mapping_v2
 
 
-def parse_alpaca_timestamp(value):
-    return value['t'].seconds * int(1e9) + value['t'].nanoseconds
+def parse_alpaca_timestamp(value: Timestamp):
+    return value.seconds + (value.nanoseconds * float(1e-9))
 
 
 def alpaca_remapping(dictionary: dict, mapping: dict):
     # From https://stackoverflow.com/a/67573821/8087739
+    try:
+        dictionary.pop('T')
+    except KeyError:
+        pass
     return {mapping[k]: dictionary[k] for k in dictionary}
 
 
@@ -47,16 +51,15 @@ def no_callback(message):
     return message
 
 
-def trades_logging(message):
-    message['t'] = parse_alpaca_timestamp(message['t'])
-    return str(message["i"] + "," +
-               message["S"] + "," +
-               message["c"] + "," +
-               message["x"] + "," +
-               message["p"] + "," +
-               message["s"] + "," +
-               message["t"] + "," +
-               message["z"] + "\n")
+def trades_logging(message: dict):
+    return str(str(message["i"]) + "," +
+               str(message["S"]) + "," +
+               str(message["c"]) + "," +
+               str(message["x"]) + "," +
+               str(message["p"]) + "," +
+               str(message["s"]) + "," +
+               str(message["t"]) + "," +
+               str(message["z"]) + "\n")
 
 
 def trades_interface(message):
@@ -72,11 +75,10 @@ def trades_interface(message):
     }
     """
     message = alpaca_remapping(message, trade_mapping_v2)
-    message['time'] = parse_alpaca_timestamp(message.pop('timestamp'))
+    message['time'] = message.pop('timestamp')
 
     renames = [
         ["id", "trade_id"],
-        ["timestamp", "time"]
     ]
 
     message = rename_to(renames, message)

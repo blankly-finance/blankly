@@ -92,12 +92,12 @@ class TickerManager(WebsocketManager):
             override_symbol = blankly.utils.to_exchange_coin_id(override_symbol, "binance").lower()
             if sandbox_mode:
                 ticker = Binance_Ticker(override_symbol,
-                                        "trade",
+                                        "trades",
                                         log=log,
                                         WEBSOCKET_URL="wss://testnet.binance.vision/ws")
             else:
                 ticker = Binance_Ticker(override_symbol,
-                                        "trade",
+                                        "trades",
                                         log=log)
             ticker.append_callback(callback)
             self.__tickers['binance'][override_symbol] = ticker
@@ -115,7 +115,7 @@ class TickerManager(WebsocketManager):
                                        WEBSOCKET_URL="wss://paper-api.alpaca.markets/stream/v2/{}/".format(stream))
             else:
                 ticker = Alpaca_Ticker(override_symbol,
-                                       "trade_updates",
+                                       "trades",
                                        log=log,
                                        WEBSOCKET_URL="wss://stream.data.alpaca.markets/v2/{}/".format(stream))
             ticker.append_callback(callback)

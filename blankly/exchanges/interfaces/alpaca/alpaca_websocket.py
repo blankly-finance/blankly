@@ -17,7 +17,7 @@
 """
 
 from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
-import blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket_utils as websocket_utils
+from blankly.exchanges.interfaces.alpaca.alpaca_websocket_utils import switch_type, parse_alpaca_timestamp
 from blankly.exchanges.auth.auth_constructor import load_auth
 
 import blankly
@@ -84,7 +84,7 @@ class Tickers(ABCExchangeWebsocket):
         """
         self.__symbol = symbol
         self.__stream = stream
-        self.__logging_callback, self.__interface_callback, log_message = websocket_utils.switch_type(stream)
+        self.__logging_callback, self.__interface_callback, log_message = switch_type(stream)
 
         # Initialize log file
         if log is not None:
@@ -142,8 +142,11 @@ class Tickers(ABCExchangeWebsocket):
             # In case the user closes while its reading from the websocket, this will let it expire
             persist_connected = self.ws.connected
             try:
-                received = msgpack.unpackb(self.ws.recv())[0]
+                received = msgpack.unpackb(self.ws.recv())[0]  # type: dict
                 # Modify time to use epoch
+
+                if 't' in received:
+                    received['t'] = parse_alpaca_timestamp(received['t'])
 
                 if self.__log:
                     if counter % 100 == 0:
@@ -155,7 +158,7 @@ class Tickers(ABCExchangeWebsocket):
                 # Manage price events and fire for each manager attached
                 interface_message = self.__interface_callback(received)
 
-                self.__most_recent_time = blankly.utils.epoch_from_ISO8601(interface_message["time"])
+                self.__most_recent_time = interface_message["time"]
                 interface_message["time"] = self.__most_recent_time
                 self.__time_feed.append(self.__most_recent_time)
                 self.__most_recent_tick = interface_message
