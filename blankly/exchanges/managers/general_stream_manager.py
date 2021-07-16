@@ -92,6 +92,8 @@ class GeneralManager(WebsocketManager):
             else:
                 websocket = Alpaca_Websocket(asset_id_cache, channel, log,
                                              WEBSOCKET_URL="wss://stream.data.alpaca.markets/v2/{}/".format(stream))
+            websocket.append_callback(callback)
+
             self.__websockets[channel][exchange_cache][asset_id_cache] = websocket
 
             return websocket
