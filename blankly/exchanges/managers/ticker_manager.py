@@ -60,8 +60,8 @@ class TickerManager(WebsocketManager):
         Returns:
             Direct ticker object
         """
-        preferences = blankly.utils.load_user_preferences()
-        sandbox_mode = preferences['settings']['use_sandbox_websockets']
+
+        sandbox_mode = self.preferences['settings']['use_sandbox_websockets']
 
         exchange_name = self.__default_exchange
         # Ensure the ticker dict has this overridden exchange
@@ -103,14 +103,14 @@ class TickerManager(WebsocketManager):
             self.__tickers['binance'][override_symbol] = ticker
             return ticker
         elif exchange_name == "alpaca":
-            stream = preferences['settings']['alpaca']['websocket_stream']
+            stream = self.preferences['settings']['alpaca']['websocket_stream']
             if override_symbol is None:
                 override_symbol = self.__default_symbol
 
             override_symbol = blankly.utils.to_exchange_coin_id(override_symbol, "alpaca")
             if sandbox_mode:
                 ticker = Alpaca_Ticker(override_symbol,
-                                       "trade_updates",
+                                       "trades",
                                        log=log,
                                        WEBSOCKET_URL="wss://paper-api.alpaca.markets/stream/v2/{}/".format(stream))
             else:

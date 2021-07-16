@@ -45,8 +45,6 @@ class GeneralManager(WebsocketManager):
         if override_exchange is not None:
             exchange_cache = override_exchange
 
-        preferences = blankly.utils.load_user_preferences()
-
         if channel not in self.__websockets.keys():
             self.__websockets[channel] = {}
 
@@ -56,7 +54,7 @@ class GeneralManager(WebsocketManager):
         if asset_id_cache not in self.__websockets[channel][exchange_cache].keys():
             self.__websockets[channel][exchange_cache][asset_id_cache] = {}
 
-        use_sandbox = preferences['settings']['use_sandbox_websockets']
+        use_sandbox = self.preferences['settings']['use_sandbox_websockets']
 
         if exchange_cache == "coinbase_pro":
             print(self.__websockets)
@@ -83,8 +81,9 @@ class GeneralManager(WebsocketManager):
             return websocket
 
         if exchange_cache == "alpaca":
-            # Alpaca doesn't really use a sandbox websocket feed
-            stream = preferences['settings']['alpaca']['websocket_stream']
+            stream = self.preferences['settings']['alpaca']['websocket_stream']
+
+            asset_id_cache = blankly.utils.to_exchange_coin_id(asset_id_cache, "alpaca")
             if use_sandbox:
                 websocket = Alpaca_Websocket(asset_id_cache, channel, log,
                                              WEBSOCKET_URL=

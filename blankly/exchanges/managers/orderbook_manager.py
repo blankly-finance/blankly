@@ -21,6 +21,7 @@ import requests
 
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tickers as Coinbase_Pro_Orderbook
 from blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Binance_Orderbook
+from blankly.exchanges.interfaces.alpaca.alpaca_websocket import Tickers as Alpaca_Websocket
 
 from blankly.exchanges.managers.websocket_manager import WebsocketManager
 
@@ -88,6 +89,9 @@ class OrderbookManager(WebsocketManager):
             kwargs: Add any other parameters that should be passed into a callback function to identify
                 it or modify behavior
         """
+
+        use_sandbox = self.preferences['settings']['use_sandbox_websockets']
+
         exchange_name = self.__default_exchange
         # Ensure the ticker dict has this overridden exchange
         if override_exchange is not None:
@@ -101,10 +105,17 @@ class OrderbookManager(WebsocketManager):
         if exchange_name == "coinbase_pro":
             if override_symbol is None:
                 override_symbol = self.__default_currency
-            websocket = Coinbase_Pro_Orderbook(override_symbol, "level2",
-                                               pre_event_callback=self.coinbase_snapshot_update,
-                                               initially_stopped=initially_stopped
-                                               )
+
+            if use_sandbox:
+                websocket = Coinbase_Pro_Orderbook(override_symbol, "level2",
+                                                   pre_event_callback=self.coinbase_snapshot_update,
+                                                   initially_stopped=initially_stopped,
+                                                   WEBSOCKET_URL="wss://ws-feed-public.sandbox.pro.coinbase.com")
+            else:
+                websocket = Coinbase_Pro_Orderbook(override_symbol, "level2",
+                                                   pre_event_callback=self.coinbase_snapshot_update,
+                                                   initially_stopped=initially_stopped
+                                                   )
             # This is where the sorting magic happens
             websocket.append_callback(self.coinbase_update)
 
@@ -123,7 +134,13 @@ class OrderbookManager(WebsocketManager):
 
             # Lower the keys to subscribe
             specific_currency_id = blankly.utils.to_exchange_coin_id(override_symbol, "binance").lower()
-            websocket = Binance_Orderbook(specific_currency_id, "depth", initially_stopped=initially_stopped)
+
+            if use_sandbox:
+                websocket = Binance_Orderbook(specific_currency_id, "depth", initially_stopped=initially_stopped,
+                                              WEBSOCKET_URL="wss://testnet.binance.vision/ws")
+            else:
+                websocket = Binance_Orderbook(specific_currency_id, "depth", initially_stopped=initially_stopped)
+
             websocket.append_callback(self.binance_update)
 
             # binance returns the keys in all UPPER so the books should be created based on response
@@ -136,6 +153,32 @@ class OrderbookManager(WebsocketManager):
             self.__orderbooks['binance'][specific_currency_id] = {
                 "buy": buys,
                 "sell": sells
+            }
+
+        elif exchange_name == "alpaca":
+            if override_symbol is None:
+                override_symbol = self.__default_currency
+
+            stream = self.preferences['settings']['alpaca']['websocket_stream']
+            override_symbol = blankly.utils.to_exchange_coin_id(override_symbol, "alpaca")
+
+            if use_sandbox:
+                websocket = Alpaca_Websocket(override_symbol, 'quotes', initially_stopped=initially_stopped,
+                                             WEBSOCKET_URL=
+                                             "wss://paper-api.alpaca.markets/stream/v2/{}/".format(stream))
+            else:
+                websocket = Alpaca_Websocket(override_symbol, 'quotes', initially_stopped=initially_stopped,
+                                             WEBSOCKET_URL="wss://stream.data.alpaca.markets/v2/{}/".format(stream))
+
+            websocket.append_callback(self.alpaca_update)
+
+            self.__websockets['alpaca'][override_symbol] = websocket
+            self.__websockets_callbacks['alpaca'][override_symbol] = callback
+            self.__websockets_kwargs['alpaca'][override_symbol] = kwargs
+
+            self.__orderbooks['alpaca'][override_symbol] = {
+                "buy": {},
+                "sell": {},
             }
 
         else:
@@ -179,7 +222,8 @@ class OrderbookManager(WebsocketManager):
         else:
             book[price] = float(update['changes'][0][2])
         self.__orderbooks['coinbase_pro'][update['product_id']][side] = book
-        self.__websockets_callbacks['coinbase_pro'][update['product_id']](book,
+        self.__websockets_callbacks['coinbase_pro'][update['product_id']](self.__orderbooks['coinbase_pro']
+                                                                          [update['product_id']],
                                                                           **self.__websockets_kwargs['coinbase_pro']
                                                                           [update['product_id']])
 
@@ -218,6 +262,15 @@ class OrderbookManager(WebsocketManager):
         # Pass in this new updated orderbook
         self.__websockets_callbacks['binance'][symbol](self.__orderbooks['binance'][symbol],
                                                        **self.__websockets_kwargs['binance'][symbol])
+
+    def alpaca_update(self, update: dict):
+        # Alpaca only gives the spread, no orderbook depth (alpaca is very bad)
+        symbol = update['S']
+        self.__orderbooks['alpaca'][symbol]['buy'] = {update['bp']: update['bs']}
+        self.__orderbooks['alpaca'][symbol]['sell'] = {update['ap']: update['as']}
+
+        self.__websockets_callbacks['alpaca'][symbol](self.__orderbooks['alpaca'][symbol],
+                                                      **self.__websockets_kwargs['alpaca'][symbol])
 
     def append_orderbook_callback(self, callback_object, override_symbol=None, override_exchange=None):
         """

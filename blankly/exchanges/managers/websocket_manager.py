@@ -25,6 +25,8 @@ class WebsocketManager(ABCExchangeWebsocket):
         self.__default_symbol = default_symbol
         self.__default_exchange = default_exchange
 
+        self.preferences = blankly.utils.load_user_preferences()
+
     def close_all_websockets(self):
         """
         Iterate through orderbooks and make sure they're closed
