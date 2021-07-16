@@ -147,6 +147,9 @@ class Tickers(ABCExchangeWebsocket):
 
                 if 't' in received:
                     received['t'] = parse_alpaca_timestamp(received['t'])
+                    recent_time = received['t']
+                else:
+                    recent_time = time.time()
 
                 if self.__log:
                     if counter % 100 == 0:
@@ -158,8 +161,7 @@ class Tickers(ABCExchangeWebsocket):
                 # Manage price events and fire for each manager attached
                 interface_message = self.__interface_callback(received)
 
-                self.__most_recent_time = interface_message["time"]
-                interface_message["time"] = self.__most_recent_time
+                self.__most_recent_time = recent_time
                 self.__time_feed.append(self.__most_recent_time)
                 self.__most_recent_tick = interface_message
                 self.__ticker_feed.append(interface_message)
@@ -172,11 +174,10 @@ class Tickers(ABCExchangeWebsocket):
 
                 counter += 1
             except Exception as e:
+                traceback.print_exc()
                 if persist_connected:
-                    traceback.print_exc()
                     pass
                 else:
-                    traceback.print_exc()
                     print("Error reading ticker websocket for " + self.__symbol + " on " +
                           self.__stream + ": attempting to re-initialize")
                     # Give a delay so this doesn't eat up from the main thread if it takes many tries to initialize

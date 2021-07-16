@@ -44,11 +44,21 @@ def switch_type(stream):
                no_callback, \
                "symbol,ask_exchange,ask_price,ask_size,bid_exchange,bid_price,bid_size,conditions,timestamp,tape\n"
     else:
-        return no_callback, no_callback, ""
+        return no_logging_callback, no_callback, ""
 
 
 def no_callback(message):
     return message
+
+
+def no_logging_callback(message):
+    response = ""
+    for i in list(message.keys()):
+        response += str(message[i])
+        response += ','
+
+    response += '\n'
+    return response
 
 
 def trades_logging(message: dict):
@@ -94,14 +104,13 @@ def trades_interface(message):
 
 
 def quotes_logging(message):
-    message['t'] = parse_alpaca_timestamp(message['t'])
-    return str(message["S"] + "," +
-               message["ax"] + "," +
-               message["ap"] + "," +
-               message["as"] + "," +
-               message["bx"] + "," +
-               message["bp"] + "," +
-               message["bs"] + "," +
-               message["c"] + "," +
-               message["t"] + "," +
-               message["z"] + "\n")
+    return str(str(message["S"]) + "," +
+               str(message["ax"]) + "," +
+               str(message["ap"]) + "," +
+               str(message["as"]) + "," +
+               str(message["bx"]) + "," +
+               str(message["bp"]) + "," +
+               str(message["bs"]) + "," +
+               str(message["c"]) + "," +
+               str(message["t"]) + "," +
+               str(message["z"]) + "\n")
