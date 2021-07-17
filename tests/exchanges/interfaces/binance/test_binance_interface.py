@@ -84,6 +84,8 @@ def test_get_buy_sell_order(binance_interface: BinanceInterface) -> None:
 
     market_buy_order = binance_interface.market_order(btc_usd_id, 'buy', 200)
 
+    time.sleep(1.5)
+
     num_retries = 0
     # wait until order is filled
     while binance_interface.get_order(btc_usd_id, market_buy_order.get_id())['status'] != "filled":
