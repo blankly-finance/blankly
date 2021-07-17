@@ -56,7 +56,7 @@ class WebsocketManager(ABCExchangeWebsocket):
             exchange = self.__default_exchange
 
         if exchange == "binance":
-            currency_id = blankly.utils.to_exchange_coin_id(currency_id, "binance").lower()
+            currency_id = blankly.utils.to_exchange_coin_id(currency_id, "binance")
         return self.websockets[exchange][currency_id]
 
     def get_ticker(self, symbol, override_exchange=None):

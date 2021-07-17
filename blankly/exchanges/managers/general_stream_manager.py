@@ -68,6 +68,7 @@ class GeneralManager(WebsocketManager):
 
             return websocket
         elif exchange_cache == "binance":
+            # Lower this to subscribe
             asset_id_cache = blankly.utils.to_exchange_coin_id(asset_id_cache, "binance").lower()
             if use_sandbox:
                 websocket = Binance_Websocket(asset_id_cache, channel, log,
@@ -76,6 +77,8 @@ class GeneralManager(WebsocketManager):
                 websocket = Binance_Websocket(asset_id_cache, channel, log)
             websocket.append_callback(callback)
 
+            # Upper this to cache
+            asset_id_cache = asset_id_cache.upper()
             self.__websockets[channel][exchange_cache][asset_id_cache] = websocket
 
             return websocket

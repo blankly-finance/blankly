@@ -120,10 +120,16 @@ class Tickers(ABCExchangeWebsocket):
             for i in self.__callbacks:
                 i(interface_message)
         except KeyError:
+            # If the try below figures this out then we don't have to traceback
+            error_found = False
             try:
                 if message['result'] is None:
                     self.__response = message
+                    error_found = True
             except KeyError:
+                traceback.print_exc()
+
+            if not error_found:
                 traceback.print_exc()
 
     def on_error(self, ws, error):
