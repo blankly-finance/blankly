@@ -145,8 +145,8 @@ class OrderbookManager(WebsocketManager):
             self.__websockets_callbacks['coinbase_pro'][override_symbol] = callback
             self.__websockets_kwargs['coinbase_pro'][override_symbol] = kwargs
             self.__orderbooks['coinbase_pro'][override_symbol] = {
-                "buy": [],
-                "sell": []
+                "bids": [],
+                "asks": []
             }
             return websocket
         elif exchange_name == "binance":
@@ -172,8 +172,8 @@ class OrderbookManager(WebsocketManager):
 
             buys, sells = binance_snapshot(specific_currency_id, 1000)
             self.__orderbooks['binance'][specific_currency_id] = {
-                "buy": buys,
-                "sell": sells
+                "bids": buys,
+                "asks": sells
             }
 
         elif exchange_name == "alpaca":
@@ -198,8 +198,8 @@ class OrderbookManager(WebsocketManager):
             self.__websockets_kwargs['alpaca'][override_symbol] = kwargs
 
             self.__orderbooks['alpaca'][override_symbol] = {
-                "buy": [],
-                "sell": [],
+                "bids": [],
+                "asks": [],
             }
 
         else:
@@ -209,29 +209,36 @@ class OrderbookManager(WebsocketManager):
         print("Orderbook snapshot acquired for: " + update['product_id'])
         # Clear whatever book we had
         book = {
-            "buy": [],
-            "sell": []
+            "bids": [],
+            "asks": []
         }
         # Get all bids
         buys = update['bids']
         # Convert these to float and write to our order dictionaries
         for i in range(len(buys)):
             buy = buys[i]
-            book['buy'].append((float(buy[0]), float(buy[1])))
+            book['bids'].append((float(buy[0]), float(buy[1])))
 
         sells = update['asks']
         for i in range(len(sells)):
             sell = sells[i]
-            book['sell'].append((float(sell[0]), float(sell[1])))
+            book['asks'].append((float(sell[0]), float(sell[1])))
 
-        book["buy"] = sort_list_tuples(book["buy"])
-        book["sell"] = sort_list_tuples(book["sell"])
+        book["bids"] = sort_list_tuples(book["bids"])
+        book["asks"] = sort_list_tuples(book["asks"])
 
         self.__orderbooks['coinbase_pro'][update['product_id']] = book
 
     def coinbase_update(self, update):
         # Side is first in list
         side = update['changes'][0][0]
+
+        # Have to convert coinbase to use this
+        if side == 'buy':
+            side = 'bids'
+        elif side == 'sell':
+            side = 'asks'
+
         # Price is second
         price = float(update['changes'][0][1])
         qty = float(update['changes'][0][2])
@@ -257,8 +264,8 @@ class OrderbookManager(WebsocketManager):
             symbol = update['s']
 
             # Get symbol for orderbook
-            book_buys = self.__orderbooks['binance'][symbol]['buy']  # type: list
-            book_sells = self.__orderbooks['binance'][symbol]['sell']  # type: list
+            book_buys = self.__orderbooks['binance'][symbol]['bids']  # type: list
+            book_sells = self.__orderbooks['binance'][symbol]['asks']  # type: list
 
             # Buys are b, count from low to high with reverse (which is the ::-1 thing)
             new_buys = update['b'][::-1]  # type: list
@@ -284,8 +291,8 @@ class OrderbookManager(WebsocketManager):
             book_buys = sort_list_tuples(book_buys)
             book_sells = sort_list_tuples(book_sells)
 
-            self.__orderbooks['binance'][symbol]['buy'] = book_buys
-            self.__orderbooks['binance'][symbol]['sell'] = book_sells
+            self.__orderbooks['binance'][symbol]['bids'] = book_buys
+            self.__orderbooks['binance'][symbol]['asks'] = book_sells
 
             # Pass in this new updated orderbook
             self.__websockets_callbacks['binance'][symbol](self.__orderbooks['binance'][symbol],
@@ -296,8 +303,8 @@ class OrderbookManager(WebsocketManager):
     def alpaca_update(self, update: dict):
         # Alpaca only gives the spread, no orderbook depth (alpaca is very bad)
         symbol = update['S']
-        self.__orderbooks['alpaca'][symbol]['buy'] = [(['bp'], update['bs'])]
-        self.__orderbooks['alpaca'][symbol]['sell'] = [(update['ap'], update['as'])]
+        self.__orderbooks['alpaca'][symbol]['bids'] = [(['bp'], update['bs'])]
+        self.__orderbooks['alpaca'][symbol]['asks'] = [(update['ap'], update['as'])]
 
         self.__websockets_callbacks['alpaca'][symbol](self.__orderbooks['alpaca'][symbol],
                                                       **self.__websockets_kwargs['alpaca'][symbol])
