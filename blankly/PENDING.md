@@ -8,4 +8,5 @@
 - Changes in the homogeneity of the websocket trade feeds
 - Alpaca websocket streaming setting in `settings.json`
 - Orderbooks are going to become a list of tuples
-- Alpaca also has a weird ordebook
+- Alpaca also has a weird orderbook
+- Buys are now bids and sells are now asks in orderbooks

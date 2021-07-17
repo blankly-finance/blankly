@@ -54,6 +54,7 @@ def binance_snapshot(symbol, limit):
 
     buys = sort_list_tuples(buys)
     sells = sort_list_tuples(sells)
+    print("Orderbook snapshot acquired for: " + symbol.upper())
     return buys, sells
 
 
@@ -142,7 +143,7 @@ class OrderbookManager(WebsocketManager):
 
             # Store this object
             self.__websockets['coinbase_pro'][override_symbol] = websocket
-            self.__websockets_callbacks['coinbase_pro'][override_symbol] = callback
+            self.__websockets_callbacks['coinbase_pro'][override_symbol] = [callback]
             self.__websockets_kwargs['coinbase_pro'][override_symbol] = kwargs
             self.__orderbooks['coinbase_pro'][override_symbol] = {
                 "bids": [],
@@ -167,7 +168,7 @@ class OrderbookManager(WebsocketManager):
             # binance returns the keys in all UPPER so the books should be created based on response
             specific_currency_id = specific_currency_id.upper()
             self.__websockets['binance'][specific_currency_id] = websocket
-            self.__websockets_callbacks['binance'][specific_currency_id] = callback
+            self.__websockets_callbacks['binance'][specific_currency_id] = [callback]
             self.__websockets_kwargs['binance'][specific_currency_id] = kwargs
 
             buys, sells = binance_snapshot(specific_currency_id, 1000)
@@ -194,7 +195,7 @@ class OrderbookManager(WebsocketManager):
             websocket.append_callback(self.alpaca_update)
 
             self.__websockets['alpaca'][override_symbol] = websocket
-            self.__websockets_callbacks['alpaca'][override_symbol] = callback
+            self.__websockets_callbacks['alpaca'][override_symbol] = [callback]
             self.__websockets_kwargs['alpaca'][override_symbol] = kwargs
 
             self.__orderbooks['alpaca'][override_symbol] = {
@@ -252,10 +253,12 @@ class OrderbookManager(WebsocketManager):
 
         book = sort_list_tuples(book)
         self.__orderbooks['coinbase_pro'][update['product_id']][side] = book
-        self.__websockets_callbacks['coinbase_pro'][update['product_id']](self.__orderbooks['coinbase_pro']
-                                                                          [update['product_id']],
-                                                                          **self.__websockets_kwargs['coinbase_pro']
-                                                                          [update['product_id']])
+
+        # Iterate through the callback list
+        callbacks = self.__websockets_callbacks['coinbase_pro'][update['product_id']]
+        for i in callbacks:
+            i(self.__orderbooks['coinbase_pro'][update['product_id']],
+              **self.__websockets_kwargs['coinbase_pro'][update['product_id']])
 
     def binance_update(self, update):
         try:
@@ -295,8 +298,10 @@ class OrderbookManager(WebsocketManager):
             self.__orderbooks['binance'][symbol]['asks'] = book_sells
 
             # Pass in this new updated orderbook
-            self.__websockets_callbacks['binance'][symbol](self.__orderbooks['binance'][symbol],
-                                                           **self.__websockets_kwargs['binance'][symbol])
+            callbacks = self.__websockets_callbacks['binance'][symbol]
+            for i in callbacks:
+                i(self.__orderbooks['binance'][symbol],
+                  **self.__websockets_kwargs['binance'][symbol])
         except Exception:
             traceback.print_exc()
 
@@ -306,8 +311,10 @@ class OrderbookManager(WebsocketManager):
         self.__orderbooks['alpaca'][symbol]['bids'] = [(['bp'], update['bs'])]
         self.__orderbooks['alpaca'][symbol]['asks'] = [(update['ap'], update['as'])]
 
-        self.__websockets_callbacks['alpaca'][symbol](self.__orderbooks['alpaca'][symbol],
-                                                      **self.__websockets_kwargs['alpaca'][symbol])
+        callbacks = self.__websockets_callbacks['alpaca'][symbol]
+        for i in callbacks:
+            i(self.__orderbooks['alpaca'][symbol],
+              **self.__websockets_kwargs['alpaca'][symbol])
 
     def append_orderbook_callback(self, callback_object, override_symbol=None, override_exchange=None):
         """
@@ -325,7 +332,7 @@ class OrderbookManager(WebsocketManager):
         if override_exchange is None:
             override_exchange = self.__default_exchange
 
-        self.__websockets_callbacks[override_exchange][override_symbol] = callback_object
+        self.__websockets_callbacks[override_exchange][override_symbol].append(callback_object)
 
     def get_most_recent_orderbook(self, override_symbol=None, override_exchange=None):
         """
