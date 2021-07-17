@@ -57,7 +57,6 @@ class GeneralManager(WebsocketManager):
         use_sandbox = self.preferences['settings']['use_sandbox_websockets']
 
         if exchange_cache == "coinbase_pro":
-            print(self.__websockets)
             if use_sandbox:
                 websocket = Coinbase_Pro_Websocket(asset_id_cache, channel, log,
                                                    WEBSOCKET_URL="wss://ws-feed-public.sandbox.pro.coinbase.com")
@@ -69,6 +68,7 @@ class GeneralManager(WebsocketManager):
 
             return websocket
         elif exchange_cache == "binance":
+            asset_id_cache = blankly.utils.to_exchange_coin_id(asset_id_cache, "binance").lower()
             if use_sandbox:
                 websocket = Binance_Websocket(asset_id_cache, channel, log,
                                               WEBSOCKET_URL="wss://testnet.binance.vision/ws")

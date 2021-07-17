@@ -15,6 +15,8 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from typing import List
+
 import blankly.utils.utils
 import blankly.exchanges.auth.auth_constructor
 import requests
@@ -24,6 +26,10 @@ from blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Bi
 from blankly.exchanges.interfaces.alpaca.alpaca_websocket import Tickers as Alpaca_Websocket
 
 from blankly.exchanges.managers.websocket_manager import WebsocketManager
+
+
+def sort_list_tuples(list_with_tuples: list) -> List[tuple]:
+    return sorted(list_with_tuples, key=lambda x: x[0])
 
 
 def binance_snapshot(symbol, limit):
@@ -38,14 +44,28 @@ def binance_snapshot(symbol, limit):
     except KeyError:
         raise KeyError(response)
     sells_response = response['asks']
-    buys = {}
-    sells = {}
+    buys = []
+    sells = []
     for i in buys_response:
-        buys[float(i[0])] = float(i[1])
+        buys.append((float(i[0]), float(i[1])))
     for i in sells_response:
-        sells[float(i[0])] = float(i[1])
+        sells.append((float(i[0]), float(i[1])))
 
+    buys = sort_list_tuples(buys)
+    sells = sort_list_tuples(sells)
     return buys, sells
+
+
+def remove_price(book: list, price: float) -> list:
+    for j in range(len(book)):
+        price_at_index = book[j][0]
+        if price_at_index > price:
+            break
+        if price_at_index == price:
+            book.pop(j)
+            break
+
+    return book
 
 
 class OrderbookManager(WebsocketManager):
@@ -124,8 +144,8 @@ class OrderbookManager(WebsocketManager):
             self.__websockets_callbacks['coinbase_pro'][override_symbol] = callback
             self.__websockets_kwargs['coinbase_pro'][override_symbol] = kwargs
             self.__orderbooks['coinbase_pro'][override_symbol] = {
-                "buy": {},
-                "sell": {}
+                "buy": [],
+                "sell": []
             }
             return websocket
         elif exchange_name == "binance":
@@ -177,8 +197,8 @@ class OrderbookManager(WebsocketManager):
             self.__websockets_kwargs['alpaca'][override_symbol] = kwargs
 
             self.__orderbooks['alpaca'][override_symbol] = {
-                "buy": {},
-                "sell": {},
+                "buy": [],
+                "sell": [],
             }
 
         else:
@@ -188,39 +208,42 @@ class OrderbookManager(WebsocketManager):
         print("Orderbook snapshot acquired for: " + update['product_id'])
         # Clear whatever book we had
         book = {
-            "buy": {},
-            "sell": {}
+            "buy": [],
+            "sell": []
         }
         # Get all bids
         buys = update['bids']
         # Convert these to float and write to our order dictionaries
         for i in range(len(buys)):
             buy = buys[i]
-            book['buy'][float(buy[0])] = float(buy[1])
+            book['buy'].append(([float(buy[0])], float(buy[1])))
 
         sells = update['asks']
         for i in range(len(sells)):
             sell = sells[i]
-            book['sell'][float(sell[0])] = float(sell[1])
+            book['sell'].append(([float(sell[0])], float(sell[1])))
+
+        book["buy"] = sort_list_tuples(book["buy"])
+        book["sell"] = sort_list_tuples(book["sell"])
 
         self.__orderbooks['coinbase_pro'][update['product_id']] = book
 
     def coinbase_update(self, update):
-        # Side is first in tuple
+        # Side is first in list
+        print(update)
         side = update['changes'][0][0]
         # Price is second
         price = float(update['changes'][0][1])
-        book = self.__orderbooks['coinbase_pro'][update['product_id']][side]
+        qty = float(update['changes'][0][2])
+        book = self.__orderbooks['coinbase_pro'][update['product_id']][side]  # type: list
 
         # Quantity at that point is third
-        qty = float(update['changes'][0][2])
         if qty == 0:
-            try:
-                book.pop(price)
-            except KeyError:
-                pass
+            book = remove_price(book, price)
         else:
-            book[price] = float(update['changes'][0][2])
+            book.append((price, qty))
+
+        book = sort_list_tuples(book)
         self.__orderbooks['coinbase_pro'][update['product_id']][side] = book
         self.__websockets_callbacks['coinbase_pro'][update['product_id']](self.__orderbooks['coinbase_pro']
                                                                           [update['product_id']],
@@ -233,32 +256,32 @@ class OrderbookManager(WebsocketManager):
         symbol = update['s']
 
         # Get symbol for orderbook
-        book_buys = self.__orderbooks['binance'][symbol]['buy']
-        book_sells = self.__orderbooks['binance'][symbol]['sell']
-        # Buys are b
-        new_buys = update['b']
+        book_buys = self.__orderbooks['binance'][symbol]['buy']  # type: list
+        book_sells = self.__orderbooks['binance'][symbol]['sell']  # type: list
+
+        # Buys are b, count from low to high with reverse
+        new_buys = update['b'].reverse()  # type: list
         for i in new_buys:
-            # Price is i[0], quantity is i[1]
-            if float(i[1]) == 0:
-                try:
-                    book_buys.pop(float(i[0]))
-                except KeyError:
-                    pass
+            if i[1] == 0:
+                book_buys = remove_price(book_buys, i[0])
             else:
-                book_buys[float(i[0])] = float(i[1])
-        # Asks are sells
-        new_sells = update['a']
+                book_buys.append((i[0], i[1]))
+
+        # Asks are sells, these are also counted from low to high
+        new_sells = update['a']  # type: list
         for i in new_sells:
-            # Price is i[0], quantity is i[1]
-            if float(i[1]) == 0:
-                try:
-                    book_sells.pop(float(i[0]))
-                except KeyError:
-                    pass
+            if i[1] == 0:
+                book_sells = remove_price(book_sells, i[0])
             else:
-                book_sells[float(i[0])] = float(i[1])
+                book_sells.append((i[0], i[1]))
+
+        # Now sort them
+        book_buys = sort_list_tuples(book_buys)
+        book_sells = sort_list_tuples(book_sells)
+
         self.__orderbooks['binance'][symbol]['buy'] = book_buys
         self.__orderbooks['binance'][symbol]['sell'] = book_sells
+
         # Pass in this new updated orderbook
         self.__websockets_callbacks['binance'][symbol](self.__orderbooks['binance'][symbol],
                                                        **self.__websockets_kwargs['binance'][symbol])
@@ -266,8 +289,8 @@ class OrderbookManager(WebsocketManager):
     def alpaca_update(self, update: dict):
         # Alpaca only gives the spread, no orderbook depth (alpaca is very bad)
         symbol = update['S']
-        self.__orderbooks['alpaca'][symbol]['buy'] = {update['bp']: update['bs']}
-        self.__orderbooks['alpaca'][symbol]['sell'] = {update['ap']: update['as']}
+        self.__orderbooks['alpaca'][symbol]['buy'] = [(['bp'], update['bs'])]
+        self.__orderbooks['alpaca'][symbol]['sell'] = [(update['ap'], update['as'])]
 
         self.__websockets_callbacks['alpaca'][symbol](self.__orderbooks['alpaca'][symbol],
                                                       **self.__websockets_kwargs['alpaca'][symbol])

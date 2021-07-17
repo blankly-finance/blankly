@@ -29,7 +29,7 @@ from binance.client import Client as Binance_API
 
 
 class BlanklyBot:
-    currency_pair: str
+    symbol: str
     user_preferences: dict
     exchange_type: str
     initial_state: dict
@@ -50,7 +50,7 @@ class BlanklyBot:
         self.exchange_type = ""
         self.initial_state = {}
         self.user_preferences = {}
-        self.currency_pair = ""
+        self.symbol = ""
         self.direct_calls = None
         self.process = Process(target=self.setup_process)
 
@@ -71,7 +71,7 @@ class BlanklyBot:
         self.user_preferences = user_preferences
         self.Interface = copy.deepcopy(interface)
         # Coin id is the currency and which market its on
-        self.currency_pair = currency_pair
+        self.symbol = currency_pair
         self.direct_calls = interface.get_calls()
         self.coinbase_pro_direct = self.direct_calls
         self.binance_direct = self.direct_calls
@@ -96,8 +96,8 @@ class BlanklyBot:
         """
         Create any objects that need to be process-specific in the other process
         """
-        self.Ticker_Manager = blankly.TickerManager(self.exchange_type, self.currency_pair)
-        self.Orderbook_Manager = blankly.OrderbookManager(self.exchange_type, self.currency_pair)
+        self.Ticker_Manager = blankly.TickerManager(self.exchange_type, self.symbol)
+        self.Orderbook_Manager = blankly.OrderbookManager(self.exchange_type, self.symbol)
         self.main(args)
 
     """
