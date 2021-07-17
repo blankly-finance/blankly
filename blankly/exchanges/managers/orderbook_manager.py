@@ -20,6 +20,7 @@ from typing import List
 import blankly.utils.utils
 import blankly.exchanges.auth.auth_constructor
 import requests
+import traceback
 
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tickers as Coinbase_Pro_Orderbook
 from blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Binance_Orderbook
@@ -216,12 +217,12 @@ class OrderbookManager(WebsocketManager):
         # Convert these to float and write to our order dictionaries
         for i in range(len(buys)):
             buy = buys[i]
-            book['buy'].append(([float(buy[0])], float(buy[1])))
+            book['buy'].append((float(buy[0]), float(buy[1])))
 
         sells = update['asks']
         for i in range(len(sells)):
             sell = sells[i]
-            book['sell'].append(([float(sell[0])], float(sell[1])))
+            book['sell'].append((float(sell[0]), float(sell[1])))
 
         book["buy"] = sort_list_tuples(book["buy"])
         book["sell"] = sort_list_tuples(book["sell"])
@@ -230,7 +231,6 @@ class OrderbookManager(WebsocketManager):
 
     def coinbase_update(self, update):
         # Side is first in list
-        print(update)
         side = update['changes'][0][0]
         # Price is second
         price = float(update['changes'][0][1])
@@ -251,40 +251,47 @@ class OrderbookManager(WebsocketManager):
                                                                           [update['product_id']])
 
     def binance_update(self, update):
-        # TODO this needs a snapshot to work correctly, which needs arun's rest code
-        # Get symbol first
-        symbol = update['s']
+        try:
+            # TODO this needs a snapshot to work correctly, which needs arun's rest code
+            # Get symbol first
+            symbol = update['s']
 
-        # Get symbol for orderbook
-        book_buys = self.__orderbooks['binance'][symbol]['buy']  # type: list
-        book_sells = self.__orderbooks['binance'][symbol]['sell']  # type: list
+            # Get symbol for orderbook
+            book_buys = self.__orderbooks['binance'][symbol]['buy']  # type: list
+            book_sells = self.__orderbooks['binance'][symbol]['sell']  # type: list
 
-        # Buys are b, count from low to high with reverse
-        new_buys = update['b'].reverse()  # type: list
-        for i in new_buys:
-            if i[1] == 0:
-                book_buys = remove_price(book_buys, i[0])
-            else:
-                book_buys.append((i[0], i[1]))
+            # Buys are b, count from low to high with reverse (which is the ::-1 thing)
+            new_buys = update['b'][::-1]  # type: list
+            for i in new_buys:
+                i[0] = float(i[0])
+                i[1] = float(i[1])
+                if i[1] == 0:
+                    book_buys = remove_price(book_buys, i[0])
+                else:
+                    book_buys.append((i[0], i[1]))
 
-        # Asks are sells, these are also counted from low to high
-        new_sells = update['a']  # type: list
-        for i in new_sells:
-            if i[1] == 0:
-                book_sells = remove_price(book_sells, i[0])
-            else:
-                book_sells.append((i[0], i[1]))
+            # Asks are sells, these are also counted from low to high
+            new_sells = update['a']  # type: list
+            for i in new_sells:
+                i[0] = float(i[0])
+                i[1] = float(i[1])
+                if i[1] == 0:
+                    book_sells = remove_price(book_sells, i[0])
+                else:
+                    book_sells.append((i[0], i[1]))
 
-        # Now sort them
-        book_buys = sort_list_tuples(book_buys)
-        book_sells = sort_list_tuples(book_sells)
+            # Now sort them
+            book_buys = sort_list_tuples(book_buys)
+            book_sells = sort_list_tuples(book_sells)
 
-        self.__orderbooks['binance'][symbol]['buy'] = book_buys
-        self.__orderbooks['binance'][symbol]['sell'] = book_sells
+            self.__orderbooks['binance'][symbol]['buy'] = book_buys
+            self.__orderbooks['binance'][symbol]['sell'] = book_sells
 
-        # Pass in this new updated orderbook
-        self.__websockets_callbacks['binance'][symbol](self.__orderbooks['binance'][symbol],
-                                                       **self.__websockets_kwargs['binance'][symbol])
+            # Pass in this new updated orderbook
+            self.__websockets_callbacks['binance'][symbol](self.__orderbooks['binance'][symbol],
+                                                           **self.__websockets_kwargs['binance'][symbol])
+        except Exception:
+            traceback.print_exc()
 
     def alpaca_update(self, update: dict):
         # Alpaca only gives the spread, no orderbook depth (alpaca is very bad)
