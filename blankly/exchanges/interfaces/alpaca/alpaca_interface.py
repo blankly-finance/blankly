@@ -20,6 +20,7 @@ import warnings
 
 import dateparser
 import pytz
+import time
 from alpaca_trade_api.rest import TimeFrame
 
 from blankly.utils import utils as utils
@@ -28,8 +29,10 @@ from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.utils.exceptions import APIException
+from blankly.utils.time_builder import build_minute
 import pandas as pd
 import alpaca_trade_api
+from alpaca_trade_api.rest import APIError as AlpacaAPIError
 from dateutil import parser
 import datetime
 from datetime import datetime as dt
@@ -248,7 +251,7 @@ class AlpacaInterface(ExchangeInterface):
             'taker_fee_rate': 0.0
         }
 
-    def get_product_history(self, symbol: str, epoch_start: int, epoch_stop: int, resolution: int):
+    def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution: int):
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
         supported_multiples = [60, 3600, 86400]
@@ -281,8 +284,25 @@ class AlpacaInterface(ExchangeInterface):
         epoch_start_str = dt.fromtimestamp(epoch_start, tz=timezone.utc).isoformat()
         epoch_stop_str = dt.fromtimestamp(epoch_stop, tz=timezone.utc).isoformat()
 
-        bars = self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str, adjustment='raw').df
-        bars.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"}, inplace=True)
+        try:
+            bars = self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str, adjustment='raw').df
+        except AlpacaAPIError as e:
+            if e.code == 42210000:
+                warning_string = "Your alpaca subscription does not permit querying data from the last 15 minutes. " \
+                                  "Blankly is adjusting your query."
+                warnings.warn(warning_string)
+                epoch_stop = time.time()-(build_minute()*15)
+                if epoch_stop >= epoch_start:
+                    return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+                else:
+                    warning_string = "No data range queried after time adjustmnet."
+                    warnings.warn(warning_string)
+                    return pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+            else:
+                raise e
+        bars.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
+                    inplace=True)
+
         return utils.get_ohlcv(bars, row_divisor)
 
     def history(self,
