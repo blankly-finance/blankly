@@ -18,10 +18,11 @@
 
 
 from typing import Any
-from blankly.indicators.utils import convert_to_numpy
-from blankly.indicators.utils import check_series
-import tulipy as ti
+
 import pandas as pd
+import tulipy as ti
+
+from blankly.indicators.utils import check_series, convert_to_numpy
 
 
 def stddev_period(data, period=14, use_series=False) -> Any:

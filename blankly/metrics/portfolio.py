@@ -17,9 +17,10 @@
 """
 
 
-import pandas as pd
 import warnings
+
 import numpy as np
+import pandas as pd
 
 
 def cagr(start_value, end_value, years):
