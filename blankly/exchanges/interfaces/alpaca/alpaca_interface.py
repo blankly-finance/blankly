@@ -119,24 +119,49 @@ class AlpacaInterface(ExchangeInterface):
         open_orders = self.calls.list_orders(symbols=symbols)
         snapshot_price = self.calls.get_snapshots(symbols=symbols)
 
+        # now grab the available cash in the account
+        account = self.calls.get_account()
+        positions_dict['USD'] = utils.AttributeDict({
+            'available': float(account['cash']),
+            'hold': 0
+        })
+
         for order in open_orders:
-            if order['side'] != 'sell':
-                continue
+            if order['side'] == 'buy':  # buy orders only affect USD holds
+                if order['qty']:  # this case handles qty market buy and limit buy
+                    if order['type'] == 'limit':
+                        dollar_amt = float(order['qty']) * float(order['limit_price'])
+                    elif order['type'] == 'market':
+                        dollar_amt = float(order['qty']) * snapshot_price[curr_symbol]['latestTrade']['p']
+                    else: # we dont have support for stop_order, stop_limit_order
+                        dollar_amt = 0
+                else:  # this is the case for notional market buy
+                    dollar_amt = order['notional']
 
-            curr_symbol = order['symbol']
-            if order['qty']:
-                qty = float(order['qty'])
-            else:  # this is the case for notional trades, calculate the qty with cash/price
-                qty = float(order['notional']) / snapshot_price[curr_symbol]['latestTrade']['p']
+                positions_dict['USD']['available'] -= dollar_amt
+                positions_dict['USD']['hold'] += dollar_amt
 
-            positions_dict[curr_symbol]['available'] -= qty
-            positions_dict[curr_symbol]['hold'] += qty
+            else:
+                curr_symbol = order['symbol']
+                if order['qty']:  # this case handles qty market sell and limit sell
+                    qty = float(order['qty'])
+                else:  # this is the case for notional market sell, calculate the qty with cash/price
+                    qty = float(order['notional']) / snapshot_price[curr_symbol]['latestTrade']['p']
 
-            if symbol is not None and curr_symbol == symbol:
-                return utils.AttributeDict({
-                    'available': positions_dict[curr_symbol]['available'],
-                    'hold': positions_dict[curr_symbol]['hold']
-                })
+                positions_dict[curr_symbol]['available'] -= qty
+                positions_dict[curr_symbol]['hold'] += qty
+
+                if symbol is not None and curr_symbol == symbol:
+                    return utils.AttributeDict({
+                        'available': positions_dict[curr_symbol]['available'],
+                        'hold': positions_dict[curr_symbol]['hold']
+                    })
+
+        if symbol == 'USD':
+            return utils.AttributeDict({
+                'available': positions_dict['USD']['available'],
+                'hold': positions_dict['USD']['available']
+            })
 
         if symbol is not None:
             # if we haven't found the currency, then we'll end up here
