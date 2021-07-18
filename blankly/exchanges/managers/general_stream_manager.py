@@ -16,10 +16,9 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import blankly.utils.utils
-from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tickers as Coinbase_Pro_Websocket
-from blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Binance_Websocket
 from blankly.exchanges.interfaces.alpaca.alpaca_websocket import Tickers as Alpaca_Websocket
-
+from blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Binance_Websocket
+from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tickers as Coinbase_Pro_Websocket
 from blankly.exchanges.managers.websocket_manager import WebsocketManager
 
 

@@ -18,8 +18,9 @@
 
 
 import abc
-from blankly.exchanges.auth.auth_constructor import load_auth
 import warnings
+
+from blankly.exchanges.auth.auth_constructor import load_auth
 from blankly.utils.exceptions import AuthError
 
 
