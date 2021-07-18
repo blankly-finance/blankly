@@ -281,7 +281,10 @@ def get_base_asset(blankly_coin_id):
 
 def get_quote_asset(blankly_coin_id):
     # Gets the USD of the BTC-USD
-    return blankly_coin_id.split('-')[1]
+    split = blankly_coin_id.split('-')
+    if len(split) > 1:
+        return split[1]
+    return split
 
 
 def rename_to(keys_array, renaming_dictionary):
