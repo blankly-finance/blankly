@@ -15,6 +15,8 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import dateparser
+from datetime import datetime as dt
 import blankly
 import unittest
 import pytest
@@ -61,7 +63,7 @@ def test_get_exchange(coinbase_interface: CoinbaseProInterface) -> None:
 
     assert btc_usd_id
 
-    #market_buy_order = coinbase_interface.market_order(btc_usd_id, 'buy', 200)
+    # market_buy_order = coinbase_interface.market_order(btc_usd_id, 'buy', 200)
 
 
 def test_get_price(coinbase_interface: CoinbaseProInterface) -> None:
@@ -72,3 +74,21 @@ def test_get_price(coinbase_interface: CoinbaseProInterface) -> None:
     responses.append(coinbase_interface.get_price('ETH-BTC'))
     for resp in responses:
         assert type(resp) is float
+
+
+def test_start_with_end_history(coinbase_interface: CoinbaseProInterface) -> None:
+    # This initial selection could fail because of the slightly random day that they delete their data
+    start_dt = dateparser.parse("2021-07-15")
+    start = str(start_dt.replace(day=1).date())
+    stop = str(start_dt.date())
+
+    # The dates are offset by one because the time is the open time
+    close_stop = str(dt.today().replace(day=dt.today().day - 1).date())
+
+    resp = coinbase_interface.history('BTC-USD', resolution='1h', start_date=start, end_date=stop)
+
+    start_date = dt.fromtimestamp(resp['time'][0]).strftime('%Y-%m-%d')
+    end_date = dt.fromtimestamp(resp['time'].iloc[-1]).strftime('%Y-%m-%d')
+
+    assert start_date == start
+    assert end_date == close_stop

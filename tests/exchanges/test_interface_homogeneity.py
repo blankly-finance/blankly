@@ -15,6 +15,8 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import traceback
+
 import dateparser
 
 import blankly
@@ -305,8 +307,9 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
 
         # This initial selection could fail because of the slightly random day that they delete their data
-        start = str(dt.today().replace(day=1).date())
-        stop = str(dt.today().date())
+        start_dt = dateparser.parse("2021-07-15")
+        start = str(start_dt.replace(day=1).date())
+        stop = str(start_dt.date())
 
         # The dates are offset by one because the time is the open time
         close_stop = str(dt.today().replace(day=dt.today().day-1).date())
@@ -319,16 +322,14 @@ class InterfaceHomogeneity(unittest.TestCase):
             else:
                 responses.append(i.history('BTC-USD', resolution='1h', start_date=start, end_date=stop))
 
-        for i in responses:
-            self.check_product_history_columns(i)
+        for idx, resp in enumerate(responses):
+            start_date = dt.fromtimestamp(resp['time'][0]).strftime('%Y-%m-%d')
+            end_date = dt.fromtimestamp(resp['time'].iloc[-1]).strftime('%Y-%m-%d')
 
-            start_date = dt.fromtimestamp(i['time'][0]).strftime('%Y-%m-%d')
-            end_date = dt.fromtimestamp(i['time'].iloc[-1]).strftime('%Y-%m-%d')
-
+            print("Homogeneity test started on interface: " + self.interfaces[idx].get_exchange_type())
+            self.check_product_history_columns(resp)
             self.assertEqual(start_date, start)
             self.assertEqual(end_date, close_stop)
-
-            self.check_product_history_types(i)
 
     def test_get_product_history(self):
         # Setting for number of hours to test backwards to
