@@ -26,10 +26,10 @@ class Alpaca(Exchange):
         Exchange.__init__(self, 'alpaca', portfolio_name, keys_path, settings_path)
 
     def get_exchange_state(self):
-        return self.Interface.get_fees()
+        return self.interface.get_fees()
 
     def get_asset_state(self, symbol):
-        return self.Interface.get_account(symbol)
+        return self.interface.get_account(symbol)
 
     def get_direct_calls(self) -> alpaca_trade_api.REST:
         return self.calls

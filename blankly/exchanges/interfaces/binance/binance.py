@@ -37,7 +37,7 @@ class Binance(Exchange):
         """
         # TODO Populate this with useful information
         symbol = utils.get_base_asset(symbol)
-        account = self.Interface.get_account(symbol=symbol)
+        account = self.interface.get_account(symbol=symbol)
         return account
 
     def get_exchange_state(self):
@@ -45,7 +45,7 @@ class Binance(Exchange):
         Exchange state is the external properties for the exchange block
         """
         # TODO Populate this with useful information
-        return self.Interface.get_fees()
+        return self.interface.get_fees()
 
     def get_direct_calls(self) -> Client:
         return self.calls

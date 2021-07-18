@@ -37,7 +37,7 @@ class Exchange(ABCExchange, abc.ABC):
 
         self.__auth = self.__factory.create_auth(keys_path, self.__type, self.__name)
         self.__direct_calls_factory = DirectCallsFactory()
-        self.calls, self.Interface = self.__direct_calls_factory.create(self.__type, self.__auth, preferences_path)
+        self.calls, self.interface = self.__direct_calls_factory.create(self.__type, self.__auth, preferences_path)
         write_auth_cache(exchange_type, portfolio_name, self.calls)
 
         self.preferences = blankly.utils.load_user_preferences(preferences_path)
@@ -56,15 +56,15 @@ class Exchange(ABCExchange, abc.ABC):
 
     def construct_interface(self, calls):
         if self.__type == "coinbase_pro":
-            self.Interface = CoinbaseProInterface(self.__type, calls)
+            self.interface = CoinbaseProInterface(self.__type, calls)
         elif self.__type == "binance":
-            self.Interface = BinanceInterface(self.__type, calls)
+            self.interface = BinanceInterface(self.__type, calls)
 
     def get_interface(self) -> ABCExchangeInterface:
         """
         Get the the authenticated interface for the object. This will provide authenticated API calls.
         """
-        return self.Interface
+        return self.interface
 
     def start_models(self, coin_id=None):
         """
@@ -140,7 +140,7 @@ class Exchange(ABCExchange, abc.ABC):
             "args": args
         }
         model.setup(self.__type, coin_id, self.preferences, self.get_full_state(coin_id),
-                    self.Interface)
+                    self.interface)
 
     @abc.abstractmethod
     def get_asset_state(self, symbol):
