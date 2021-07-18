@@ -15,17 +15,16 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import traceback
 from typing import List
 
-import blankly.utils.utils
-import blankly.exchanges.auth.auth_constructor
 import requests
-import traceback
 
-from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tickers as Coinbase_Pro_Orderbook
-from blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Binance_Orderbook
+import blankly.exchanges.auth.auth_constructor
+import blankly.utils.utils
 from blankly.exchanges.interfaces.alpaca.alpaca_websocket import Tickers as Alpaca_Websocket
-
+from blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Binance_Orderbook
+from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tickers as Coinbase_Pro_Orderbook
 from blankly.exchanges.managers.websocket_manager import WebsocketManager
 
 
