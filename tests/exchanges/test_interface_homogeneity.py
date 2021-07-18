@@ -15,30 +15,29 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import traceback
+
+import time
+import unittest
+from datetime import datetime as dt
 
 import dateparser
+import numpy
+import pandas as pd
 
 import blankly
-from blankly.utils.utils import compare_dictionaries
-from blankly.utils.time_builder import build_hour
-from datetime import datetime as dt
-import unittest
-import time
-import pandas as pd
-import numpy
-
-from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.exchanges.orders.limit_order import LimitOrder
+from blankly.exchanges.orders.market_order import MarketOrder
+from blankly.utils.time_builder import build_hour
+from blankly.utils.utils import compare_dictionaries
 
 
 def compare_responses(response_list, force_exchange_specific=True):
     """
     Compare a set of responses against the others. This supports a large set of interfaces
     """
-    for i in range(len(response_list)-1):
-        if not compare_dictionaries(response_list[i], response_list[i+1], force_exchange_specific):
-            print("Failed checking index " + str(i+1) + " against index " + str(i))
+    for i in range(len(response_list) - 1):
+        if not compare_dictionaries(response_list[i], response_list[i + 1], force_exchange_specific):
+            print("Failed checking index " + str(i + 1) + " against index " + str(i))
             return False
     return True
 

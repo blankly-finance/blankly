@@ -1,12 +1,16 @@
-import numpy as np
 import pickle
-from pathlib import Path
 import unittest
-from blankly.indicators import ema, vwma, wma, zlema, sma, hma, kaufman_adaptive_ma, trima, macd
+from pathlib import Path
+
+import numpy as np
+
+from blankly.indicators import ema, hma, kaufman_adaptive_ma, macd, sma, trima, vwma, wma, zlema
+
 
 def compare_equal(a, b):
     # compares two numpy arrays
     return np.array_equal(a, b)
+
 
 class MovingAverages(unittest.TestCase):
     @classmethod

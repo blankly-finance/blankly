@@ -1,12 +1,17 @@
-import numpy as np
 import pickle
-from pathlib import Path
 import unittest
-from blankly.indicators import rsi, stochastic_oscillator, percentage_price_oscillator, absolute_price_oscillator, chande_momentum_oscillator, aroon_oscillator
+from pathlib import Path
+
+import numpy as np
+
+from blankly.indicators import absolute_price_oscillator, aroon_oscillator, chande_momentum_oscillator, \
+    percentage_price_oscillator, rsi, stochastic_oscillator
+
 
 def compare_equal(a, b):
     # compares two numpy arrays
     return np.array_equal(a, b)
+
 
 class Oscillators(unittest.TestCase):
     @classmethod

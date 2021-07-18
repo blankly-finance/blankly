@@ -1,17 +1,17 @@
+import datetime
+import time
+from datetime import datetime as dt
+from pathlib import Path
+
 import alpaca_trade_api
+import dateparser
+import dateparser as dp
+import pytest
+import pytz
 
 from blankly.exchanges.interfaces.alpaca.alpaca_auth import AlpacaAuth
-from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
-import pytest
-
 from blankly.exchanges.interfaces.alpaca.alpaca_interface import AlpacaInterface
-from pathlib import Path
-import datetime
-import dateparser as dp
-import time
-import pytz
-from datetime import datetime as dt
-import dateparser
+from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 
 timeZ_Ny = pytz.timezone('America/New_York')
 MARKET_OPEN = datetime.time(hour=9, minute=0, second=0, tzinfo=timeZ_Ny)
@@ -30,6 +30,7 @@ def alpaca_interface():
 
 def test_get_exchange(alpaca_interface: AlpacaInterface) -> None:
     assert alpaca_interface.get_exchange_type() == 'alpaca'
+
 
 # TODO: uncomment and fix this when we get the function to work
 # def test_get_products(alpaca_interface: AlpacaInterface) -> None:
@@ -113,6 +114,7 @@ def test_get_product_history_est_timezone(alpaca_interface: AlpacaInterface) -> 
     assert return_df.iloc[0]['time'] == desired_timestamp
     assert (len(return_df) == 6)
 
+
 def test_get_product_history_custom(alpaca_interface: AlpacaInterface) -> None:
     assert isinstance(alpaca_interface.calls, alpaca_trade_api.REST)
     end = dateparser.parse("2021-02-04 9:35AM EST")
@@ -120,14 +122,15 @@ def test_get_product_history_custom(alpaca_interface: AlpacaInterface) -> None:
     return_df = alpaca_interface.history("AAPL", to=10, resolution='1h', end_date=end)
     assert (len(return_df) == 10)
 
+
 def test_get_account(alpaca_interface: AlpacaInterface) -> None:
     products = alpaca_interface.get_account()
-    asset = "USD"
     for _, val in products.items():
         assert 'available' in val
         assert 'hold' in val
 
     assert "USD" in products
+
 
 def test_get_price(alpaca_interface: AlpacaInterface) -> None:
     price = alpaca_interface.get_price("AAPL")
