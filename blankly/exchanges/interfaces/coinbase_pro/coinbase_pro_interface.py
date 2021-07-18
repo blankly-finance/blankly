@@ -438,7 +438,9 @@ class CoinbaseProInterface(ExchangeInterface):
 
         resolution = blankly.time_builder.time_interval_to_seconds(resolution)
 
-        epoch_start, epoch_stop = super().get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        # epoch_start, epoch_stop = super().get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        epoch_start = utils.convert_epochs(epoch_start)
+        epoch_stop = utils.convert_epochs(epoch_stop)
 
         accepted_grans = [60, 300, 900, 3600, 21600, 86400]
         if resolution not in accepted_grans:
@@ -484,6 +486,10 @@ class CoinbaseProInterface(ExchangeInterface):
 
         # Have to cast this for some reason
         df[['high']] = df[['high']].astype(float)
+        df[['volume']] = df[['volume']].astype(float)
+        df[['low']] = df[['low']].astype(float)
+        df[['open']] = df[['low']].astype(float)
+
         return df
 
     """
