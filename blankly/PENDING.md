@@ -10,3 +10,5 @@
 - Orderbooks are going to become a list of tuples
 - Alpaca also has a weird orderbook
 - Buys are now bids and sells are now asks in orderbooks
+- How to generate alpaca paper keys
+- Go over features page again because got so many features
