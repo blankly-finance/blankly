@@ -122,10 +122,12 @@ def test_get_product_history_custom(alpaca_interface: AlpacaInterface) -> None:
 
 def test_get_account(alpaca_interface: AlpacaInterface) -> None:
     products = alpaca_interface.get_account()
+    asset = "USD"
     for _, val in products.items():
         assert 'available' in val
         assert 'hold' in val
 
+    assert "USD" in products
 
 def test_get_price(alpaca_interface: AlpacaInterface) -> None:
     price = alpaca_interface.get_price("AAPL")
