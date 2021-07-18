@@ -16,19 +16,20 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
-from blankly.exchanges.interfaces.alpaca.alpaca_websocket_utils import switch_type, parse_alpaca_timestamp
-from blankly.exchanges.auth.auth_constructor import load_auth
+import collections
+import ssl
+import threading
+import time
+import traceback
+import warnings
+
+import msgpack
+from websocket import create_connection
 
 import blankly
-import threading
-import ssl
-import msgpack
-import traceback
-import collections
-import warnings
-import time
-from websocket import create_connection
+from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
+from blankly.exchanges.auth.auth_constructor import load_auth
+from blankly.exchanges.interfaces.alpaca.alpaca_websocket_utils import parse_alpaca_timestamp, switch_type
 
 
 def create_ticker_connection(symbol, url, channel):

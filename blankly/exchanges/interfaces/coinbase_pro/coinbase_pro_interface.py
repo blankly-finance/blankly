@@ -19,18 +19,16 @@
 
 import time
 import warnings
+
 import pandas as pd
 
 import blankly.utils.time_builder
 import blankly.utils.utils as utils
-from blankly.utils.exceptions import InvalidOrder
-from blankly.utils.exceptions import APIException
+from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.exchanges.orders.stop_limit import StopLimit
-
-
-from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
+from blankly.utils.exceptions import APIException, InvalidOrder
 
 
 class CoinbaseProInterface(ExchangeInterface):

@@ -17,10 +17,11 @@
 """
 
 
-from blankly.exchanges.auth.abc_auth import ABCAuth
+import os
 
 import alpaca_trade_api
-import os
+
+from blankly.exchanges.auth.abc_auth import ABCAuth
 
 APCA_API_LIVE_URL = "https://api.alpaca.markets"
 APCA_API_PAPER_URL = "https://paper-api.alpaca.markets"

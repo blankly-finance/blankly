@@ -24,9 +24,9 @@ import pandas as pd
 import blankly.utils.exceptions as exceptions
 import blankly.utils.utils
 import blankly.utils.utils as utils
+from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
-from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 
 
 class BinanceInterface(ExchangeInterface):

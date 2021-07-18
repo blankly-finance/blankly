@@ -17,8 +17,8 @@
 """
 
 
-from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.exchanges.exchange import Exchange
+from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 
 
 class PaperTrade(Exchange):

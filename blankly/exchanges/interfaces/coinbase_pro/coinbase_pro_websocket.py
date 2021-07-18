@@ -16,17 +16,18 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import blankly
-import threading
+import collections
 import json
 import ssl
+import threading
 import time
 import traceback
-from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
-import blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket_utils as websocket_utils
-import collections
 
 from websocket import create_connection
+
+import blankly
+import blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket_utils as websocket_utils
+from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
 
 
 def create_ticker_connection(id, url, channel):
