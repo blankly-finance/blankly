@@ -17,12 +17,13 @@
 """
 
 
-from blankly.indicators.utils import convert_to_numpy
-from blankly.indicators.utils import check_series
 from typing import Any
+
 import numpy as np
 import pandas as pd
 import tulipy as ti
+
+from blankly.indicators.utils import check_series, convert_to_numpy
 
 
 def rsi(data: Any, period: int = 14, round_rsi: bool = False, use_series=False) -> np.array:

@@ -17,11 +17,12 @@
 """
 
 
-from blankly.indicators.utils import convert_to_numpy
-from blankly.indicators.utils import check_series
 from typing import Any
+
 import pandas as pd
 import tulipy as ti
+
+from blankly.indicators.utils import check_series, convert_to_numpy
 
 
 def ema(data: Any, period: int = 50, use_series=False) -> Any:
