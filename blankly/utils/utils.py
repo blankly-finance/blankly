@@ -16,21 +16,21 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import datetime as dt
-import dateutil.parser as dp
+import datetime
 import json
-import numpy as np
-import warnings
-from math import ceil
 import sys
-import pandas as pd
+import warnings
+from datetime import datetime as dt, timezone
+from math import ceil
 from typing import Union
-import pytz
-from blankly.utils.time_builder import time_interval_to_seconds
+
+import dateutil.parser as dp
+import numpy as np
+import pandas as pd
 import pandas_market_calendars as mcal
-from blankly.indicators.statistics import min_period, max_period, sum_period
-from datetime import timezone
 from sklearn.linear_model import LinearRegression
+
+from blankly.utils.time_builder import time_interval_to_seconds
 
 
 # Recursively check if the user has all the preferences, inform when defaults are missing
@@ -181,10 +181,10 @@ def epoch_from_ISO8601(ISO8601) -> float:
     return dp.parse(ISO8601).timestamp()
 
 
-def convert_input_to_epoch(value: Union[str, dt.datetime]) -> float:
+def convert_input_to_epoch(value: Union[str, dt]) -> float:
     if isinstance(value, str):
         return epoch_from_ISO8601(value)
-    elif isinstance(value, dt.datetime):
+    elif isinstance(value, dt):
         return value.timestamp()
     elif isinstance(value, float):
         return value
@@ -192,7 +192,7 @@ def convert_input_to_epoch(value: Union[str, dt.datetime]) -> float:
 
 
 def ISO8601_from_epoch(epoch) -> str:
-    return dt.datetime.utcfromtimestamp(epoch).isoformat() + 'Z'
+    return dt.utcfromtimestamp(epoch).isoformat() + 'Z'
 
 
 def get_price_derivative(ticker, point_number):
@@ -512,8 +512,8 @@ def get_ohlcv_2(candles, n):
 
 
 def ceil_date(date, **kwargs):
-    secs = dt.timedelta(**kwargs).total_seconds()
-    return dt.datetime.fromtimestamp(date.timestamp() + secs - date.timestamp() % secs)
+    secs = datetime.timedelta(**kwargs).total_seconds()
+    return dt.fromtimestamp(date.timestamp() + secs - date.timestamp() % secs)
 
 
 def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_multiplier):
@@ -530,8 +530,8 @@ def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_
         return end_epoch - 4 * 86400 # worst case is three day weekend at 9:30am open
 
     temp_start = end_epoch - limit * resolution * resolution_multiplier
-    end_date = dt.datetime.fromtimestamp(end_epoch, tz=timezone.utc)
-    start_date = dt.datetime.fromtimestamp(temp_start, tz=timezone.utc)
+    end_date = dt.fromtimestamp(end_epoch, tz=timezone.utc)
+    start_date = dt.fromtimestamp(temp_start, tz=timezone.utc)
 
     schedule = nyse.schedule(start_date=start_date, end_date=end_date)
     date_range = mcal.date_range(schedule, frequency='1D')
@@ -539,7 +539,7 @@ def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_
     count = 1
     while len(date_range) < required_length: 
         temp_start -= 3600 * OVERESTIMATE_CONSTANT * count
-        start_date = dt.datetime.fromtimestamp(temp_start)
+        start_date = dt.fromtimestamp(temp_start)
         schedule = nyse.schedule(start_date=start_date, end_date=end_date)
         date_range = mcal.date_range(schedule, frequency='1D')
         count += 1
