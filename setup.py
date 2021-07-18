@@ -34,7 +34,7 @@ setup(
         'pandas',
         'python-binance',
         'newtulipy',
-        'alpaca-trade-api',
+        'alpaca-trade-api >= 1.2.3',
         'pytest',
         'bokeh',
         'pytest-mock',
