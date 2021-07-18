@@ -83,7 +83,7 @@ def test_start_with_end_history(coinbase_interface: CoinbaseProInterface) -> Non
     stop = str(start_dt.date())
 
     # The dates are offset by one because the time is the open time
-    close_stop = str(dt.today().replace(day=dt.today().day - 1).date())
+    close_stop = str(dt.today().replace(day=start_dt.day - 1).date())
 
     resp = coinbase_interface.history('BTC-USD', resolution='1h', start_date=start, end_date=stop)
 
