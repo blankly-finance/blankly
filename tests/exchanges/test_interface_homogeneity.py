@@ -312,7 +312,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         stop = str(start_dt.date())
 
         # The dates are offset by one because the time is the open time
-        close_stop = str(dt.today().replace(day=dt.today().day-1).date())
+        close_stop = str(dt.today().replace(day=start_dt.day-1).date())
 
         for i in self.interfaces:
             if i.get_exchange_type() == "binance":
