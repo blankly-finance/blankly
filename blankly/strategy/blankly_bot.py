@@ -16,16 +16,17 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from multiprocessing import Process, Manager
-import blankly
 import copy
 import warnings
+from multiprocessing import Manager, Process
 
-from blankly.exchanges.managers.orderbook_manager import OrderbookManager
-from blankly.exchanges.managers.ticker_manager import TickerManager
+from binance.client import Client as Binance_API
+
+import blankly
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as CoinbaseProAPI
-from binance.client import Client as Binance_API
+from blankly.exchanges.managers.orderbook_manager import OrderbookManager
+from blankly.exchanges.managers.ticker_manager import TickerManager
 
 
 class BlanklyBot:
