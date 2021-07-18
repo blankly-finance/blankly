@@ -26,19 +26,20 @@ setup(
     # download_url='https://github.com/EmersonDove/Blankly/archive/v0.1.1-alpha.tar.gz',
     keywords=['Crypto', 'Stocks', 'Quantitative Finance', 'Exchanges', 'Bot'],  # Keywords
     install_requires=[
-        'numpy',
-        'scikit-learn',
-        'zerorpc',
-        'requests',
-        'websocket-client',
-        'pandas',
-        'python-binance',
-        'newtulipy',
         'alpaca-trade-api >= 1.2.3',
-        'pytest',
         'bokeh',
+        'dateparser',
+        'newtulipy',
+        'numpy',
+        'pandas',
+        'pandas_market_calendars',
+        'pytest',
         'pytest-mock',
-        'pandas_market_calendars'
+        'python-binance',
+        'requests',
+        'scikit-learn',
+        'websocket-client',
+        'zerorpc'
     ],
     classifiers=[
         # Possible: "3 - Alpha", "4 - Beta" or "5 - Production/Stable"
