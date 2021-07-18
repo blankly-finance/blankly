@@ -94,6 +94,7 @@ class API:
     """
     Wallet Endpoints
     """
+
     def system_status(self):
         endpoint = '/wapi/v3/systemStatus.html'
         signed = False
@@ -211,6 +212,7 @@ class API:
     """
     Market Data Endpoints
     """
+
     def test_connectivity(self):
         endpoint = '/api/v3/ping'
         signed = False
@@ -296,6 +298,7 @@ class API:
     """
     spot account/trade endpoints
     """
+
     def test_new_order(self, symbol, side, type, **optional_params):
         endpoint = '/api/v3/order/test'
         signed = True
@@ -397,7 +400,7 @@ class API:
         signed = True
         return self._send_request('get', self.__api_url + endpoint, signed)
 
-    def account_trade_list(self, symbol,  **optional_params):
+    def account_trade_list(self, symbol, **optional_params):
         endpoint = '/api/v3/myTrades'
         signed = True
         params = OrderedDict()

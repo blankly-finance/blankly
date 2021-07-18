@@ -16,14 +16,13 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import blankly.metrics as metrics
 from blankly.utils.time_builder import build_year
 
 
 def cagr(backtest_data):
     account_values = backtest_data['resampled_account_value']
-    years = (account_values['time'].iloc[-1] - account_values['time'][0])/build_year()
+    years = (account_values['time'].iloc[-1] - account_values['time'][0]) / build_year()
     return metrics.cagr(account_values['time'][0], account_values['time'].iloc[-1], years)
 
 

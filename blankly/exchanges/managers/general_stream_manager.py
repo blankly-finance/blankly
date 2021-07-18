@@ -102,6 +102,7 @@ class GeneralManager(WebsocketManager):
     """
     Create overriden method signatures
     """
+
     def append_callback(self, callback_object, channel, override_symbol=None, override_exchange=None):
         self.websockets = self.__websockets[channel]
         super().append_callback(callback_object, override_symbol, override_exchange)

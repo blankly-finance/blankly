@@ -38,6 +38,7 @@ class BacktestingWrapper:
     """
     Override functions for manipulating backtesting
     """
+
     def get_backtesting_price(self, asset_id):
         try:
             return self.frame['prices'][asset_id]

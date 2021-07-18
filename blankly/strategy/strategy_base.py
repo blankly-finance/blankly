@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import datetime
 import time
 import typing
@@ -49,7 +48,7 @@ class Strategy:
         self.__variables = {}
         self.__hashes = []
         self.__assigned_websockets = []
-    
+
     @property
     def variables(self):
         return self.__variables
@@ -150,7 +149,7 @@ class Strategy:
         Function to skip & ignore callbacks
         """
         pass
-        
+
     def __price_event_rest(self, **kwargs):
         callback = kwargs['callback']
         symbol = kwargs['symbol']
@@ -235,8 +234,8 @@ class Strategy:
 
         for i in self.__assigned_websockets:
             self.Orderbook_Manager.restart_ticker(i[0], i[1])
-    
-    def backtest(self, 
+
+    def backtest(self,
                  initial_values: dict = None,
                  to: str = None,
                  start_date: str = None,

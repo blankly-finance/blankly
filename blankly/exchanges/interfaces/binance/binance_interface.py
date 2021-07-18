@@ -514,7 +514,7 @@ class BinanceInterface(ExchangeInterface):
         response['type'] = response['type'].lower()
         response['side'] = response['side'].lower()
         response['status'] = super().homogenize_order_status('binance', response['status'].lower())
-        response['created_at'] = response['created_at']/1000
+        response['created_at'] = response['created_at'] / 1000
         response['symbol'] = utils.to_blankly_coin_id(response['symbol'], 'binance')
         needed = self.choose_order_specificity(response['type'])
         response = utils.isolate_specific(needed, response)

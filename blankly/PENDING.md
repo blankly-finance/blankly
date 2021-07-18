@@ -1,4 +1,5 @@
 ## Pending documentation changes
+
 - Alpaca `get_clock` in the exchange class
 - Changes in the homogeneity of the websocket trade feeds
 - Alpaca websocket streaming setting in `settings.json`

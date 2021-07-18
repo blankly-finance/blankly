@@ -82,6 +82,7 @@ class WebsocketManager(ABCExchangeWebsocket):
     """
     Ticker functions/overridden
     """
+
     def append_callback(self, callback_object, override_symbol=None, override_exchange=None):
         """
         This bypasses all processing that a manager class may do before returning to the user's main.

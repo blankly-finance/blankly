@@ -19,12 +19,14 @@
 
 class Order:
     """Order Type"""
+
     def __init__(self, order_type, side, amount, price=None):
         if order_type not in ['market', 'limit']:
-            raise ValueError("Order types can only be of type ['market', 'limit'], but was given: {}".format(order_type))
+            raise ValueError(
+                "Order types can only be of type ['market', 'limit'], but was given: {}".format(order_type))
         self.type = order_type
         if side not in ['buy', 'sell']:
-                raise ValueError("Order side can only be of type ['buy', 'sell'], but was given: {}".format(order_type))
+            raise ValueError("Order side can only be of type ['buy', 'sell'], but was given: {}".format(order_type))
         self.side = side
         if self.amount <= 0:
             raise ValueError("Size must be greater than zero, but was given: {}".format(size))
@@ -36,4 +38,3 @@ class Order:
             raise ValueError("Price must be greater than zero but was given: {}".format(price))
 
         self.price = price
-

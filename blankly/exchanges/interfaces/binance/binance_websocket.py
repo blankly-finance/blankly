@@ -154,6 +154,7 @@ class Tickers(ABCExchangeWebsocket):
         ws.send(request)
 
     """ Required in manager """
+
     def is_websocket_open(self):
         return self.__thread.is_alive()
 
@@ -161,32 +162,39 @@ class Tickers(ABCExchangeWebsocket):
         return self.__id
 
     """ Required in manager """
+
     def append_callback(self, obj):
         self.__callbacks.append(obj)
 
     """ Define a variable each time so there is no array manipulation """
     """ Required in manager """
+
     def get_most_recent_tick(self):
         return self.__most_recent_tick
 
     """ Required in manager """
+
     def get_most_recent_time(self):
         return self.__most_recent_time
 
     """ Required in manager """
+
     def get_time_feed(self):
         return list(self.__time_feed)
 
     """ Parallel with time feed """
     """ Required in manager """
+
     def get_feed(self):
         return list(self.__ticker_feed)
 
     """ Required in manager """
+
     def get_response(self):
         return self.__response
 
     """ Required in manager """
+
     def close_websocket(self):
         if self.__thread.is_alive():
             self.ws.close()
@@ -194,5 +202,6 @@ class Tickers(ABCExchangeWebsocket):
             print("Websocket for " + self.__id + '@' + self.__stream + " is already closed")
 
     """ Required in manager """
+
     def restart_ticker(self):
         self.start_websocket()

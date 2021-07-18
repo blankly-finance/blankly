@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 from binance.client import Client
 
 from blankly.exchanges.exchange import Exchange
@@ -30,6 +29,7 @@ class Binance(Exchange):
     """
     Builds information about the symbol on this exchange by making particular API calls
     """
+
     def get_asset_state(self, symbol):
         """
         Portfolio state is the internal properties for the exchange block.

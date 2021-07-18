@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 from typing import Any
 
 import pandas as pd
@@ -28,7 +27,7 @@ from blankly.indicators.utils import check_series, convert_to_numpy
 def stddev_period(data, period=14, use_series=False) -> Any:
     if check_series(data):
         use_series = True
-    data = convert_to_numpy(data)    
+    data = convert_to_numpy(data)
     stddev = ti.stddev(data, period)
     return pd.Series(stddev) if use_series else stddev
 

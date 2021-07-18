@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface as Interface
 from blankly.utils.utils import AttributeDict
 
@@ -27,6 +26,7 @@ class StrategyState:
     resolution: float
 
     """Strategy State"""
+
     def __init__(self, strategy, variables: AttributeDict, resolution: float = None):
         self.strategy = strategy
         self.variables = variables
@@ -35,4 +35,3 @@ class StrategyState:
     @property
     def interface(self) -> Interface:
         return self.strategy.Interface
-

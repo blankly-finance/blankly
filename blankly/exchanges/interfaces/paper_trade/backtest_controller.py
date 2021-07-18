@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import os
 import traceback
 import typing
@@ -106,7 +105,7 @@ class BackTestController:
                 if tuple(identifier) not in self.price_dictionary.keys():
                     print("Including: " + string_identifier + ".csv in backtest.")
                     self.price_dictionary[tuple(identifier)] = pd.read_csv(os.path.join(cache_folder,
-                                                                           string_identifier + ".csv")
+                                                                                        string_identifier + ".csv")
                                                                            )
             else:
                 if tuple(identifier) not in self.price_dictionary.keys():
@@ -164,7 +163,7 @@ class BackTestController:
                     elif arr[mid] > x:
                         return binary_search(arr, low, mid - 1, x)
                 except IndexError:
-                    return len(arr)-1
+                    return len(arr) - 1
 
                 # If element is smaller than mid, then it can only
                 # be present in left subarray
@@ -345,7 +344,7 @@ class BackTestController:
             for i in range(price_number):
                 price_array = self.prices[i]
                 if show_progress:
-                    update_progress(i/price_number)
+                    update_progress(i / price_number)
                 self.interface.receive_price(price_array[1], price_array[2])
                 self.current_time = price_array[0]
                 self.interface.receive_time(self.current_time)
@@ -488,7 +487,7 @@ class BackTestController:
 
             # Assign start and stop limits
             epoch_start = epoch_backup[0]
-            epoch_max = epoch_backup[len(epoch_backup)-1]
+            epoch_max = epoch_backup[len(epoch_backup) - 1]
 
             # Going to push this in as a single column version of our price data so that __determine_price can handle it
             self.pd_prices['Account Value (' + self.quote_currency + ')'] = pd.DataFrame()
