@@ -70,6 +70,7 @@ class API:
     """
 
     """ Full interface support """
+
     def get_products(self):
         """Get a list of available currency pairs for trading.
 
@@ -131,6 +132,7 @@ class API:
         return requests.get(self.__api_url + "products/{}/book".format(product_id), params=params).json()
 
     """ PAGINATED """ """ Full interface support """
+
     def get_product_trades(self, product_id, before='', after='', limit=None, result=None):
         """List the latest trades for a product.
 
@@ -164,6 +166,7 @@ class API:
                                             .format(product_id))
 
     """ Full interface support """
+
     def get_product_historic_rates(self, product_id, start=None, end=None, granularity=None):
         """Historic rates for a product.
 
@@ -230,6 +233,7 @@ class API:
         return requests.get(self.__api_url + 'products/{}/stats'.format(product_id), auth=self.__auth).json()
 
     """ Full interface support """
+
     def get_currencies(self):
         """List known currencies.
 
@@ -265,6 +269,7 @@ class API:
     """
     Private API Calls
     """
+
     def get_accounts(self):
         """ Get a list of trading all accounts.
 
@@ -294,6 +299,7 @@ class API:
         return requests.get(self.__api_url + 'accounts', auth=self.__auth).json()
 
     """ Full interface support """
+
     def get_account(self, account_id):
         """ Get information for a single account.
 
@@ -315,6 +321,7 @@ class API:
         return requests.get(self.__api_url + 'accounts/' + account_id, auth=self.__auth).json()
 
     """ PAGINATED """
+
     def get_account_history(self, account_id, **kwargs):
         """ List account activity. Account activity either increases or
         decreases your account balance.
@@ -356,6 +363,7 @@ class API:
         return self._send_paginated_message(endpoint, params=kwargs)
 
     """ PAGINATED """
+
     def get_account_holds(self, account_id, **kwargs):
         """ Get holds on an account.
 
@@ -404,6 +412,7 @@ class API:
     """
     Buy & sell
     """
+
     def place_order(self, product_id, side, order_type, **kwargs):
         """ Place an order.
 
@@ -625,6 +634,7 @@ class API:
         return self.place_order(**params)
 
     """ Full interface support """
+
     def cancel_order(self, order_id):
         """ Cancel a previously placed order.
 
@@ -649,6 +659,7 @@ class API:
 
     """ PAGINATED """
     """ Full interface support (untested) """
+
     def get_orders(self, product_id=None, status=None, **kwargs):
         """ List your current open orders.
 
@@ -715,6 +726,7 @@ class API:
         return self._send_paginated_message('orders', params=params)
 
     """ Full interface support (untested) """
+
     def get_order(self, order_id):
         """ Get a single order by order id.
 
@@ -751,6 +763,7 @@ class API:
         return requests.get(self.__api_url + "orders/" + order_id, auth=self.__auth).json()
 
     """ PAGINATED """
+
     def get_fills(self, order_id=None, product_id=None, **kwargs):
         """ Get a list of recent fills.
 
@@ -810,6 +823,7 @@ class API:
         return self._send_paginated_message('/fills', params=params)
 
     """ Full interface support (tested) """
+
     def get_fees(self):
         """
             Returns:
@@ -866,6 +880,7 @@ class API:
     """
     UNDOCUMENTED
     """
+
     def create_report(self, report_type, start_date, end_date, product_id=None,
                       account_id=None, report_format='pdf', email=None):
         """ Create report of historic information about your account.
@@ -974,19 +989,6 @@ class API:
             }
         """
         return requests.get(self.__api_url + 'products/' + product_id + '/ticker', auth=self.__auth).json()
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # # Create custom authentication for Exchange
 # class CoinbaseExchangeAuth(AuthBase):

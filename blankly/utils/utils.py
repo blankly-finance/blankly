@@ -63,24 +63,24 @@ backtest_path_override = None
 
 # Copy of settings to compare defaults vs overrides
 default_global_settings = {
-  "settings": {
-    "account_update_time": 5000,
-    "use_sandbox": False,
-    "use_sandbox_websockets": False,
-    "websocket_buffer_size": 10000,
+    "settings": {
+        "account_update_time": 5000,
+        "use_sandbox": False,
+        "use_sandbox_websockets": False,
+        "websocket_buffer_size": 10000,
 
-    "coinbase_pro": {
-      "cash": "USD"
-    },
-    "binance": {
-      "cash": "USDT",
-      "binance_tld": "us"
-    },
-    "alpaca": {
-        "websocket_stream": "iex",
-        "cash": "USD"
+        "coinbase_pro": {
+            "cash": "USD"
+        },
+        "binance": {
+            "cash": "USDT",
+            "binance_tld": "us"
+        },
+        "alpaca": {
+            "websocket_stream": "iex",
+            "cash": "USD"
+        }
     }
-  }
 }
 
 default_backtest_settings = {
@@ -320,7 +320,7 @@ def isolate_specific(needed, compare_dictionary):
     # Make a copy of the dictionary so we don't modify it if you loop over
     compare_dictionary = {**compare_dictionary}
     # Create a row vector for the keys
-    column = [column[0] for column in needed]    # ex: ['currency', 'available', 'hold']
+    column = [column[0] for column in needed]  # ex: ['currency', 'available', 'hold']
     # Create an area to hold the specific data
     if 'exchange_specific' in compare_dictionary:
         exchange_specific = compare_dictionary['exchange_specific']
@@ -518,16 +518,16 @@ def ceil_date(date, **kwargs):
 
 def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_multiplier):
     OVERESTIMATE_CONSTANT = 1.5
-    
+
     nyse = mcal.get_calendar('NYSE')
     required_length = ceil(limit * OVERESTIMATE_CONSTANT)
     resolution = time_interval_to_seconds(resolution_str)
 
     if resolution == 60 and limit < (1440 / resolution_multiplier):
-        return end_epoch - 4 * 86400 # worst case is three day weekend at 9:30am open
+        return end_epoch - 4 * 86400  # worst case is three day weekend at 9:30am open
 
     if resolution == 3600 and limit < (24 / resolution_multiplier):
-        return end_epoch - 4 * 86400 # worst case is three day weekend at 9:30am open
+        return end_epoch - 4 * 86400  # worst case is three day weekend at 9:30am open
 
     temp_start = end_epoch - limit * resolution * resolution_multiplier
     end_date = dt.fromtimestamp(end_epoch, tz=timezone.utc)
@@ -537,7 +537,7 @@ def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_
     date_range = mcal.date_range(schedule, frequency='1D')
 
     count = 1
-    while len(date_range) < required_length: 
+    while len(date_range) < required_length:
         temp_start -= 3600 * OVERESTIMATE_CONSTANT * count
         start_date = dt.fromtimestamp(temp_start)
         schedule = nyse.schedule(start_date=start_date, end_date=end_date)

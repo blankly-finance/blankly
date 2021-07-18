@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 from blankly.exchanges.exchange import Exchange
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as CoinbaseProAPI
 
@@ -29,6 +28,7 @@ class CoinbasePro(Exchange):
     """
     Builds information about the asset on this exchange by making particular API calls
     """
+
     def get_asset_state(self, symbol):
         """
         This determines the internal properties of the exchange block.
@@ -50,6 +50,7 @@ class CoinbasePro(Exchange):
     """
     GUI Testing Functions | These only exist in the coinbase_pro class:
     """
+
     def get_indicators(self):
         return self.calls.get_fees()
 

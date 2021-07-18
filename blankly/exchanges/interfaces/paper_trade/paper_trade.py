@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 from blankly.exchanges.exchange import Exchange
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 
@@ -32,6 +31,7 @@ class PaperTrade(Exchange):
     """
     Builds information about the symbol on this exchange by making particular API calls
     """
+
     def get_asset_state(self, symbol):
         """
         This determines the internal properties of the exchange block.

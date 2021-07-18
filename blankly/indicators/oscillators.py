@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 from typing import Any
 
 import numpy as np
@@ -94,7 +93,8 @@ def stochastic_rsi(data, period=14, smooth_pct_k=3, smooth_pct_d=3):
 
     # Calculate StochRSI
     rsi_values = pd.Series(rsi_values)
-    stochrsi = (rsi_values - rsi_values.rolling(period).min()) / (rsi_values.rolling(period).max() - rsi_values.rolling(period).min())
+    stochrsi = (rsi_values - rsi_values.rolling(period).min()) / (
+                rsi_values.rolling(period).max() - rsi_values.rolling(period).min())
     stochrsi_K = stochrsi.rolling(smooth_pct_k).mean()
     stochrsi_D = stochrsi_K.rolling(smooth_pct_d).mean()
 

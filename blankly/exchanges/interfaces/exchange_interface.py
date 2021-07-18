@@ -232,7 +232,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                     warnings.warn("Exchange failed to provide updated data within the timeout.")
                     return response
                 data_append = [self.get_product_history(symbol,
-                                                        epoch_stop-resolution_seconds,
+                                                        epoch_stop - resolution_seconds,
                                                         epoch_stop,
                                                         resolution_seconds).iloc[-1].to_dict()]
                 data_append[0]['time'] = int(data_append[0]['time'])
@@ -274,6 +274,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
     Order lifecycle should be:
     Accepted -> live -> done -> settled
     """
+
     def homogenize_order_status(self, exchange, status):
         if exchange == "binance":
             if status == "new":

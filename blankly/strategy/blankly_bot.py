@@ -104,6 +104,7 @@ class BlanklyBot:
     """
     State getters and setters for external understanding of the operation
     """
+
     def get_state(self):
         try:
             return self.__state.copy()

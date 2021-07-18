@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 from binance.client import Client
 
 import blankly.utils.utils as utils

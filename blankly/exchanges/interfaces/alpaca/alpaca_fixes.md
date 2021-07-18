@@ -11,8 +11,9 @@
 ### get_account()
 
 - Need a correct hold value
-  - This is described here https://alpaca.markets/docs/trading-on-alpaca/orders/ in buying power
-- Get account with no arguments needs to list every single account, including those with no size at all. This involves parsing the products and comparing those to the account output (this may be implemented I can really tell). 
+    - This is described here https://alpaca.markets/docs/trading-on-alpaca/orders/ in buying power
+- Get account with no arguments needs to list every single account, including those with no size at all. This involves
+  parsing the products and comparing those to the account output (this may be implemented I can really tell).
 - USD also needs to be in there
 
 ### market_order()

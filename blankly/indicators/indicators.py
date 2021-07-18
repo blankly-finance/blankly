@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import pandas as pd
 import tulipy as ti
 
@@ -24,7 +23,7 @@ from blankly.indicators.utils import check_series, convert_to_numpy
 
 
 def bbands(data, period=14, stddev=2):
-    data = convert_to_numpy(data)    
+    data = convert_to_numpy(data)
     return ti.bbands(data, period, stddev)
 
 
@@ -74,4 +73,3 @@ def average_true_range(high_data, low_data, close_data, period=50, use_series=Fa
     close_data = convert_to_numpy(close_data)
     atr = ti.atr(high_data, low_data, close_data, period=period)
     return pd.Series(atr) if use_series else atr
-

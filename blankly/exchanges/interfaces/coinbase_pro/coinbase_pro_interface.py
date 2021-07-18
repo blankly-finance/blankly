@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import time
 import warnings
 
@@ -222,6 +221,7 @@ class CoinbaseProInterface(ExchangeInterface):
     If you want to use this function you can, just do interface.stop_limit(args) if you're using a coinbase pro 
     interface
     """
+
     def stop_limit(self, symbol, side, stop_price, limit_price, size, stop='loss') -> StopLimit:
         """
         Used for placing stop orders
@@ -537,10 +537,10 @@ class CoinbaseProInterface(ExchangeInterface):
             "quote_asset": products.pop('quote_currency'),
             "max_orders": 1000000000000,
             "limit_order": {
-                "base_min_size": float(products.pop('base_min_size')),    # Minimum size to buy
-                "base_max_size": float(products.pop('base_max_size')),    # Maximum size to buy
+                "base_min_size": float(products.pop('base_min_size')),  # Minimum size to buy
+                "base_max_size": float(products.pop('base_max_size')),  # Maximum size to buy
                 "base_increment": float(products.pop('base_increment')),  # Specifies the minimum increment
-                                                                          # for the base_asset.
+                # for the base_asset.
                 "price_increment": float(products['quote_increment']),
 
                 "min_price": float(products['quote_increment']),
@@ -549,7 +549,7 @@ class CoinbaseProInterface(ExchangeInterface):
             'market_order': {
                 "fractionable": True,
                 "quote_increment": float(products.pop('quote_increment')),  # Specifies the min order price as well
-                                                                            # as the price increment.
+                # as the price increment.
                 "buy": {
                     "min_funds": float(products['min_market_funds']),
                     "max_funds": float(products['max_market_funds']),

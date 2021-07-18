@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import decimal
 import threading
 import time
@@ -86,6 +85,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         }
 
     """ Needs to be overridden here """
+
     def start_paper_trade_watchdog(self):
         # TODO, this process could use variable update time/websocket usage, poll time and a variety of settings
         #  to create a robust trading system
@@ -98,6 +98,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         self.__run_watchdog = False
 
     """ Needs to be overridden here """
+
     def __paper_trade_watchdog(self):
         """
         Internal order watching system

@@ -35,6 +35,7 @@ def load_json(keys_file):
         raise FileNotFoundError("Make sure a keys.json file is placed in the same folder as the project working "
                                 "directory (or specified in the exchange constructor)!")
 
+
 # def load_auth_coinbase_pro(keys_file, name):
 #     exchange_type = "coinbase_pro"
 #     name, portfolio = __load_auth(keys_file, name, exchange_type)

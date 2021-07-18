@@ -25,7 +25,7 @@ def switch_type(stream):
     if stream == "trade":
         return trade, \
                trade_interface, \
-               "event_time,system_time,event_type,symbol,trade_id,price,quantity,buyer_order_id,seller_order_id,"\
+               "event_time,system_time,event_type,symbol,trade_id,price,quantity,buyer_order_id,seller_order_id," \
                "trade_time,buyer_is_maker\n"
     elif stream == "depth":
         return depth, depth_interface, ""
@@ -100,5 +100,5 @@ def trade_interface(message):
         ["trade_id", int],
         ["size", float]
     ]
-    message["time"] = message["time"]/1000
+    message["time"] = message["time"] / 1000
     return utils.isolate_specific(needed, message)

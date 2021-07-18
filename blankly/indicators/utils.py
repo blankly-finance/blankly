@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 from typing import Any
 
 import numpy as np
@@ -27,7 +26,7 @@ def to_historical_returns(data: Any):
     return pd.Series(data).diff().tolist()
 
 
-def convert_to_numpy(data: Any): 
+def convert_to_numpy(data: Any):
     if type(data) == list:
         return np.asarray(data)
     elif type(data) == pd.Series:

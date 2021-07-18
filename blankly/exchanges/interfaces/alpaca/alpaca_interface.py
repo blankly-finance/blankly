@@ -282,9 +282,9 @@ class AlpacaInterface(ExchangeInterface):
         except AlpacaAPIError as e:
             if e.code == 42210000:
                 warning_string = "Your alpaca subscription does not permit querying data from the last 15 minutes. " \
-                                  "Blankly is adjusting your query."
+                                 "Blankly is adjusting your query."
                 warnings.warn(warning_string)
-                epoch_stop = time.time()-(build_minute()*15)
+                epoch_stop = time.time() - (build_minute() * 15)
                 if epoch_stop >= epoch_start:
                     return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
                 else:
@@ -367,7 +367,8 @@ class AlpacaInterface(ExchangeInterface):
 
         if to:
             aggregated_limit = to * row_divisor
-            bars = self.calls.get_barset(symbol, time_interval, limit=int(aggregated_limit), end=end_date.isoformat())[symbol]
+            bars = self.calls.get_barset(symbol, time_interval, limit=int(aggregated_limit), end=end_date.isoformat())[
+                symbol]
             return_df = pd.DataFrame(bars)
             return_df.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
                              inplace=True)

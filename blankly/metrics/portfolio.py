@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import warnings
 
 import numpy as np
@@ -40,7 +39,7 @@ def sortino(returns, n=252, risk_free_rate=None):
         mean = returns.mean() - risk_free_rate
     else:
         mean = returns.mean()
-    std_neg = returns[returns < 0].std() 
+    std_neg = returns[returns < 0].std()
     return mean / std_neg * np.sqrt(n)
 
 
@@ -50,7 +49,7 @@ def sharpe(returns, n=252, risk_free_rate=None):
         mean = returns.mean() - risk_free_rate
     else:
         mean = returns.mean()
-    std = returns.std() 
+    std = returns.std()
     return mean / std * np.sqrt(n)
 
 
@@ -89,8 +88,7 @@ def cvar(initial_value, returns, alpha):
 
 def max_drawdown(returns):
     return_series = pd.Series(returns)
-    comp_ret = (return_series+1).cumprod()
+    comp_ret = (return_series + 1).cumprod()
     peak = comp_ret.expanding(min_periods=1).max()
-    dd = (comp_ret/peak)-1
+    dd = (comp_ret / peak) - 1
     return dd.min()
-

@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import alpaca_trade_api
 
 from blankly.exchanges.exchange import Exchange

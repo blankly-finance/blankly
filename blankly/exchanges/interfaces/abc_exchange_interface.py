@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import abc
 from datetime import datetime as dt
 from typing import Union
@@ -194,9 +193,10 @@ class ABCExchangeInterface(abc.ABC):
         get_withdraw_history
 
     """
+
     @abc.abstractmethod
-    def history(self, 
-                symbol: str, 
+    def history(self,
+                symbol: str,
                 to: Union[str, int] = 200,
                 resolution: Union[str, float] = '1d',
                 start_date: Union[str, dt, float] = None,

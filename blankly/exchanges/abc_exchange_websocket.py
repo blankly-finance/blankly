@@ -23,6 +23,7 @@ class ABCExchangeWebsocket(abc.ABC):
     """
     Each of these functions are required to be implemented for interaction with the ticker manager class.
     """
+
     @abc.abstractmethod
     def is_websocket_open(self):
         pass

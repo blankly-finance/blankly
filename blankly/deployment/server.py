@@ -60,6 +60,7 @@ class TradeInterface:
             raise ValueError("Exchange not found or unsupported")
 
     """ External State """
+
     def get_exchange_state(self, name):
         for i in range(len(self.__exchanges)):
             if self.__exchanges[i].get_name() == name:
@@ -69,6 +70,7 @@ class TradeInterface:
     Internal State, this has all the currencies. This is mainly used for an initial definition of which currencies
     are being used, get model state is what will matter for the reporting into these blocks
     """
+
     def get_portfolio_state(self, name):
         for i in range(len(self.__exchanges)):
             if self.__exchanges[i].get_name() == name:
@@ -87,6 +89,7 @@ class TradeInterface:
     """
     Three indicators at the top of the GUI - JSON with only 3 keys
     """
+
     def update_indicators(self, name):
         for i in range(len(self.__exchanges)):
             if self.__exchanges[i].get_name() == name:

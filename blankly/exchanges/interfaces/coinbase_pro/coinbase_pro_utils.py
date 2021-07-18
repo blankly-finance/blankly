@@ -37,6 +37,7 @@ class CoinbaseProUtils:
     }
     (size in currency (like .01 BTC), buy/sell (string), product id (BTC-USD))
     """
+
     def generate_limit_order(self, size, price, side, product_id):
         order = {
             'size': size,

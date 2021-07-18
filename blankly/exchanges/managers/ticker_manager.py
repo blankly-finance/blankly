@@ -47,6 +47,7 @@ class TickerManager(WebsocketManager):
     """ 
     Manager Functions 
     """
+
     def create_ticker(self, callback, log: str = None, override_symbol: str = None, override_exchange: str = None):
         """
         Create a ticker on a given exchange.
