@@ -42,7 +42,7 @@ class mock_alpaca_direct_calls:
         }
         return mock_account_response
 
-    def list_orders(self, symbols):
+    def list_orders(self, *args, **kwargs):
         mock_orders_response = [{
             "id": "61e69015-8549-4bfd-b9c3-01e75843f47d",
             "client_order_id": "eb9e2aaa-f71a-4f51-b5b4-52a6c565dad4",
