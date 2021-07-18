@@ -100,7 +100,8 @@ def test_get_buy_sell_order(binance_interface: BinanceInterface) -> None:
     assert resp["type"] == "market"
 
     market_sell_order = binance_interface.market_order(btc_usd_id, 'sell', 200)
-
+    # this test has been flaky, so lets add a sleep for engine to process order
+    time.sleep(1)
     # wait until order is filled
     while binance_interface.get_order(btc_usd_id, market_sell_order.get_id())['status'] != "filled":
         time.sleep(1)
