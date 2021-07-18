@@ -586,7 +586,9 @@ class BinanceInterface(ExchangeInterface):
 
         resolution = blankly.time_builder.time_interval_to_seconds(resolution)
 
-        epoch_start, epoch_stop = super().get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        # epoch_start, epoch_stop = super().get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        epoch_start = utils.convert_epochs(epoch_start)
+        epoch_stop = utils.convert_epochs(epoch_stop)
 
         epoch_start = int(epoch_start)
         epoch_stop = int(epoch_stop)
