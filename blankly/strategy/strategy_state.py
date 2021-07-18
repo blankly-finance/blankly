@@ -17,8 +17,8 @@
 """
 
 
-from blankly.utils.utils import AttributeDict
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface as Interface
+from blankly.utils.utils import AttributeDict
 
 
 class StrategyState:
