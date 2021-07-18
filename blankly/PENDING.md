@@ -1,14 +1,8 @@
 ## Pending documentation changes
-- Update get_base_currency to get_base_asset in utils
-- Update base and quote asset in get products
-- Update currency_id to symbol across the interface key docs
-- Rename all `Blankly` imports to `blankly`
-- Change websocket arguments to include symbol
 - Alpaca `get_clock` in the exchange class
 - Changes in the homogeneity of the websocket trade feeds
 - Alpaca websocket streaming setting in `settings.json`
 - Orderbooks are going to become a list of tuples
 - Alpaca also has a weird orderbook
-- Buys are now bids and sells are now asks in orderbooks
 - How to generate alpaca paper keys
 - Go over features page again because got so many features
