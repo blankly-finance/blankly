@@ -15,17 +15,17 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import time
+import unittest
+from pathlib import Path
+
 import pytest
 
 import blankly
-import unittest
-
 from blankly.exchanges.interfaces.binance.binance_auth import BinanceAuth
-from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
+from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 from blankly.utils.utils import AttributeDict
-from pathlib import Path
-import time
 
 
 class BinanceInterface_test(unittest.TestCase):
