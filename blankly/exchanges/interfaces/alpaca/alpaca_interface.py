@@ -115,8 +115,8 @@ class AlpacaInterface(ExchangeInterface):
                 'hold': 0
             })
 
-        symbols = positions_dict.keys()
-        open_orders = self.calls.list_orders(symbols=symbols)
+        symbols = list(positions_dict.keys())
+        open_orders = self.calls.list_orders(status='open', symbols=symbols)
         snapshot_price = self.calls.get_snapshots(symbols=symbols)
 
         # now grab the available cash in the account
@@ -127,13 +127,14 @@ class AlpacaInterface(ExchangeInterface):
         })
 
         for order in open_orders:
+            curr_symbol = order['symbol']
             if order['side'] == 'buy':  # buy orders only affect USD holds
                 if order['qty']:  # this case handles qty market buy and limit buy
                     if order['type'] == 'limit':
                         dollar_amt = float(order['qty']) * float(order['limit_price'])
                     elif order['type'] == 'market':
                         dollar_amt = float(order['qty']) * snapshot_price[curr_symbol]['latestTrade']['p']
-                    else: # we dont have support for stop_order, stop_limit_order
+                    else:  # we dont have support for stop_order, stop_limit_order
                         dollar_amt = 0
                 else:  # this is the case for notional market buy
                     dollar_amt = order['notional']
@@ -142,7 +143,6 @@ class AlpacaInterface(ExchangeInterface):
                 positions_dict['USD']['hold'] += dollar_amt
 
             else:
-                curr_symbol = order['symbol']
                 if order['qty']:  # this case handles qty market sell and limit sell
                     qty = float(order['qty'])
                 else:  # this is the case for notional market sell, calculate the qty with cash/price
@@ -230,35 +230,61 @@ class AlpacaInterface(ExchangeInterface):
         # TODO: handle the different response codes
         return {'order_id': order_id}
 
-    # TODO: this doesnt exactly fit
     def get_open_orders(self, symbol=None):
         assert isinstance(self.calls, alpaca_trade_api.REST)
-        orders = self.calls.list_orders()
-        renames = [
-            ["asset_id", "symbol"],
-            ["filled_avg_price", "price"],
-            ["qty", "size"],
-            ["notional", "funds"]
-        ]
-        for order in orders:
-            order = utils.rename_to(renames, order)
-            needed = self.choose_order_specificity(order['type'])
-            order['created_at'] = parser.isoparse(order['created_at']).timestamp()
-            order = utils.isolate_specific(needed, order)
+        orders = self.calls.list_orders(status='open')
+
+        for i in range(len(orders)):
+            # orders[i] = utils.rename_to(renames, orders[i])
+            # if orders[i]['type'] == "limit":
+            #     orders[i]['price'] = orders[i]['limit_price']
+            # if orders[i]['type'] == "market":
+            #     if orders[i]['notional']:
+            #         orders[i]['funds'] = orders[i]['notional']
+            #     else:
+            #         orders[i]['funds'] = orders[i]['notional']
+            # orders[i]['created_at'] = parser.isoparse(orders[i]['created_at']).timestamp()
+            orders[i] = self.homogenize_order(orders[i])
+
         return orders
 
     def get_order(self, symbol, order_id) -> dict:
         assert isinstance(self.calls, alpaca_trade_api.REST)
         order = self.calls.get_order(order_id)
-        needed = self.choose_order_specificity(order['type'])
-        renames = [
-            ["asset_id", "symbol"],
-            ["filled_avg_price", "price"],
-            ["qty", "size"],
-            ["notional", "funds"]
-        ]
-        order = utils.rename_to(renames, order)
+        order = self.homogenize_order(order)
+        return order
+
+    # TODO: fix this function
+    def homogenize_order(self, order):
+        if order['type'] == "limit":
+            renames = [
+                ["qty", "size"],
+                ["limit_price", "price"]
+            ]
+            order = utils.rename_to(renames, order)
+
+        elif order['type'] == "market":
+            if order['notional']:
+                renames = [
+                    ["notional", "funds"]
+                ]
+                order = utils.rename_to(renames, order)
+
+            else: # market order of number of shares
+                qty = order['qty']
+                price = self.calls.get_last_trade(symbol=order['symbol'])
+                order['funds'] = qty * price
+
+        # TODO: test stop_limit orders
+        elif order['type'] == "stop_limit":
+            renames = [
+                ["qty", "size"],
+            ]
+            order = utils.rename_to(renames, order)
+
         order['created_at'] = parser.isoparse(order['created_at']).timestamp()
+        needed = self.choose_order_specificity(order['type'])
+
         order = utils.isolate_specific(needed, order)
         return order
 
