@@ -15,14 +15,14 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import warnings
-
-from blankly.utils.time_builder import time_interval_to_seconds
-from blankly.utils.utils import ceil_date
-from datetime import datetime as dt
 import threading
 import time
 import traceback
+import warnings
+from datetime import datetime as dt
+
+from blankly.utils.time_builder import time_interval_to_seconds
+from blankly.utils.utils import ceil_date
 
 
 class Scheduler:
