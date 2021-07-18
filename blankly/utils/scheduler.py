@@ -116,7 +116,8 @@ class Scheduler:
             except Exception:
                 traceback.print_exc()
             base_time += interval
-            kwargs['ohlcv_time'] += interval
+            if self.synced:
+                kwargs['ohlcv_time'] += interval
 
             # The downside of this is that it keeps the thread running while waiting to stop
             # It's dependent on delay if its more efficient to just check more

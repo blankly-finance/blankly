@@ -158,12 +158,12 @@ class Strategy:
         variables = kwargs['variables']
         ohlc = kwargs['ohlc']
         state = kwargs['state_object']  # type: StrategyState
-        ohlcv_time = kwargs['ohlcv_time']
 
         state.variables = variables
         state.resolution = resolution
 
         if ohlc:
+            ohlcv_time = kwargs['ohlcv_time']
             while True:
                 data = self.Interface.history(symbol, 1, resolution).iloc[-1].to_dict()
                 if data['time'] + resolution == ohlcv_time:
