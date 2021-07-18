@@ -16,14 +16,16 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import websocket
-from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
-import blankly.exchanges.interfaces.binance.binance_websocket_utils as websocket_utils
 import collections
 import json
-import blankly
 import threading
 import traceback
+
+import websocket
+
+import blankly
+import blankly.exchanges.interfaces.binance.binance_websocket_utils as websocket_utils
+from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
 
 
 class Tickers(ABCExchangeWebsocket):

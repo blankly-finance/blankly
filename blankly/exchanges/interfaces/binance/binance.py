@@ -17,11 +17,10 @@
 """
 
 
+from binance.client import Client
+
 from blankly.exchanges.exchange import Exchange
 from blankly.utils import utils
-import blankly.exchanges.auth.auth_constructor
-
-from binance.client import Client
 
 
 class Binance(Exchange):

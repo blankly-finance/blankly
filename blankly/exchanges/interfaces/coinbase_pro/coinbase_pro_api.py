@@ -16,13 +16,12 @@
 import base64
 import hashlib
 import hmac
-import requests
+import json
 import time
 import warnings
-import json
 
+import requests
 from requests.auth import AuthBase
-
 
 # Create custom authentication for Exchange
 from blankly.exchanges.auth.abc_auth import ABCAuth

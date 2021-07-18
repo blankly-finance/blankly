@@ -17,14 +17,15 @@
 """
 
 
-from blankly.exchanges.auth.abc_auth import ABCAuth
-from blankly.exchanges.interfaces.alpaca.alpaca_interface import AlpacaInterface
-from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as CoinbaseProAPI
 from binance.client import Client
-from blankly.exchanges.interfaces.alpaca.alpaca_api import create_alpaca_client
-from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
-from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
+
 import blankly.utils.utils as utils
+from blankly.exchanges.auth.abc_auth import ABCAuth
+from blankly.exchanges.interfaces.alpaca.alpaca_api import create_alpaca_client
+from blankly.exchanges.interfaces.alpaca.alpaca_interface import AlpacaInterface
+from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
+from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as CoinbaseProAPI
+from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
 
 
 class DirectCallsFactory:

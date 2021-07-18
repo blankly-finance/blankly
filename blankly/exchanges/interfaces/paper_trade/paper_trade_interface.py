@@ -17,27 +17,21 @@
 """
 
 
-from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
-from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
-from blankly.exchanges.interfaces.paper_trade.backtesting_wrapper import BacktestingWrapper
-
-
-from blankly.utils.exceptions import InvalidOrder
-from blankly.utils.exceptions import APIException
+import decimal
+import threading
+import time
+import traceback
+import warnings
 
 import blankly.exchanges.interfaces.paper_trade.local_account.trade_local as trade_local
 import blankly.exchanges.interfaces.paper_trade.utils as paper_trade
 import blankly.utils.utils as utils
-
-
+from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
+from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
+from blankly.exchanges.interfaces.paper_trade.backtesting_wrapper import BacktestingWrapper
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
-
-import warnings
-import time
-import threading
-import traceback
-import decimal
+from blankly.utils.exceptions import APIException, InvalidOrder
 
 
 class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):

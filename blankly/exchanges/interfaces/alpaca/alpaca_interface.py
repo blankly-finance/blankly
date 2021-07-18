@@ -16,31 +16,24 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import warnings
-
-import dateparser
-import pytz
 import time
-from alpaca_trade_api.rest import TimeFrame
+import warnings
+from datetime import datetime as dt, timezone
+from typing import Union
 
-from blankly.utils import utils as utils
+import alpaca_trade_api
+import dateparser
+import pandas as pd
+from alpaca_trade_api.rest import APIError as AlpacaAPIError, TimeFrame
+from dateutil import parser
+
 from blankly.exchanges.interfaces.alpaca.alpaca_api import API
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
+from blankly.utils import utils as utils
 from blankly.utils.exceptions import APIException
-from blankly.utils.time_builder import build_minute
-import pandas as pd
-import alpaca_trade_api
-from alpaca_trade_api.rest import APIError as AlpacaAPIError
-from dateutil import parser
-import datetime
-from datetime import datetime as dt
-from datetime import timezone
-from typing import Union
-
-from blankly.utils.time import is_datetime_naive
-from blankly.utils.time_builder import time_interval_to_seconds
+from blankly.utils.time_builder import build_minute, time_interval_to_seconds
 
 NY = 'America/New_York'
 

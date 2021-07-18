@@ -17,8 +17,9 @@
 """
 
 
-from blankly.exchanges.exchange import Exchange
 import alpaca_trade_api
+
+from blankly.exchanges.exchange import Exchange
 
 
 class Alpaca(Exchange):

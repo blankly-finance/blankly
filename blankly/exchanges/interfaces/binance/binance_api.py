@@ -17,12 +17,12 @@
 """
 import hashlib
 import hmac
-import requests
 import time
-from urllib.parse import urlencode
-from requests.auth import AuthBase
 from collections import OrderedDict
+from urllib.parse import urlencode
 
+import requests
+from requests.auth import AuthBase
 
 # Create custom authentication for Exchange
 from blankly.exchanges.interfaces.binance.binance_auth import BinanceAuth
