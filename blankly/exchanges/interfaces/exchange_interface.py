@@ -153,7 +153,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
 
     @property
     def account(self):
-        return self.get_account()
+        return utils.AttributeDict(self.get_account())
 
     @property
     def orders(self):
