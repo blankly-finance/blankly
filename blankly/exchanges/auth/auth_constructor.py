@@ -57,6 +57,7 @@ def load_auth(exchange_type, keys_file=None, name=None):
         if keys_path_cache is None:
             # Add a default for if info is passed in and nobody knows anything about paths
             keys_path_cache = './keys.json'
+            keys_file = keys_path_cache
         else:
             # Default to the cached path if the passed variable is wrong
             keys_file = keys_path_cache

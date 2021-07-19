@@ -110,7 +110,7 @@ class Strategy:
         else:
             self.__hashes.append(callback_hash)
         self.__variables[callback_hash] = AttributeDict({})
-        state = StrategyState(self, self.__variables[callback_hash], resolution)
+        state = StrategyState(self, self.__variables[callback_hash], symbol, resolution=resolution)
 
         # run init
         if init:
@@ -209,7 +209,7 @@ class Strategy:
         else:
             self.__hashes.append(callback_hash)
         self.__variables[callback_hash] = AttributeDict({})
-        state = StrategyState(self, self.__variables[callback])
+        state = StrategyState(self, self.__variables[callback], symbol=symbol)
         if init:
             init(symbol, state)
 

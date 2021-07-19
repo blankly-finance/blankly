@@ -154,7 +154,7 @@ def load_user_preferences(override_path=None) -> dict:
     if settings_cache is None:
         try:
             if override_path is None:
-                preferences = load_json_file('settings.json')
+                preferences = load_json_file('./settings.json')
             else:
                 preferences = load_json_file(override_path)
         except FileNotFoundError:
@@ -284,7 +284,9 @@ def get_quote_asset(blankly_coin_id):
     split = blankly_coin_id.split('-')
     if len(split) > 1:
         return split[1]
-    return split
+    else:
+        # This could go wrong
+        return 'USD'
 
 
 def rename_to(keys_array, renaming_dictionary):
