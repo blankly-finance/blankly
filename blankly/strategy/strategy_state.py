@@ -17,7 +17,7 @@
 """
 
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface as Interface
-from blankly.utils.utils import AttributeDict
+from blankly.utils.utils import AttributeDict, get_base_asset, get_quote_asset
 
 
 class StrategyState:
@@ -27,10 +27,13 @@ class StrategyState:
 
     """Strategy State"""
 
-    def __init__(self, strategy, variables: AttributeDict, resolution: float = None):
+    def __init__(self, strategy, variables: AttributeDict, symbol, resolution: float = None):
         self.strategy = strategy
         self.variables = variables
         self.resolution = resolution
+        self.symbol = symbol
+        self.base_asset = get_base_asset(symbol)
+        self.quote_asset = get_quote_asset(symbol)
 
     @property
     def interface(self) -> Interface:

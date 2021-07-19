@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import traceback
+import warnings
 from typing import List
 
 import requests
@@ -177,6 +178,8 @@ class OrderbookManager(WebsocketManager):
             }
 
         elif exchange_name == "alpaca":
+            warning_string = "Alpaca only allows the viewing of the bid/ask spread, not a total orderbook."
+            warnings.warn(warning_string)
             if override_symbol is None:
                 override_symbol = self.__default_currency
 
@@ -307,7 +310,7 @@ class OrderbookManager(WebsocketManager):
     def alpaca_update(self, update: dict):
         # Alpaca only gives the spread, no orderbook depth (alpaca is very bad)
         symbol = update['S']
-        self.__orderbooks['alpaca'][symbol]['bids'] = [(['bp'], update['bs'])]
+        self.__orderbooks['alpaca'][symbol]['bids'] = [(update['bp'], update['bs'])]
         self.__orderbooks['alpaca'][symbol]['asks'] = [(update['ap'], update['as'])]
 
         callbacks = self.__websockets_callbacks['alpaca'][symbol]
