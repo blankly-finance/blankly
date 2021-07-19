@@ -76,7 +76,7 @@ def test_trade(currency_pair, side, qty, quote_price) -> bool:
         purchase_funds = quote_price * qty
 
         # If you have more funds than the purchase requires then return true
-        if current_funds > purchase_funds:
+        if current_funds >= purchase_funds:
             return True
         else:
             raise InvalidOrder("Insufficient funds. Available:" +
@@ -92,7 +92,7 @@ def test_trade(currency_pair, side, qty, quote_price) -> bool:
         current_base = account['available']
 
         # If you have more base than the sell requires then return true
-        if current_base > qty:
+        if current_base >= qty:
             return True
         else:
             raise InvalidOrder("Not enough base currency. Available: " +

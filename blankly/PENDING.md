@@ -7,3 +7,4 @@
 - Alpaca also has a weird orderbook
 - How to generate alpaca paper keys
 - Go over features page again because got so many features
+- curr_diff is not defined in the MACD example page code, don't exactly know how to fix

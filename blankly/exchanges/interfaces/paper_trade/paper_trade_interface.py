@@ -289,7 +289,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         # Test if funds has more decimals than the increment. The increment is the maximum resolution of the quote.
         if abs(decimal.Decimal(
                 str(funds)).as_tuple().exponent) > abs(decimal.Decimal(str(quote_increment)).as_tuple().exponent):
-            raise InvalidOrder("Fund resolution is too high, maximum resolution is: " + str(quote_increment))
+            raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(quote_increment))
 
         qty = funds / price
 
@@ -398,12 +398,12 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         price_increment = order_filter['limit_order']['price_increment']
         if abs(decimal.Decimal(
                 str(price)).as_tuple().exponent) > abs(decimal.Decimal(str(price_increment)).as_tuple().exponent):
-            raise InvalidOrder("Fund resolution is too high, maximum resolution is: " + str(price_increment))
+            raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(price_increment))
 
         base_increment = order_filter['limit_order']['base_increment']
         if abs(decimal.Decimal(
                 str(size)).as_tuple().exponent) > abs(decimal.Decimal(str(base_increment)).as_tuple().exponent):
-            raise InvalidOrder("Fund resolution is too high, maximum resolution is: " + str(base_increment))
+            raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(base_increment))
 
         # Test the trade
         trade_local.test_trade(symbol, side, size, price)
