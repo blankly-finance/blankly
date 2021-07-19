@@ -28,6 +28,7 @@ from blankly.exchanges.managers.orderbook_manager import OrderbookManager
 from blankly.exchanges.managers.general_stream_manager import GeneralManager
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface as Interface
 from blankly.strategy.blankly_bot import BlanklyBot
+from blankly.utils.utils import trunc
 import blankly.utils.utils as utils
 from blankly.utils.scheduler import Scheduler
 import blankly.indicators as indicators

@@ -21,7 +21,7 @@ import json
 import sys
 import warnings
 from datetime import datetime as dt, timezone
-from math import ceil
+from math import ceil, trunc as math_trunc
 from typing import Union
 
 import dateutil.parser as dp
@@ -555,3 +555,8 @@ class AttributeDict(dict):
 
     def __setattr__(self, attr, value):
         self[attr] = value
+
+
+def trunc(number: float, decimals: int) -> float:
+    stepper = 10.0 ** decimals
+    return math_trunc(stepper * number) / stepper

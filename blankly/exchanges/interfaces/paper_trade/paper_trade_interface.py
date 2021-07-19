@@ -39,7 +39,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         self.get_products_cache = None
         self.get_fees_cache = None
-        self.get_order_filter_cache = None
+        self.get_order_filter_cache = {}
 
         self.__exchange_properties = None
 
@@ -108,6 +108,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             if not self.__run_watchdog:
                 break
             self.evaluate_limits()
+
+    def __get_decimals(self, number) -> int:
+        return abs(decimal.Decimal(str(number)).as_tuple().exponent)
 
     def override_local_account(self, value_dictionary: dict):
         """
@@ -285,13 +288,15 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             raise InvalidOrder("Funds is too large. Maximum is: " + str(max_funds))
 
         quote_increment = market_limits['market_order']['quote_increment']
+        quote_decimals = self.__get_decimals(quote_increment)
 
         # Test if funds has more decimals than the increment. The increment is the maximum resolution of the quote.
-        if abs(decimal.Decimal(
-                str(funds)).as_tuple().exponent) > abs(decimal.Decimal(str(quote_increment)).as_tuple().exponent):
+        if self.__get_decimals(funds) > quote_decimals:
             raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(quote_increment))
 
-        qty = funds / price
+        quantity_decimals = self.__get_decimals(market_limits['limit_order']['base_increment'])
+
+        qty = utils.trunc(funds / price, quantity_decimals)
 
         # Test the purchase
         trade_local.test_trade(symbol, side, qty, price)
@@ -304,15 +309,20 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             'type': 'market',
             'status': 'done',
             'symbol': str(symbol),
-            'funds': str(funds - funds * float((self.__exchange_properties["maker_fee_rate"]))),
+            'funds': str(utils.trunc(funds - funds * float((self.__exchange_properties["maker_fee_rate"])),
+                                     quote_decimals)),
             'specified_funds': str(funds),
             'post_only': 'false',
             'created_at': str(creation_time),
             'done_at': str(self.time()),
             'done_reason': 'filled',
-            'fill_fees': str(funds * float((self.__exchange_properties["maker_fee_rate"]))),
-            'filled_size': str(funds - funds * float((self.__exchange_properties["maker_fee_rate"])) / price),
-            'executed_value': str(funds - funds * float((self.__exchange_properties["maker_fee_rate"]))),
+            'fill_fees': str(utils.trunc(funds * float((self.__exchange_properties["maker_fee_rate"])),
+                                         quote_decimals)),
+            'filled_size': str(utils.trunc(funds - funds *
+                                           float((self.__exchange_properties["maker_fee_rate"])) / price,
+                                           quantity_decimals)),
+            'executed_value': str(utils.trunc(funds - funds * float((self.__exchange_properties["maker_fee_rate"])),
+                                              quote_decimals)),
             'settled': 'true'
         }
         response = utils.isolate_specific(needed, response)
@@ -320,16 +330,21 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         if side == "buy":
             trade_local.trade_local(symbol=symbol,
                                     side=side,
-                                    base_delta=qty - qty * float((self.__exchange_properties["maker_fee_rate"])),
+                                    base_delta=utils.trunc(qty -
+                                                           qty * float((self.__exchange_properties["maker_fee_rate"])),
+                                                           quantity_decimals),
                                     # Gain filled size after fees
-                                    quote_delta=funds * -1  # Loose the original fund amount
+                                    quote_delta=utils.trunc(funds * -1,
+                                                            quote_decimals)  # Loose the original fund amount
                                     )
         elif side == "sell":
             trade_local.trade_local(symbol=symbol,
                                     side=side,
-                                    base_delta=float(qty * -1),  # Loose size before any fees
-                                    quote_delta=funds - funds * float((self.__exchange_properties["maker_fee_rate"]))
-                                    # Gain executed value after fees
+                                    base_delta=utils.trunc(float(qty * -1), quantity_decimals),
+                                    # Loose size before any fees
+                                    quote_delta=utils.trunc(funds - funds *
+                                                            float((self.__exchange_properties["maker_fee_rate"])),
+                                                            quote_decimals)  # Gain executed value after fees
                                     )
         else:
             raise APIException("Invalid trade side: " + str(side))
@@ -396,13 +411,11 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         # Check if the passed parameters are more accurate than either of the max base resolution or max price
         # resolution
         price_increment = order_filter['limit_order']['price_increment']
-        if abs(decimal.Decimal(
-                str(price)).as_tuple().exponent) > abs(decimal.Decimal(str(price_increment)).as_tuple().exponent):
+        if self.__get_decimals(price) > self.__get_decimals(price_increment):
             raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(price_increment))
 
         base_increment = order_filter['limit_order']['base_increment']
-        if abs(decimal.Decimal(
-                str(size)).as_tuple().exponent) > abs(decimal.Decimal(str(base_increment)).as_tuple().exponent):
+        if self.__get_decimals(size) > self.__get_decimals(base_increment):
             raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(base_increment))
 
         # Test the trade
@@ -501,12 +514,10 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
     def get_order_filter(self, symbol):
-        if self.backtesting:
-            if self.get_order_filter_cache is None:
-                self.get_order_filter_cache = self.calls.get_order_filter(symbol)
-            return self.get_order_filter_cache
-        else:
-            return self.calls.get_order_filter(symbol)
+        # Don't re-query order filter if its cached
+        if symbol not in self.get_order_filter_cache:
+            self.get_order_filter_cache[symbol] = self.calls.get_order_filter(symbol)
+        return self.get_order_filter_cache[symbol]
 
     def get_price(self, symbol) -> float:
         if self.backtesting:
