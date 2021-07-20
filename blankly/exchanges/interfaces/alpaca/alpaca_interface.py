@@ -57,6 +57,17 @@ class AlpacaInterface(ExchangeInterface):
             "taker_fee_rate": 0
         }
 
+        filtered_assets = []
+        products = self.calls.list_assets(status=None, asset_class=None)
+        for i in products:
+            if i['symbol'] not in filtered_assets:
+                filtered_assets.append(i['symbol'])
+            else:
+                # TODO handle duplicate symbols
+                pass
+
+        self.__unique_assets = filtered_assets
+
     def get_products(self) -> dict:
         """
         [
@@ -170,8 +181,14 @@ class AlpacaInterface(ExchangeInterface):
                 'hold': 0
             })
 
-        for key in positions_dict:
-            positions_dict[key] = utils.isolate_specific(needed, positions_dict[key])
+        # This is a patch fix that should be fixed to be more optimized
+        if symbol is not None:
+            for i in self.__unique_assets:
+                if i not in positions_dict:
+                    positions_dict[i] = {
+                        'available': 0,
+                        'hold': 0
+                    }
 
         return positions_dict
 
