@@ -144,6 +144,14 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 used_currencies.append(i['symbol'])
         prices = {}
 
+        decimals_dict = {}
+        # get the market limits so that we can get accurate rounding
+        for i in used_currencies:
+            market_limits = self.get_order_filter(i)
+            decimals_dict[i] = {}
+            decimals_dict[i]['quantity_decimals'] = self.__get_decimals(market_limits['limit_order']['base_increment'])
+            decimals_dict[i]['quote_decimals'] = self.__get_decimals(market_limits['market_order']['quote_increment'])
+
         for i in used_currencies:
             prices[i] = self.get_price(i)
             if not self.backtesting:
@@ -192,7 +200,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                         trade_local.trade_local(symbol=index['symbol'],
                                                 side='buy',
                                                 base_delta=float(order['filled_size']),  # Gain filled size after fees
-                                                quote_delta=funds * -1)  # Loose the original fund amount
+                                                quote_delta=funds * -1,  # Loose the original fund amount
+                                                base_resolution=decimals_dict[index['symbol']]['quantity_decimals'],
+                                                quote_resolution=decimals_dict[index['symbol']]['quote_decimals'])
                         order['status'] = 'done'
                         order['settled'] = 'true'
 
@@ -216,7 +226,10 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                         trade_local.trade_local(symbol=index['symbol'],
                                                 side='sell',
                                                 base_delta=float(order['size'] * - 1),  # Loose size before any fees
-                                                quote_delta=float(order['executed_value']))  # Executed value after fees
+                                                quote_delta=float(order['executed_value']),  # Executed value after fees
+                                                base_resolution=decimals_dict[index['symbol']]['quantity_decimals'],
+                                                quote_resolution=decimals_dict[index['symbol']]['quote_decimals']
+                                                )
                         order['status'] = 'done'
                         order['settled'] = 'true'
 
@@ -428,6 +441,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
+        # TODO the response fills in the exchange specific tags into the base dictionary. This is
+        #  useful but really shouldn't be included. We actually really need executed value as a
+        #  universally included key.
         response = {
             'id': str(coinbase_pro_id),
             'price': str(price),
