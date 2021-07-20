@@ -299,7 +299,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         qty = utils.trunc(funds / price, quantity_decimals)
 
         # Test the purchase
-        trade_local.test_trade(symbol, side, qty, price)
+        trade_local.test_trade(symbol, side, qty, price, quote_decimals, quantity_decimals)
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
         # TODO the force typing here isn't strictly necessary because its run int the isolate_specific anyway
@@ -335,8 +335,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                                                            quantity_decimals),
                                     # Gain filled size after fees
                                     quote_delta=utils.trunc(funds * -1,
-                                                            quote_decimals)  # Loose the original fund amount
-                                    )
+                                                            quote_decimals),  # Loose the original fund amount
+                                    quote_resolution=quote_decimals, base_resolution=quantity_decimals)
         elif side == "sell":
             trade_local.trade_local(symbol=symbol,
                                     side=side,
@@ -344,8 +344,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                                     # Loose size before any fees
                                     quote_delta=utils.trunc(funds - funds *
                                                             float((self.__exchange_properties["maker_fee_rate"])),
-                                                            quote_decimals)  # Gain executed value after fees
-                                    )
+                                                            quote_decimals),  # Gain executed value after fees
+                                    quote_resolution=quote_decimals, base_resolution=quantity_decimals)
         else:
             raise APIException("Invalid trade side: " + str(side))
         return MarketOrder(order, response, self)
@@ -411,15 +411,20 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         # Check if the passed parameters are more accurate than either of the max base resolution or max price
         # resolution
         price_increment = order_filter['limit_order']['price_increment']
-        if self.__get_decimals(price) > self.__get_decimals(price_increment):
+        price_increment_decimals = self.__get_decimals(price_increment)
+
+        if self.__get_decimals(price) > price_increment_decimals:
             raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(price_increment))
 
         base_increment = order_filter['limit_order']['base_increment']
-        if self.__get_decimals(size) > self.__get_decimals(base_increment):
+        base_decimals = self.__get_decimals(base_increment)
+
+        if self.__get_decimals(size) > base_decimals:
             raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(base_increment))
 
         # Test the trade
-        trade_local.test_trade(symbol, side, size, price)
+        trade_local.test_trade(symbol, side, size, price, quote_resolution=price_increment_decimals,
+                               base_resolution=base_decimals)
 
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
