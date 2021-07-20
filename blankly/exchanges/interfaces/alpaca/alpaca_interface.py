@@ -299,8 +299,10 @@ class AlpacaInterface(ExchangeInterface):
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
         supported_multiples = [60, 3600, 86400]
-        if resolution < 60:
-            raise ValueError("alpaca does not support sub-minute candlesticks")
+        if resolution not in supported_multiples:
+            warnings.warn("Granularity is not an accepted granularity...rounding to nearest valid value.")
+            resolution = supported_multiples[min(range(len(supported_multiples)),
+                                             key=lambda i: abs(supported_multiples[i] - resolution))]
 
         found_multiple = -1
         for multiple in reversed(supported_multiples):

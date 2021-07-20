@@ -20,7 +20,7 @@ import blankly.utils.utils as utils
 from blankly.utils.exceptions import InvalidOrder
 
 
-def trade_local(symbol, side, base_delta, quote_delta) -> None:
+def trade_local(symbol, side, base_delta, quote_delta, quote_resolution, base_resolution) -> None:
     """
     Trade on the local & static account
 
@@ -39,12 +39,14 @@ def trade_local(symbol, side, base_delta, quote_delta) -> None:
 
     # Push these abstracted deltas to the local account
     try:
-        local_account.account[base]['available'] = local_account.account[base]['available'] + base_delta
+        local_account.account[base]['available'] = utils.trunc(local_account.account[base]['available'] + base_delta,
+                                                               base_resolution)
     except KeyError:
         raise KeyError("Base currency specified not found in local account")
 
     try:
-        local_account.account[quote]['available'] = local_account.account[quote]['available'] + quote_delta
+        local_account.account[quote]['available'] = utils.trunc(local_account.account[quote]['available'] + quote_delta,
+                                                                quote_resolution)
     except KeyError:
         raise KeyError("Quote currency specified not found in local account")
 
@@ -59,7 +61,7 @@ def init_local_account(currencies: dict) -> None:
     local_account.account = currencies
 
 
-def test_trade(currency_pair, side, qty, quote_price) -> bool:
+def test_trade(currency_pair, side, qty, quote_price, quote_resolution, base_resolution) -> bool:
     """
     Test a paper trade to see if you have the funds
 
@@ -72,8 +74,8 @@ def test_trade(currency_pair, side, qty, quote_price) -> bool:
     if side == 'buy':
         quote = utils.get_quote_asset(currency_pair)
         account = local_account.account[quote]
-        current_funds = account['available']
-        purchase_funds = quote_price * qty
+        current_funds = utils.trunc(account['available'], quote_resolution)
+        purchase_funds = utils.trunc(quote_price * qty, quote_resolution)
 
         # If you have more funds than the purchase requires then return true
         if current_funds >= purchase_funds:
@@ -89,7 +91,7 @@ def test_trade(currency_pair, side, qty, quote_price) -> bool:
     elif side == 'sell':
         base = utils.get_base_asset(currency_pair)
         account = local_account.account[base]
-        current_base = account['available']
+        current_base = utils.trunc(account['available'], base_resolution)
 
         # If you have more base than the sell requires then return true
         if current_base >= qty:
