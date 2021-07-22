@@ -196,10 +196,11 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                         hold = trade_local.get_account(quote)['hold']
                         trade_local.update_hold(quote, hold - (index['size'] * index['price']))
 
-                        order, funds = self.evaluate_paper_trade(index, index['price'])
+                        order, funds, executed_value, fill_fees, filled_size = self.evaluate_paper_trade(index,
+                                                                                                         index['price'])
                         trade_local.trade_local(symbol=index['symbol'],
                                                 side='buy',
-                                                base_delta=float(order['filled_size']),  # Gain filled size after fees
+                                                base_delta=filled_size,  # Gain filled size after fees
                                                 quote_delta=funds * -1,  # Loose the original fund amount
                                                 base_resolution=decimals_dict[index['symbol']]['quantity_decimals'],
                                                 quote_resolution=decimals_dict[index['symbol']]['quote_decimals'])
@@ -222,11 +223,12 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                         hold = trade_local.get_account(base)['hold']
                         trade_local.update_hold(base, hold - index['size'])
 
-                        order, funds = self.evaluate_paper_trade(index, index['price'])
+                        order, funds, executed_value, fill_fees, filled_size = self.evaluate_paper_trade(index,
+                                                                                                         index['price'])
                         trade_local.trade_local(symbol=index['symbol'],
                                                 side='sell',
                                                 base_delta=float(order['size'] * - 1),  # Loose size before any fees
-                                                quote_delta=float(order['executed_value']),  # Executed value after fees
+                                                quote_delta=executed_value,  # Executed value after fees
                                                 base_resolution=decimals_dict[index['symbol']]['quantity_decimals'],
                                                 quote_resolution=decimals_dict[index['symbol']]['quote_decimals']
                                                 )
@@ -247,11 +249,11 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         fill_fees = funds * float((self.__exchange_properties["maker_fee_rate"]))
         fill_size = order['size'] - order['size'] * float((self.__exchange_properties["maker_fee_rate"]))
 
-        order['executed_value'] = str(executed_value)
-        order['fill_fees'] = str(fill_fees)
-        order['filled_size'] = str(fill_size)
+        # order['executed_value'] = str(executed_value)
+        # order['fill_fees'] = str(fill_fees)
+        # order['filled_size'] = str(fill_size)
 
-        return order, funds
+        return order, funds, executed_value, fill_fees, fill_size
 
     def get_account(self, symbol=None) -> dict:
         needed = self.needed['get_account']
@@ -317,26 +319,26 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
         # TODO the force typing here isn't strictly necessary because its run int the isolate_specific anyway
         response = {
-            'id': str(coinbase_pro_id),
-            'side': str(side),
-            'type': 'market',
-            'status': 'done',
             'symbol': str(symbol),
+            'id': str(coinbase_pro_id),
+            'created_at': str(creation_time),
             'funds': str(utils.trunc(funds - funds * float((self.__exchange_properties["maker_fee_rate"])),
                                      quote_decimals)),
-            'specified_funds': str(funds),
-            'post_only': 'false',
-            'created_at': str(creation_time),
-            'done_at': str(self.time()),
-            'done_reason': 'filled',
-            'fill_fees': str(utils.trunc(funds * float((self.__exchange_properties["maker_fee_rate"])),
-                                         quote_decimals)),
-            'filled_size': str(utils.trunc(funds - funds *
-                                           float((self.__exchange_properties["maker_fee_rate"])) / price,
-                                           quantity_decimals)),
-            'executed_value': str(utils.trunc(funds - funds * float((self.__exchange_properties["maker_fee_rate"])),
-                                              quote_decimals)),
-            'settled': 'true'
+            'status': 'done',
+            'type': 'market',
+            'side': str(side)
+            # 'specified_funds': str(funds),
+            # 'post_only': 'false',
+            # 'done_at': str(self.time()),
+            # 'done_reason': 'filled',
+            # 'fill_fees': str(utils.trunc(funds * float((self.__exchange_properties["maker_fee_rate"])),
+            #                              quote_decimals)),
+            # 'filled_size': str(utils.trunc(funds - funds *
+            #                                float((self.__exchange_properties["maker_fee_rate"])) / price,
+            #                                quantity_decimals)),
+            # 'executed_value': str(utils.trunc(funds - funds * float((self.__exchange_properties["maker_fee_rate"])),
+            #                                   quote_decimals)),
+            # 'settled': 'true'
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
@@ -445,21 +447,21 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         #  useful but really shouldn't be included. We actually really need executed value as a
         #  universally included key.
         response = {
+            'symbol': str(symbol),
             'id': str(coinbase_pro_id),
+            'created_at': str(creation_time),
             'price': str(price),
             'size': str(size),
-            'symbol': str(symbol),
-            'side': str(side),
-            'stp': 'dc',
-            'type': 'limit',
-            "time_in_force": "GTC",
-            'post_only': 'false',
-            'created_at': str(creation_time),
-            "fill_fees": "0.0000000000000000",
-            "filled_size": "0.00000000",
-            "executed_value": "0.0000000000000000",
             'status': 'pending',
-            'settled': 'false'
+            "time_in_force": "GTC",
+            'type': 'limit',
+            'side': str(side)
+            # 'stp': 'dc',
+            # 'post_only': 'false',
+            # "fill_fees": "0.0000000000000000",
+            # "filled_size": "0.00000000",
+            # "executed_value": "0.0000000000000000",
+            # 'settled': 'false'
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)

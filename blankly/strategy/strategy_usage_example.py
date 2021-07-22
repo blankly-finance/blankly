@@ -3,7 +3,7 @@ from blankly.strategy import Strategy, StrategyState
 
 
 def golden_cross(price, ticker, state: StrategyState):
-    resolution: str = state.resolution  # get the resolution that this price event is stored at
+    resolution: float = state.resolution  # get the resolution that this price event is stored at
     variables = state.variables  # each price event has it's own local variable state
     interface: blankly.Interface = state.interface
 

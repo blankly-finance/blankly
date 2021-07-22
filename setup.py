@@ -16,11 +16,11 @@ setup(
     # packages=['blankly'],  # Potentially should be the same thing as name
     version='v1.0.2-beta',
     license='lgpl-3.0',  # Licenses: https://help.github.com/articles/licensing-a-repository
-    description='Rapidly build trading bots that run on any exchange',  # Give a short description about your library
+    description='Rapidly build & deploy cross-exchange trading bots',  # Give a short description about your library
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='blankly',
-    entry_points={'console_scripts': ['blankly = blankly.command.cli:main']},
+    entry_points={'console_scripts': ['blankly = blankly.deployment.cli:main']},
     author_email='contact@blankly.finance',
     url='https://github.com/Blankly-Finance/Blankly',  # Could be github or website
     # download_url='https://github.com/EmersonDove/Blankly/archive/v0.1.1-alpha.tar.gz',
