@@ -55,7 +55,7 @@ Make sure you're using a supported version of python. The module is currently te
 
 ### Directory Setup and API Keys
 
-Next, add [`settings.json`](https://github.com/Blankly-Finance/Blankly/blob/development/Examples/settings.json) and [`keys.json`](https://github.com/Blankly-Finance/Blankly/blob/development/Examples/keys_example.json) to your root project directory. More information can be found on our [docs](https://docs.blankly.finance)
+Next, add [`settings.json`](https://github.com/Blankly-Finance/Blankly/blob/main/examples/settings.json) and [`keys.json`](https://github.com/Blankly-Finance/Blankly/blob/main/examples/keys_example.json) to your root project directory. More information can be found on our [docs](https://docs.blankly.finance)
 
 From there, **insert your API keys** from your exchange into your `keys.json` file.
 
@@ -73,7 +73,7 @@ Project
 For more info, and ways to do more advanced things, check out our [getting started docs](https://docs.blankly.finance).
 ## Example Use
 
-We have a pre-built cookbook examples that implement strategies such as RSI, MACD, and the Golden Cross found in our [examples](https://docs.blankly.finance/examples).
+We have a pre-built cookbook examples that implement strategies such as RSI, MACD, and the Golden Cross found in our [examples](https://docs.blankly.finance/examples/golden-cross).
 
 We have made Blankly extremely easy to integrate with any existing models and price events to make it super easy to switch.
 
