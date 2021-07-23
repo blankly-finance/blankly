@@ -252,6 +252,15 @@ class BackTestController:
 
         return true_available, no_trade_available
 
+    def __has_nonzero_delta(self, cycle_status, column):
+        show_zero_delta = self.preferences['settings']['show_tickers_with_zero_delta']
+        is_same = cycle_status[column][0] == cycle_status[column].iloc[-1] == cycle_status[column].iloc[
+            int(len(cycle_status[column])/2)]
+        # Return true if they are not the same or the setting is set to true
+        output = (not is_same) or show_zero_delta
+        print("column " + str(column) + " is " + str(output))
+        return output
+
     def run(self) -> BacktestResult:
         """
         Setup
@@ -270,7 +279,8 @@ class BackTestController:
         use_price = self.preferences['settings']['use_price']
         self.use_price = use_price
 
-        # Sort each column by the use price
+        # Sort each column by time
+        print(prices)
         for column in prices.keys():
             prices[column] = prices[column].sort_values('time')
 
@@ -290,6 +300,9 @@ class BackTestController:
                                     row['low'],  # 5
                                     row['close'],  # 6
                                     row['volume']])  # 7
+
+        # pushing these prices together makes the time go weird
+        self.prices = sorted(self.prices)
 
         self.current_time = self.prices[0][0]
         self.initial_time = self.current_time
@@ -410,16 +423,12 @@ class BackTestController:
         if self.preferences['settings']['GUI_output']:
             global_x_range = None
 
-            show_zero_delta = self.preferences['settings']['show_tickers_with_zero_delta']
-
             color = Category10_10.__iter__()
 
             time = [dt.fromtimestamp(ts) for ts in cycle_status['time']]
 
             for column in cycle_status:
-                if column != 'time' and (not (cycle_status[column][0] == cycle_status[column].iloc[-1]) or
-                                         show_zero_delta):
-
+                if column != 'time' and self.__has_nonzero_delta(cycle_status, column):
                     p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
                     source = ColumnDataSource(data=dict(
                         time=time,
