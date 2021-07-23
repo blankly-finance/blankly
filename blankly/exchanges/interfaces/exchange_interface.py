@@ -220,6 +220,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
             tries = 0
             while True:
                 if data_append is None:
+                    # We can continue if this is valid
                     if response['time'].iloc[-1] == epoch_stop:
                         break
                 else:
@@ -231,11 +232,17 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                     # Admit failure and return
                     warnings.warn("Exchange failed to provide updated data within the timeout.")
                     return response
-                data_append = [self.get_product_history(symbol,
-                                                        epoch_stop - resolution_seconds,
-                                                        epoch_stop,
-                                                        resolution_seconds).iloc[-1].to_dict()]
-                data_append[0]['time'] = int(data_append[0]['time'])
+                try:
+                    data_append = [self.get_product_history(symbol,
+                                                            epoch_stop - resolution_seconds,
+                                                            epoch_stop,
+                                                            resolution_seconds).iloc[-1].to_dict()]
+                    data_append[0]['time'] = int(data_append[0]['time'])
+                except IndexError:
+                    # If there is no recent data on the exchange this will be an empty dataframe.
+                    # This happens for low volume
+                    warnings.warn("Most recent bar at this resolution does not yet exist - skipping.")
+                    break
 
             response = response.append(data_append, ignore_index=True)
 
