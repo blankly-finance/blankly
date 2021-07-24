@@ -50,7 +50,7 @@ class BackTestController:
         self.backtest_settings_path = backtest_settings_path
         if not paper_trade_exchange.get_type() == "paper_trade":
             raise ValueError("Backtest controller was not constructed with a paper trade exchange object.")
-        self.interface = paper_trade_exchange.get_interface()  # type: PaperTradeInterface
+        self.interface: PaperTradeInterface = paper_trade_exchange.get_interface()
 
         self.price_events = []
 
@@ -254,11 +254,12 @@ class BackTestController:
 
     def __has_nonzero_delta(self, cycle_status, column):
         show_zero_delta = self.preferences['settings']['show_tickers_with_zero_delta']
-        is_same = cycle_status[column][0] == cycle_status[column].iloc[-1] == cycle_status[column].iloc[
-            int(len(cycle_status[column])/2)]
+        halfway = len(cycle_status[column])/2
+        is_same = cycle_status[column].iloc[0] == cycle_status[column].iloc[-1] == cycle_status[column].iloc[
+            int(halfway)] == cycle_status[column].iloc[
+            int((halfway+halfway)/2)] == cycle_status[column].iloc[int(halfway/2)]
         # Return true if they are not the same or the setting is set to true
         output = (not is_same) or show_zero_delta
-        print("column " + str(column) + " is " + str(output))
         return output
 
     def run(self) -> BacktestResult:
@@ -280,7 +281,6 @@ class BackTestController:
         self.use_price = use_price
 
         # Sort each column by time
-        print(prices)
         for column in prices.keys():
             prices[column] = prices[column].sort_values('time')
 
@@ -291,6 +291,8 @@ class BackTestController:
 
             # Be sure to push these initial prices to the strategy
             self.interface.receive_price(k, v[use_price].iloc[0])
+
+            print("pushed: " + str(k) + " at " + str(v[use_price].iloc[0]))
 
             for index, row in frame.iterrows():
                 # TODO iterrows() is allegedly pretty slow
@@ -363,40 +365,53 @@ class BackTestController:
                 self.interface.receive_time(self.current_time)
                 self.interface.evaluate_limits()
 
-                for function_dict in self.price_events:
-                    while function_dict['next_run'] <= self.current_time:
-                        local_time = function_dict['next_run']
-                        # This is the actual callback to the user space
-                        if function_dict['ohlc']:
-                            # This pulls all the price data out of the price array defined on line 260
-                            function_dict['function']({'open': price_array[3],
-                                                       'high': price_array[4],
-                                                       'low': price_array[5],
-                                                       'close': price_array[6],
-                                                       'volume': price_array[7]},
+                while True:
+                    # Need to go through and establish an order for each of the price events
+                    functions_that_will_run = []
+                    for function_dict in self.price_events:
+                        if function_dict['next_run'] <= self.current_time:
+                            functions_that_will_run.append(function_dict)
 
-                                                      function_dict['asset_id'],
-                                                      function_dict['state_object'])
-                        else:
-                            function_dict['function'](self.interface.get_price(function_dict['asset_id']),
-                                                      function_dict['asset_id'], function_dict['state_object'])
+                    if len(functions_that_will_run) == 0:
+                        break
 
-                        # Delay the next run until after the interval
-                        function_dict['next_run'] += function_dict['interval']
+                    # Now we have a set of functions that can be run
+                    sorted_functions = sorted(functions_that_will_run, key=lambda sort_key: sort_key['next_run'])
 
-                        available_dict, no_trade_dict = self.format_account_data(local_time)
-                        price_data.append(available_dict)
+                    # Only run the first function & then re-evaluate
+                    function_dict = sorted_functions[0]
 
-                        no_trade.append(no_trade_dict)
+                    local_time = function_dict['next_run']
+
+                    # This is the actual callback to the user space
+                    if function_dict['ohlc']:
+                        # This pulls all the price data out of the price array defined on line 260
+                        function_dict['function']({'open': price_array[3],
+                                                   'high': price_array[4],
+                                                   'low': price_array[5],
+                                                   'close': price_array[6],
+                                                   'volume': price_array[7]},
+
+                                                  function_dict['asset_id'],
+                                                  function_dict['state_object'])
+                    else:
+                        function_dict['function'](self.interface.get_price(function_dict['asset_id']),
+                                                  function_dict['asset_id'], function_dict['state_object'])
+
+                    # Delay the next run until after the interval
+                    function_dict['next_run'] += function_dict['interval']
+
+                    available_dict, no_trade_dict = self.format_account_data(local_time)
+                    price_data.append(available_dict)
+
+                    no_trade.append(no_trade_dict)
         except Exception:
             traceback.print_exc()
 
         # Push the accounts to the dataframe
-        cycle_status = cycle_status.append(price_data, ignore_index=True)
+        cycle_status = cycle_status.append(price_data, ignore_index=True).sort_values(by=['time'])
 
-        no_trade_cycle_status = no_trade_cycle_status.append(no_trade, ignore_index=True)
-
-        print("Creating report...")
+        no_trade_cycle_status = no_trade_cycle_status.append(no_trade, ignore_index=True).sort_values(by=['time'])
 
         figures = []
         # for i in self.prices:
