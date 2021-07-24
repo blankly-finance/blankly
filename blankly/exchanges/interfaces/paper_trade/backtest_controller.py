@@ -292,8 +292,6 @@ class BackTestController:
             # Be sure to push these initial prices to the strategy
             self.interface.receive_price(k, v[use_price].iloc[0])
 
-            print("pushed: " + str(k) + " at " + str(v[use_price].iloc[0]))
-
             for index, row in frame.iterrows():
                 # TODO iterrows() is allegedly pretty slow
                 self.prices.append([row.time, k, row[use_price],
@@ -367,39 +365,32 @@ class BackTestController:
 
                 while True:
                     # Need to go through and establish an order for each of the price events
-                    functions_that_will_run = []
-                    for function_dict in self.price_events:
-                        if function_dict['next_run'] <= self.current_time:
-                            functions_that_will_run.append(function_dict)
+                    self.price_events = sorted(self.price_events, key=lambda sort_key: sort_key['next_run'])
 
-                    if len(functions_that_will_run) == 0:
+                    # Now the lowest one has to go past the current time to be invalid
+                    if self.price_events[0]['next_run'] > self.current_time:
                         break
 
-                    # Now we have a set of functions that can be run
-                    sorted_functions = sorted(functions_that_will_run, key=lambda sort_key: sort_key['next_run'])
-
-                    # Only run the first function & then re-evaluate
-                    function_dict = sorted_functions[0]
-
-                    local_time = function_dict['next_run']
+                    local_time = self.price_events[0]['next_run']
 
                     # This is the actual callback to the user space
-                    if function_dict['ohlc']:
+                    if self.price_events[0]['ohlc']:
                         # This pulls all the price data out of the price array defined on line 260
-                        function_dict['function']({'open': price_array[3],
-                                                   'high': price_array[4],
-                                                   'low': price_array[5],
-                                                   'close': price_array[6],
-                                                   'volume': price_array[7]},
+                        self.price_events[0]['function']({'open': price_array[3],
+                                                          'high': price_array[4],
+                                                          'low': price_array[5],
+                                                          'close': price_array[6],
+                                                          'volume': price_array[7]},
 
-                                                  function_dict['asset_id'],
-                                                  function_dict['state_object'])
+                                                         self.price_events[0]['asset_id'],
+                                                         self.price_events[0]['state_object'])
                     else:
-                        function_dict['function'](self.interface.get_price(function_dict['asset_id']),
-                                                  function_dict['asset_id'], function_dict['state_object'])
+                        self.price_events[0]['function'](self.interface.get_price(self.price_events[0]['asset_id']),
+                                                         self.price_events[0]['asset_id'], self.price_events[0][
+                                                             'state_object'])
 
                     # Delay the next run until after the interval
-                    function_dict['next_run'] += function_dict['interval']
+                    self.price_events[0]['next_run'] += self.price_events[0]['interval']
 
                     available_dict, no_trade_dict = self.format_account_data(local_time)
                     price_data.append(available_dict)
@@ -410,6 +401,8 @@ class BackTestController:
 
         # Push the accounts to the dataframe
         cycle_status = cycle_status.append(price_data, ignore_index=True).sort_values(by=['time'])
+
+        cycle_status.to_csv('output.csv')
 
         no_trade_cycle_status = no_trade_cycle_status.append(no_trade, ignore_index=True).sort_values(by=['time'])
 
@@ -454,7 +447,7 @@ class BackTestController:
                            line_width=2,
                            color=next(color),
                            legend_label=column,
-                           mode="before",
+                           mode="after",
                            )
 
                     # Replica of whats above to add the no-trade line to the backtest
