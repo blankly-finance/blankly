@@ -116,6 +116,8 @@ class AlpacaInterface(ExchangeInterface):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         needed = self.needed['get_account']
 
+        symbol = super().get_account(symbol)
+
         positions = self.calls.list_positions()
         positions_dict = utils.AttributeDict({})
 
@@ -182,7 +184,7 @@ class AlpacaInterface(ExchangeInterface):
             })
 
         # This is a patch fix that should be fixed to be more optimized
-        if symbol is not None:
+        if symbol is None:
             for i in self.__unique_assets:
                 if i not in positions_dict:
                     positions_dict[i] = {

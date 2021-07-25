@@ -250,7 +250,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
 
     def get_account(self, symbol=None):
         """
-        Get all assets in an account, or sort by assets/account_id
+        This method is a helper that allows the get_account functions to assume the base asset is being passed in
         Args:
             symbol (Optional): Filter by particular symbol
 
