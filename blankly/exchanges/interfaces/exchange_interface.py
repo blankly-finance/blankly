@@ -56,7 +56,6 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 ["base_increment", float]
             ],
             'get_account': [
-                ["symbol", str],
                 ["available", float],
                 ["hold", float]
             ],

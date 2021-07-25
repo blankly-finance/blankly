@@ -256,28 +256,16 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         return order, funds, executed_value, fill_fees, fill_size
 
     def get_account(self, symbol=None) -> dict:
-        needed = self.needed['get_account']
-
-        symbol = ExchangeInterface.get_account(symbol)
-
-        # TODO this can be optimized
-        local_account = trade_local.get_accounts()
-        accounts = {}
-        for key, value in local_account.items():
-            accounts[key] = {
-                'available': value['available'],
-                'hold': value['hold']
-            }
-
-        # We have to sort through it if the accounts are none
-        if symbol is not None:
-            if symbol in accounts.keys():
-                return local_account[symbol]
-            warnings.warn("Asset not found")
-
-        for k, v in local_account.items():
-            local_account[k] = utils.isolate_specific(needed, accounts[k])
-        return accounts
+        if symbol is None:
+            return trade_local.get_accounts()
+        else:
+            # This is a super call in all other interfaces. This apparently doesn't work here because of multiple
+            # inheritance
+            symbol = utils.get_base_asset(symbol)
+            try:
+                return trade_local.get_account(symbol)
+            except KeyError:
+                raise KeyError("Symbol not found.")
 
     def market_order(self, symbol, side, funds) -> MarketOrder:
         if not self.backtesting:

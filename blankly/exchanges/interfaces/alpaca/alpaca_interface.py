@@ -176,13 +176,6 @@ class AlpacaInterface(ExchangeInterface):
                 'hold': positions_dict['USD']['available']
             })
 
-        if symbol is not None:
-            # if we haven't found the currency, then we'll end up here
-            return utils.AttributeDict({
-                'available': 0,
-                'hold': 0
-            })
-
         # This is a patch fix that should be fixed to be more optimized
         if symbol is None:
             for i in self.__unique_assets:
@@ -191,8 +184,10 @@ class AlpacaInterface(ExchangeInterface):
                         'available': 0,
                         'hold': 0
                     }
-
-        return positions_dict
+            return positions_dict
+        else:
+            # If it didn't get recognized above we end up here
+            raise KeyError("Symbol not found.")
 
     def market_order(self, symbol, side, funds) -> MarketOrder:
         assert isinstance(self.calls, alpaca_trade_api.REST)

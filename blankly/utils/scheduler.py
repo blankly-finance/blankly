@@ -111,6 +111,7 @@ class Scheduler:
         while True:
             if self.__stop:
                 break
+            # This try except is replicated in the backtesting framework
             try:
                 func(**kwargs)
             except Exception:
