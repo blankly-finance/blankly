@@ -33,3 +33,7 @@ import blankly.utils.utils as utils
 from blankly.utils.scheduler import Scheduler
 import blankly.indicators as indicators
 from blankly.utils import time_builder
+
+# Check to see if there is a node process and connect to it
+from blankly.deployment.server import Connection as __Connection
+__connection = __Connection()

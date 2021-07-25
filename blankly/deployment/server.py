@@ -18,6 +18,8 @@
 
 import time
 import zmq
+from zmq.error import Again
+import threading
 
 #
 # from __future__ import print_function
@@ -121,23 +123,57 @@ import zmq
 #     main()
 
 
-def main():
-    context = zmq.Context()
-    socket = context.socket(zmq.REP)
-    socket.bind("tcp://*:5555")
+class Connection:
+    def __init__(self):
 
-    while True:
-        #  Wait for next request from client
-        message = socket.recv()
+        # Create a thread an a global connection variable
+        self.__thread = None
+        self.connected = False
 
-        print(f"Received request: {message}")
+        # Setup zmq connection prereqs
+        self.context = zmq.Context()
+        self.socket = self.context.socket(zmq.REP)
 
-        #  Do some 'work'
-        time.sleep(1)
+        self.reattempt_connection()
 
-        #  Send reply back to client
-        socket.send(b"World")
+    def reattempt_connection(self):
+        if not self.connected:
+            self.__thread = threading.Thread(target=self.__establish_connection, daemon=True)
+            self.__thread.start()
 
+    def __establish_connection(self):
+        self.socket.bind("tcp://*:5555")
 
-if __name__ == '__main__':
-    main()
+        # Set a timeout of ten seconds to connect
+        self.socket.set(zmq.RCVTIMEO, 10000)
+
+        try:
+            # Wait the delay time for the initialization request
+            # print("open")
+            message = self.socket.recv()
+            if message == b"ping":
+                self.connected = True
+                self.socket.send(b"pong")
+
+                # Reset this to be infinite
+                self.socket.set(zmq.RCVTIMEO, -1)
+            else:
+                print(f"Received unexpected connection request: {message}")
+        except Again:
+            pass
+            # print("failed")
+
+        # Continue the connection by listening
+        if self.connected:
+            self.__receiver()
+
+    def __receiver(self):
+        while True:
+            #  Wait for next request from client
+            message = self.socket.recv()
+
+            if message == b"ping":
+                self.socket.send(b"pong")
+
+    def __sender(self, message):
+        self.socket.send(message.encode('ascii'))
