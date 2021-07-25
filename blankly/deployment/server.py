@@ -149,19 +149,18 @@ class Connection:
 
         try:
             # Wait the delay time for the initialization request
-            # print("open")
             message = self.socket.recv()
             if message == b"ping":
+                # If the message is not a ping then it doesn't count as successful
                 self.connected = True
                 self.socket.send(b"pong")
 
-                # Reset this to be infinite
+                # Reset this to be infinite amount of time
                 self.socket.set(zmq.RCVTIMEO, -1)
             else:
                 print(f"Received unexpected connection request: {message}")
         except Again:
             pass
-            # print("failed")
 
         # Continue the connection by listening
         if self.connected:
@@ -175,5 +174,5 @@ class Connection:
             if message == b"ping":
                 self.socket.send(b"pong")
 
-    def __sender(self, message):
+    def send(self, message: str):
         self.socket.send(message.encode('ascii'))

@@ -258,6 +258,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
     def get_account(self, symbol=None) -> dict:
         needed = self.needed['get_account']
 
+        symbol = ExchangeInterface.get_account(symbol)
+
         # TODO this can be optimized
         local_account = trade_local.get_accounts()
         accounts = {}

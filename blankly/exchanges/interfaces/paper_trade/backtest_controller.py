@@ -461,7 +461,7 @@ class BackTestController:
                                line_width=2,
                                color=next(color),
                                legend_label='Account Value (No Trades)',
-                               mode="before")
+                               mode="after")
 
                     p.add_tools(hover)
 

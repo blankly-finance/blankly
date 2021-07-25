@@ -36,4 +36,6 @@ from blankly.utils import time_builder
 
 # Check to see if there is a node process and connect to it
 from blankly.deployment.server import Connection as __Connection
+from blankly.deployment.reporter import Reporter as __Reporter
 __connection = __Connection()
+reporter = __Reporter(__connection)

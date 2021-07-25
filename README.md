@@ -79,61 +79,40 @@ We have made Blankly extremely easy to integrate with any existing models and pr
 
 ```python
 import blankly
-from blankly.strategy import Strategy, StrategyState
-from model import my_awesome_model
+from blankly import StrategyState
 
 
-def price_event(price: float, ticker: str, state: StrategyState):
-    interface = state.interface
-
-    # Add this most recent price to be stored for this particular price event
-    history = state.variables['history']
-    history.append(price)
-
-    # easily integrate your model
-    decision = my_awesome_model(history)
-
-    # buy or sell based on that decision
-    if decision:
-        buy_order = int(.025 * interface.cash)
-        if buy_order > 10:
-            interface.market_order(ticker, 'buy', int(.025 * interface.cash))
-            state.variables['has_buy_order'] = True
-    elif state.variables['has_buy_order'] and not decision:
-        amt = interface.account[ticker]['available']
-        interface.market_order(ticker, 'sell', int(amt))
-        state.variables['has_buy_order'] = False
+def price_event(price, symbol, state: StrategyState):
+    """ This function will give an updated price every 15 seconds from our definition below """
+    state.variables['history'].append(price)
+    rsi = blankly.indicators.rsi(state.variables['history'])
+    if rsi[-1] < 30:
+        # Dollar cost average buy
+        state.interface.market_order(symbol, side='buy', funds=10)
+    elif rsi[-1] > 70:
+        # Dollar cost average sell
+        state.interface.market_order(symbol, side='sell', funds=10)
 
 
-# Easily run setup code
-def strategy_init(currency_pair, state: StrategyState):
-    state.variables['history'] = state.interface.history(symbol=currency_pair,
-                                                         to='4w',
-                                                         resolution='1h')['close'].tolist()
+def init(symbol, state: StrategyState):
+    # Download price data to give context to the algo
+    state.variables['history'] = state.interface.history(symbol, to='1y')['open'].tolist()
 
 
 if __name__ == "__main__":
-    # All authentication is done in this line
-    exchange = blankly.CoinbasePro()
+    # Authenticate coinbase pro strategy
+    coinbase_pro = blankly.CoinbasePro()
 
-    # Now just wrap it into a strategy to gain a huge amount of functionality
-    strategy = Strategy(exchange)
+    # Use our strategy helper on coinbase pro
+    coinbase_strategy = blankly.Strategy(coinbase_pro)
 
-    # Run the code above with a new price once a day
-    strategy.add_price_event(price_event,
-                             symbol='BTC-USD',
-                             resolution='1h',
-                             # Pass an init function to run before any price events
-                             init=strategy_init)
+    # Run the price event function every time we check for a new price - by default that is 15 seconds
+    coinbase_strategy.add_price_event(price_event, symbol='BTC-USD', resolution='30m', init=init)
 
-    # Run the code above with a new price once every thirty minutes
-    strategy.add_price_event(price_event,
-                             symbol='LINK-USD',
-                             resolution='1h',
-                             init=strategy_init)
-
-    strategy.start()
-
+    # Start the strategy. This will begin each of the price event ticks
+    coinbase_strategy.start()
+    # Or backtest using this
+    # coinbase_strategy.backtest(to='1y', initial_values={'USD': 100000, 'BTC': 2})
 ```
 
 ## Supported Exchanges

@@ -55,6 +55,7 @@ class Exchange(ABCExchange, abc.ABC):
     def get_preferences(self):
         return self.preferences
 
+    # Can be removed?
     def construct_interface(self, calls):
         if self.__type == "coinbase_pro":
             self.interface = CoinbaseProInterface(self.__type, calls)
