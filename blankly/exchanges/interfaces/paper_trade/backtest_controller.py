@@ -75,6 +75,9 @@ class BackTestController:
 
         self.quote_currency = self.preferences['settings']['quote_account_value_in']
 
+        # Create a global generator because a second yield function gets really nasty
+        self.__color_generator = Category10_10.__iter__()
+
         self.initial_account = {}
 
     def sync_prices(self, save=True) -> dict:
@@ -264,12 +267,12 @@ class BackTestController:
         return output
 
     def __next_color(self):
-        color = Category10_10.__iter__()
-        while True:
-            try:
-                yield next(color)
-            except StopIteration:
-                color = Category10_10.__iter__()
+        # This should be a generator but it doesn't work without doing a foreach loop
+        try:
+            return next(self.__color_generator)
+        except StopIteration:
+            self.__color_generator = Category10_10.__iter__()
+            return next(self.__color_generator)
 
     def run(self) -> BacktestResult:
         """
@@ -461,7 +464,7 @@ class BackTestController:
                     p.step('time', 'value',
                            source=source,
                            line_width=2,
-                           color=next(self.__next_color()),
+                           color=self.__next_color(),
                            legend_label=column,
                            mode="after",
                            )
@@ -475,7 +478,7 @@ class BackTestController:
                         p.step('time', 'value',
                                source=source,
                                line_width=2,
-                               color=next(self.__next_color()),
+                               color=self.__next_color(),
                                legend_label='Account Value (No Trades)',
                                mode="after")
 
