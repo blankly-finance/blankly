@@ -252,15 +252,24 @@ class BackTestController:
 
         return true_available, no_trade_available
 
-    def __has_nonzero_delta(self, cycle_status, column):
+    def __has_nonzero_delta(self, cycle_status, column) -> bool:
         show_zero_delta = self.preferences['settings']['show_tickers_with_zero_delta']
         halfway = len(cycle_status[column])/2
+
         is_same = cycle_status[column].iloc[0] == cycle_status[column].iloc[-1] == cycle_status[column].iloc[
             int(halfway)] == cycle_status[column].iloc[
             int((halfway+halfway)/2)] == cycle_status[column].iloc[int(halfway/2)]
         # Return true if they are not the same or the setting is set to true
         output = (not is_same) or show_zero_delta
         return output
+
+    def __next_color(self):
+        color = Category10_10.__iter__()
+        while True:
+            try:
+                yield next(color)
+            except StopIteration:
+                color = Category10_10.__iter__()
 
     def run(self) -> BacktestResult:
         """
@@ -351,6 +360,8 @@ class BackTestController:
 
         show_progress = self.preferences['settings']['show_progress_during_backtest']
 
+        ignore_exceptions = self.preferences['settings']['ignore_user_exceptions']
+
         print("\nBacktesting...")
         price_number = len(self.prices)
         try:
@@ -374,20 +385,26 @@ class BackTestController:
                     local_time = self.price_events[0]['next_run']
 
                     # This is the actual callback to the user space
-                    if self.price_events[0]['ohlc']:
-                        # This pulls all the price data out of the price array defined on line 260
-                        self.price_events[0]['function']({'open': price_array[3],
-                                                          'high': price_array[4],
-                                                          'low': price_array[5],
-                                                          'close': price_array[6],
-                                                          'volume': price_array[7]},
+                    try:
+                        if self.price_events[0]['ohlc']:
+                            # This pulls all the price data out of the price array defined on line 260
+                            self.price_events[0]['function']({'open': price_array[3],
+                                                              'high': price_array[4],
+                                                              'low': price_array[5],
+                                                              'close': price_array[6],
+                                                              'volume': price_array[7]},
 
-                                                         self.price_events[0]['asset_id'],
-                                                         self.price_events[0]['state_object'])
-                    else:
-                        self.price_events[0]['function'](self.interface.get_price(self.price_events[0]['asset_id']),
-                                                         self.price_events[0]['asset_id'], self.price_events[0][
-                                                             'state_object'])
+                                                             self.price_events[0]['asset_id'],
+                                                             self.price_events[0]['state_object'])
+                        else:
+                            self.price_events[0]['function'](self.interface.get_price(self.price_events[0]['asset_id']),
+                                                             self.price_events[0]['asset_id'], self.price_events[0][
+                                                                 'state_object'])
+                    except Exception as e:
+                        if ignore_exceptions:
+                            traceback.print_exc()
+                        else:
+                            raise e
 
                     # Delay the next run until after the interval
                     self.price_events[0]['next_run'] += self.price_events[0]['interval']
@@ -402,7 +419,8 @@ class BackTestController:
         # Push the accounts to the dataframe
         cycle_status = cycle_status.append(price_data, ignore_index=True).sort_values(by=['time'])
 
-        cycle_status.to_csv('output.csv')
+        if len(cycle_status) == 0:
+            raise RuntimeError("Empty result - no valid backtesting events occurred. Was there an error?.")
 
         no_trade_cycle_status = no_trade_cycle_status.append(no_trade, ignore_index=True).sort_values(by=['time'])
 
@@ -431,8 +449,6 @@ class BackTestController:
         if self.preferences['settings']['GUI_output']:
             global_x_range = None
 
-            color = Category10_10.__iter__()
-
             time = [dt.fromtimestamp(ts) for ts in cycle_status['time']]
 
             for column in cycle_status:
@@ -445,7 +461,7 @@ class BackTestController:
                     p.step('time', 'value',
                            source=source,
                            line_width=2,
-                           color=next(color),
+                           color=next(self.__next_color()),
                            legend_label=column,
                            mode="after",
                            )
@@ -459,7 +475,7 @@ class BackTestController:
                         p.step('time', 'value',
                                source=source,
                                line_width=2,
-                               color=next(color),
+                               color=next(self.__next_color()),
                                legend_label='Account Value (No Trades)',
                                mode="after")
 

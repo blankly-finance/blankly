@@ -24,6 +24,7 @@
     "show_progress_during_backtest": false,
     "cache_location": "./price_caches",
     "resample_account_value_for_metrics": "1d",
-    "quote_account_value_in": "USD"
+    "quote_account_value_in": "USD",
+    "ignore_user_exceptions": true
   }
 }
