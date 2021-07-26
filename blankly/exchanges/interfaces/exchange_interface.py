@@ -168,7 +168,8 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 to: Union[str, int] = 200,
                 resolution: Union[str, float] = '1d',
                 start_date: Union[str, dt, float] = None,
-                end_date: Union[str, dt, float] = None):
+                end_date: Union[str, dt, float] = None,
+                return_as: str='df'):
 
         to_present = False
         if end_date is None:
@@ -244,7 +245,9 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                     break
 
             response = response.append(data_append, ignore_index=True)
-
+        
+        if return_as == 'list':
+            return response.to_dict('list')
         return response
 
     def get_account(self, symbol=None):
