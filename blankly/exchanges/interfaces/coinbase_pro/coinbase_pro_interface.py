@@ -110,17 +110,18 @@ class CoinbaseProInterface(ExchangeInterface):
         """
         accounts = self.calls.get_accounts()
 
-        parsed_dictionary = {}
+        parsed_dictionary = utils.AttributeDict({})
 
         # We have to sort through it if the accounts are none
         if symbol is not None:
             for i in accounts:
                 if i["currency"] == symbol:
                     parsed_value = utils.isolate_specific(needed, i)
-                    return utils.AttributeDict({
+                    dictionary = utils.AttributeDict({
                         'available': parsed_value['available'],
                         'hold': parsed_value['hold']
                     })
+                    return dictionary
             raise ValueError("Symbol not found")
         for i in range(len(accounts)):
             parsed_dictionary[accounts[i]['currency']] = utils.AttributeDict({
@@ -128,7 +129,7 @@ class CoinbaseProInterface(ExchangeInterface):
                 'hold': float(accounts[i]['hold'])
             })
 
-        return utils.AttributeDict(parsed_dictionary)
+        return parsed_dictionary
 
     def market_order(self, symbol, side, funds) -> MarketOrder:
         """

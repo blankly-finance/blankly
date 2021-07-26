@@ -180,10 +180,10 @@ class AlpacaInterface(ExchangeInterface):
         if symbol is None:
             for i in self.__unique_assets:
                 if i not in positions_dict:
-                    positions_dict[i] = {
+                    positions_dict[i] = utils.AttributeDict({
                         'available': 0,
                         'hold': 0
-                    }
+                    })
             return positions_dict
         else:
             # If it didn't get recognized above we end up here

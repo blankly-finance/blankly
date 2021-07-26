@@ -22,6 +22,7 @@ from typing import Union
 
 import pandas
 
+from blankly.utils.utils import AttributeDict
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 
@@ -71,7 +72,7 @@ class ABCExchangeInterface(abc.ABC):
 
     @abc.abstractmethod
     def get_account(self,
-                    symbol: str = None) -> dict:
+                    symbol: str = None) -> AttributeDict:
         """
         Get all assets in an account, or sort by symbol/account_id
         Args:
@@ -129,7 +130,7 @@ class ABCExchangeInterface(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def account(self) -> dict:
+    def account(self) -> AttributeDict:
         """
         Get all assets in an account, or sort by assets/account_id
 

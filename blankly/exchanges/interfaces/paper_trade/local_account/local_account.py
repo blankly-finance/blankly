@@ -15,5 +15,6 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from blankly.utils import utils
 
-account = {}
+account = utils.AttributeDict({})
