@@ -200,7 +200,8 @@ class ABCExchangeInterface(abc.ABC):
                 to: Union[str, int] = 200,
                 resolution: Union[str, float] = '1d',
                 start_date: Union[str, dt, float] = None,
-                end_date: Union[str, dt, float] = None) -> pandas.DataFrame:
+                end_date: Union[str, dt, float] = None,
+                return_as: str = 'df') -> pandas.DataFrame:
         """
         Wrapper for .get_product_history() which allows users to more easily get product history from right now.
         Args:
@@ -212,6 +213,7 @@ class ABCExchangeInterface(abc.ABC):
                 timestamp)
             end_date (str or datetime or float): End Date for data gathering (in either string, datetime or epoch
                 timestamp)
+            return_as (str): Return Type (Either list or dataframe)
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
             TODO add return example

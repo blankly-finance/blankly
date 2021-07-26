@@ -370,7 +370,8 @@ class AlpacaInterface(ExchangeInterface):
                 to: Union[str, int] = None,
                 resolution: Union[str, float] = '1d',
                 start_date: Union[str, dt, float] = None,
-                end_date: Union[str, dt, float] = None):
+                end_date: Union[str, dt, float] = None,
+                return_as: str='df'):
 
         assert isinstance(self.calls, alpaca_trade_api.REST)
         if not to and not start_date:
@@ -440,10 +441,14 @@ class AlpacaInterface(ExchangeInterface):
             return_df.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
                              inplace=True)
 
-            return utils.get_ohlcv_2(return_df, row_divisor)
+            history = utils.get_ohlcv_2(return_df, row_divisor)
+
         else:
             # bars = self.calls.get_barset(symbol, time_interval, start=start_date.isoformat(), end=end_date.isoformat())[symbol]
-            return self.get_product_history(symbol, start_date.timestamp(), end_date.timestamp(), resolution_seconds)
+            history = self.get_product_history(symbol, start_date.timestamp(), end_date.timestamp(), resolution_seconds)
+        if return_as == 'list':
+            return history.to_dict('list')
+        return history
         # return_df = pd.DataFrame(bars)
         # return_df.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"}, inplace=True)
         #
