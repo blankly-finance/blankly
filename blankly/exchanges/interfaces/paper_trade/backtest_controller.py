@@ -151,7 +151,6 @@ class BackTestController:
         self.price_events.append([callback, asset_id, time_interval, state_object, ohlc])
 
     def __determine_price(self, asset_id, epoch):
-
         # Geeksforgeeks binary search implementation
         def binary_search(arr, low, high, x):
             # Check base case
@@ -214,9 +213,14 @@ class BackTestController:
                                                                           typing.Union[int, typing.Any]],
                                                               typing.Dict[typing.Union[str, typing.Any],
                                                                           typing.Union[int, typing.Any]]]:
+
+        # This is done so that only traded assets are evaluated.
         true_available = {}
-        # Grab the account status
-        true_account = self.interface.get_account()
+        assets = self.interface.traded_assets
+        true_account = {}
+        for i in assets:
+            # Grab the account status
+            true_account[i] = self.interface.get_account(i)
 
         # Create an account total value
         value_total = 0
@@ -338,8 +342,7 @@ class BackTestController:
         Begin backtesting
         """
         self.interface.set_backtesting(True)
-        account = self.interface.get_account()
-        column_keys = list(account.keys())
+        column_keys = list.copy(self.interface.traded_assets)
         column_keys.append('time')
 
         # column_keys = ['time']
@@ -418,6 +421,8 @@ class BackTestController:
                     no_trade.append(no_trade_dict)
         except Exception:
             traceback.print_exc()
+
+        # print(cycle_status)
 
         # Push the accounts to the dataframe
         cycle_status = cycle_status.append(price_data, ignore_index=True).sort_values(by=['time'])
