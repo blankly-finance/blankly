@@ -20,7 +20,6 @@ import decimal
 import threading
 import time
 import traceback
-import warnings
 
 import blankly.exchanges.interfaces.paper_trade.local_account.trade_local as trade_local
 import blankly.exchanges.interfaces.paper_trade.utils as paper_trade
@@ -71,6 +70,32 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         # Initialize the local account
         trade_local.init_local_account(accounts)
+
+        self.traded_assets = []
+
+        # Because alpaca has so many columns we need to optimize to perform an accurate backtest
+        accounts = self.get_account()
+
+        for i in accounts.keys():
+            if (accounts[i]['available'] + accounts[i]['hold']) != 0 and i not in self.traded_assets:
+                self.traded_assets.append(i)
+
+    def __check_trading_assets(self, symbol: str):
+        """
+        Append a newly traded symbol to traded assets array. This is used to more efficiently evaluate
+        which accounts need graphs
+
+        Args:
+            symbol (str): The string representing the asset
+        """
+        base_asset = utils.get_base_asset(symbol)
+        quote_asset = utils.get_quote_asset(symbol)
+
+        if base_asset not in self.traded_assets:
+            self.traded_assets.append(base_asset)
+
+        if quote_asset not in self.traded_assets:
+            self.traded_assets.append(quote_asset)
 
     def init_exchange(self):
         try:
@@ -353,6 +378,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                                     quote_resolution=quote_decimals, base_resolution=quantity_decimals)
         else:
             raise APIException("Invalid trade side: " + str(side))
+
+        self.__check_trading_assets(symbol)
         return MarketOrder(order, response, self)
 
     def limit_order(self, symbol, side, price, size) -> LimitOrder:
