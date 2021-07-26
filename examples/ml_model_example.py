@@ -3,6 +3,7 @@ from blankly import Alpaca
 from blankly.indicators import rsi, sma
 from sklearn.neural_network import MLPClassifier
 from sklearn.datasets import make_classification
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
 def init(symbol, state: StrategyState):
@@ -22,10 +23,16 @@ def price_event(price, symbol, state: StrategyState):
 
     variables['history'].append(price)
     model = variables['model']
+    scaler = MinMaxScaler()
+    rsi_values = rsi(variables['history'], period=14)
+    rsi_value = scaler.fit_transform(rsi_values)[-1]
 
-    rsi_value = rsi(variables['history'], period=14)
-    ma_value = sma(variables['history'], period=50)
-    ma100_value = sma(variables['history'], period=100)
+    ma_values = sma(variables['history'], period=50)
+    ma_value = scaler.fit_transform(ma_values)[-1]
+
+    ma100_values = sma(variables['history'], period=100)
+    ma100_value = scaler.fit_transform(ma100_values)[-1]
+
     prediction = model.predict([rsi_value, ma_value, ma100_value])
     # comparing prev diff with current diff will show a cross
     if prediction == 1:
