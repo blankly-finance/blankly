@@ -1,4 +1,6 @@
 .vscode
+*.html
+price_caches
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
