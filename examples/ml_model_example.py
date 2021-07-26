@@ -37,13 +37,17 @@ def price_event(price, symbol, state: StrategyState):
     ma100_values = sma(variables['history'], period=100).reshape(-1, 1)
     ma100_value = scaler.fit_transform(ma100_values)[-1]
     value = np.array([rsi_value, ma_value, ma100_value]).reshape(1, 3)
-    prediction = model.predict(value)[0]
+    prediction = model.predict_proba(value)[0][1]
+    print(prediction)
     # comparing prev diff with current diff will show a cross
-    if prediction == 1 and not variables['has_bought']:
+    if prediction > 0.4 and not variables['has_bought']:
+        print('Market buying...')
         interface.market_order(symbol, 'buy', interface.cash)
         variables['has_bought'] = True
-    elif prediction == 0 and variables['has_bought']:
+    elif prediction <= 0.4 and variables['has_bought']:
+        print('Market selling...')
         curr_value = interface.account[state.base_asset]['available'] * price
+        # truncate is required due to float precision
         interface.market_order(symbol, 'sell', trunc(curr_value, 2))
         variables['has_bought'] = False
 
@@ -52,6 +56,7 @@ coinbase = CoinbasePro()
 s = Strategy(coinbase)
 # creating an init allows us to run the same function for
 # different tickers and resolutions
-s.add_price_event(price_event, 'BTC-USD', resolution='1h', init=init)
+s.add_price_event(price_event, 'BTC-USD', resolution='1d', init=init)
 # s.add_price_event(price_event, 'AAPL', resolution='1d', init=init)
-s.backtest(to='1y', initial_values={'USD': 100000})
+history = s.backtest(to='1y', initial_values={'BTC': 0, 'USD': 100})
+print(history)
