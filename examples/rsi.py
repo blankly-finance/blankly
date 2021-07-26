@@ -16,7 +16,7 @@ def price_event(price, symbol, state: StrategyState):
 
 def init(symbol, state: StrategyState):
     # Download price data to give context to the algo
-    state.variables['history'] = state.interface.history(symbol, to='1y')['open'].tolist()
+    state.variables['history'] = state.interface.history(symbol, to='1y', return_as='list')['close']
 
 
 if __name__ == "__main__":
