@@ -112,14 +112,14 @@ def get_accounts() -> dict:
     """
     Get the paper trading local account
     """
-    return local_account.account
+    return utils.AttributeDict(local_account.account)
 
 
-def get_account(asset_id) -> dict:
+def get_account(asset_id) -> utils.AttributeDict:
     """
     Get a single account under an asset id
     """
-    return local_account.account[asset_id]
+    return utils.AttributeDict(local_account.account[asset_id])
 
 
 def update_available(asset_id, new_value):
