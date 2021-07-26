@@ -148,15 +148,15 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         current_account = trade_local.get_accounts()
         for k, v in current_account.items():
             if k in value_dictionary.keys():
-                current_account[k] = {
+                current_account[k] = utils.AttributeDict({
                     'available': value_dictionary[k],
                     'hold': 0
-                }
+                })
             else:
-                current_account[k] = {
+                current_account[k] = utils.AttributeDict({
                     'available': 0,
                     'hold': 0
-                }
+                })
         trade_local.init_local_account(current_account)
 
     def evaluate_limits(self):
