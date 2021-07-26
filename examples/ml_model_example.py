@@ -1,15 +1,17 @@
 import numpy as np
+from blankly import trunc
 from blankly import Strategy, StrategyState, Interface
-from blankly import Alpaca, CoinbasePro
+from blankly import CoinbasePro
 from blankly.indicators import rsi, sma
 from sklearn.neural_network import MLPClassifier
 from sklearn.datasets import make_classification
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
+
 def init(symbol, state: StrategyState):
     interface: Interface = state.interface
-    resolution: str = state.resolution
+    resolution: float = state.resolution
     variables = state.variables
     X, y = make_classification(n_samples=500, n_features=3, n_informative=3, n_redundant=0, random_state=1)
     X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=1)
@@ -17,6 +19,7 @@ def init(symbol, state: StrategyState):
     variables['model'] = MLPClassifier(random_state=1, max_iter=300).fit(X_train, y_train)
     variables['history'] = interface.history(symbol, 300, resolution)['close'].tolist()
     variables['has_bought'] = False
+
 
 def price_event(price, symbol, state: StrategyState):
     interface: Interface = state.interface
@@ -36,18 +39,19 @@ def price_event(price, symbol, state: StrategyState):
     value = np.array([rsi_value, ma_value, ma100_value]).reshape(1, 3)
     prediction = model.predict(value)[0]
     # comparing prev diff with current diff will show a cross
-    if prediction == 1:
+    if prediction == 1 and not variables['has_bought']:
         interface.market_order(symbol, 'buy', interface.cash)
         variables['has_bought'] = True
     elif prediction == 0 and variables['has_bought']:
-        curr_value = interface.account[symbol].available * price
-        interface.market_order(symbol, 'sell', curr_value)
+        curr_value = interface.account[state.base_asset]['available'] * price
+        interface.market_order(symbol, 'sell', trunc(curr_value, 2))
         variables['has_bought'] = False
 
-alpaca = CoinbasePro()
-s = Strategy(alpaca)
-# creating an init allows us to run the same function for 
+
+coinbase = CoinbasePro()
+s = Strategy(coinbase)
+# creating an init allows us to run the same function for
 # different tickers and resolutions
-s.add_price_event(price_event, 'BTC-USD', resolution='15m', init=init)
+s.add_price_event(price_event, 'BTC-USD', resolution='1h', init=init)
 # s.add_price_event(price_event, 'AAPL', resolution='1d', init=init)
-s.backtest(to='1y', initial_values={'BTC': 100000,'USD': 100000})
+s.backtest(to='1y', initial_values={'USD': 100000})
