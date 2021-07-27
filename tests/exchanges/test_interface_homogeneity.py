@@ -88,6 +88,9 @@ class InterfaceHomogeneity(unittest.TestCase):
 
     def test_get_account(self):
         responses = []
+
+        availability_results = []
+
         for i in range(len(self.interfaces)):
             if self.interfaces[i].get_exchange_type() == "alpaca":
                 responses.append(self.interfaces[i].get_account()['AAPL'])
@@ -96,8 +99,8 @@ class InterfaceHomogeneity(unittest.TestCase):
                 responses.append(self.interfaces[i].account['AAPL'])
 
                 # These are just testing for error
-                test = self.interfaces[i].account.AAPL.available
-                test = self.interfaces[i].account.AAPL.hold
+                availability_results.append(self.interfaces[i].account.AAPL.available)
+                availability_results.append(self.interfaces[i].account.AAPL.hold)
             else:
                 responses.append(self.interfaces[i].get_account()['BTC'])
                 responses.append(self.interfaces[i].get_account('BTC'))
@@ -105,8 +108,8 @@ class InterfaceHomogeneity(unittest.TestCase):
                 responses.append(self.interfaces[i].account['BTC'])
 
                 # These are just testing for error
-                test = self.interfaces[i].account.BTC.available
-                test = self.interfaces[i].account.BTC.hold
+                availability_results.append(self.interfaces[i].account.BTC.available)
+                availability_results.append(self.interfaces[i].account.BTC.hold)
 
         self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
@@ -304,11 +307,14 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         for i in self.interfaces:
             if i.get_exchange_type() == "binance":
-                responses.append((i.history('BTC-USDT', to=expected_hours, resolution='1h', end_date=end_date_str), 'binance'))
+                responses.append((i.history('BTC-USDT', to=expected_hours, resolution='1h', end_date=end_date_str),
+                                  'binance'))
             elif i.get_exchange_type() == "alpaca":
-                responses.append((i.history('MSFT', to=expected_hours, resolution='1h', end_date=end_date_str), 'alpaca'))
+                responses.append((i.history('MSFT', to=expected_hours, resolution='1h', end_date=end_date_str),
+                                  'alpaca'))
             else:
-                responses.append((i.history('BTC-USD', to=expected_hours, resolution='1h', end_date=end_date_str), 'coinbase_pro'))
+                responses.append((i.history('BTC-USD', to=expected_hours, resolution='1h', end_date=end_date_str),
+                                  'coinbase_pro'))
         for i in responses:
             self.check_product_history_columns(i[0])
 
@@ -386,7 +392,6 @@ class InterfaceHomogeneity(unittest.TestCase):
                 responses.append(i.get_order_filter('MSFT'))
             else:
                 responses.append(i.get_order_filter('BTC-USD'))
-
 
         self.assertTrue(compare_responses(responses))
 

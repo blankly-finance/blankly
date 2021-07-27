@@ -16,7 +16,7 @@ def init(symbol, state: StrategyState):
     X, y = make_classification(n_samples=500, n_features=3, n_informative=3, n_redundant=0, random_state=1)
     X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=1)
     # initialize the historical data
-    variables['model'] = MLPClassifier(random_state=1, max_iter=300).fit(X_train, y_train)
+    variables['model'] = MLPClassifier(random_state=1, max_iter=10000).fit(X_train, y_train)
     variables['history'] = interface.history(symbol, 300, resolution, return_as='list')['close']
     variables['has_bought'] = False
 
@@ -55,5 +55,5 @@ s = Strategy(coinbase)
 # different tickers and resolutions
 s.add_price_event(price_event, 'BTC-USD', resolution='1d', init=init)
 # s.add_price_event(price_event, 'AAPL', resolution='1d', init=init)
-history = s.backtest(to='1y', initial_values={'BTC': 0, 'USD': 100})
+history = s.backtest(to='1y', initial_values={'USD': 100})
 print(history)

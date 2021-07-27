@@ -280,7 +280,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         return order, funds, executed_value, fill_fees, fill_size
 
-    def get_account(self, symbol=None) -> dict:
+    def get_account(self, symbol=None) -> utils.AttributeDict:
         if symbol is None:
             return trade_local.get_accounts()
         else:
