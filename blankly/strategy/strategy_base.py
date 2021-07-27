@@ -47,7 +47,8 @@ class Strategy:
         self.__schedulers = []
         self.__variables = {}
         self.__hashes = []
-        self.__assigned_websockets = []
+        self.__orderbook_websockets = []
+        self.__ticker_websockets = []
 
     @property
     def variables(self):
@@ -112,10 +113,6 @@ class Strategy:
         self.__variables[callback_hash] = AttributeDict({})
         state = StrategyState(self, self.__variables[callback_hash], symbol, resolution=resolution)
 
-        # run init
-        if init:
-            init(symbol, state)
-
         if resolution < 10:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
             self.Ticker_Manager.create_ticker(self.__idle_event, override_symbol=symbol)
@@ -130,6 +127,8 @@ class Strategy:
                                   ohlc=bar,
                                   symbol=symbol, **kwargs)
             )
+            exchange_type = self.__exchange.get_type()
+            self.__ticker_websockets.append([symbol, exchange_type, init, state])
         else:
             # Use the API
             self.__schedulers.append(
@@ -141,6 +140,7 @@ class Strategy:
                                   state_object=state,
                                   synced=synced,
                                   ohlc=bar,
+                                  init=init,
                                   symbol=symbol, **kwargs)
             )
 
@@ -210,8 +210,6 @@ class Strategy:
             self.__hashes.append(callback_hash)
         self.__variables[callback_hash] = AttributeDict({})
         state = StrategyState(self, self.__variables[callback], symbol=symbol)
-        if init:
-            init(symbol, state)
 
         variables = self.__variables[callback_hash]
 
@@ -226,13 +224,25 @@ class Strategy:
                                                 )
 
         exchange_type = self.__exchange.get_type()
-        self.__assigned_websockets.append([symbol, exchange_type])
+        self.__orderbook_websockets.append([symbol, exchange_type, init, state])
 
     def start(self):
         for i in self.__schedulers:
+            kwargs = i.get_kwargs()
+            if kwargs['init'] is not None:
+                kwargs['init'](kwargs['symbol'], kwargs['state_object'])
             i.start()
 
-        for i in self.__assigned_websockets:
+        for i in self.__orderbook_websockets:
+            # Index 2 contains the initialization function for the assigned websockets array
+            if i[2] is not None:
+                i[2](i[0], i[3])
+            self.Orderbook_Manager.restart_ticker(i[0], i[1])
+
+        for i in self.__ticker_websockets:
+            # Index 2 contains the initialization function for the assigned websockets array
+            if i[2] is not None:
+                i[2](i[0], i[3])
             self.Orderbook_Manager.restart_ticker(i[0], i[1])
 
     def backtest(self,
@@ -347,7 +357,8 @@ class Strategy:
                                                                asset_id=kwargs['symbol'],
                                                                time_interval=i.get_interval(),
                                                                state_object=kwargs['state_object'],
-                                                               ohlc=kwargs['ohlc']
+                                                               ohlc=kwargs['ohlc'],
+                                                               init=kwargs['init']
                                                                )
 
         # Run the backtest & return results
