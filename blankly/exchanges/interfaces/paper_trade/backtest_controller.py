@@ -78,7 +78,7 @@ class BackTestController:
         # Create a global generator because a second yield function gets really nasty
         self.__color_generator = Category10_10.__iter__()
 
-        self.initial_account = {}
+        self.initial_account = None
 
         # Because the times are run in order we can use this variable to optimize account value searching
         self.__current_search_index = 0

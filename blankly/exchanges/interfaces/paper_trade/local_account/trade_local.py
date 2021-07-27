@@ -15,6 +15,9 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
+import copy
+
 import blankly.exchanges.interfaces.paper_trade.local_account.local_account as local_account
 import blankly.utils.utils as utils
 from blankly.utils.exceptions import InvalidOrder
@@ -108,18 +111,18 @@ def test_trade(currency_pair, side, qty, quote_price, quote_resolution, base_res
         raise LookupError("Invalid purchase side")
 
 
-def get_accounts() -> dict:
+def get_accounts() -> utils.AttributeDict:
     """
     Get the paper trading local account
     """
-    return utils.AttributeDict(local_account.account)
+    return copy.deepcopy(utils.AttributeDict(local_account.account))
 
 
 def get_account(asset_id) -> utils.AttributeDict:
     """
     Get a single account under an asset id
     """
-    return utils.AttributeDict(local_account.account[asset_id])
+    return copy.deepcopy(utils.AttributeDict(local_account.account[asset_id]))
 
 
 def update_available(asset_id, new_value):

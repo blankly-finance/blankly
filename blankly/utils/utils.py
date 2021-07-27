@@ -551,7 +551,11 @@ def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_
 
 class AttributeDict(dict):
     def __getattr__(self, attr):
-        return self[attr]
+        # Try catch is wrapped to support copying objects
+        try:
+            return self[attr]
+        except KeyError:
+            raise AttributeError(attr)
 
     def __setattr__(self, attr, value):
         self[attr] = value
