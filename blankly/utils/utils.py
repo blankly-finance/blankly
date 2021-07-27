@@ -558,5 +558,12 @@ class AttributeDict(dict):
 
 
 def trunc(number: float, decimals: int) -> float:
+    """
+    Truncate a number instead of rounding (ex: trunc(9.9999999, 2) == 9.99 instead of round(9.9999999, 2) == 10.0)
+
+    Args:
+        number (float): Number to truncate
+        decimals (int): Number of decimals to keep: trunc(9.9999999, 2) == 9.99
+    """
     stepper = 10.0 ** decimals
     return math_trunc(stepper * number) / stepper

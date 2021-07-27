@@ -58,15 +58,15 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         if initial_account_values is not None:
             for i in accounts.keys():
                 if i in initial_account_values.keys():
-                    accounts[i] = {
+                    accounts[i] = utils.AttributeDict({
                         'available': initial_account_values[i],
                         'hold': 0.0
-                    }
+                    })
                 else:
-                    accounts[i] = {
+                    accounts[i] = utils.AttributeDict({
                         'available': 0.0,
                         'hold': 0.0
-                    }
+                    })
 
         # Initialize the local account
         trade_local.init_local_account(accounts)

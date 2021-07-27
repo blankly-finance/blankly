@@ -80,6 +80,9 @@ class BackTestController:
 
         self.initial_account = {}
 
+        # Because the times are run in order we can use this variable to optimize account value searching
+        self.__current_search_index = 0
+
     def sync_prices(self, save=True) -> dict:
         cache_folder = self.preferences['settings']["cache_location"]
         # Make sure the cache folder exists and read files
@@ -145,47 +148,33 @@ class BackTestController:
         # Ensure everything is up to date
         self.sync_prices(save)
 
-    def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval, state_object, ohlc):
+    def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval, state_object, ohlc, init):
         if isinstance(time_interval, str):
             time_interval = time_interval_to_seconds(time_interval)
-        self.price_events.append([callback, asset_id, time_interval, state_object, ohlc])
+        self.price_events.append([callback, asset_id, time_interval, state_object, ohlc, init])
 
     def __determine_price(self, asset_id, epoch):
-        # Geeksforgeeks binary search implementation
-        def binary_search(arr, low, high, x):
-            # Check base case
-            if high >= low:
+        # Custom linear search algorithm, returns last index when failed
+        def search(arr, size, x):
+            while True:
+                if self.__current_search_index == size:
+                    # Must be the last one in the list
+                    return self.__current_search_index - 1
 
-                mid = (high + low) // 2
-
-                # Modify this to get our sort-of-right behavior
-                try:
-                    if arr[mid] <= x <= arr[mid + 1]:
-                        return mid
-                    elif arr[mid] > x:
-                        return binary_search(arr, low, mid - 1, x)
-                except IndexError:
-                    return len(arr) - 1
-
-                # If element is smaller than mid, then it can only
-                # be present in left subarray
-
-                # Else the element can only be present in right subarray
+                if arr[self.__current_search_index] <= x <= arr[self.__current_search_index + 1]:
+                    # Found it in this range
+                    return self.__current_search_index
                 else:
-                    return binary_search(arr, mid + 1, high, x)
-
-            else:
-                # Must be before this case
-                return 0
-
+                    self.__current_search_index += 1
         try:
             prices = self.pd_prices[asset_id][self.use_price]  # type: pd.Series
             times = self.pd_prices[asset_id]['time']  # type: pd.Series
 
             # Iterate and find the correct quote price
-            index = binary_search(times, 0, times.size, epoch)
+            index = search(times, times.size, epoch)
             return prices[index]
         except KeyError:
+            # Not a currency that we have data for at all
             return 0
 
     def write_setting(self, key, value, save=False):
@@ -331,13 +320,21 @@ class BackTestController:
                 'interval': self.price_events[i][2],
                 'state_object': self.price_events[i][3],
                 'next_run': self.initial_time,
-                'ohlc': self.price_events[i][4]
+                'ohlc': self.price_events[i][4],
+                'init': self.price_events[i][5]
             }
 
         if prices == {} or self.price_events == []:
             raise ValueError("Either no price data or backtest events given. "
                              "Use .append_backtest_price_data or "
                              "append_backtest_price_event to create the backtest model.")
+
+        # Run the initialization functions for the price events
+        print("\nInitializing...")
+        for i in self.price_events:
+            if i['init'] is not None:
+                i['init'](i['asset_id'], i['state_object'])
+
         """
         Begin backtesting
         """
@@ -361,8 +358,9 @@ class BackTestController:
 
         # Add an initial account row here
         if self.preferences['settings']['save_initial_account_value']:
-            available_dict = self.format_account_data(self.initial_time)
+            available_dict, no_trade_dict = self.format_account_data(self.initial_time)
             price_data.append(available_dict)
+            no_trade.append(no_trade_dict)
 
         show_progress = self.preferences['settings']['show_progress_during_backtest']
 
@@ -421,8 +419,6 @@ class BackTestController:
                     no_trade.append(no_trade_dict)
         except Exception:
             traceback.print_exc()
-
-        # print(cycle_status)
 
         # Push the accounts to the dataframe
         cycle_status = cycle_status.append(price_data, ignore_index=True).sort_values(by=['time'])
@@ -506,7 +502,8 @@ class BackTestController:
         def is_number(s):
             try:
                 float(s)
-                return True
+                # Love how bools cast to a number
+                return not isinstance(s, bool)
             except ValueError:
                 return False
 
