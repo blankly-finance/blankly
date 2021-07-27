@@ -232,7 +232,6 @@ class BinanceInterface(ExchangeInterface):
                 if val['asset'] == i:
                     # Do the normal thing above and append
                     mutated = utils.rename_to(renames, val)
-                    mutated = utils.isolate_specific(needed, mutated)
                     parsed_dictionary[mutated['symbol']] = utils.AttributeDict({
                         'available': mutated['available'],
                         'hold': mutated['hold']
