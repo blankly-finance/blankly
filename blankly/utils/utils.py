@@ -417,7 +417,7 @@ def compare_dictionaries(dict1, dict2, force_exchange_specific=True) -> bool:
             # Now are they the same type
             if not isinstance(dict2[key], type(value)):
                 # Issue detected
-                print("Type of key " + dict1[key] + " in dict1 is " + str(type(dict1[key])) +
+                print("Type of key " + str(dict1[key]) + " in dict1 is " + str(type(dict1[key])) +
                       ", but is " + str(type(dict2[key])) + " in dict2.")
                 return False
             else:
