@@ -91,8 +91,23 @@ class InterfaceHomogeneity(unittest.TestCase):
         for i in range(len(self.interfaces)):
             if self.interfaces[i].get_exchange_type() == "alpaca":
                 responses.append(self.interfaces[i].get_account()['AAPL'])
+                responses.append(self.interfaces[i].get_account('AAPL'))
+                responses.append(self.interfaces[i].account.AAPL)
+                responses.append(self.interfaces[i].account['AAPL'])
+
+                # These are just testing for error
+                test = self.interfaces[i].account.AAPL.available
+                test = self.interfaces[i].account.AAPL.hold
             else:
                 responses.append(self.interfaces[i].get_account()['BTC'])
+                responses.append(self.interfaces[i].get_account('BTC'))
+                responses.append(self.interfaces[i].account.BTC)
+                responses.append(self.interfaces[i].account['BTC'])
+
+                # These are just testing for error
+                test = self.interfaces[i].account.BTC.available
+                test = self.interfaces[i].account.BTC.hold
+
         self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
     def check_market_order(self, order1: MarketOrder, side, funds):

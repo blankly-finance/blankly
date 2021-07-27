@@ -161,8 +161,6 @@ class BinanceInterface(ExchangeInterface):
         """
         symbol = super().get_account(symbol=symbol)
 
-        needed = self.needed['get_account']
-
         # TODO this should really use the get_asset_balance() function from binance.
         """
         {
@@ -202,10 +200,9 @@ class BinanceInterface(ExchangeInterface):
                     # If it was in the accounts return we can just isolate & parse
                     if accounts[i]["asset"] == symbol:
                         accounts = utils.rename_to(renames, accounts[i])
-                        parsed_value = utils.isolate_specific(needed, accounts)
                         return utils.AttributeDict({
-                            'available': parsed_value['available'],
-                            'hold': parsed_value['hold']
+                            'available': float(accounts['available']),
+                            'hold': float(accounts['hold'])
                         })
                 # If not just return a default 0 value. This is safe because we already checked if the symbol
                 #  was valid
@@ -233,8 +230,8 @@ class BinanceInterface(ExchangeInterface):
                     # Do the normal thing above and append
                     mutated = utils.rename_to(renames, val)
                     parsed_dictionary[mutated['symbol']] = utils.AttributeDict({
-                        'available': mutated['available'],
-                        'hold': mutated['hold']
+                        'available': float(mutated['available']),
+                        'hold': float(mutated['hold'])
                     })
                     found = True
             # If it wasn't found just default here
