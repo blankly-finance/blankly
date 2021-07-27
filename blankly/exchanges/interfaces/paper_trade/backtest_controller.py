@@ -527,6 +527,8 @@ class BackTestController:
             epoch_start = epoch_backup[0]
             epoch_max = epoch_backup[len(epoch_backup) - 1]
 
+            # Reset the current search index to zero for re-searching
+            self.__current_search_index = 0
             # Going to push this in as a single column version of our price data so that __determine_price can handle it
             self.pd_prices['Account Value (' + self.quote_currency + ')'] = pd.DataFrame()
             self.pd_prices['Account Value (' + self.quote_currency + ')'][use_price] = \
