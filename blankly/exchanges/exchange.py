@@ -68,14 +68,17 @@ class Exchange(ABCExchange, abc.ABC):
         """
         return self.interface
 
-    def start_models(self, coin_id=None):
+    def start_models(self, symbol=None):
         """
-        Start all models or a specific one after appending it to to the exchange
+        Start all models or a specific one after appending it to to the exchange.
+
+        This is used only for multiprocessed bots which are appended directly to the exchange. NOT bots that use
+        the strategy class.
         """
-        if coin_id is not None:
+        if symbol is not None:
             # Run a specific model with the args
-            if not self.models[coin_id]["model"].is_running():
-                self.models[coin_id]["model"].run(self.models[coin_id]["args"])
+            if not self.models[symbol]["model"].is_running():
+                self.models[symbol]["model"].run(self.models[symbol]["args"])
         else:
             for coin_iterator in self.models:
                 # Start all models
@@ -97,6 +100,7 @@ class Exchange(ABCExchange, abc.ABC):
         """
         Returns JUST the model state, as opposed to all the data returned by get_asset_state()
 
+        This is also used for querying a general state from a multiprocessed bot
         Args:
             currency: Currency that the selected model is running on.
         """
@@ -106,6 +110,8 @@ class Exchange(ABCExchange, abc.ABC):
         """
         Makes API calls to determine the state of the currency. This also returns the state of the model on that
         currency.
+
+        This is also used only for multiprocessed models
 
         Args:
             currency: Currency to filter for. This filters model information and the exchange information.
@@ -120,6 +126,8 @@ class Exchange(ABCExchange, abc.ABC):
     def write_value(self, currency, key, value):
         """
         Write a key/value pair to a bot attached to a particular currency pair
+
+        This is also used only for multiprocessed bots.
 
         Args:
             currency: Change state on bot attached to this currency
@@ -146,6 +154,11 @@ class Exchange(ABCExchange, abc.ABC):
 
     @abc.abstractmethod
     def get_asset_state(self, symbol):
+        """
+        This is left out of documentation because it lacks thorough implementations.
+
+        Generally this will be used to get a report of performance of a symbol on an exchange.
+        """
         pass
 
     @abc.abstractmethod

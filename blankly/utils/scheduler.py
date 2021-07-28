@@ -18,6 +18,7 @@
 import threading
 import time
 import traceback
+import typing
 import warnings
 from datetime import datetime as dt
 
@@ -26,13 +27,19 @@ from blankly.utils.utils import ceil_date
 
 
 class Scheduler:
-    def __init__(self, function, interval, initially_stopped=False, synced=True, **kwargs):
+    def __init__(self, function: typing.Callable,
+                 interval: typing.Union[str, float],
+                 initially_stopped: bool = False,
+                 synced: bool = True, **kwargs):
         """
         Wrapper for functions that run at a set interval
         Args:
             function: Function reference to create the scheduler on ex: self.price_event
             interval: int of delay between calls in seconds, or a string that takes units s, m, h, d w, M, y (second,
-            minute, hour, day, week, month, year) after a magnitude. examples: "4s", "6h", "10d".
+              minute, hour, day, week, month, year) after a magnitude. examples: "4s", "6h", "10d".
+            initially_stopped: Keep the scheduler halted until start() is run
+            synced: Align the scheduler with intervals in UTC. ex: if the interval is '1h' then with sync it will only
+              run at *:00
         """
         if isinstance(interval, str):
             interval = time_interval_to_seconds(interval)

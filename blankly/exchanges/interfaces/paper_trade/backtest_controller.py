@@ -581,7 +581,7 @@ class BackTestController:
             metrics_indicators['variance'] = attempt(metrics.variance, dataframes)
             metrics_indicators['var'] = attempt(metrics.var, dataframes)
             metrics_indicators['cvar'] = attempt(metrics.cvar, dataframes)
-            metrics_indicators['beta'] = attempt(metrics.beta, dataframes)
+            # metrics_indicators['beta'] = attempt(metrics.beta, dataframes)
             # return_dict['max_drawdown'] = metrics.cagr(return_dict)
             # -----=====*****=====-----
 
