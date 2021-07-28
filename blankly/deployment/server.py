@@ -142,7 +142,11 @@ class Connection:
             self.__thread.start()
 
     def __establish_connection(self):
-        self.socket.bind("tcp://*:5555")
+        try:
+            self.socket.bind("tcp://*:5555")
+        except zmq.error.ZMQError:
+            # If logging is implemented this could write to the log in the background
+            pass
 
         # Set a timeout of ten seconds to connect
         self.socket.set(zmq.RCVTIMEO, 10000)

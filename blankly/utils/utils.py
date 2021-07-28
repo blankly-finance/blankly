@@ -92,7 +92,9 @@ default_backtest_settings = {
     "show_progress_during_backtest": False,
     "cache_location": "./price_caches",
     "resample_account_value_for_metrics": "1d",
-    "quote_account_value_in": "USD"
+    "quote_account_value_in": "USD",
+    "ignore_user_exceptions": False
+
 }
 
 
@@ -477,7 +479,7 @@ def split_df(df, n):
     return df.groupby(np.arange(len(df)) // n)
 
 
-def get_ohlcv(candles, n):
+def get_ohlcv(candles, n, from_zero: bool):
     if len(candles) < n:
         raise ValueError("Not enough candles provided, required at least {} candles, "
                          "but only received {}".format(n, len(candles)))
@@ -487,29 +489,16 @@ def get_ohlcv(candles, n):
     new_candles['low'] = df['low'].min().reset_index(drop=True)
     new_candles['volume'] = df['volume'].sum().reset_index(drop=True)
     new_candles['volume'] = new_candles['volume'].apply(lambda x: float(x))
-    new_candles['close'] = candles['close'].iloc[::n].reset_index(drop=True)
-    new_candles['open'] = candles['open'].iloc[::n].reset_index(drop=True)
-    new_candles['time'] = candles.index.to_series().iloc[::n].reset_index(drop=True)
-    new_candles['time'] = new_candles['time'].apply(lambda x: np.int64(x.timestamp()))
-    print(new_candles)
-    return new_candles
-
-
-# TODO: change this
-def get_ohlcv_2(candles, n):
-    if len(candles) < n:
-        raise ValueError("Not enough candles provided, required at least {} candles, "
-                         "but only received {}".format(n, len(candles)))
-    new_candles = pd.DataFrame()
-    df = split_df(candles, n)
-    new_candles['high'] = df['high'].max().reset_index(drop=True)
-    new_candles['low'] = df['low'].min().reset_index(drop=True)
-    new_candles['volume'] = df['volume'].sum().reset_index(drop=True)
-    new_candles['volume'] = new_candles['volume'].apply(lambda x: float(x))
-    new_candles['close'] = candles['close'].iloc[0::n].reset_index(drop=True)
-    new_candles['open'] = candles['open'].iloc[0::n].reset_index(drop=True)
-    new_candles['time'] = candles['time'].iloc[0::n].reset_index(drop=True).astype('int64')
-    new_candles['time'] = new_candles['time'].apply(lambda x: np.int64(x))
+    if from_zero:
+        new_candles['close'] = candles['close'].iloc[0::n].reset_index(drop=True)
+        new_candles['open'] = candles['open'].iloc[0::n].reset_index(drop=True)
+        new_candles['time'] = candles['time'].iloc[0::n].reset_index(drop=True).astype('int64')
+        new_candles['time'] = new_candles['time'].apply(lambda x: np.int64(x))
+    else:
+        new_candles['close'] = candles['close'].iloc[::n].reset_index(drop=True)
+        new_candles['open'] = candles['open'].iloc[::n].reset_index(drop=True)
+        new_candles['time'] = candles.index.to_series().iloc[::n].reset_index(drop=True)
+        new_candles['time'] = new_candles['time'].apply(lambda x: np.int64(x.timestamp()))
     return new_candles
 
 
@@ -518,8 +507,10 @@ def ceil_date(date, **kwargs):
     return dt.fromtimestamp(date.timestamp() + secs - date.timestamp() % secs)
 
 
+OVERESTIMATE_CONSTANT = 1.5
+
+
 def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_multiplier):
-    OVERESTIMATE_CONSTANT = 1.5
 
     nyse = mcal.get_calendar('NYSE')
     required_length = ceil(limit * OVERESTIMATE_CONSTANT)

@@ -10,3 +10,4 @@
 - curr_diff is not defined in the MACD example page code, don't exactly know how to fix
 - base and quote asset in StrategyState
 - return_as addition to `history()`
+- Backtest result class
