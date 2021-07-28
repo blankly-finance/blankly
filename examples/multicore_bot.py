@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     # This starts the main() function of the model and puts it on a different process (computer core)
     # The main() function is in the class above
-    portfolio.start_models(coin_id="BTC-USD")
+    portfolio.start_models(symbol="BTC-USD")
 
     # Now other processes can be created or just continue with this one.
     while True:

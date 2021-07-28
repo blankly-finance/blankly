@@ -243,23 +243,23 @@ def fit_parabola(ticker, point_number):
     return np.polyfit(times, prices, 2, full=True)
 
 
-def to_blankly_coin_id(asset_id, exchange, quote_guess=None) -> str:
+def to_blankly_symbol(symbol, exchange, quote_guess=None) -> str:
     if exchange == "binance":
         if quote_guess is not None:
-            index = int(asset_id.find(quote_guess))
-            asset_id = asset_id[0:index]
-            return asset_id + "-" + quote_guess
+            index = int(symbol.find(quote_guess))
+            symbol = symbol[0:index]
+            return symbol + "-" + quote_guess
         else:
             # Try your best to try to parse anyway
             quotes = ['BNB', 'BTC', 'TRX', 'XRP', 'ETH', 'USDT', 'BUSD', 'AUD', 'BRL', 'EUR', 'GBP', 'RUB',
                       'TRY', 'TUSD', 'USDC', 'PAX', 'BIDR', 'DAI', 'IDRT', 'UAH', 'NGN', 'VAI', 'BVND']
             for i in quotes:
-                if __check_ending(asset_id, i):
-                    return to_blankly_coin_id(asset_id, 'binance', quote_guess=i)
-            raise LookupError("Unable to parse binance coin id of: " + str(asset_id))
+                if __check_ending(symbol, i):
+                    return to_blankly_symbol(symbol, 'binance', quote_guess=i)
+            raise LookupError("Unable to parse binance coin id of: " + str(symbol))
 
     if exchange == "coinbase_pro":
-        return asset_id
+        return symbol
 
 
 def __check_ending(full_string, checked_ending) -> bool:
@@ -267,23 +267,23 @@ def __check_ending(full_string, checked_ending) -> bool:
     return checked_ending == full_string[-check_length:]
 
 
-def to_exchange_coin_id(blankly_coin_id, exchange):
+def to_exchange_symbol(blankly_symbol, exchange):
     if exchange == "binance":
-        return blankly_coin_id.replace('-', '')
+        return blankly_symbol.replace('-', '')
     if exchange == "alpaca":
-        return get_base_asset(blankly_coin_id)
+        return get_base_asset(blankly_symbol)
     if exchange == "coinbase_pro":
-        return blankly_coin_id
+        return blankly_symbol
 
 
-def get_base_asset(blankly_coin_id):
+def get_base_asset(symbol):
     # Gets the BTC of the BTC-USD
-    return blankly_coin_id.split('-')[0]
+    return symbol.split('-')[0]
 
 
-def get_quote_asset(blankly_coin_id):
+def get_quote_asset(symbol):
     # Gets the USD of the BTC-USD
-    split = blankly_coin_id.split('-')
+    split = symbol.split('-')
     if len(split) > 1:
         return split[1]
     else:
@@ -541,6 +541,17 @@ def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_
 
 
 class AttributeDict(dict):
+    """
+    This is adds functions to the dictionary class, no other modifications. This gives dictionaries abilities like:
+
+    print(account.BTC) -> {'available': 1, 'hold': 0}
+
+    account.BTC = "cool"
+    print(account.BTC) -> cool
+
+    Basically you can get and set attributes with a dot instead of [] - like dict.available rather than
+     dict['available']
+    """
     def __getattr__(self, attr):
         # Try catch is wrapped to support copying objects
         try:

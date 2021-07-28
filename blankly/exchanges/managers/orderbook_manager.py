@@ -155,7 +155,7 @@ class OrderbookManager(WebsocketManager):
                 override_symbol = self.__default_currency
 
             # Lower the keys to subscribe
-            specific_currency_id = blankly.utils.to_exchange_coin_id(override_symbol, "binance").lower()
+            specific_currency_id = blankly.utils.to_exchange_symbol(override_symbol, "binance").lower()
 
             if use_sandbox:
                 websocket = Binance_Orderbook(specific_currency_id, "depth", initially_stopped=initially_stopped,
@@ -184,7 +184,7 @@ class OrderbookManager(WebsocketManager):
                 override_symbol = self.__default_currency
 
             stream = self.preferences['settings']['alpaca']['websocket_stream']
-            override_symbol = blankly.utils.to_exchange_coin_id(override_symbol, "alpaca")
+            override_symbol = blankly.utils.to_exchange_symbol(override_symbol, "alpaca")
 
             if use_sandbox:
                 websocket = Alpaca_Websocket(override_symbol, 'quotes', initially_stopped=initially_stopped,

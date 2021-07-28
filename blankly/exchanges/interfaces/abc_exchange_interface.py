@@ -128,33 +128,6 @@ class ABCExchangeInterface(abc.ABC):
         TODO add return example
         """
 
-    @property
-    @abc.abstractmethod
-    def account(self) -> AttributeDict:
-        """
-        Get all assets in an account, or sort by assets/account_id
-
-        TODO add return example
-        """
-        pass
-
-    @property
-    @abc.abstractmethod
-    def orders(self) -> list:
-        """
-        List open orders.
-        TODO add return example
-        """
-        pass
-
-    @property
-    @abc.abstractmethod
-    def cash(self) -> float:
-        """
-        Get the amount of cash in a portfolio. The cash default is set in the settings .json file
-        """
-        pass
-
     @abc.abstractmethod
     def get_open_orders(self,
                         symbol: str = None) -> list:
@@ -199,7 +172,7 @@ class ABCExchangeInterface(abc.ABC):
     def history(self,
                 symbol: str,
                 to: Union[str, int] = 200,
-                resolution: Union[str, float] = '1d',
+                resolution: Union[str, int] = '1d',
                 start_date: Union[str, dt, float] = None,
                 end_date: Union[str, dt, float] = None,
                 return_as: str = 'df') -> pandas.DataFrame:
@@ -214,7 +187,7 @@ class ABCExchangeInterface(abc.ABC):
                 timestamp)
             end_date (str or datetime or float): End Date for data gathering (in either string, datetime or epoch
                 timestamp)
-            return_as (str): Return Type (Either list or dataframe)
+            return_as (str): Return Type (Either list or df (dataframe))
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
             TODO add return example
@@ -226,7 +199,7 @@ class ABCExchangeInterface(abc.ABC):
                             symbol: str,
                             epoch_start: float,
                             epoch_stop: float,
-                            resolution: Union[str, float]) -> pandas.DataFrame:
+                            resolution: Union[str, int]) -> pandas.DataFrame:
         """
         Returns the product history from an exchange
         Args:
@@ -258,5 +231,32 @@ class ABCExchangeInterface(abc.ABC):
         Args:
             symbol: The asset such as (BTC-USD, or MSFT)
             TODO add return example
+        """
+        pass
+
+    @property
+    @abc.abstractmethod
+    def account(self) -> AttributeDict:
+        """
+        Get all assets in an account, or sort by assets/account_id
+
+        TODO add return example
+        """
+        pass
+
+    @property
+    @abc.abstractmethod
+    def orders(self) -> list:
+        """
+        List open orders.
+        TODO add return example
+        """
+        pass
+
+    @property
+    @abc.abstractmethod
+    def cash(self) -> float:
+        """
+        Get the amount of cash in a portfolio. The cash default is set in the settings .json file
         """
         pass

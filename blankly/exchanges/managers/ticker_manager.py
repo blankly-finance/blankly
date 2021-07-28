@@ -32,9 +32,9 @@ class TickerManager(WebsocketManager):
         """
         self.__default_exchange = default_exchange
         if default_exchange == "binance":
-            default_symbol = blankly.utils.to_exchange_coin_id(default_symbol, "binance").lower()
+            default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "binance").lower()
         elif default_exchange == "alpaca":
-            default_symbol = blankly.utils.to_exchange_coin_id(default_symbol, "alpaca")
+            default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "alpaca")
 
         self.__default_symbol = default_symbol
 
@@ -88,7 +88,7 @@ class TickerManager(WebsocketManager):
             if override_symbol is None:
                 override_symbol = self.__default_symbol
 
-            override_symbol = blankly.utils.to_exchange_coin_id(override_symbol, "binance").lower()
+            override_symbol = blankly.utils.to_exchange_symbol(override_symbol, "binance").lower()
             if sandbox_mode:
                 ticker = Binance_Ticker(override_symbol,
                                         "trades",
@@ -106,7 +106,7 @@ class TickerManager(WebsocketManager):
             if override_symbol is None:
                 override_symbol = self.__default_symbol
 
-            override_symbol = blankly.utils.to_exchange_coin_id(override_symbol, "alpaca")
+            override_symbol = blankly.utils.to_exchange_symbol(override_symbol, "alpaca")
             if sandbox_mode:
                 ticker = Alpaca_Ticker(override_symbol,
                                        "trades",

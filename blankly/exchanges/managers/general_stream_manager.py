@@ -68,7 +68,7 @@ class GeneralManager(WebsocketManager):
             return websocket
         elif exchange_cache == "binance":
             # Lower this to subscribe
-            asset_id_cache = blankly.utils.to_exchange_coin_id(asset_id_cache, "binance").lower()
+            asset_id_cache = blankly.utils.to_exchange_symbol(asset_id_cache, "binance").lower()
             if use_sandbox:
                 websocket = Binance_Websocket(asset_id_cache, channel, log,
                                               WEBSOCKET_URL="wss://testnet.binance.vision/ws")
@@ -85,7 +85,7 @@ class GeneralManager(WebsocketManager):
         if exchange_cache == "alpaca":
             stream = self.preferences['settings']['alpaca']['websocket_stream']
 
-            asset_id_cache = blankly.utils.to_exchange_coin_id(asset_id_cache, "alpaca")
+            asset_id_cache = blankly.utils.to_exchange_symbol(asset_id_cache, "alpaca")
             if use_sandbox:
                 websocket = Alpaca_Websocket(asset_id_cache, channel, log,
                                              WEBSOCKET_URL=

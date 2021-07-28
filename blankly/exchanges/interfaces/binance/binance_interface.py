@@ -309,7 +309,7 @@ class BinanceInterface(ExchangeInterface):
             'symbol': symbol,
             'type': 'market'
         }
-        modified_symbol = utils.to_exchange_coin_id(symbol, "binance")
+        modified_symbol = utils.to_exchange_symbol(symbol, "binance")
         # The interface here will be the query of order status from this object, because orders are dynamic
         # creatures
         response = self.calls.order_market(symbol=modified_symbol, side=side, quoteOrderQty=funds)
@@ -317,7 +317,7 @@ class BinanceInterface(ExchangeInterface):
         response['type'] = response['type'].lower()
         response['status'] = super().homogenize_order_status('binance', response['status'].lower())
         response["transactTime"] = response["transactTime"] / 1000
-        response['symbol'] = utils.to_blankly_coin_id(response['symbol'], 'binance')
+        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance')
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
@@ -371,7 +371,7 @@ class BinanceInterface(ExchangeInterface):
             'symbol': symbol,
             'type': 'limit'
         }
-        modified_symbol = utils.to_exchange_coin_id(symbol, 'binance')
+        modified_symbol = utils.to_exchange_symbol(symbol, 'binance')
         response = self.calls.order_limit(symbol=modified_symbol, side=side, price=price, quantity=size)
         renames = [
             ["orderId", "id"],
@@ -382,7 +382,7 @@ class BinanceInterface(ExchangeInterface):
         response['side'] = response['side'].lower()
         response['type'] = response['type'].lower()
         response['status'] = super().homogenize_order_status('binance', response['status'].lower())
-        response['symbol'] = utils.to_blankly_coin_id(response['symbol'], 'binance')
+        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance')
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
@@ -419,7 +419,7 @@ class BinanceInterface(ExchangeInterface):
         renames = [
             ["orderId", "order_id"]
         ]
-        modified_symbol = utils.to_exchange_coin_id(symbol, 'binance')
+        modified_symbol = utils.to_exchange_symbol(symbol, 'binance')
         response = self.calls.cancel_order(symbol=modified_symbol, orderId=order_id)
         response = utils.rename_to(renames, response)
         return utils.isolate_specific(needed, response)
@@ -460,7 +460,7 @@ class BinanceInterface(ExchangeInterface):
         ]
 
         if symbol is not None:
-            symbol = utils.to_exchange_coin_id(symbol, "binance")
+            symbol = utils.to_exchange_symbol(symbol, "binance")
             orders = self.calls.get_open_orders(symbol=symbol)
         else:
             orders = self.calls.get_open_orders()
@@ -473,7 +473,7 @@ class BinanceInterface(ExchangeInterface):
             orders[i]['created_at'] = orders[i]['created_at'] / 1000
             needed = self.choose_order_specificity(orders[i]['type'])
             orders[i] = utils.isolate_specific(needed, orders[i])
-            orders[i]['symbol'] = utils.to_blankly_coin_id(orders[i]['symbol'], 'binance', quote_guess=None)
+            orders[i]['symbol'] = utils.to_blankly_symbol(orders[i]['symbol'], 'binance', quote_guess=None)
 
         return orders
 
@@ -503,7 +503,7 @@ class BinanceInterface(ExchangeInterface):
             ["timeInForce", "time_in_force"]
         ]
 
-        symbol = utils.to_exchange_coin_id(symbol, 'binance')
+        symbol = utils.to_exchange_symbol(symbol, 'binance')
         response = self.calls.get_order(symbol=symbol, orderId=int(order_id))
 
         response = utils.rename_to(renames, response)
@@ -511,7 +511,7 @@ class BinanceInterface(ExchangeInterface):
         response['side'] = response['side'].lower()
         response['status'] = super().homogenize_order_status('binance', response['status'].lower())
         response['created_at'] = response['created_at'] / 1000
-        response['symbol'] = utils.to_blankly_coin_id(response['symbol'], 'binance')
+        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance')
         needed = self.choose_order_specificity(response['type'])
         response = utils.isolate_specific(needed, response)
 
@@ -621,7 +621,7 @@ class BinanceInterface(ExchangeInterface):
         history = []
 
         # Convert coin id to binance coin
-        symbol = utils.to_exchange_coin_id(symbol, 'binance')
+        symbol = utils.to_exchange_symbol(symbol, 'binance')
         while need > 1000:
             # Close is always 300 points ahead
             window_close = int(window_open + 1000 * resolution)
@@ -734,7 +734,7 @@ class BinanceInterface(ExchangeInterface):
         },
         """
 
-        converted_symbol = utils.to_exchange_coin_id(symbol, 'binance')
+        converted_symbol = utils.to_exchange_symbol(symbol, 'binance')
         current_price = None
         symbol_data = self.calls.get_exchange_info()["symbols"]
         for i in symbol_data:
@@ -807,6 +807,6 @@ class BinanceInterface(ExchangeInterface):
         """
         Returns just the price of an asset.
         """
-        symbol = utils.to_exchange_coin_id(symbol, "binance")
+        symbol = utils.to_exchange_symbol(symbol, "binance")
         response = self.calls.get_symbol_ticker(symbol=symbol)
         return float(response['price'])
