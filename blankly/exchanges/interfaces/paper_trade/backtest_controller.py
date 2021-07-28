@@ -568,14 +568,20 @@ class BackTestController:
             except ZeroDivisionError:
                 raise ZeroDivisionError("Division by zero when calculating cum returns. "
                                         "Are there valid account datapoints?")
-            metrics_indicators['sortino'] = metrics.sortino(dataframes)
-            metrics_indicators['sharpe'] = metrics.sharpe(dataframes)
-            metrics_indicators['calmar'] = metrics.calmar(dataframes)
-            metrics_indicators['volatility'] = metrics.volatility(dataframes)
-            metrics_indicators['variance'] = metrics.variance(dataframes)
-            # return_dict['beta'] = metrics.beta(return_dict)
-            metrics_indicators['var'] = metrics.var(dataframes)
-            metrics_indicators['cvar'] = metrics.cvar(dataframes)
+
+            def attempt(math_callable: typing.Callable, dict_of_dataframes: dict):
+                try:
+                    return math_callable(dict_of_dataframes)
+                except ZeroDivisionError:
+                    return 'failed'
+            metrics_indicators['sortino'] = attempt(metrics.sortino, dataframes)
+            metrics_indicators['sharpe'] = attempt(metrics.sharpe, dataframes)
+            metrics_indicators['calmar'] = attempt(metrics.calmar, dataframes)
+            metrics_indicators['volatility'] = attempt(metrics.volatility, dataframes)
+            metrics_indicators['variance'] = attempt(metrics.variance, dataframes)
+            metrics_indicators['var'] = attempt(metrics.var, dataframes)
+            metrics_indicators['cvar'] = attempt(metrics.cvar, dataframes)
+            metrics_indicators['beta'] = attempt(metrics.beta, dataframes)
             # return_dict['max_drawdown'] = metrics.cagr(return_dict)
             # -----=====*****=====-----
 

@@ -59,7 +59,7 @@ class Strategy:
         self.__variables[hashed][key] = value
 
     def add_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
-                        init: typing.Callable = None, synced: bool = False, **kwargs):
+                        init: typing.Callable = None, synced: bool = False):
         """
         Add Price Event
         Args:
@@ -70,10 +70,10 @@ class Strategy:
                 can be used for accumulating price data
             synced: Sync the function to
         """
-        self.__custom_price_event(callback, symbol, resolution, init, synced, kwargs=kwargs)
+        self.__custom_price_event(callback, symbol, resolution, init, synced)
 
     def add_bar_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
-                      init: typing.Callable = None, **kwargs):
+                      init: typing.Callable = None):
         """
         Add Price Event
         Args:
@@ -83,10 +83,10 @@ class Strategy:
             init: Callback function to allow a setup for the strategy variable. This
                 can be used for accumulating price data
         """
-        self.__custom_price_event(callback, symbol, resolution, init, synced=True, bar=True, kwargs=kwargs)
+        self.__custom_price_event(callback, symbol, resolution, init, synced=True, bar=True)
 
     def __custom_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
-                             init: typing.Callable = None, synced: bool = False, bar: bool = False, **kwargs):
+                             init: typing.Callable = None, synced: bool = False, bar: bool = False):
         """
         Add Price Event
         Args:
@@ -125,7 +125,7 @@ class Strategy:
                                   state_object=state,
                                   synced=synced,
                                   ohlc=bar,
-                                  symbol=symbol, **kwargs)
+                                  symbol=symbol)
             )
             exchange_type = self.__exchange.get_type()
             self.__ticker_websockets.append([symbol, exchange_type, init, state])
@@ -141,7 +141,7 @@ class Strategy:
                                   synced=synced,
                                   ohlc=bar,
                                   init=init,
-                                  symbol=symbol, **kwargs)
+                                  symbol=symbol)
             )
 
     def __idle_event(self):
@@ -191,8 +191,7 @@ class Strategy:
     def __orderbook_event(self, tick, symbol, user_callback, state_object):
         user_callback(tick, symbol, state_object)
 
-    def add_orderbook_event(self, callback: typing.Callable, symbol: str, init: typing.Callable = None,
-                            **kwargs):
+    def add_orderbook_event(self, callback: typing.Callable, symbol: str, init: typing.Callable = None):
         """
         Add Orderbook Event
         Args:
@@ -219,9 +218,7 @@ class Strategy:
                                                 symbol=symbol,
                                                 user_callback=callback,
                                                 variables=variables,
-                                                state_object=state,
-                                                **kwargs
-                                                )
+                                                state_object=state)
 
         exchange_type = self.__exchange.get_type()
         self.__orderbook_websockets.append([symbol, exchange_type, init, state])
