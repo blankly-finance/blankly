@@ -17,6 +17,7 @@
 """
 
 from typing import Any
+from collections import deque
 
 import numpy as np
 import pandas as pd
@@ -27,9 +28,9 @@ def to_historical_returns(data: Any):
 
 
 def convert_to_numpy(data: Any):
-    if type(data) == list:
-        return np.asarray(data)
-    elif type(data) == pd.Series:
+    if isinstance(data, list) or isinstance(data, deque):
+        return np.fromiter(data, float)
+    elif isinstance(data, pd.Series):
         return data.to_numpy()
     return data
 

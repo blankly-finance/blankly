@@ -20,6 +20,7 @@ import time
 import warnings
 from datetime import datetime as dt
 from typing import Union
+from collections import deque
 
 from dateutil import parser
 
@@ -246,8 +247,14 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
 
             response = response.append(data_append, ignore_index=True)
         
-        if return_as != 'df':
+        if return_as != 'df' and return_as != 'deque':
             return response.to_dict(return_as)
+        elif return_as == 'deque':
+            # Create a deque object that has the same length
+            response = response.to_dict('list')
+            for i in response.keys():
+                response[i] = deque(response[i], len(response[i]))
+            return response
         return response
 
     def get_account(self, symbol=None):
