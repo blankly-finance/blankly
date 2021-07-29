@@ -28,11 +28,13 @@ from bokeh.palettes import Category10_10
 from bokeh.plotting import ColumnDataSource, figure, show
 
 import blankly.exchanges.interfaces.paper_trade.metrics as metrics
+import blankly.utils.utils
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
 from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
-from blankly.utils.utils import load_backtest_preferences, update_progress, write_backtest_preferences
+from blankly.utils.utils import load_backtest_preferences, update_progress, write_backtest_preferences, \
+    get_base_asset, get_quote_asset
 
 
 def to_string_key(separated_list):
@@ -79,6 +81,11 @@ class BackTestController:
         self.__color_generator = Category10_10.__iter__()
 
         self.initial_account = None
+
+        self.__exchange_type = self.interface.get_exchange_type()
+
+        # Create our own traded assets dictionary because we customize it a bit
+        self.__traded_assets = []
 
         # Because the times are run in order we can use this variable to optimize account value searching
         self.__current_search_index = 0
@@ -205,7 +212,7 @@ class BackTestController:
 
         # This is done so that only traded assets are evaluated.
         true_available = {}
-        assets = self.interface.traded_assets
+        assets = self.__traded_assets
         true_account = {}
         for i in assets:
             # Grab the account status
@@ -225,8 +232,9 @@ class BackTestController:
             currency_pair = i
 
             # Convert to quote (this could be optimized a bit)
-            currency_pair += '-'
-            currency_pair += self.quote_currency
+            if self.__exchange_type != 'alpaca':
+                currency_pair += '-'
+                currency_pair += self.quote_currency
 
             # Get price at time
             price = self.__determine_price(currency_pair, local_time)
@@ -339,7 +347,24 @@ class BackTestController:
         Begin backtesting
         """
         self.interface.set_backtesting(True)
+        # Re-evaluate the traded assets account
+        # This is mainly used if the user has an account with some value that gets added in at the backtest point
+        # This occurs after initialization so there has to be a function to test & re-evaluate that
+        self.interface.evaluate_traded_account_assets()
         column_keys = list.copy(self.interface.traded_assets)
+
+        # Comically if you don't include USD at any point there will be an error
+        if 'USD' not in column_keys:
+            column_keys.append("USD")
+        # If they start a price event on something they don't own, this should also be included
+        for i in self.price_events:
+            base_asset = get_base_asset(i['asset_id'])
+            quote_asset = get_quote_asset(i['asset_id'])
+            if base_asset not in column_keys:
+                column_keys.append(base_asset)
+            if quote_asset not in column_keys:
+                column_keys.append(quote_asset)
+        self.__traded_assets = list.copy(column_keys)
         column_keys.append('time')
 
         # column_keys = ['time']

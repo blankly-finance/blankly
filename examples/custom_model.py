@@ -1,7 +1,7 @@
 from blankly import Strategy, StrategyState, Interface
 from blankly import Alpaca
-from blankly.indicators import sma
 
+# Example import
 from models import OrderPricingModel, OrderDecisionModel
 
 

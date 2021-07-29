@@ -11,7 +11,7 @@ from sklearn.model_selection import train_test_split
 
 def init(symbol, state: StrategyState):
     interface: Interface = state.interface
-    resolution: float = state.resolution
+    resolution = state.resolution
     variables = state.variables
     X, y = make_classification(n_samples=500, n_features=3, n_informative=3, n_redundant=0, random_state=1)
     X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=1)
