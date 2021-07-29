@@ -405,7 +405,8 @@ class BackTestController:
             for i in range(price_number):
                 price_array = self.prices[i]
                 if show_progress:
-                    update_progress(i / price_number)
+                    if i % 100 == 0:
+                        update_progress(i / price_number)
                 self.interface.receive_price(price_array[1], price_array[2])
                 self.current_time = price_array[0]
                 self.interface.receive_time(self.current_time)
@@ -450,6 +451,7 @@ class BackTestController:
                     self.price_events[0]['next_run'] += self.price_events[0]['interval']
 
                     available_dict, no_trade_dict = self.format_account_data(local_time)
+
                     price_data.append(available_dict)
 
                     no_trade.append(no_trade_dict)

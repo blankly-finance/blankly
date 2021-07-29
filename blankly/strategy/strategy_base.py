@@ -54,6 +54,9 @@ class Strategy:
         # This is done because we switch the interface to a paper trade interface
         self.backtesting_controller = None
 
+        # This will throw a warning if they're trying to use an orderbook in the backtest
+        self.__using_orderbook = False
+
     @property
     def variables(self):
         return self.__variables
@@ -204,7 +207,7 @@ class Strategy:
             init: Callback function to allow a setup for the strategy variable. This
                 can be used for accumulating price data
         """
-        self.__scheduling_pair.append([symbol, 'live'])
+        self.__scheduling_pair.append([symbol, None])
         callback_hash = hash((callback, symbol))
         if callback_hash in self.__hashes:
             raise ValueError("A callback of the same type and resolution has already been made for the ticker: "
@@ -212,7 +215,7 @@ class Strategy:
         else:
             self.__hashes.append(callback_hash)
         self.__variables[callback_hash] = AttributeDict({})
-        state = StrategyState(self, self.__variables[callback], symbol=symbol)
+        state = StrategyState(self, self.__variables[callback_hash], symbol=symbol)
 
         variables = self.__variables[callback_hash]
 
@@ -226,6 +229,9 @@ class Strategy:
 
         exchange_type = self.__exchange.get_type()
         self.__orderbook_websockets.append([symbol, exchange_type, init, state])
+
+        # Set this to true so that we can throw a warning in the backtest
+        self.__using_orderbook = True
 
     def start(self):
         for i in self.__schedulers:
@@ -353,9 +359,17 @@ class Strategy:
         # Write each scheduling pair as a price event - save if enabled.
         if start is not None and end is not None:
             for i in self.__scheduling_pair:
-                self.backtesting_controller.add_prices(i[0], start, end, i[1], save=save)
+                # None means live which is orderbook, which we skip anyway
+                if i[1] is not None:
+                    self.backtesting_controller.add_prices(i[0], start, end, i[1], save=save)
+
         else:
             warnings.warn("User-specified start and end time not given. Defaulting to using only cached data.")
+
+        if self.__using_orderbook:
+            warning_string = "Artificial orderbook generation is not yet supported for backtesting - " \
+                             "skipping orderbook callbacks."
+            warnings.warn(warning_string)
 
         # Append each of the events the class defines into the backtest
         for i in self.__schedulers:
