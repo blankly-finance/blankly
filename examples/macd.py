@@ -42,7 +42,7 @@ def price_event(price, symbol, state: StrategyState):
     is_cross_down = slope_macd < 0 and curr_macd <= curr_signal_macd < prev_macd
     if is_cross_up:
         # If there is a buy signal, buy with 40% of cash available (that 40% has to be more than 10 dollars though)
-        cash = trunc(interface.cash * .4, 9)
+        cash = trunc(interface.cash * .4, 2)
         if cash > 10:
             interface.market_order(symbol, 'buy', cash)
             variables['has_bought'] = True
@@ -55,7 +55,14 @@ def price_event(price, symbol, state: StrategyState):
 
 alpaca = Alpaca()
 s = Strategy(alpaca)
-s.add_price_event(price_event, 'MSFT', resolution='1d', init=init)
-s.add_price_event(price_event, 'AAPL', resolution='1d', init=init)
+
+# Add a bunch of stocks to watch for 2 years
+s.add_price_event(price_event, 'SNAP', resolution='1d', init=init)
+s.add_price_event(price_event, 'PBFX', resolution='1d', init=init)
 s.add_price_event(price_event, 'NCLH', resolution='1d', init=init)
+
+s.add_price_event(price_event, 'CRBP', resolution='1d', init=init)
+s.add_price_event(price_event, 'D', resolution='1d', init=init)
+s.add_price_event(price_event, 'GME', resolution='1d', init=init)
+
 print(s.backtest(initial_values={'USD': 10000}, to='2y'))
