@@ -50,6 +50,10 @@ class Strategy:
         self.__orderbook_websockets = []
         self.__ticker_websockets = []
 
+        # Initialize backtesting attributes. This only used for sending times to the Strategy/StrategyState
+        # This is done because we switch the interface to a paper trade interface
+        self.backtesting_controller = None
+
     @property
     def variables(self):
         return self.__variables
@@ -242,6 +246,12 @@ class Strategy:
                 i[2](i[0], i[3])
             self.Orderbook_Manager.restart_ticker(i[0], i[1])
 
+    def time(self) -> float:
+        if self.backtesting_controller is not None and self.backtesting_controller.time is not None:
+            return self.backtesting_controller.time
+        else:
+            return time.time()
+
     def backtest(self,
                  initial_values: dict = None,
                  to: str = None,
@@ -328,38 +338,38 @@ class Strategy:
             end = (end_date - epoch).total_seconds()
 
         self.Interface = self.__paper_trade_exchange.get_interface()
-        backtesting_controller = BackTestController(self.__paper_trade_exchange,
-                                                    backtest_settings_path=settings_path,
-                                                    callbacks=callbacks
-                                                    )
+        self.backtesting_controller = BackTestController(self.__paper_trade_exchange,
+                                                         backtest_settings_path=settings_path,
+                                                         callbacks=callbacks
+                                                         )
 
         # Write any kwargs as settings to the settings - save if enabled.
         for k, v in kwargs.items():
-            backtesting_controller.write_setting(k, v, save)
+            self.backtesting_controller.write_setting(k, v, save)
 
         if initial_values is not None:
-            backtesting_controller.write_initial_price_values(initial_values)
+            self.backtesting_controller.write_initial_price_values(initial_values)
 
         # Write each scheduling pair as a price event - save if enabled.
         if start is not None and end is not None:
             for i in self.__scheduling_pair:
-                backtesting_controller.add_prices(i[0], start, end, i[1], save=save)
+                self.backtesting_controller.add_prices(i[0], start, end, i[1], save=save)
         else:
             warnings.warn("User-specified start and end time not given. Defaulting to using only cached data.")
 
         # Append each of the events the class defines into the backtest
         for i in self.__schedulers:
             kwargs = i.get_kwargs()
-            backtesting_controller.append_backtest_price_event(callback=kwargs['callback'],
-                                                               asset_id=kwargs['symbol'],
-                                                               time_interval=i.get_interval(),
-                                                               state_object=kwargs['state_object'],
-                                                               ohlc=kwargs['ohlc'],
-                                                               init=kwargs['init']
-                                                               )
+            self.backtesting_controller.append_backtest_price_event(callback=kwargs['callback'],
+                                                                    asset_id=kwargs['symbol'],
+                                                                    time_interval=i.get_interval(),
+                                                                    state_object=kwargs['state_object'],
+                                                                    ohlc=kwargs['ohlc'],
+                                                                    init=kwargs['init']
+                                                                    )
 
         # Run the backtest & return results
-        results = backtesting_controller.run()
+        results = self.backtesting_controller.run()
 
         # Clean up
         self.Interface = self.__interface_cache

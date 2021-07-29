@@ -26,7 +26,6 @@ class StrategyState:
     resolution: int
 
     """Strategy State"""
-
     def __init__(self, strategy, variables: AttributeDict, symbol, resolution: int = None):
         self.strategy = strategy
         self.variables = variables
@@ -37,4 +36,15 @@ class StrategyState:
 
     @property
     def interface(self) -> Interface:
+        """
+        Get the interface object that the strategy is running on. Use this to interact with your exchange.
+        """
         return self.strategy.Interface
+
+    @property
+    def time(self) -> float:
+        """
+        Get the time from the strategy.
+        This will automatically switch to match the correct times during backtesting
+        """
+        return self.strategy.time()

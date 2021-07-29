@@ -90,6 +90,9 @@ class BackTestController:
         # Because the times are run in order we can use this variable to optimize account value searching
         self.__current_search_index = 0
 
+        # Export a time for use in other classes
+        self.time = None
+
     def sync_prices(self, save=True) -> dict:
         cache_folder = self.preferences['settings']["cache_location"]
         # Make sure the cache folder exists and read files
@@ -337,6 +340,9 @@ class BackTestController:
                              "Use .append_backtest_price_data or "
                              "append_backtest_price_event to create the backtest model.")
 
+        # Initialize this before the callbacks so it works in the initialization functions
+        self.time = self.initial_time
+
         # Run the initialization functions for the price events
         print("\nInitializing...")
         for i in self.price_events:
@@ -346,7 +352,9 @@ class BackTestController:
         """
         Begin backtesting
         """
+
         self.interface.set_backtesting(True)
+
         # Re-evaluate the traded assets account
         # This is mainly used if the user has an account with some value that gets added in at the backtest point
         # This occurs after initialization so there has to be a function to test & re-evaluate that
@@ -413,6 +421,9 @@ class BackTestController:
 
                     local_time = self.price_events[0]['next_run']
 
+                    # Export the time for strategy
+                    self.time = local_time
+
                     # This is the actual callback to the user space
                     try:
                         if self.price_events[0]['ohlc']:
@@ -444,6 +455,9 @@ class BackTestController:
                     no_trade.append(no_trade_dict)
         except Exception:
             traceback.print_exc()
+
+        # Reset time to be None to indicate we're no longer in a backtest
+        self.time = None
 
         # Push the accounts to the dataframe
         cycle_status = cycle_status.append(price_data, ignore_index=True).sort_values(by=['time'])
