@@ -329,7 +329,11 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         if self.__get_decimals(funds) > quote_decimals:
             raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(quote_increment))
 
-        quantity_decimals = self.__get_decimals(market_limits['limit_order']['base_increment'])
+        if self.get_exchange_type() == 'alpaca':
+            # This could break, but there appears that 10 decimals is about right for alpaca
+            quantity_decimals = 10
+        else:
+            quantity_decimals = self.__get_decimals(market_limits['limit_order']['base_increment'])
 
         qty = utils.trunc(funds / price, quantity_decimals)
 
