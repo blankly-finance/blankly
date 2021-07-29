@@ -54,5 +54,8 @@ class DirectCallsFactory:
             calls = create_alpaca_client(auth, preferences["settings"]["use_sandbox"])
             return calls, AlpacaInterface(calls, preferences_path)
 
+        elif exchange_name == 'oanda':
+            calls = create_alpaca_client(auth, preferences["settings"]["use_sandbox"])
+            return calls, OandaInterface(calls, preferences_path)
         elif exchange_name == 'paper_trade':
             return None, None

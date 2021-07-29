@@ -32,7 +32,7 @@ class Exchange(ABCExchange, abc.ABC):
     interface: ABCExchangeInterface
 
     def __init__(self, exchange_type, portfolio_name, keys_path, preferences_path):
-        self.__type = exchange_type  # coinbase_pro, binance, alpaca
+        self.__type = exchange_type  # coinbase_pro, binance, alpaca, oanda
         self.__name = portfolio_name  # my_cool_portfolio
         self.__factory = AuthFactory()
 
