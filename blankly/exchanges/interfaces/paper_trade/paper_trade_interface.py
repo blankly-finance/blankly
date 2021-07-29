@@ -71,9 +71,14 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         # Initialize the local account
         trade_local.init_local_account(accounts)
 
+        # Initialize our traded assets list
         self.traded_assets = []
 
+        self.evaluate_traded_account_assets()
+
+    def evaluate_traded_account_assets(self):
         # Because alpaca has so many columns we need to optimize to perform an accurate backtest
+        self.traded_assets = []
         accounts = self.get_account()
 
         for i in accounts.keys():

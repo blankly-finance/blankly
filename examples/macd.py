@@ -10,12 +10,10 @@ SIGNAL_PERIOD = 9
 
 def init(symbol, state: StrategyState):
     interface: Interface = state.interface
-    resolution: float = state.resolution
+    resolution = state.resolution
     variables = state.variables
     # initialize the historical data
-    variables['history'] = interface.history(symbol, 800, 
-        resolution,
-        return_as='list')['close']
+    variables['history'] = interface.history(symbol, 800, resolution, return_as='list')['close']
     variables['short_period'] = SHORT_PERIOD
     variables['long_period'] = LONG_PERIOD
     variables['signal_period'] = SIGNAL_PERIOD

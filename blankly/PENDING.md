@@ -9,3 +9,4 @@
 - Alpaca also has a weird orderbook
 - Go over features page again because got so many features
 - Backtest result class
+- Say something about how get_account will try to get the base asset

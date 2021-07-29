@@ -23,11 +23,11 @@ from blankly.utils.utils import AttributeDict, get_base_asset, get_quote_asset
 class StrategyState:
     interface: Interface
     variables: AttributeDict
-    resolution: float
+    resolution: int
 
     """Strategy State"""
 
-    def __init__(self, strategy, variables: AttributeDict, symbol, resolution: float = None):
+    def __init__(self, strategy, variables: AttributeDict, symbol, resolution: int = None):
         self.strategy = strategy
         self.variables = variables
         self.resolution = resolution
