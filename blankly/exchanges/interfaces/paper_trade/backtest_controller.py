@@ -259,15 +259,15 @@ class BackTestController:
 
         return true_available, no_trade_available
 
-    def __has_nonzero_delta(self, cycle_status, column) -> bool:
+    def __account_was_used(self, column) -> bool:
         show_zero_delta = self.preferences['settings']['show_tickers_with_zero_delta']
-        halfway = len(cycle_status[column])/2
 
-        is_same = cycle_status[column].iloc[0] == cycle_status[column].iloc[-1] == cycle_status[column].iloc[
-            int(halfway)] == cycle_status[column].iloc[
-            int((halfway+halfway)/2)] == cycle_status[column].iloc[int(halfway/2)]
+        # Just check if its in the traded assets or if the zero delta is enabled
+        used = self.__traded_assets
+        is_used = column in used or 'Account Value (' + self.quote_currency + ')' == column
+
         # Return true if they are not the same or the setting is set to true
-        output = (not is_same) or show_zero_delta
+        output = is_used or show_zero_delta
         return output
 
     def __next_color(self):
@@ -409,7 +409,6 @@ class BackTestController:
                         update_progress(i / price_number)
                 self.interface.receive_price(price_array[1], price_array[2])
                 self.current_time = price_array[0]
-                self.interface.receive_time(self.current_time)
                 self.interface.evaluate_limits()
 
                 while True:
@@ -424,6 +423,8 @@ class BackTestController:
 
                     # Export the time for strategy
                     self.time = local_time
+
+                    self.interface.receive_time(local_time)
 
                     # This is the actual callback to the user space
                     try:
@@ -497,7 +498,7 @@ class BackTestController:
             time = [dt.fromtimestamp(ts) for ts in cycle_status['time']]
 
             for column in cycle_status:
-                if column != 'time' and self.__has_nonzero_delta(cycle_status, column):
+                if column != 'time' and self.__account_was_used(column):
                     p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
                     source = ColumnDataSource(data=dict(
                         time=time,

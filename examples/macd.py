@@ -13,7 +13,7 @@ def init(symbol, state: StrategyState):
     resolution = state.resolution
     variables = state.variables
     # initialize the historical data
-    variables['history'] = interface.history(symbol, 800, resolution, return_as='list')['close']
+    variables['history'] = interface.history(symbol, 800, resolution, end_date=state.time, return_as='deque')['close']
     variables['short_period'] = SHORT_PERIOD
     variables['long_period'] = LONG_PERIOD
     variables['signal_period'] = SIGNAL_PERIOD
@@ -40,12 +40,14 @@ def price_event(price, symbol, state: StrategyState):
     is_cross_up = slope_macd > 0 and curr_macd >= curr_signal_macd > prev_macd
 
     is_cross_down = slope_macd < 0 and curr_macd <= curr_signal_macd < prev_macd
-    if is_cross_up and not variables['has_bought']:
-        # buy with all available cash
-        interface.market_order(symbol, 'buy', interface.cash)
-        variables['has_bought'] = True
+    if is_cross_up:
+        # If there is a buy signal, buy with 40% of cash available (that 40% has to be more than 10 dollars though)
+        cash = trunc(interface.cash * .4, 9)
+        if cash > 10:
+            interface.market_order(symbol, 'buy', cash)
+            variables['has_bought'] = True
     elif is_cross_down and variables['has_bought']:
-        # sell all of the position
+        # Sell all of the position. We also have to own a position after buying
         curr_value = trunc(interface.account[symbol].available * price, 2)
         interface.market_order(symbol, 'sell', curr_value)
         variables['has_bought'] = False
@@ -54,4 +56,6 @@ def price_event(price, symbol, state: StrategyState):
 alpaca = Alpaca()
 s = Strategy(alpaca)
 s.add_price_event(price_event, 'MSFT', resolution='1d', init=init)
-s.backtest(initial_values={'USD': 10000}, to='2y')
+s.add_price_event(price_event, 'AAPL', resolution='1d', init=init)
+s.add_price_event(price_event, 'NCLH', resolution='1d', init=init)
+print(s.backtest(initial_values={'USD': 10000}, to='2y'))
