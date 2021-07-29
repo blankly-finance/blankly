@@ -5,8 +5,8 @@
 
 ### Needed
 - Alpaca `get_clock` in the exchange class
-- Changes in the homogeneity of the websocket trade feeds
 - Alpaca also has a weird orderbook
+- Changes in the homogeneity of the websocket trade feeds
 - Go over features page again because got so many features
 - Backtest result class
 - Say something about how get_account will try to get the base asset
