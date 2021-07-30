@@ -144,7 +144,8 @@ class Connection:
     def __establish_connection(self):
         try:
             self.socket.bind("tcp://*:5555")
-        except zmq.error.ZMQError:
+        except zmq.error.ZMQError as e:
+            raise e
             # If logging is implemented this could write to the log in the background
             pass
 

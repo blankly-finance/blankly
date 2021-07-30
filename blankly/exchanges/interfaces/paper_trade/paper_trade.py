@@ -25,8 +25,25 @@ class PaperTrade(Exchange):
         # Giving the preferences path as none allows us to create a default
         Exchange.__init__(self, "paper_trade", "", None, None)
 
-        self.interface = PaperTradeInterface(authenticated_exchange.get_interface(), initial_account_values)
+        self.interface = PaperTradeInterface(authenticated_exchange.get_interface(),
+                                             initial_account_values)
         self.calls = authenticated_exchange.get_direct_calls()
+
+    def start_limit_order_watch(self):
+        """
+        This enables a thread that can watch & execute limit orders in the background of the exchange interface
+
+        These throw warnings because they're typed to the ABC class
+        """
+        self.interface.start_paper_trade_watchdog()
+
+    def stop_limit_order_watch(self):
+        """
+        This stops the thread that watches & executes limit orders
+
+        These throw warnings because they're typed to the ABC class
+        """
+        self.interface.stop_paper_trade_watchdog()
 
     """
     Builds information about the symbol on this exchange by making particular API calls
