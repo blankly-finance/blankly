@@ -120,7 +120,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         # TODO, this process could use variable update time/websocket usage, poll time and a variety of settings
         #  to create a robust trading system
         # Create the watchdog for watching limit orders
-        self.__thread = threading.Thread(target=self.__paper_trade_watchdog())
+        self.__thread = threading.Thread(target=self.__paper_trade_watchdog(), daemon=True)
         self.__thread.start()
         self.__run_watchdog = True
 
