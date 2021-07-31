@@ -37,7 +37,8 @@ class Reporter:
             description (optional): A longer description for use in GUIs or other areas where context is important
         """
         var_id = id(var)
-        format_message = self.connection.format_message('macro', id=var_id, name=name, description=description)
+        format_message = self.connection.format_message('macro', id=var_id, name=name, description=description,
+                                                        type=type(var))
         self.connection.send(format_message)
         self.__macros[var_id] = var
 

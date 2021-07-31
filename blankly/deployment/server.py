@@ -147,7 +147,6 @@ class Connection:
         try:
             self.socket.bind("tcp://*:5555")
         except zmq.error.ZMQError as e:
-            raise e
             # If logging is implemented this could write to the log in the background
             pass
 
@@ -194,7 +193,7 @@ class Connection:
             existing (str): The existing string
             payload (str): The new payload portion to add to the string
         """
-        return existing + "\x0f" + str(payload) + "\x0e"
+        return existing + str(payload) + "\x0f"
 
     def format_message(self, command: str, **kwargs) -> str:
         """
@@ -219,7 +218,7 @@ class Connection:
                 output = self.__pad(output, i)
                 output = self.__pad(output, kwargs[i])
 
-        return output
+        return output[:-1]
 
     def send(self, message: str):
         """
