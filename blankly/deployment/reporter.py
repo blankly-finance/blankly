@@ -29,13 +29,16 @@ class Reporter:
     def export_macro(self, var: Any, name: str, description: str = None):
         """
         Create a variable that can be updated by external processes
+        All strings must be in ascii characters
 
         Args:
-            var: Any variable that can
-
+            var: Any variable that can represented in a string (ex: float, str, int)
+            name: The name of the macro
+            description (optional): A longer description for use in GUIs or other areas where context is important
         """
         var_id = id(var)
-        self.connection.format_message('macro', id=var_id, name=name, description=description)
+        format_message = self.connection.format_message('macro', id=var_id, name=name, description=description)
+        self.connection.send(format_message)
         self.__macros[var_id] = var
 
     def update_macro(self, var):
