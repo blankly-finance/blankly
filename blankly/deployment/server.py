@@ -136,6 +136,8 @@ class Connection:
 
         self.reattempt_connection()
 
+        self.__send_buffer = []
+
     def reattempt_connection(self):
         if not self.connected:
             self.__thread = threading.Thread(target=self.__establish_connection, daemon=True)
@@ -169,17 +171,22 @@ class Connection:
 
         # Continue the connection by listening
         if self.connected:
-            self.__receiver()
+            self.__event_loop()
 
-    def __receiver(self):
+    def __event_loop(self):
         while True:
             #  Wait for next request from client
             message = self.socket.recv()
 
-            if message == b"ping":
-                self.socket.send(b"pong")
+            print(message)
 
-    def __pad(self, existing: str, payload: str):
+            # Begin sending through the buffer
+            if self.__send_buffer:
+                self.socket.send(self.__send_buffer.pop(0))
+            else:
+                self.socket.send(b"no message")
+
+    def __pad(self, existing: str, payload: str) -> str:
         """
         Pad an existing command string with a new section
 
@@ -187,7 +194,7 @@ class Connection:
             existing (str): The existing string
             payload (str): The new payload portion to add to the string
         """
-        return existing + "\x0f" + payload + "\x0e"
+        return existing + "\x0f" + str(payload) + "\x0e"
 
     def format_message(self, command: str, **kwargs) -> str:
         """
@@ -215,7 +222,13 @@ class Connection:
         return output
 
     def send(self, message: str):
+        """
+        Add the message to the buffer
+
+        Args:
+            message: ASCII compatible (generally should be sent through a formatter) message
+        """
         try:
-            self.socket.send(message.encode('ascii'))
+            self.__send_buffer.append(message.encode('ascii'))
         except UnicodeEncodeError:
             raise RuntimeError("Failed to send, only ASCII characters are currently supported in message")
