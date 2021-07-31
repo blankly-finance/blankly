@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+from typing import Any
 
 from blankly.deployment.server import Connection
 
@@ -23,3 +24,19 @@ from blankly.deployment.server import Connection
 class Reporter:
     def __init__(self, connection: Connection):
         self.connection = connection
+        self.__macros = {}
+
+    def export_macro(self, var: Any, name: str, description: str = None):
+        """
+        Create a variable that can be updated by external processes
+
+        Args:
+            var: Any variable that can
+
+        """
+        var_id = id(var)
+        self.connection.format_message('macro', id=var_id, name=name, description=description)
+        self.__macros[var_id] = var
+
+    def update_macro(self, var):
+        return self.__macros[id(var)]
