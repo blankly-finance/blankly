@@ -179,5 +179,43 @@ class Connection:
             if message == b"ping":
                 self.socket.send(b"pong")
 
+    def __pad(self, existing: str, payload: str):
+        """
+        Pad an existing command string with a new section
+
+        Args:
+            existing (str): The existing string
+            payload (str): The new payload portion to add to the string
+        """
+        return existing + "\x0f" + payload + "\x0e"
+
+    def format_message(self, command: str, **kwargs) -> str:
+        """
+        Format a message for sending to a node or external process
+
+        Args:
+            command: The general command to use
+            kwargs: Arguments for that particular command
+
+        Commands:
+            macro: Create a macro variable that can be updated from node
+                id (required): The python ID of the variable. Generally found with id(var)
+                name (required): A required name for the variable. This should be short but descriptive such as
+                    "RSI Low"
+                description (optional): A longer description for use in GUIs or other areas where context is important
+        """
+        # Use shift in/shift out characters to show each section of request
+        output = self.__pad("", command)
+        for i in kwargs.keys():
+            # Skip any variables that were None
+            if kwargs[i] is not None:
+                output = self.__pad(output, i)
+                output = self.__pad(output, kwargs[i])
+
+        return output
+
     def send(self, message: str):
-        self.socket.send(message.encode('ascii'))
+        try:
+            self.socket.send(message.encode('ascii'))
+        except UnicodeEncodeError:
+            raise RuntimeError("Failed to send, only ASCII characters are currently supported in message")
