@@ -34,8 +34,10 @@ from blankly.utils.scheduler import Scheduler
 import blankly.indicators as indicators
 from blankly.utils import time_builder
 
-# Check to see if there is a node process and connect to it
-from blankly.deployment.server import Connection as __Connection
-from blankly.deployment.reporter import Reporter as __Reporter
-__connection = __Connection()
-reporter = __Reporter(__connection)
+
+from blankly.deployment.reporter_headers import Reporter as __Reporter_Headers
+try:
+    from blankly_external import Reporter as __Reporter
+    reporter = __Reporter
+except ImportError:
+    reporter = __Reporter_Headers()
