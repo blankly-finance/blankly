@@ -13,4 +13,4 @@
 - Say something about how get_account will try to get the base asset
 - Add .time to both Strategy and StrategyState and explain how the time change to match during backtesting
 - Add `deque` as an option to `.history` in `return_as`
-- Add the functions from the macro export off
+- Add the functions from the live_var export off
