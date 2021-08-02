@@ -34,10 +34,11 @@ from blankly.utils.scheduler import Scheduler
 import blankly.indicators as indicators
 from blankly.utils import time_builder
 
-
 from blankly.deployment.reporter_headers import Reporter as __Reporter_Headers
+is_deployed = False
 try:
     from blankly_external import Reporter as __Reporter
     reporter = __Reporter
+    is_deployed = True
 except ImportError:
     reporter = __Reporter_Headers()
