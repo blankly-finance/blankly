@@ -20,6 +20,7 @@ import datetime
 import time
 import typing
 import warnings
+import threading
 
 import pandas as pd
 
@@ -56,6 +57,9 @@ class Strategy:
 
         # This will throw a warning if they're trying to use an orderbook in the backtest
         self.__using_orderbook = False
+
+        # Lock argument for creating linear processes
+        self.lock = threading.Lock()
 
     @property
     def variables(self):
@@ -179,7 +183,10 @@ class Strategy:
         else:
             data = self.Interface.get_price(symbol)
 
+        # Lock the thread and run the callback
+        self.lock.acquire()
         callback(data, symbol, state)
+        self.lock.release()
 
     def __price_event_websocket(self, **kwargs):
         callback = kwargs['callback']
