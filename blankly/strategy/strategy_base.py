@@ -20,7 +20,6 @@ import datetime
 import time
 import typing
 import warnings
-import threading
 
 import pandas as pd
 
@@ -31,6 +30,7 @@ from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestRes
 from blankly.strategy.strategy_state import StrategyState
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import AttributeDict
+from blankly.exchanges.strategy_logger import StrategyLogger
 
 
 class Strategy:
@@ -40,7 +40,7 @@ class Strategy:
         self.Orderbook_Manager = blankly.OrderbookManager(self.__exchange.get_type(), currency_pair)
 
         self.__scheduling_pair = []  # Object to hold a currency and the resolution its pulled at: ["BTC-USD", 60]
-        self.Interface = exchange.get_interface()
+        self.Interface = StrategyLogger(interface=exchange.get_interface(), strategy=self)
 
         # Create a cache for the current interface, and a wrapped paper trade object for user backtesting
         self.__interface_cache = self.Interface
@@ -58,8 +58,6 @@ class Strategy:
         # This will throw a warning if they're trying to use an orderbook in the backtest
         self.__using_orderbook = False
 
-        # Lock argument for creating linear processes
-        self.lock = threading.Lock()
 
     @property
     def variables(self):
@@ -183,10 +181,7 @@ class Strategy:
         else:
             data = self.Interface.get_price(symbol)
 
-        # Lock the thread and run the callback
-        self.lock.acquire()
         callback(data, symbol, state)
-        self.lock.release()
 
     def __price_event_websocket(self, **kwargs):
         callback = kwargs['callback']

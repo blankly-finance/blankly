@@ -13,7 +13,7 @@ def init(symbol, state: StrategyState):
     resolution = state.resolution
     variables = state.variables
     # initialize the historical data
-    variables['history'] = interface.history(symbol, 800, resolution, end_date=state.time, return_as='deque')['close']
+    variables['history'] = interface.history(symbol, 800, resolution, return_as='deque')['close']
     variables['short_period'] = SHORT_PERIOD
     variables['long_period'] = LONG_PERIOD
     variables['signal_period'] = SIGNAL_PERIOD
