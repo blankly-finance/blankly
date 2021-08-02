@@ -17,5 +17,13 @@
             "API_KEY": "********************",
             "API_SECRET": "****************************************"
         }
+    },
+    "oanda": {
+        "oanda portfolio": {
+            "PERSONAL_ACCESS_TOKEN": "********************",
+        },
+        "oanda portfolio 2": {
+            "PERSONAL_ACCESS_TOKEN": "********************",
+        }
     }
 }
