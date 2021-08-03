@@ -1,5 +1,4 @@
 from blankly.exchanges.auth.abc_auth import ABCAuth
-from blankly.exchanges.interfaces.oanda.oanda_auth import OandaAuth
 import requests
 from collections import OrderedDict
 
@@ -152,6 +151,23 @@ class OandaAPI:
         assert isinstance(accountid, str)
         endpoint = f'/v3/accounts/{accountid}/orders/{orderid}/cancel'
         return self._send_request('get', self.__api_url + endpoint)
+
+    def place_market_order(self, instrument: str, units: float, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
+        assert isinstance(accountid, str)
+        endpoint = f'/v3/accounts/{accountid}/orders'
+
+        order_request = {
+            "type": "MARKET",
+            "instrument": instrument,
+            "units": units,
+            "timeInForce": "FOK"
+        }
+        data = OrderedDict()
+        data["order"] = order_request
+
+        return self._send_request('get', self.__api_url + endpoint, data=data)
     """
     Trade Endpoints
     """
