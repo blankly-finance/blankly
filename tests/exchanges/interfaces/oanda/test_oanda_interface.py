@@ -29,6 +29,13 @@ def oanda_interface():
 def test_get_exchange(oanda_interface: OandaInterface) -> None:
     assert oanda_interface.get_exchange_type() == 'oanda'
 
+def test_get_open_orders(oanda_interface: OandaInterface) -> None:
+    x = oanda_interface.get_exchange_type() == 'oanda'
+
+def test_get_all_open_orders(oanda_interface: OandaInterface) -> None:
+    oanda_interface.get_all_open_orders()
+
+
 def test_api() -> None:
     keys_file_path = Path("tests/config/keys.json").resolve()
     settings_file_path = Path("tests/config/settings.json").resolve()
@@ -36,8 +43,12 @@ def test_api() -> None:
     auth_obj = OandaAuth(str(keys_file_path), "oanda test portfolio")
     api, _ = DirectCallsFactory.create("oanda", auth_obj, str(settings_file_path))
     assert isinstance(api, OandaAPI)
+    x = api.get_all_accounts()
     print(api.get_all_accounts())
-    print(api.get_account('101-001-20168332-001'))
-    print(api.get_account_summary('101-001-20168332-001'))
-    print(api.get_account_instruments('101-001-20168332-001'))
-    print(api.get_account_changes('101-001-20168332-001', 3))
+    print(api.get_account())
+    print(api.get_account_summary())
+    print(api.get_account_instruments())
+    print(api.get_account_changes('3'))
+    y = api.get_all_open_orders()
+    z = api.get_orders("EUR_CAD")
+    assert(False)

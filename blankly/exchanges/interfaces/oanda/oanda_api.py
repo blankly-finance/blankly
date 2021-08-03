@@ -1,7 +1,7 @@
+from blankly.exchanges.auth.abc_auth import ABCAuth
 from blankly.exchanges.interfaces.oanda.oanda_auth import OandaAuth
 import requests
 from collections import OrderedDict
-from urllib.parse import urlencode
 
 
 class OandaAPI:
@@ -9,8 +9,9 @@ class OandaAPI:
     API_URL = 'https://api-fxtrade.oanda.com'
     API_PRACTICE_URL = 'https://api-fxpractice.oanda.com'
 
-    def __init__(self, auth: OandaAuth, sandbox: bool = False):
-        self.api_key = auth.keys['PERSONAL_ACCESS_TOKEN']
+    def __init__(self, auth: ABCAuth, sandbox: bool = False):
+        self.__api_key = auth.keys['PERSONAL_ACCESS_TOKEN']
+        self.default_account = auth.keys['ACCOUNT_ID']
 
         if not sandbox:
             self.__api_url = self.API_URL
@@ -23,7 +24,7 @@ class OandaAPI:
         session = requests.session()
         session.headers.update({"Content-Type": "application/json",
                                 "Accept-Datetime-Format": "UNIX",
-                                'Authorization': 'Bearer {}'.format(self.api_key)})
+                                'Authorization': 'Bearer {}'.format(self.__api_key)})
         return session
 
     def _send_request(self, method, url, params=None, data=None):
@@ -48,22 +49,31 @@ class OandaAPI:
         endpoint = '/v3/accounts'
         return self._send_request('get', self.__api_url + endpoint)
 
-    def get_account(self, accountid: str):
+    def get_account(self, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
         assert isinstance(accountid, str)
+
         endpoint = f'/v3/accounts/{accountid}'
         return self._send_request('get', self.__api_url + endpoint)
 
-    def get_account_summary(self, accountid: str):
+    def get_account_summary(self, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
         assert isinstance(accountid, str)
         endpoint = f'/v3/accounts/{accountid}/summary'
         return self._send_request('get', self.__api_url + endpoint)
 
-    def get_account_instruments(self, accountid: str):
+    def get_account_instruments(self, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
         assert isinstance(accountid, str)
         endpoint = f'/v3/accounts/{accountid}/instruments'
         return self._send_request('get', self.__api_url + endpoint)
 
-    def get_account_changes(self, accountid: str, sinceTransactionID: str):
+    def get_account_changes(self, sinceTransactionID: str, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
         assert isinstance(accountid, str)
         endpoint = f'/v3/accounts/{accountid}/changes'
 
@@ -72,11 +82,13 @@ class OandaAPI:
 
         return self._send_request('get', self.__api_url + endpoint, params=params)
 
-    def patch_account_configuration(self, accountid: str, alias: str, marginRate: float):
+    def patch_account_configuration(self, alias: str, marginRate: float, accountid: str):
         # Client-defined alias (name) for the Account
         # alias: (string),
         # The string representation of a decimal number.
         # marginRate: (DecimalNumber)
+        if accountid is None:
+            accountid = self.default_account
 
         assert isinstance(accountid, str)
         assert isinstance(alias, str)
@@ -109,14 +121,71 @@ class OandaAPI:
     """
     Order Endpoints
     """
+    def get_orders(self, instrument: str, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
+        assert isinstance(accountid, str)
+        endpoint = f'/v3/accounts/{accountid}/orders'
 
+        params = OrderedDict()
+        params["instrument"] = instrument
+
+        return self._send_request('get', self.__api_url + endpoint)
+
+    def get_all_open_orders(self, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
+        assert isinstance(accountid, str)
+        endpoint = f'/v3/accounts/{accountid}/pendingOrders'
+        return self._send_request('get', self.__api_url + endpoint)
+
+    def get_order(self, orderid: str, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
+        assert isinstance(accountid, str)
+        endpoint = f'/v3/accounts/{accountid}/orders/{orderid}'
+        return self._send_request('get', self.__api_url + endpoint)
+
+    def cancel_order(self, orderid: str, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
+        assert isinstance(accountid, str)
+        endpoint = f'/v3/accounts/{accountid}/orders/{orderid}/cancel'
+        return self._send_request('get', self.__api_url + endpoint)
     """
     Trade Endpoints
     """
 
     """
     Position Endpoints
-     """
+    """
+    def get_all_positions(self, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
+        assert isinstance(accountid, str)
+        endpoint = f'/v3/accounts/{accountid}/positions'
+        return self._send_request('get', self.__api_url + endpoint)
+
+    def get_all_open_positions(self, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
+        assert isinstance(accountid, str)
+        endpoint = f'/v3/accounts/{accountid}/openPositions'
+        return self._send_request('get', self.__api_url + endpoint)
+
+    def get_position(self, instrument: str, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
+        assert isinstance(accountid, str)
+        endpoint = f'/v3/accounts/{accountid}/positions/{instrument}'
+        return self._send_request('get', self.__api_url + endpoint)
+
+    def close_position(self,  instrument: str, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
+        assert isinstance(accountid, str)
+        endpoint = f'/v3/accounts/{accountid}/positions/{instrument}/close'
+        return self._send_request('get', self.__api_url + endpoint)
 
     """
     Transaction Endpoints
@@ -126,6 +195,3 @@ class OandaAPI:
     Pricing Endpoints
     """
 
-    """
-    Forex Labs Endpoints
-    """
