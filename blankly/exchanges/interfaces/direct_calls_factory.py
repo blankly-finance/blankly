@@ -58,9 +58,7 @@ class DirectCallsFactory:
 
         elif exchange_name == 'oanda':
             calls = OandaAPI(auth, preferences["settings"]["use_sandbox"])
-
-            # TODO: CHANGE THIS BELOW
-            return calls, None
+            return calls, OandaInterface(calls, preferences_path)
 
         elif exchange_name == 'paper_trade':
             return None, None
