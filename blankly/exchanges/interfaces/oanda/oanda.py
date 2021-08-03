@@ -1,4 +1,5 @@
 from blankly.exchanges.exchange import Exchange
+from blankly.exchanges.interfaces.oanda.oanda_api import OandaAPI
 
 
 class Oanda(Exchange):
@@ -11,8 +12,9 @@ class Oanda(Exchange):
     def get_asset_state(self, symbol):
         return self.interface.get_account(symbol)
 
-    def get_direct_calls(self) -> alpaca_trade_api.REST:
+    def get_direct_calls(self) -> OandaAPI:
         return self.calls
 
+    # TODO: Oanda doesnt support querying the server clock
     def get_market_clock(self):
         return self.calls.get_clock()
