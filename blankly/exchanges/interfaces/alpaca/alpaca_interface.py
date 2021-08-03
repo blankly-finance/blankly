@@ -245,7 +245,10 @@ class AlpacaInterface(ExchangeInterface):
 
     def get_open_orders(self, symbol=None):
         assert isinstance(self.calls, alpaca_trade_api.REST)
-        orders = self.calls.list_orders(status='open')
+        if symbol is None:
+            orders = self.calls.list_orders(status='open')
+        else:
+            orders = self.calls.list_orders(status='open', symbols=[symbol])
 
         for i in range(len(orders)):
             # orders[i] = utils.rename_to(renames, orders[i])
