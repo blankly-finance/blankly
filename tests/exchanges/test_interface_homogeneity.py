@@ -295,26 +295,29 @@ class InterfaceHomogeneity(unittest.TestCase):
     def test_point_with_end_history(self):
         responses = []
 
-        today = dateparser.parse("2021-07-09 9:35AM")
+        print(str(dt.now().date()))
+        today: dt = dateparser.parse(str(dt.now().date()))
 
-        # This won't work at the start of the month
-        end_date = dt.today().replace(day=today.day-2)
-        close_stop = str(dt.today().replace(day=today.day-3).date())
+        # This won't work at the start of the
+        end_date = today.replace(day=today.day-1)
+        close_stop = str(today.replace(day=today.day-2).date())
 
         expected_hours = end_date.day * 24 - (24*2)
 
         end_date_str = str(end_date.date())
 
-        for i in self.interfaces:
-            if i.get_exchange_type() == "binance":
-                responses.append((i.history('BTC-USDT', to=expected_hours, resolution='1h', end_date=end_date_str),
-                                  'binance'))
-            elif i.get_exchange_type() == "alpaca":
-                responses.append((i.history('MSFT', to=expected_hours, resolution='1h', end_date=end_date_str),
-                                  'alpaca'))
-            else:
-                responses.append((i.history('BTC-USD', to=expected_hours, resolution='1h', end_date=end_date_str),
-                                  'coinbase_pro'))
+        # This won't run until the fourth day of the month because of binance
+        if today.month == end_date.month - 1:
+            for i in self.interfaces:
+                if i.get_exchange_type() == "binance":
+                    responses.append((i.history('BTC-USDT', to=expected_hours, resolution='1h', end_date=end_date_str),
+                                      'binance'))
+                elif i.get_exchange_type() == "alpaca":
+                    responses.append((i.history('MSFT', to=expected_hours, resolution='1h', end_date=end_date_str),
+                                      'alpaca'))
+                else:
+                    responses.append((i.history('BTC-USD', to=expected_hours, resolution='1h', end_date=end_date_str),
+                                      'coinbase_pro'))
         for i in responses:
             self.check_product_history_columns(i[0])
 
@@ -327,8 +330,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
 
         # This initial selection could fail because of the slightly random day that they delete their data
-        start_dt = dateparser.parse("2021-07-15")
-        start = str(start_dt.replace(day=1).date())
+        start_dt = dateparser.parse("2021-08-4")
+        start = str(start_dt.replace(day=2).date())
         stop = str(start_dt.date())
 
         # The dates are offset by one because the time is the open time
@@ -343,6 +346,7 @@ class InterfaceHomogeneity(unittest.TestCase):
                 responses.append(i.history('BTC-USD', resolution='1h', start_date=start, end_date=stop))
 
         for idx, resp in enumerate(responses):
+            print(resp)
             start_date = dt.fromtimestamp(resp['time'][0]).strftime('%Y-%m-%d')
             end_date = dt.fromtimestamp(resp['time'].iloc[-1]).strftime('%Y-%m-%d')
 
