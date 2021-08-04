@@ -1,3 +1,5 @@
+import json
+
 from blankly.exchanges.auth.abc_auth import ABCAuth
 import requests
 from collections import OrderedDict
@@ -37,7 +39,7 @@ class OandaAPI:
         else:
             assert isinstance(data, OrderedDict)
 
-        response = getattr(self.session, method)(url, params=params, data=data)
+        response = getattr(self.session, method)(url, params=params, data=json.dumps(data))
         return response.json()
 
     """
@@ -150,7 +152,7 @@ class OandaAPI:
             accountid = self.default_account
         assert isinstance(accountid, str)
         endpoint = f'/v3/accounts/{accountid}/orders/{orderid}/cancel'
-        return self._send_request('get', self.__api_url + endpoint)
+        return self._send_request('put', self.__api_url + endpoint)
 
     def place_market_order(self, instrument: str, units: float, accountid: str = None):
         if accountid is None:
@@ -167,7 +169,7 @@ class OandaAPI:
         data = OrderedDict()
         data["order"] = order_request
 
-        return self._send_request('get', self.__api_url + endpoint, data=data)
+        return self._send_request('post', self.__api_url + endpoint, data=data)
     """
     Trade Endpoints
     """
@@ -201,7 +203,7 @@ class OandaAPI:
             accountid = self.default_account
         assert isinstance(accountid, str)
         endpoint = f'/v3/accounts/{accountid}/positions/{instrument}/close'
-        return self._send_request('get', self.__api_url + endpoint)
+        return self._send_request('put', self.__api_url + endpoint)
 
     """
     Transaction Endpoints
