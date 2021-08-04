@@ -78,6 +78,7 @@ def test_get_price(coinbase_interface: CoinbaseProInterface) -> None:
 
 def test_start_with_end_history(coinbase_interface: CoinbaseProInterface) -> None:
     # This initial selection could fail because of the slightly random day that they delete their data
+    # TODO fix this with interface_homogeneity to use live binance keys
     start_dt = dateparser.parse("2021-08-4")
     start = str(start_dt.replace(day=1).date())
     stop = str(start_dt.date())
