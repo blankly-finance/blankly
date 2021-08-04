@@ -22,8 +22,8 @@ from blankly.utils.time_builder import build_year
 
 def cagr(backtest_data):
     account_values = backtest_data['resampled_account_value']
-    years = (account_values['time'].iloc[-1] - account_values['time'][0]) / build_year()
-    return metrics.cagr(account_values['time'][0], account_values['time'].iloc[-1], years)
+    years = (account_values['time'].iloc[-1] - account_values['time'].iloc[0]) / build_year()
+    return metrics.cagr(account_values['value'].iloc[0], account_values['value'].iloc[-1], years)
 
 
 def cum_returns(backtest_data):
@@ -85,5 +85,5 @@ def cvar(backtest_data):
 
 
 def max_drawdown(backtest_data):
-    returns = backtest_data['returns']['value']
-    return metrics.max_drawdown()
+    values = backtest_data['returns']['value']
+    return metrics.max_drawdown(values)
