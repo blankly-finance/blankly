@@ -29,12 +29,20 @@ def oanda_interface():
 def test_get_exchange(oanda_interface: OandaInterface) -> None:
     assert oanda_interface.get_exchange_type() == 'oanda'
 
-def test_get_open_orders(oanda_interface: OandaInterface) -> None:
-    x = oanda_interface.get_exchange_type() == 'oanda'
+def test_market_order(oanda_interface: OandaInterface) -> None:
+    resp = oanda_interface.market_order("EUR_USD", "buy", 100)
+    print(resp)
+    assert False
 
 def test_get_all_open_orders(oanda_interface: OandaInterface) -> None:
-    oanda_interface.get_all_open_orders()
+    resp = oanda_interface.get_open_orders()
+    print(resp)
+    assert False
 
+def test_get_order(oanda_interface: OandaInterface) -> None:
+    resp = oanda_interface.get_order("hello", 4)
+    print(resp)
+    assert False
 
 def test_api() -> None:
     keys_file_path = Path("tests/config/keys.json").resolve()
