@@ -295,7 +295,7 @@ class InterfaceHomogeneity(unittest.TestCase):
     def test_point_with_end_history(self):
         responses = []
 
-        print(str(dt.now().date()))
+        # TODO update these to use the binance live keys
         today: dt = dateparser.parse(str(dt.now().date()))
 
         # This won't work at the start of the
@@ -330,6 +330,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
 
         # This initial selection could fail because of the slightly random day that they delete their data
+        # TODO update this with live keys
         start_dt = dateparser.parse("2021-08-4")
         start = str(start_dt.replace(day=2).date())
         stop = str(start_dt.date())
@@ -346,7 +347,6 @@ class InterfaceHomogeneity(unittest.TestCase):
                 responses.append(i.history('BTC-USD', resolution='1h', start_date=start, end_date=stop))
 
         for idx, resp in enumerate(responses):
-            print(resp)
             start_date = dt.fromtimestamp(resp['time'][0]).strftime('%Y-%m-%d')
             end_date = dt.fromtimestamp(resp['time'].iloc[-1]).strftime('%Y-%m-%d')
 

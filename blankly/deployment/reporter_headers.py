@@ -21,6 +21,7 @@ from typing import Any
 
 class Reporter:
     def __init__(self):
+        self.__live_vars = {}
         pass
 
     def export_live_var(self, var: Any, name: str, description: str = None):
@@ -33,7 +34,7 @@ class Reporter:
             name: The name of the live_var
             description (optional): A longer description for use in GUIs or other areas where context is important
         """
-        pass
+        self.__live_vars[id(var)] = var
 
     def update_live_var(self, var):
         """
@@ -42,4 +43,4 @@ class Reporter:
         Args:
             var: The variable that was exported initially
         """
-        pass
+        return self.__live_vars[id(var)]
