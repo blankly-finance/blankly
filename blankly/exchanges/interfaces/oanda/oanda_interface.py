@@ -81,7 +81,7 @@ class OandaInterface(ExchangeInterface):
     def market_order(self, symbol: str, side: str, funds: float) -> MarketOrder:
         assert isinstance(self.calls, OandaAPI)
 
-        qty_to_buy = funds/self.get_price(symbol)
+        qty_to_buy = funds / self.get_price(symbol)
         if side == "buy":
             pass
         elif side == "sell":
@@ -178,7 +178,36 @@ class OandaInterface(ExchangeInterface):
 
     # todo: implement
     def get_order_filter(self, symbol: str):
-        pass
+        assert isinstance(self.calls, OandaAPI)
+        resp = self.calls.get_account_instruments(symbol)['instruments'][0]
+        resp['symbol'] = resp.pop('name')
+        currencies = resp['symbol'].split('_')
+        resp['base_asset'] = currencies[0]
+        resp['quote_asset'] = currencies[1]
+        resp['limit_order'] = {
+            "base_min_size": float(resp['minimumTradeSize']),
+            "base_max_size": float(resp['maximumOrderUnits']),
+            "base_increment": 10 ** (-1 * int(resp['tradeUnitsPrecision'])),
+            "price_increment": 0.01,
+            "min_price": 0.00001,
+            "max_price": 9999999999
+        }
+        price = self.get_price(symbol)
+        resp['market_order'] = {
+            "fractionable": True,
+            "quote_increment": 0.01,
+            "buy": {
+                "min_funds": float(resp['minimumTradeSize']) * price,
+                "max_funds": float(resp['maximumOrderUnits']) * price
+            },
+            "sell": {
+                "min_funds": float(resp['minimumTradeSize']) * price,
+                "max_funds": float(resp['maximumOrderUnits']) * price
+            }
+        }
+        needed = self.needed["get_order_filter"]
+        resp = utils.isolate_specific(needed, resp)
+        return resp
 
     def get_price(self, symbol: str) -> float:
         resp = self.calls.get_order_book(symbol)['orderBook']['price']

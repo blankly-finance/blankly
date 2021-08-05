@@ -37,7 +37,7 @@ def test_market_order(oanda_interface: OandaInterface) -> None:
 def test_get_all_open_orders(oanda_interface: OandaInterface) -> None:
     resp = oanda_interface.get_open_orders()
     print(resp)
-    resp = oanda_interface.limit_order("EUR_USD", "buy", 1, 100)
+    resp = oanda_interface.get_order_filter("EUR_USD")
     assert False
 
 def test_get_order(oanda_interface: OandaInterface) -> None:
