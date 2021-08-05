@@ -14,7 +14,3 @@ class Oanda(Exchange):
 
     def get_direct_calls(self) -> OandaAPI:
         return self.calls
-
-    # TODO: Oanda doesnt support querying the server clock
-    def get_market_clock(self):
-        return self.calls.get_clock()
