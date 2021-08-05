@@ -103,14 +103,13 @@ class OandaInterface(ExchangeInterface):
         resp['id'] = resp['orderCreateTransaction']['id']
         resp['created_at'] = resp['orderCreateTransaction']['time']
         resp['funds'] = qty_to_buy
-        resp['status'] = qty_to_buy
+        resp['status'] = "active"
         resp['type'] = 'market'
         resp['side'] = side
 
         resp = utils.isolate_specific(needed, resp)
         return MarketOrder(order, resp, self)
 
-    # todo: finish implementing
     def limit_order(self, symbol: str, side: str, price: float, quantity: int) -> LimitOrder:
         assert isinstance(self.calls, OandaAPI)
         if side == "buy":
@@ -120,6 +119,7 @@ class OandaInterface(ExchangeInterface):
         else:
             raise ValueError("side needs to be either sell or buy")
 
+        resp = self.calls.place_limit_order(symbol, quantity, price)
         needed = self.needed['limit_order']
         order = {
             'size': quantity,
@@ -129,8 +129,18 @@ class OandaInterface(ExchangeInterface):
             'type': 'limit'
         }
 
-        resp = self.calls.place_limit_order(symbol, quantity, price)
-        return resp
+        resp['symbol'] = resp['orderCreateTransaction']['instrument']
+        resp['id'] = resp['orderCreateTransaction']['id']
+        resp['created_at'] = resp['orderCreateTransaction']['time']
+        resp['price'] = price
+        resp['size'] = quantity
+        resp['status'] = "active"
+        resp['time_in_force'] = 'GTC'
+        resp['type'] = 'limit'
+        resp['side'] = side
+
+        resp = utils.isolate_specific(needed, resp)
+        return LimitOrder(order, resp, self)
 
     def cancel_order(self, symbol, order_id) -> dict:
         # Either the Order’s OANDA-assigned OrderID or the Order’s client-provided ClientID prefixed by the “@” symbol
