@@ -30,17 +30,28 @@ def test_get_exchange(oanda_interface: OandaInterface) -> None:
     assert oanda_interface.get_exchange_type() == 'oanda'
 
 def test_market_order(oanda_interface: OandaInterface) -> None:
-    resp = oanda_interface.market_order("EUR_USD", "buy", 100)
+    resp = oanda_interface.market_order("EUR_USD", "sell", 50)
     print(resp)
     assert False
 
 def test_get_all_open_orders(oanda_interface: OandaInterface) -> None:
     resp = oanda_interface.get_open_orders()
     print(resp)
+    resp = oanda_interface.get_products()
     assert False
 
 def test_get_order(oanda_interface: OandaInterface) -> None:
     resp = oanda_interface.get_order("hello", 4)
+    print(resp)
+    assert False
+
+def test_get_account(oanda_interface: OandaInterface) -> None:
+    resp = oanda_interface.get_account()
+    print(resp)
+    assert False
+
+def test_get_price(oanda_interface: OandaInterface) -> None:
+    resp = oanda_interface.get_price("EUR_USD")
     print(resp)
     assert False
 
@@ -58,5 +69,8 @@ def test_api() -> None:
     print(api.get_account_instruments())
     print(api.get_account_changes('3'))
     y = api.get_all_open_orders()
-    z = api.get_orders("EUR_CAD")
+    z = api.get_orders("EUR_USD")
+    aa = api.get_all_positions()
+    b = api.get_latest_candle("EUR_USD")
+    # c = api.place_limit_order("EUR_USD", 10, 1.00)
     assert(False)
