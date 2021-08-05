@@ -105,9 +105,11 @@ class OandaAPI:
     """
     Instrument Endpoints
     """
-    def get_candles(self, instrument: str):
+    def get_latest_candle(self, instrument: str):
         endpoint = f'/v3/instruments/{instrument}/candles'
-        return self._send_request('get', self.__api_url + endpoint)
+        params = OrderedDict()
+        params["count"] = 1
+        return self._send_request('get', self.__api_url + endpoint, params=params)
 
     def get_order_book(self, instrument: str):
         assert isinstance(instrument, str)
@@ -165,6 +167,24 @@ class OandaAPI:
             "instrument": instrument,
             "units": units,
             "timeInForce": "FOK"
+        }
+        data = OrderedDict()
+        data["order"] = order_request
+
+        return self._send_request('post', self.__api_url + endpoint, data=data)
+
+    def place_limit_order(self, instrument: str, units: float, price: float, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
+        assert isinstance(accountid, str)
+        endpoint = f'/v3/accounts/{accountid}/orders'
+
+        order_request = {
+            "type": "LIMIT",
+            "instrument": instrument,
+            "units": units,
+            "price": price,
+            "timeInForce": "GTC"
         }
         data = OrderedDict()
         data["order"] = order_request
