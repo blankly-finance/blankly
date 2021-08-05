@@ -65,12 +65,17 @@ class OandaAPI:
         endpoint = f'/v3/accounts/{accountid}/summary'
         return self._send_request('get', self.__api_url + endpoint)
 
-    def get_account_instruments(self, accountid: str = None):
+    def get_account_instruments(self, instrument: str = None, accountid: str = None):
         if accountid is None:
             accountid = self.default_account
         assert isinstance(accountid, str)
         endpoint = f'/v3/accounts/{accountid}/instruments'
-        return self._send_request('get', self.__api_url + endpoint)
+
+        params = OrderedDict()
+        if instrument is not None:
+            params["instruments"] = instrument
+
+        return self._send_request('get', self.__api_url + endpoint, params)
 
     def get_account_changes(self, sinceTransactionID: str, accountid: str = None):
         if accountid is None:
@@ -105,6 +110,7 @@ class OandaAPI:
     """
     Instrument Endpoints
     """
+
     def get_latest_candle(self, instrument: str):
         endpoint = f'/v3/instruments/{instrument}/candles'
         params = OrderedDict()
@@ -124,6 +130,7 @@ class OandaAPI:
     """
     Order Endpoints
     """
+
     def get_orders(self, instrument: str, accountid: str = None):
         if accountid is None:
             accountid = self.default_account
@@ -190,6 +197,7 @@ class OandaAPI:
         data["order"] = order_request
 
         return self._send_request('post', self.__api_url + endpoint, data=data)
+
     """
     Trade Endpoints
     """
@@ -197,6 +205,7 @@ class OandaAPI:
     """
     Position Endpoints
     """
+
     def get_all_positions(self, accountid: str = None):
         if accountid is None:
             accountid = self.default_account
@@ -218,7 +227,7 @@ class OandaAPI:
         endpoint = f'/v3/accounts/{accountid}/positions/{instrument}'
         return self._send_request('get', self.__api_url + endpoint)
 
-    def close_position(self,  instrument: str, accountid: str = None):
+    def close_position(self, instrument: str, accountid: str = None):
         if accountid is None:
             accountid = self.default_account
         assert isinstance(accountid, str)
@@ -232,4 +241,3 @@ class OandaAPI:
     """
     Pricing Endpoints
     """
-
