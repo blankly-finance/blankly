@@ -3,6 +3,8 @@ from blankly.exchanges.interfaces.oanda.oanda_api import OandaAPI
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.utils import utils as utils
+import warnings
+import pandas as pd
 
 
 class OandaInterface(ExchangeInterface):
@@ -174,9 +176,48 @@ class OandaInterface(ExchangeInterface):
 
     # todo: implement
     def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution: int):
-        pass
+        assert isinstance(self.calls, OandaAPI)
 
-    # todo: implement
+        supported_multiples = {5: "S5", 10: "S10", 15: "S15", 30: "S30", 60: "M1", 60 * 2: "M2",
+                               60 * 4: "M4", 60 * 5: "M5", 60 * 10: "M10", 60 * 15: "M15", 60 * 30: "M30",
+                               60 * 60: "H1", 60 * 60 * 24: "D", 60 * 60 * 24 * 7: "W", 60 * 60 * 24 * 30: "M"}
+
+        multiples_keys = supported_multiples.keys()
+        if resolution not in multiples_keys:
+            warnings.warn("Granularity is not an accepted granularity...rounding to nearest valid value.")
+            resolution = multiples_keys[min(range(len(multiples_keys)),
+                                            key=lambda i: abs(multiples_keys[i] - resolution))]
+
+        found_multiple, row_divisor = self.__evaluate_multiples(multiples_keys, resolution)
+
+        candles = \
+        self.calls.get_candles_by_startend(symbol, supported_multiples[found_multiple], epoch_start, epoch_stop)['candles']
+
+        result = []
+        for candle in candles:
+            ohlc = candle['mid']
+            result.append([int(float(candle['time'])), ohlc['o'], ohlc['h'], ohlc['l'], ohlc['c'], candle['volume']])
+
+        df = pd.DataFrame(result, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+
+        dtypes = {"time": "int64", "open": "float32", "high": "float32", "low": "float32", "close": "float32",
+                  "volume": "float32"}
+
+        df = df.astype(dtypes)
+        print(candles)
+
+        return df
+
+        # TODO: implement
+        def history(self,
+                    symbol: str,
+                    to: Union[str, int] = None,
+                    resolution: Union[str, float] = '1d',
+                    start_date: Union[str, dt, float] = None,
+                    end_date: Union[str, dt, float] = None,
+                    return_as: str = 'df'):
+            pass
+
     def get_order_filter(self, symbol: str):
         assert isinstance(self.calls, OandaAPI)
         resp = self.calls.get_account_instruments(symbol)['instruments'][0]
@@ -232,3 +273,19 @@ class OandaInterface(ExchangeInterface):
         needed = self.choose_order_specificity(order['type'])
         order = utils.isolate_specific(needed, order)
         return order
+
+    def __evaluate_multiples(self, alpaca_v1_resolutions, resolution_seconds):
+        found_multiple = -1
+        for multiple in reversed(alpaca_v1_resolutions):
+            if resolution_seconds % multiple == 0:
+                found_multiple = multiple
+                break
+
+        row_divisor = resolution_seconds / found_multiple
+        row_divisor = int(row_divisor)
+
+        if row_divisor > 100:
+            raise Warning("The resolution you requested is an extremely high of the base resolutions supported and may "
+                          "slow down the performance of your model: {} * {}".format(found_multiple, row_divisor))
+
+        return found_multiple, row_divisor
