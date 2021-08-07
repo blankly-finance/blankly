@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Create a report to help us understand your bug and rapidly fix
+about: Help us easily & rapidly understand your issue.
 title: ''
 labels: ''
 assignees: ''
