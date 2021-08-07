@@ -122,7 +122,7 @@ if __name__ == "__main__":
 | Coinbase Pro | 🟢           | 🟢               | 🟢        | 🟢        |
 | Binance      | 🟢           | 🟢               | 🟢        | 🟢       |
 | Alpaca       | 🟢         | 🟢             | 🟢      | 🟢        |
-| OANDA | 🔴 | 🔴 | 🔴 | 🔴 |
+| OANDA | 🟡 | 🟡 | 🟡 | 🟡 |
 
 🟢  = working
 
