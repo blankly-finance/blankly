@@ -111,10 +111,21 @@ class OandaAPI:
     Instrument Endpoints
     """
 
-    def get_latest_candle(self, instrument: str):
+    def get_candles_by_startend(self, instrument: str, granularity: str, from_unix: float, to_unix: float):
         endpoint = f'/v3/instruments/{instrument}/candles'
         params = OrderedDict()
-        params["count"] = 1
+        params["granularity"] = granularity
+        params["from"] = str(from_unix)
+        params["to"] = str(to_unix)
+
+        return self._send_request('get', self.__api_url + endpoint, params=params)
+
+    def get_last_k_candles(self, instrument: str, granularity: str, count: int):
+        endpoint = f'/v3/instruments/{instrument}/candles'
+        params = OrderedDict()
+        params["granularity"] = granularity
+        params["count"] = count
+
         return self._send_request('get', self.__api_url + endpoint, params=params)
 
     def get_order_book(self, instrument: str):

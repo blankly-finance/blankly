@@ -3,6 +3,7 @@ import time
 from datetime import datetime as dt
 from pathlib import Path
 
+import dateparser
 import pytest
 import pytz
 
@@ -35,9 +36,11 @@ def test_market_order(oanda_interface: OandaInterface) -> None:
     assert False
 
 def test_get_all_open_orders(oanda_interface: OandaInterface) -> None:
-    resp = oanda_interface.get_open_orders()
-    print(resp)
-    resp = oanda_interface.get_order_filter("EUR_USD")
+    start = dateparser.parse("2021-02-04 9:30AM EST").timestamp()
+    end = dateparser.parse("2021-02-04 9:35AM EST").timestamp()
+
+    bars = oanda_interface.get_product_history("EUR_USD", start, end, 60)
+
     assert False
 
 def test_get_order(oanda_interface: OandaInterface) -> None:
