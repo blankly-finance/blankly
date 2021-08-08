@@ -120,11 +120,12 @@ class OandaAPI:
 
         return self._send_request('get', self.__api_url + endpoint, params=params)
 
-    def get_last_k_candles(self, instrument: str, granularity: str, count: int):
+    def get_last_k_candles(self, instrument: str, granularity: str, to_unix: int, count: int):
         endpoint = f'/v3/instruments/{instrument}/candles'
         params = OrderedDict()
         params["granularity"] = granularity
         params["count"] = count
+        params["to"] = str(to_unix)
 
         return self._send_request('get', self.__api_url + endpoint, params=params)
 

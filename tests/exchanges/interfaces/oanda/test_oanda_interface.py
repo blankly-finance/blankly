@@ -39,8 +39,9 @@ def test_get_all_open_orders(oanda_interface: OandaInterface) -> None:
     start = dateparser.parse("2021-02-04 9:30AM EST").timestamp()
     end = dateparser.parse("2021-02-04 9:35AM EST").timestamp()
 
-    bars = oanda_interface.get_product_history("EUR_USD", start, end, 60)
-
+    # bars = oanda_interface.history("EUR_USD", to=5, resolution=60)
+    # bars = oanda_interface.history("EUR_USD", to=5, resolution=60, end_date=end)
+    bars = oanda_interface.history("EUR_USD", to=5, resolution=60*3, end_date=end)
     assert False
 
 def test_get_order(oanda_interface: OandaInterface) -> None:
