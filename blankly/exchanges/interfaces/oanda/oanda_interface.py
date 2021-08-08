@@ -2,9 +2,13 @@ from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.interfaces.oanda.oanda_api import OandaAPI
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
-from blankly.utils import utils as utils
+from blankly.utils import time_interval_to_seconds, utils as utils
 import warnings
 import pandas as pd
+from datetime import datetime as dt
+from typing import Union
+import time
+import dateparser as dp
 
 
 class OandaInterface(ExchangeInterface):
@@ -191,7 +195,8 @@ class OandaInterface(ExchangeInterface):
         found_multiple, row_divisor = self.__evaluate_multiples(multiples_keys, resolution)
 
         candles = \
-        self.calls.get_candles_by_startend(symbol, supported_multiples[found_multiple], epoch_start, epoch_stop)['candles']
+            self.calls.get_candles_by_startend(symbol, supported_multiples[found_multiple], epoch_start, epoch_stop)[
+                'candles']
 
         result = []
         for candle in candles:
@@ -208,15 +213,55 @@ class OandaInterface(ExchangeInterface):
 
         return df
 
-        # TODO: implement
-        def history(self,
-                    symbol: str,
-                    to: Union[str, int] = None,
-                    resolution: Union[str, float] = '1d',
-                    start_date: Union[str, dt, float] = None,
-                    end_date: Union[str, dt, float] = None,
-                    return_as: str = 'df'):
-            pass
+    # TODO: implement
+    def history(self,
+                symbol: str,
+                to: Union[str, int] = None,
+                resolution: Union[str, float] = '1d',
+                start_date: Union[str, dt, float] = None,
+                end_date: Union[str, dt, float] = None,
+                return_as: str = 'df'):
+        assert isinstance(self.calls, OandaAPI)
+
+        if not to and not start_date:
+            raise ValueError("history() call needs only 1 of {start_date, to} defined")
+        if to and start_date:
+            raise ValueError("history() call needs 1 of {start_date, to} defined")
+
+        start_date = self._handle_input_time_conv(end_date)
+        end_date = self._handle_input_time_conv(end_date)
+
+        supported_multiples = {5: "S5", 10: "S10", 15: "S15", 30: "S30", 60: "M1", 60 * 2: "M2",
+                               60 * 4: "M4", 60 * 5: "M5", 60 * 10: "M10", 60 * 15: "M15", 60 * 30: "M30",
+                               60 * 60: "H1", 60 * 60 * 24: "D", 60 * 60 * 24 * 7: "W", 60 * 60 * 24 * 30: "M"}
+
+        multiples_keys = supported_multiples.keys()
+        # convert resolution into epoch seconds
+        resolution_seconds = time_interval_to_seconds(resolution)
+
+        found_multiple, row_divisor = self.__evaluate_multiples(multiples_keys, resolution_seconds)
+
+        if to:
+            aggregated_limit = to * row_divisor
+            candles = self.calls.get_last_k_candles(symbol, supported_multiples[found_multiple], int(end_date), aggregated_limit)['candles']
+        else:
+            candles = self.calls.get_candles_by_startend(symbol, supported_multiples[found_multiple], int(start_date), int(end_date))['candles']
+
+        result = []
+        for candle in candles:
+            ohlc = candle['mid']
+            result.append([int(float(candle['time'])), ohlc['o'], ohlc['h'], ohlc['l'], ohlc['c'], candle['volume']])
+
+        df = pd.DataFrame(result, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+
+        dtypes = {"time": "int64", "open": "float32", "high": "float32", "low": "float32", "close": "float32",
+                  "volume": "float32"}
+
+        df = df.astype(dtypes)
+
+        history = utils.get_ohlcv(df, row_divisor, from_zero=True)
+
+        return history
 
     def get_order_filter(self, symbol: str):
         assert isinstance(self.calls, OandaAPI)
@@ -289,3 +334,20 @@ class OandaInterface(ExchangeInterface):
                           "slow down the performance of your model: {} * {}".format(found_multiple, row_divisor))
 
         return found_multiple, row_divisor
+
+    def _handle_input_time_conv(self, date: Union[str, dt, float] = None) -> float:
+        if not date:
+            return time.time()
+
+        if isinstance(date, float):
+            pass
+        elif isinstance(date, str):
+            date = dp.parse(date).timestamp()
+        elif isinstance(date, dt):
+            date = date.timestamp()
+        else:
+            raise ValueError("start and end time must be one of [str, float, datetime]")
+
+        return date
+
+    # def _handle_ohlc_conversion(self):
