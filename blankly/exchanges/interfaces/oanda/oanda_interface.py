@@ -10,6 +10,8 @@ from typing import Union
 import time
 import dateparser as dp
 
+from blankly.utils.exceptions import APIException
+
 
 class OandaInterface(ExchangeInterface):
     def __init__(self, authenticated_API: OandaAPI, preferences_path: str):
@@ -25,6 +27,7 @@ class OandaInterface(ExchangeInterface):
             "maker_fee_rate": 0,
             "taker_fee_rate": 0
         }
+        self.default_trunc = self._get_default_truncation()
 
     def get_products(self) -> dict:
         assert isinstance(self.calls, OandaAPI)
@@ -53,18 +56,17 @@ class OandaInterface(ExchangeInterface):
 
     def get_account(self, symbol=None) -> utils.AttributeDict:
         assert isinstance(self.calls, OandaAPI)
-        positions = self.calls.get_all_positions()['positions']
         positions_dict = utils.AttributeDict({})
-
+        positions = self.calls.get_all_positions()['positions']
         for position in positions:
             positions_dict[position['instrument']] = utils.AttributeDict({
                 'available': float(position['long']['units']) - float(position['short']['units']),
-                'hold': 0
+                'hold': 0.0
             })
 
         positions_dict['USD'] = utils.AttributeDict({
             'available': self.cash,
-            'hold': 0
+            'hold': 0.0
         })
 
         # Now query all open orders and accordingly adjust
@@ -81,6 +83,18 @@ class OandaInterface(ExchangeInterface):
                     positions_dict[instrument]['available'] -= (-1 * float(position['units']))
                     positions_dict[instrument]['hold'] += (-1 * float(position['units']))
 
+        if symbol is not None:
+            if symbol in positions_dict:
+                return utils.AttributeDict({
+                    'available': positions_dict[symbol]['available'],
+                    'hold': positions_dict[symbol]['hold']
+                })
+            else:
+                return utils.AttributeDict({
+                    'available': 0.0,
+                    'hold': 0.0
+                })
+
         return positions_dict
 
     # funds is the base asset (EUR_CAD the base asset is CAD)
@@ -88,6 +102,10 @@ class OandaInterface(ExchangeInterface):
         assert isinstance(self.calls, OandaAPI)
 
         qty_to_buy = funds / self.get_price(symbol)
+        qty_to_buy = utils.trunc(qty_to_buy, self.default_trunc)
+
+        # we need to round qty_to_buy
+
         if side == "buy":
             pass
         elif side == "sell":
@@ -169,6 +187,8 @@ class OandaInterface(ExchangeInterface):
         # Either the Order’s OANDA-assigned OrderID or the Order’s client-provided ClientID prefixed by the “@” symbol
         assert isinstance(self.calls, OandaAPI)
         order = self.calls.get_order(order_id)
+        if 'errorCode' in order:
+            raise APIException(str(order))
         return self.homogenize_order(order)
 
     def get_fees(self):
@@ -213,7 +233,7 @@ class OandaInterface(ExchangeInterface):
 
         return df
 
-    # TODO: implement
+
     def history(self,
                 symbol: str,
                 to: Union[str, int] = None,
@@ -350,4 +370,9 @@ class OandaInterface(ExchangeInterface):
 
         return date
 
-    # def _handle_ohlc_conversion(self):
+    def _get_default_truncation(self) -> int:
+        instruments = self.calls.get_account_instruments()['instruments']
+        lowest_precision = int(instruments[0]['tradeUnitsPrecision'])
+        for instrument in instruments:
+            lowest_precision = min(lowest_precision, int(instrument['tradeUnitsPrecision']))
+        return lowest_precision

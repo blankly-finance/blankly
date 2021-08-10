@@ -19,11 +19,9 @@
         }
     },
     "oanda": {
-        "oanda portfolio": {
-            "PERSONAL_ACCESS_TOKEN": "********************",
-        },
-        "oanda portfolio 2": {
-            "PERSONAL_ACCESS_TOKEN": "********************",
+        "oanda test portfolio": {
+            "ACCOUNT_ID": "********************",
+            "PERSONAL_ACCESS_TOKEN": "*************************************************************"
         }
     }
 }
