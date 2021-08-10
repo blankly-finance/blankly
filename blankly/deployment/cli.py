@@ -16,6 +16,22 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import argparse
+
+parser = argparse.ArgumentParser(description='Blankly CLI & deployment tool.')
+parser.add_argument('--deploy',
+                    metavar='deploy',
+                    type=str,
+                    help='Main deploy command for the module. Input a path to a deployment formatted bot folder.')
+
 
 def main():
-    print("blankly deployment is coming soon!")
+    args = parser.parse_args()
+    print(vars(args))
+    if args.deploy:
+        print(args)
+
+        print("blankly deployment is coming soon!")
+
+
+main()
