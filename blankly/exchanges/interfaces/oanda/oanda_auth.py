@@ -22,5 +22,5 @@ from blankly.exchanges.auth.abc_auth import ABCAuth
 class OandaAuth(ABCAuth):
     def __init__(self, keys_file, portfolio_name):
         super().__init__(keys_file, portfolio_name, 'oanda')
-        needed_keys = ['PERSONAL_ACCESS_TOKEN']
+        needed_keys = ['PERSONAL_ACCESS_TOKEN', 'ACCOUNT_ID']
         self.validate_credentials(needed_keys)

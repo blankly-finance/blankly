@@ -163,6 +163,7 @@ class AlpacaInterface(ExchangeInterface):
                 positions_dict[curr_symbol]['available'] -= qty
                 positions_dict[curr_symbol]['hold'] += qty
 
+                # todo: this is incorrect
                 if symbol is not None and curr_symbol == symbol:
                     return utils.AttributeDict({
                         'available': positions_dict[curr_symbol]['available'],
@@ -172,7 +173,7 @@ class AlpacaInterface(ExchangeInterface):
         if symbol == 'USD':
             return utils.AttributeDict({
                 'available': positions_dict['USD']['available'],
-                'hold': positions_dict['USD']['available']
+                'hold': positions_dict['USD']['hold']
             })
 
         # This is a patch fix that should be fixed to be more optimized
