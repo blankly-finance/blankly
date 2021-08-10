@@ -1,5 +1,5 @@
 """
-    Logic to provide consistency across exchanges
+    Logging system to allow users to view & understand actions done in the strategy
     Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
@@ -16,14 +16,15 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
-from typing import Union
-from blankly.utils.utils import AttributeDict
-from datetime import datetime as dt
 import pandas
-from blankly.utils.utils import AttributeDict
-from blankly.exchanges.orders.limit_order import LimitOrder
+from typing import Union
+from datetime import datetime as dt
+
+import blankly
+from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 from blankly.exchanges.orders.market_order import MarketOrder
+from blankly.exchanges.orders.limit_order import LimitOrder
+from blankly.utils.utils import AttributeDict
 
 
 class StrategyLogger(ABCExchangeInterface):
@@ -37,35 +38,60 @@ class StrategyLogger(ABCExchangeInterface):
     def get_exchange_type(self):
         return self.interface.get_exchange_type()
     
-    def get_account(self, symbol: str) -> AttributeDict:
-        return self.interface.get_account(symbol)
+    def get_account(self, symbol: str = None) -> AttributeDict:
+        out = self.interface.get_account(symbol)
+
+        # Log this with the account info as well as the account it was attached to
+        blankly.reporter.log_strategy_event(self.strategy, 'get_account', symbol=symbol, account=out)
+        return out
     
     def get_products(self):
         return self.interface.get_products()
 
-    def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution: Union[str, int]) -> pandas.DataFrame:
+    def get_product_history(self, symbol: str, epoch_start: float,
+                            epoch_stop: float, resolution: Union[str, int]) -> pandas.DataFrame:
         return self.interface.get_product_history(symbol, epoch_start, epoch_stop, resolution)
     
-    def history(self, symbol: str, to: Union[str, int], resolution: Union[str, int], 
-            start_date: Union[str, dt, float], end_date: Union[str, dt, float], return_as: str) -> pandas.DataFrame:
+    def history(self,
+                symbol: str,
+                to: Union[str, int] = 200,
+                resolution: Union[str, int] = '1d',
+                start_date: Union[str, dt, float] = None,
+                end_date: Union[str, dt, float] = None,
+                return_as: str = 'df') -> pandas.DataFrame:
         if end_date is None:
             end_date = self.strategy.time()
-        return self.interface.history(symbol, to=to, resolution=resolution, 
-            start_date=start_date, end_date=end_date, return_as=return_as)
+        return self.interface.history(symbol, to=to,
+                                      resolution=resolution, start_date=start_date,
+                                      end_date=end_date, return_as=return_as)
     
     def market_order(self, symbol: str, side: str, funds: float) -> MarketOrder:
-        # Add additional logging with deployment
-        return self.interface.market_order(symbol, side, funds)
+        out = self.interface.market_order(symbol, side, funds)
+
+        # Record this market order along with the arguments
+        blankly.reporter.log_strategy_event(self.strategy, 'market_order',
+                                            symbol=symbol, side=side,
+                                            funds=funds)
+        return out
     
     def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
-        # Add additional logging with deployment
-        return self.interface.limit_order(symbol, side, price, size)
+        out = self.interface.limit_order(symbol, side, price, size)
+
+        # Record limit order along with the arguments
+        blankly.reporter.log_strategy_event(self.strategy, 'limit_order',
+                                            symbol=symbol, side=side,
+                                            price=price, size=size)
+        return out
     
     def cancel_order(self, symbol: str, order_id: str) -> dict:
-        # Add additional logging with deployment
-        return self.interface.cancel_order(symbol, order_id)
+        out = self.interface.cancel_order(symbol, order_id)
 
-    def get_open_orders(self, symbol: str) -> list:
+        # Record the cancellation along with the arguments
+        blankly.reporter.log_strategy_event(self.strategy, 'cancel_order',
+                                            symbol=symbol, order_id=order_id)
+        return out
+
+    def get_open_orders(self, symbol: str = None) -> list:
         return self.interface.get_open_orders(symbol=symbol)
 
     def get_order(self, symbol: str, order_id: str) -> dict:
