@@ -18,6 +18,8 @@
 
 from typing import Any
 
+from blankly.strategy.strategy_base import Strategy
+
 
 class Reporter:
     def __init__(self):
@@ -38,9 +40,24 @@ class Reporter:
 
     def update_live_var(self, var):
         """
-        Get the variable as with any changes that may have occured
+        Get the variable as with any changes that may have occurred
 
         Args:
             var: The variable that was exported initially
         """
         return self.__live_vars[id(var)]
+
+    def export_strategy(self, strategy: Strategy):
+        """
+        Export a strategy for monitoring. This is used internally on the construction of the strategy object
+
+        Args:
+            strategy (Strategy): The strategy object to monitor
+        """
+        pass
+
+    def log_strategy_event(self, strategy_object, event_name, **kwargs):
+        """
+        Export a strategy event that has occurred
+        """
+        pass
