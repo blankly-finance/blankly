@@ -30,6 +30,7 @@ from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestRes
 from blankly.strategy.strategy_state import StrategyState
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import AttributeDict
+from blankly.utils.utils import get_ohlcv_from_list
 from blankly.exchanges.strategy_logger import StrategyLogger
 
 
@@ -124,7 +125,8 @@ class Strategy:
         self.__variables[callback_hash] = AttributeDict({})
         state = StrategyState(self, self.__variables[callback_hash], symbol, resolution=resolution)
 
-        if resolution < 10:
+        # TODO this should be < 60, but its set to <= for testing
+        if resolution < 60:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
             self.Ticker_Manager.create_ticker(self.__idle_event, override_symbol=symbol)
             self.__schedulers.append(
@@ -176,9 +178,13 @@ class Strategy:
         if ohlc:
             ohlcv_time = kwargs['ohlcv_time']
             while True:
-                data = self.Interface.history(symbol, 1, resolution).iloc[-1].to_dict()
-                if data['time'] + resolution == ohlcv_time:
-                    break
+                # Sometimes coinbase doesn't download recent data correctly
+                try:
+                    data = self.Interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
+                    if data['time'] + resolution == ohlcv_time:
+                        break
+                except IndexError:
+                    pass
                 time.sleep(.5)
             data['price'] = self.Interface.get_price(symbol)
         else:
@@ -191,14 +197,43 @@ class Strategy:
         symbol = kwargs['symbol']
         resolution = kwargs['resolution']
         variables = kwargs['variables']
+        ohlc = kwargs['ohlc']
         state = kwargs['state_object']  # type: StrategyState
 
-        price = self.Ticker_Manager.get_most_recent_tick(override_symbol=symbol)
+        if ohlc:
+            close_time = kwargs['ohlcv_time']
+            open_time = close_time-resolution
+            ticker_feed = list(reversed(self.Ticker_Manager.get_feed(override_symbol=symbol)))
+            #     tick        tick
+            #      |    ohlcv close                            ohlcv open
+            # 0    |   -20          -40            -60        -80
+            # newest, newest - 1, newest - 2
+            count = 0
+            while ticker_feed[count]['time'] > close_time:
+                count += 1
+
+            close_index = count
+
+            # Start at the close index to save some iterations
+            count = close_index
+            while ticker_feed[count]['time'] < open_time:
+                count += 1
+            # Subtract 1 to put it back inside the range
+            count -= 1
+            open_index = count
+
+            # Get the latest price that isn't past the timeframe
+            last_price = ticker_feed[close_index:][-1]['price']
+
+            data = get_ohlcv_from_list(list(reversed(ticker_feed[close_index:open_index])), last_price)
+
+        else:
+            data = self.Ticker_Manager.get_most_recent_tick(override_symbol=symbol)
 
         state.variables = variables
         state.resolution = resolution
 
-        callback(price, symbol, state)
+        callback(data, symbol, state)
 
     def __orderbook_event(self, tick, symbol, user_callback, state_object):
         user_callback(tick, symbol, state_object)
