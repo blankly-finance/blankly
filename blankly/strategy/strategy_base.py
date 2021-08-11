@@ -135,6 +135,7 @@ class Strategy:
                                   variables=self.__variables[callback_hash],
                                   state_object=state,
                                   synced=synced,
+                                  init=init,
                                   ohlc=bar,
                                   symbol=symbol)
             )
@@ -155,7 +156,7 @@ class Strategy:
                                   symbol=symbol)
             )
 
-    def __idle_event(self):
+    def __idle_event(self, *args, **kwargs):
         """
         Function to skip & ignore callbacks
         """
@@ -254,7 +255,7 @@ class Strategy:
             # Index 2 contains the initialization function for the assigned websockets array
             if i[2] is not None:
                 i[2](i[0], i[3])
-            self.Orderbook_Manager.restart_ticker(i[0], i[1])
+            self.Ticker_Manager.restart_ticker(i[0], i[1])
 
     def time(self) -> float:
         if self.backtesting_controller is not None and self.backtesting_controller.time is not None:
