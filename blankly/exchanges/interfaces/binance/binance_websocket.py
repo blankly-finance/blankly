@@ -108,8 +108,7 @@ class Tickers(ABCExchangeWebsocket):
         try:
             self.__most_recent_time = message['E']
             self.__time_feed.append(self.__most_recent_time)
-            self.__most_recent_tick = message
-            self.__ticker_feed.append(self.__most_recent_tick)
+
             # Run callbacks on message
             if self.__log:
                 if self.__message_count % 100 == 0:
@@ -119,6 +118,8 @@ class Tickers(ABCExchangeWebsocket):
                 self.__file.write(line)
 
             interface_message = self.__interface_callback(message)
+            self.__ticker_feed.append(interface_message)
+            self.__most_recent_tick = interface_message
             for i in self.__callbacks:
                 i(interface_message)
         except KeyError:

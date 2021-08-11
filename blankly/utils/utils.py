@@ -502,6 +502,37 @@ def get_ohlcv(candles, n, from_zero: bool):
     return new_candles
 
 
+def get_ohlcv_from_list(tick_list: list, last_price: float):
+    """
+    Created with the purpose of parsing ticker data into a viable OHLCV pattern. The
+
+    Args:
+        tick_list (list): List of data containing price ticks. Needs to be at least: [{'price': 343, 'size': 3.4}, ...]
+            The data must also be ordered oldest to most recent at the end
+        last_price (float): The last price in case there isn't any valid data
+    """
+    out = {
+        'open': last_price,
+        'high': last_price,
+        'low': last_price,
+        'close': last_price,
+        'volume': 0
+    }
+    if len(tick_list) > 0:
+        out['open'] = tick_list[0]['price']
+        out['close'] = tick_list[-1]['price']
+
+    for i in tick_list:
+        out['volume'] = out['volume'] + i['size']
+
+        if i['price'] > out['high']:
+            out['high'] = i['price']
+        elif i['price'] < out['low']:
+            out['low'] = i['price']
+
+    return out
+
+
 def ceil_date(date, **kwargs):
     secs = datetime.timedelta(**kwargs).total_seconds()
     return dt.fromtimestamp(date.timestamp() + secs - date.timestamp() % secs)

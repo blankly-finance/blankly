@@ -138,8 +138,6 @@ class Tickers(ABCExchangeWebsocket):
                 self.__most_recent_time = blankly.utils.epoch_from_ISO8601(received["time"])
                 received["time"] = self.__most_recent_time
                 self.__time_feed.append(self.__most_recent_time)
-                self.__most_recent_tick = received
-                self.__ticker_feed.append(received)
 
                 if self.__log:
                     if counter % 100 == 0:
@@ -150,6 +148,9 @@ class Tickers(ABCExchangeWebsocket):
 
                 # Manage price events and fire for each manager attached
                 interface_message = self.__interface_callback(received)
+                self.__ticker_feed.append(interface_message)
+                self.__most_recent_tick = interface_message
+
                 try:
                     for i in self.__callbacks:
                         i(interface_message)
