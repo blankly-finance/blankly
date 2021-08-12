@@ -314,6 +314,7 @@ class OandaInterface(ExchangeInterface):
                 "max_funds": float(resp['maximumOrderUnits']) * price
             }
         }
+        resp['max_orders'] = 10000
         needed = self.needed["get_order_filter"]
         resp = utils.isolate_specific(needed, resp)
         return resp
