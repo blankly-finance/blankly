@@ -12,6 +12,7 @@ import dateparser as dp
 
 from blankly.utils.exceptions import APIException
 
+# todo: add the decorator for the error handling
 
 class OandaInterface(ExchangeInterface):
     def __init__(self, authenticated_API: OandaAPI, preferences_path: str):
@@ -172,7 +173,6 @@ class OandaInterface(ExchangeInterface):
         resp = self.calls.cancel_order(order_id)
         return {'order_id': order_id}
 
-    # todo: homogenize the response
     def get_open_orders(self, symbol=None):
         assert isinstance(self.calls, OandaAPI)
         if symbol is None:
@@ -181,6 +181,9 @@ class OandaInterface(ExchangeInterface):
             resp = self.calls.get_orders(symbol)
 
         orders = resp['orders']
+
+        for i in range(len(orders)):
+            orders[i] = self.homogenize_order(orders[i])
         return orders
 
     def get_order(self, symbol, order_id) -> dict:
@@ -189,7 +192,8 @@ class OandaInterface(ExchangeInterface):
         order = self.calls.get_order(order_id)
         if 'errorCode' in order:
             raise APIException(str(order))
-        return self.homogenize_order(order)
+
+        return self.homogenize_order(order['order'])
 
     def get_fees(self):
         assert isinstance(self.calls, OandaAPI)
@@ -198,7 +202,6 @@ class OandaInterface(ExchangeInterface):
             'taker_fee_rate': 0.0
         }
 
-    # todo: implement
     def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution: int):
         assert isinstance(self.calls, OandaAPI)
 
@@ -316,25 +319,46 @@ class OandaInterface(ExchangeInterface):
         return resp
 
     def get_price(self, symbol: str) -> float:
-        resp = self.calls.get_order_book(symbol)['orderBook']['price']
-        return float(resp)
+        assert isinstance(self.calls, OandaAPI)
+        resp = self.calls.get_order_book(symbol)
+        if 'errorMessage' in resp:
+            # could be that this is instrument without order book so try using latest candle
+            resp2 = self.calls.get_last_k_candles(symbol, 'S5', time.time(), 1)
+            if 'errorMessage' in resp2:
+                raise APIException(f'{symbol} did not have orderbook, so tried to use latest candle to price. Here is the orderbook error ' + str(resp) + 'here is the candle error ' + str(resp2))
+            return float(resp2['candles'][0]['mid']['c'])
+        return float(resp['orderBook']['price'])
 
     def homogenize_order(self, order):
-        if order['order']['type'] == "MARKET":
-            order['symbol'] = order['order']['instrument']
-            order['id'] = order['order']['id']
-            order['created_at'] = order['order']['createTime']
-
-            # TODO: handle status
-            order['status'] = order['order']['state']
-            order['funds'] = order['order']['units']
+        if order['type'] == "MARKET":
             order['type'] = 'market'
-            if float(order['order']['units']) < 0:
+            if float(order['units']) < 0:
                 order['side'] = 'sell'
             else:
                 order['side'] = 'buy'
+            order['time_in_force'] = 'GTC'
+            renames = [['instrument', 'symbol'],
+                       ['createTime', 'created_at'],
+                       ['state', 'status'], # TODO: handle status
+                       ['units', 'funds']] # TODO: I think this is wrong
+            order = utils.rename_to(renames, order)
 
-        # TODO: handle other order types
+        elif order['type'] == "LIMIT":
+            order['type'] = 'limit'
+            if float(order['units']) < 0:
+                order['side'] = 'sell'
+            else:
+                order['side'] = 'buy'
+            order['time_in_force'] = 'GTC'
+            renames = [['instrument', 'symbol'],
+                       ['createTime', 'created_at'],
+                       ['state', 'status'],  # TODO: handle status
+                       ['units', 'size']]
+            order = utils.rename_to(renames, order)
+        else:
+            # TODO: handle other order types
+            pass
+
         needed = self.choose_order_specificity(order['type'])
         order = utils.isolate_specific(needed, order)
         return order
