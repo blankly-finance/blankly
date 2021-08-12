@@ -4,6 +4,16 @@ from blankly.exchanges.auth.abc_auth import ABCAuth
 import requests
 from collections import OrderedDict
 
+from blankly.utils.exceptions import APIException
+
+
+def api_error_handler(func):
+    def wrapper(*args, **kwargs):
+        resp = func(*args, **kwargs)
+        if 'errorMessage' in resp:
+            raise APIException(str(resp))
+        return resp
+    return wrapper
 
 class OandaAPI:
     # documentation here: http://developer.oanda.com/rest-live-v20/account-ep/
@@ -151,8 +161,9 @@ class OandaAPI:
 
         params = OrderedDict()
         params["instrument"] = instrument
+        params["count"] = 500
 
-        return self._send_request('get', self.__api_url + endpoint)
+        return self._send_request('get', self.__api_url + endpoint,  params=params)
 
     def get_all_open_orders(self, accountid: str = None):
         if accountid is None:
@@ -168,6 +179,7 @@ class OandaAPI:
         endpoint = f'/v3/accounts/{accountid}/orders/{orderid}'
         return self._send_request('get', self.__api_url + endpoint)
 
+    @api_error_handler
     def cancel_order(self, orderid: str, accountid: str = None):
         if accountid is None:
             accountid = self.default_account
