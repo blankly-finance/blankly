@@ -19,19 +19,35 @@
 import argparse
 
 parser = argparse.ArgumentParser(description='Blankly CLI & deployment tool.')
-parser.add_argument('--deploy',
-                    metavar='deploy',
-                    type=str,
-                    help='Main deploy command for the module. Input a path to a deployment formatted bot folder.')
+
+
+subparsers = parser.add_subparsers(help='Different blankly commands.')
+
+init_parser = subparsers.add_parser('init', help='Sub command to create a blankly-enabled development environment.')
+init_parser.set_defaults(which='init')
+
+deploy_parser = subparsers.add_parser('deploy', help='Sub command to deploy the model.')
+deploy_parser.set_defaults(which='deploy')
+
+deploy_parser.add_argument('path',
+                           metavar='path',
+                           type=str,
+                           nargs='?',
+                           help='Path to the directory containing the blankly enabled deploy code.')
 
 
 def main():
-    args = parser.parse_args()
-    print(vars(args))
-    if args.deploy:
-        print(args)
+    args = vars(parser.parse_args())
+    try:
+        which = args['which']
+    except KeyError:
+        parser.print_help()
+        return
 
-        print("blankly deployment is coming soon!")
+    if which == 'deploy':
+        pass
+    elif which == 'init':
+        pass
 
 
 main()
