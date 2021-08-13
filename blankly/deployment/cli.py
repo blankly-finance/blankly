@@ -23,6 +23,8 @@ import os
 import platform
 import runpy
 import time
+import requests
+import json
 
 
 from blankly.utils.utils import load_json_file
@@ -33,6 +35,15 @@ def add_path_arg(arg_parser):
                             metavar='path',
                             type=str,
                             help='Path to the directory containing the blankly enabled folder.')
+
+
+def create_and_write_file(filename: str, default_contents: str = None):
+    try:
+        file = open("./" + filename, 'x+')
+        if default_contents is not None:
+            file.write(default_contents)
+    except FileExistsError:
+        pass
 
 
 parser = argparse.ArgumentParser(description='Blankly CLI & deployment tool.')
@@ -50,8 +61,8 @@ add_path_arg(deploy_parser)
 
 run_parser = subparsers.add_parser('run', help='Mimic the run mechanism used in blankly deployment.')
 run_parser.add_argument('--monitor',
-                        action='store_false',
-                        help='Enable to monitor the blankly process to understand CPU & memory usage. '
+                        action='store_true',
+                        help='Add this flag to monitor the blankly process to understand CPU & memory usage. '
                              'The module psutil must be installed.')
 run_parser.set_defaults(which='run')
 
@@ -71,7 +82,27 @@ def main():
         else:
             pass
     elif which == 'init':
-        pass
+        keys_example = requests.get('https://raw.githubusercontent.com/Blankly-Finance/'
+                                    'Blankly/main/examples/keys_example.json')
+        create_and_write_file('keys.json', keys_example.text)
+
+        settings = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/settings.json')
+        create_and_write_file('settings.json', settings.text)
+
+        backtest = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/backtest.json')
+        create_and_write_file('backtest.json', backtest.text)
+
+        bot = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/rsi.py')
+        create_and_write_file('bot.py', bot.text)
+
+        py_version = platform.python_version_tuple()
+        deploy = {
+            "main_script": "./bot.py",
+            "python_version": py_version[0] + "." + py_version[1],
+            "requirements": "./requirements.txt",
+            "working_directory": "."
+        }
+        create_and_write_file('deploy.json', json.dumps(deploy, indent=2))
 
     elif which == 'run':
         if args['path'] is None:
@@ -127,7 +158,7 @@ def main():
                     monitor_string += str(process.memory_percent())
                     sys.stdout.write(monitor_string)
                     sys.stdout.flush()
-                    time.sleep(1)
+                    time.sleep(5)
 
 
 main()
