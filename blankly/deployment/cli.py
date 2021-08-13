@@ -22,6 +22,7 @@ import warnings
 import os
 import platform
 import runpy
+import time
 
 
 from blankly.utils.utils import load_json_file
@@ -48,6 +49,10 @@ deploy_parser.set_defaults(which='deploy')
 add_path_arg(deploy_parser)
 
 run_parser = subparsers.add_parser('run', help='Mimic the run mechanism used in blankly deployment.')
+run_parser.add_argument('--monitor',
+                        action='store_false',
+                        help='Enable to monitor the blankly process to understand CPU & memory usage. '
+                             'The module psutil must be installed.')
 run_parser.set_defaults(which='run')
 
 add_path_arg(run_parser)
@@ -67,6 +72,7 @@ def main():
             pass
     elif which == 'init':
         pass
+
     elif which == 'run':
         if args['path'] is None:
             run_parser.print_help()
@@ -78,8 +84,7 @@ def main():
                 # Find where the user specified their working directory and migrate to that
                 deployment_dict = load_json_file(deployment_location)
             except FileNotFoundError:
-                FileNotFoundError(f"Deployment json not found in location {deployment_location}.")
-                return
+                raise FileNotFoundError(f"Deployment json not found in location {deployment_location}.")
 
             # Set the working directory to match the deployment dictionary
             os.chdir(os.path.join(blankly_folder, deployment_dict['working_directory']))
@@ -103,6 +108,26 @@ def main():
             # The execute function to run the modules
             main_script_abs = os.path.abspath(deployment_dict['main_script'])
             runpy.run_path(main_script_abs, {}, "__main__")
+
+            if args['monitor']:
+                try:
+                    import psutil
+                except ImportError:
+                    raise ImportError("Must install psutil (pip install psutil) to monitor "
+                                      "the Blankly process")
+                print("Process must be killed to halt monitoring.")
+
+                pid = os.getpid()
+                process = psutil.Process(pid)
+                while True:
+                    monitor_string = "\rCPU Usage: "
+                    monitor_string += str(process.cpu_percent())
+                    monitor_string += " | "
+                    monitor_string += "Memory Usage: "
+                    monitor_string += str(process.memory_percent())
+                    sys.stdout.write(monitor_string)
+                    sys.stdout.flush()
+                    time.sleep(1)
 
 
 main()
