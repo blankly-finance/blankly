@@ -17,9 +17,11 @@
 """
 
 import argparse
+import sys
 import warnings
 import os
 import platform
+import runpy
 
 
 from blankly.utils.utils import load_json_file
@@ -96,7 +98,11 @@ def main():
                                  "manually if needed."
                 warnings.warn(warning_string)
 
-            exec((open(os.path.join(blankly_folder, deployment_dict['main_script'])).read()))
+            sys.path.append(blankly_folder)
+
+            # The execute function to run the modules
+            main_script_abs = os.path.abspath(deployment_dict['main_script'])
+            runpy.run_path(main_script_abs, {}, "__main__")
 
 
 main()
