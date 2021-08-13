@@ -125,7 +125,6 @@ class Strategy:
         self.__variables[callback_hash] = AttributeDict({})
         state = StrategyState(self, self.__variables[callback_hash], symbol, resolution=resolution)
 
-        # TODO this should be < 60, but its set to <= for testing
         if resolution < 60:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
             self.Ticker_Manager.create_ticker(self.__idle_event, override_symbol=symbol)
@@ -228,7 +227,7 @@ class Strategy:
             data = get_ohlcv_from_list(list(reversed(ticker_feed[close_index:open_index])), last_price)
 
         else:
-            data = self.Ticker_Manager.get_most_recent_tick(override_symbol=symbol)
+            data = self.Ticker_Manager.get_most_recent_tick(override_symbol=symbol)['price']
 
         state.variables = variables
         state.resolution = resolution
