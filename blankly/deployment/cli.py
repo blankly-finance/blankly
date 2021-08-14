@@ -26,8 +26,17 @@ import time
 import requests
 import json
 
-
 from blankly.utils.utils import load_json_file
+
+
+very_important_string = """
+██████╗ ██╗      █████╗ ███╗   ██╗██╗  ██╗██╗  ██╗   ██╗    ███████╗██╗███╗   ██╗ █████╗ ███╗   ██╗ ██████╗███████╗
+██╔══██╗██║     ██╔══██╗████╗  ██║██║ ██╔╝██║  ╚██╗ ██╔╝    ██╔════╝██║████╗  ██║██╔══██╗████╗  ██║██╔════╝██╔════╝
+██████╔╝██║     ███████║██╔██╗ ██║█████╔╝ ██║   ╚████╔╝     █████╗  ██║██╔██╗ ██║███████║██╔██╗ ██║██║     █████╗  
+██╔══██╗██║     ██╔══██║██║╚██╗██║██╔═██╗ ██║    ╚██╔╝      ██╔══╝  ██║██║╚██╗██║██╔══██║██║╚██╗██║██║     ██╔══╝  
+██████╔╝███████╗██║  ██║██║ ╚████║██║  ██╗███████╗██║       ██║     ██║██║ ╚████║██║  ██║██║ ╚████║╚██████╗███████╗
+╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝╚═╝       ╚═╝     ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚══════╝
+"""
 
 
 def add_path_arg(arg_parser):
@@ -82,19 +91,32 @@ def main():
         else:
             pass
     elif which == 'init':
+        print("Initializing...")
+        print(very_important_string)
+
+        # Directly download keys.json
+        print("Downloading keys template...")
         keys_example = requests.get('https://raw.githubusercontent.com/Blankly-Finance/'
                                     'Blankly/main/examples/keys_example.json')
         create_and_write_file('keys.json', keys_example.text)
 
+        # Directly download settings.json
+        print("Downloading settings defaults...")
         settings = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/settings.json')
         create_and_write_file('settings.json', settings.text)
 
+        # Directly download backtest.json
+        print("Downloading backtest defaults...")
         backtest = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/backtest.json')
         create_and_write_file('backtest.json', backtest.text)
 
+        # Directly download an rsi bot
+        print("Downloading RSI bot example...")
         bot = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/rsi.py')
         create_and_write_file('bot.py', bot.text)
 
+        print("Writing defaults...")
+        # Interpret defaults and write to this folder
         py_version = platform.python_version_tuple()
         deploy = {
             "main_script": "./bot.py",
@@ -103,6 +125,11 @@ def main():
             "working_directory": "."
         }
         create_and_write_file('deploy.json', json.dumps(deploy, indent=2))
+
+        # Write in a blank requirements file
+        create_and_write_file('requirements.txt', None)
+
+        print("Done!")
 
     elif which == 'run':
         if args['path'] is None:
