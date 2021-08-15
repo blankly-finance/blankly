@@ -42,37 +42,42 @@ Check out our [website](https://blankly.finance) and our [docs](https://docs.bla
 
 ### Installation
 
-First install Blankly using `pip`. Blankly is hosted on [PyPi](https://pypi.org/project/Blankly/).
+1. First install Blankly using `pip`. Blankly is hosted on [PyPi](https://pypi.org/project/Blankly/).
 
 ```bash
 $ pip install blankly
 ```
 
-Make sure you're using a supported version of python. The module is currently tested on these versions:
+2. Next, just run:
+```bash
+$ blankly init
+```
+This will run our setup script in the current terminal working directory.
+The command will create the files `keys.json`, `settings.json`, `backtest.json`, `deploy.json` and an example script called `bot.py`.
 
-- Python 3.7+
+3. From there, **insert your API keys** from your exchange into the generated `keys.json` file.
 
+More information can be found on our [docs](https://docs.blankly.finance)
 
-### Directory Setup and API Keys
-
-Next, add [`settings.json`](https://github.com/Blankly-Finance/Blankly/blob/main/examples/settings.json) and [`keys.json`](https://github.com/Blankly-Finance/Blankly/blob/main/examples/keys_example.json) to your root project directory. More information can be found on our [docs](https://docs.blankly.finance)
-
-From there, **insert your API keys** from your exchange into your `keys.json` file.
-
-The working directory format should look similar to this:
-
+### Directory format
+The working directory format should have at least these files:
 ```
 Project
-   |-script.py
+   |-bot.py
    |-keys.json
    |-settings.json
 ```
 
+If you don't want to use our `init` command, you can find the same files in the `examples` folder under [`settings.json`](https://github.com/Blankly-Finance/Blankly/blob/main/examples/settings.json) and [`keys.json`](https://github.com/Blankly-Finance/Blankly/blob/main/examples/keys_example.json)
+
 ### Additional Info
+Make sure you're using a supported version of python. The module is currently tested on these versions:
+
+- Python 3.7+
 
 For more info, and ways to do more advanced things, check out our [getting started docs](https://docs.blankly.finance).
-## Example Use
 
+## Example Use
 We have a pre-built cookbook examples that implement strategies such as RSI, MACD, and the Golden Cross found in our [examples](https://docs.blankly.finance/examples/golden-cross).
 
 We have made Blankly extremely easy to integrate with any existing models and price events to make it super easy to switch.
