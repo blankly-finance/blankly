@@ -26,6 +26,7 @@ import time
 import requests
 import json
 
+from blankly.deployment.api import API
 from blankly.utils.utils import load_json_file
 
 
@@ -88,8 +89,10 @@ def main():
     if which == 'deploy':
         if args['path'] is None:
             deploy_parser.print_help()
+            return
         else:
-            pass
+            api = API()
+            print(api.get_details(project_id='u4PB0Adpb4XAYd33qsH1', model_id='Fb0D0me8ubzVT7L75dO5'))
     elif which == 'init':
         print("Initializing...")
         print(very_important_string)
