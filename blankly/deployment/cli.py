@@ -25,7 +25,9 @@ import runpy
 import time
 import requests
 import json
+import zipfile
 
+from os.path import basename
 from blankly.deployment.api import API
 from blankly.utils.utils import load_json_file
 
@@ -79,6 +81,22 @@ run_parser.set_defaults(which='run')
 add_path_arg(run_parser)
 
 
+def zipdir(path, ziph):
+    # From https://stackoverflow.com/a/1855118/8087739
+    # Notice we're using this instead of shutil because it allows customization such as passwords and skipping
+    # directories
+    # ziph is zipfile handle
+    for root, dirs, files in os.walk(path, topdown=True):
+        for file in files:
+            # (Modification) Skip everything that is in the blankly_dist folder
+            if root[0:14] != './blankly_dist':
+                ziph.write(os.path.join(root, file),
+                           os.path.relpath(os.path.join(root, file),
+                                           os.path.join(path, '..')))
+            else:
+                print('Skipping:', file, 'in folder', root)
+
+
 def main():
     args = vars(parser.parse_args())
     try:
@@ -92,7 +110,32 @@ def main():
             return
         else:
             api = API()
-            print(api.get_details(project_id='u4PB0Adpb4XAYd33qsH1', model_id='Fb0D0me8ubzVT7L75dO5'))
+            # print(api.get_details(project_id='u4PB0Adpb4XAYd33qsH1', model_id='Fb0D0me8ubzVT7L75dO5'))
+            # print(api.upload('./deploy.json'))
+            # with ZipFile('model.zip', 'w') as zip_obj:
+            #     for folder_name, sub_folders, file_names in os.walk('./'):
+            #         for file_name in file_names:
+            #             file_path = os.path.join(folder_name, file_name)
+            #
+            #             zip_obj.write(file_path, basename(file_path))
+
+            print("Zipping...")
+
+            blankly_dist_folder = os.path.join(args['path'], './blankly_dist')
+            try:
+                os.mkdir(blankly_dist_folder)
+                print("Creating distribution folder...")
+            except FileExistsError:
+                pass
+
+            model_path = os.path.join(blankly_dist_folder, 'model.zip')
+            zip_ = zipfile.ZipFile(model_path, 'w', zipfile.ZIP_DEFLATED)
+            zipdir('./', zip_)
+
+            zip_.close()
+            print("Uploading...")
+            print(api.upload(model_path))
+
     elif which == 'init':
         print("Initializing...")
         print(very_important_string)
@@ -131,6 +174,12 @@ def main():
 
         # Write in a blank requirements file
         create_and_write_file('requirements.txt', None)
+
+        try:
+            os.mkdir('./blankly_dist')
+            print("Creating distribution folder...")
+        except FileExistsError:
+            print("Distribution folder already exists - skipping.")
 
         print("Done!")
 

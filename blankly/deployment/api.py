@@ -29,16 +29,24 @@ class API:
         else:
             self.url = blankly_frontend_api_url
 
-    def __request(self, type_: str, route: str, json: dict = None, params: dict = None):
+    def __request(self, type_: str, route: str, json: dict = None, params: dict = None, file=None):
         """
         Create a general request to the blankly API services
+
+        Args:
+            type_: Request types such as 'post', 'get', and 'delete'
+            route: The address where the request should be routed to './model/details'
+            json: Optional json to be attached to the request body
+            params: Optional parameters for the address URL
+            file: Optional file uploaded in bytes: file = {'file': open(file_path, 'rb')}
         """
         route = os.path.join(self.url, route)
 
         kwargs = {
             'url': route,
             'params': params,
-            'json': json
+            'json': json,
+            'files': file
         }
 
         if type_ == "get":
@@ -66,3 +74,8 @@ class API:
 
     def create_project(self, uid: str, name: str, plan: str):
         return self.__request('post', 'project/create', json={'uid': uid, 'name': name, 'plan': plan})
+
+    def upload(self, file_path: str):
+        file = {'file': open(file_path, 'rb')}
+        return self.__request('post', 'model/upload', file=file)
+
