@@ -125,7 +125,7 @@ def main():
 
             zip_.close()
             print("Uploading...")
-            print(api.upload(model_path))
+            print(api.upload(model_path, project_id='u4PB0Adpb4XAYd33qsH1', model_id='Fb0D0me8ubzVT7L75dO5'))
 
     elif which == 'init':
         print("Initializing...")
