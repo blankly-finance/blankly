@@ -27,7 +27,6 @@ import requests
 import json
 import zipfile
 
-from os.path import basename
 from blankly.deployment.api import API
 from blankly.utils.utils import load_json_file
 
@@ -110,14 +109,6 @@ def main():
             return
         else:
             api = API()
-            # print(api.get_details(project_id='u4PB0Adpb4XAYd33qsH1', model_id='Fb0D0me8ubzVT7L75dO5'))
-            # print(api.upload('./deploy.json'))
-            # with ZipFile('model.zip', 'w') as zip_obj:
-            #     for folder_name, sub_folders, file_names in os.walk('./'):
-            #         for file_name in file_names:
-            #             file_path = os.path.join(folder_name, file_name)
-            #
-            #             zip_obj.write(file_path, basename(file_path))
 
             print("Zipping...")
 
