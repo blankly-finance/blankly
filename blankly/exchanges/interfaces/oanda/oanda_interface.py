@@ -1,3 +1,21 @@
+"""
+    Interface for communicating with Oanda
+    Copyright (C) 2021  Arun Annamalai
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.interfaces.oanda.oanda_api import OandaAPI
 from blankly.exchanges.orders.limit_order import LimitOrder
@@ -13,6 +31,7 @@ import dateparser as dp
 from blankly.utils.exceptions import APIException
 
 # todo: add the decorator for the error handling
+
 
 class OandaInterface(ExchangeInterface):
     def __init__(self, authenticated_API: OandaAPI, preferences_path: str):
@@ -205,6 +224,8 @@ class OandaInterface(ExchangeInterface):
     def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution: int):
         assert isinstance(self.calls, OandaAPI)
 
+        resolution = utils.time_interval_to_seconds(resolution)
+
         supported_multiples = {5: "S5", 10: "S10", 15: "S15", 30: "S30", 60: "M1", 60 * 2: "M2",
                                60 * 4: "M4", 60 * 5: "M5", 60 * 10: "M10", 60 * 15: "M15", 60 * 30: "M30",
                                60 * 60: "H1", 60 * 60 * 24: "D", 60 * 60 * 24 * 7: "W", 60 * 60 * 24 * 30: "M"}
@@ -235,7 +256,6 @@ class OandaInterface(ExchangeInterface):
         print(candles)
 
         return df
-
 
     def history(self,
                 symbol: str,
@@ -326,7 +346,9 @@ class OandaInterface(ExchangeInterface):
             # could be that this is instrument without order book so try using latest candle
             resp2 = self.calls.get_last_k_candles(symbol, 'S5', time.time(), 1)
             if 'errorMessage' in resp2:
-                raise APIException(f'{symbol} did not have orderbook, so tried to use latest candle to price. Here is the orderbook error ' + str(resp) + 'here is the candle error ' + str(resp2))
+                raise APIException(f'{symbol} did not have orderbook, so tried to use latest candle to '
+                                   f'price. Here is the orderbook error ' + str(resp) + 'here is the candle error ' +
+                                   str(resp2))
             return float(resp2['candles'][0]['mid']['c'])
         return float(resp['orderBook']['price'])
 
@@ -364,7 +386,8 @@ class OandaInterface(ExchangeInterface):
         order = utils.isolate_specific(needed, order)
         return order
 
-    def __evaluate_multiples(self, alpaca_v1_resolutions, resolution_seconds):
+    @staticmethod
+    def __evaluate_multiples(alpaca_v1_resolutions, resolution_seconds):
         found_multiple = -1
         for multiple in reversed(alpaca_v1_resolutions):
             if resolution_seconds % multiple == 0:
@@ -380,7 +403,8 @@ class OandaInterface(ExchangeInterface):
 
         return found_multiple, row_divisor
 
-    def _handle_input_time_conv(self, date: Union[str, dt, float] = None) -> float:
+    @staticmethod
+    def _handle_input_time_conv(date: Union[str, dt, float] = None) -> float:
         if not date:
             return time.time()
 

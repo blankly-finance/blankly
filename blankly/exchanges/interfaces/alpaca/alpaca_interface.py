@@ -315,6 +315,8 @@ class AlpacaInterface(ExchangeInterface):
     def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution: int):
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
+        resolution = time_interval_to_seconds(resolution)
+
         supported_multiples = [60, 3600, 86400]
         if resolution not in supported_multiples:
             warnings.warn("Granularity is not an accepted granularity...rounding to nearest valid value.")
