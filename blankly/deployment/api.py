@@ -29,15 +29,18 @@ class API:
         else:
             self.url = blankly_frontend_api_url
 
-    def __request(self, type_: str, route: str, json: dict = None, params: dict = None, file=None):
+        self.uid = "u4PB0Adpb4XAYd33qsH1"  # TODO this is unclear right now
+
+    def __request(self, type_: str, route: str, json: dict = None, params: dict = None, file=None, data: dict = None):
         """
         Create a general request to the blankly API services
 
         Args:
             type_: Request types such as 'post', 'get', and 'delete'
             route: The address where the request should be routed to './model/details'
-            json: Optional json to be attached to the request body
+            json: Optional json to be attached to the request
             params: Optional parameters for the address URL
+            data: Optional JSON to be attached to the request body dictionary
             file: Optional file uploaded in bytes: file = {'file': open(file_path, 'rb')}
         """
         route = os.path.join(self.url, route)
@@ -46,7 +49,8 @@ class API:
             'url': route,
             'params': params,
             'json': json,
-            'files': file
+            'files': file,
+            'data': data
         }
 
         if type_ == "get":
@@ -69,17 +73,14 @@ class API:
     def get_status(self, project_id: str, model_id: str):
         return self.__request('get', 'model/status', json={'projectId': project_id, 'modelId': model_id})
 
-    def list_projects(self, uid: str):
-        return self.__request('get', 'project/list', json={'uid': uid})
+    def list_projects(self):
+        return self.__request('get', 'project/list', json={'uid': self.uid})
 
-    def create_project(self, uid: str, name: str, plan: str):
-        return self.__request('post', 'project/create', json={'uid': uid, 'name': name, 'plan': plan})
+    def create_project(self, name: str, plan: str):
+        return self.__request('post', 'project/create', json={'uid': self.uid, 'name': name, 'plan': plan})
 
     def upload(self, file_path: str, project_id: str, model_id: str):
-        file = {'file': open(file_path, 'rb')}
-        file_name = os.path.basename(os.path.normpath(file_path))
-        user_id = "aaaaaaa"
-        return self.__request('post', 'model/upload', file=file, json={'filename': file_name,
-                                                                       'projectId': project_id,
-                                                                       'userId': user_id,
-                                                                       'modelId': model_id})
+        file = {'model': open(file_path, 'rb')}
+        return self.__request('post', 'model/upload', file=file, data={'projectId': project_id,
+                                                                       'userId': self.uid,
+                                                                       'modelId': model_id}, params={'we got': True})
