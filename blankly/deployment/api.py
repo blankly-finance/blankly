@@ -75,7 +75,11 @@ class API:
     def create_project(self, uid: str, name: str, plan: str):
         return self.__request('post', 'project/create', json={'uid': uid, 'name': name, 'plan': plan})
 
-    def upload(self, file_path: str):
+    def upload(self, file_path: str, project_id: str, model_id: str):
         file = {'file': open(file_path, 'rb')}
-        return self.__request('post', 'model/upload', file=file)
-
+        file_name = os.path.basename(os.path.normpath(file_path))
+        user_id = "aaaaaaa"
+        return self.__request('post', 'model/upload', file=file, json={'filename': file_name,
+                                                                       'projectId': project_id,
+                                                                       'userId': user_id,
+                                                                       'modelId': model_id})
