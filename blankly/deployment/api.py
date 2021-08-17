@@ -68,16 +68,16 @@ class API:
         """
         Get the details route
         """
-        return self.__request('get', 'model/details', json={'projectId': project_id, 'modelId': model_id})
+        return self.__request('get', 'model/details', data={'projectId': project_id, 'modelId': model_id})
 
     def get_status(self, project_id: str, model_id: str):
-        return self.__request('get', 'model/status', json={'projectId': project_id, 'modelId': model_id})
+        return self.__request('get', 'model/status', data={'projectId': project_id, 'modelId': model_id})
 
     def list_projects(self):
-        return self.__request('get', 'project/list', json={'uid': self.uid})
+        return self.__request('get', 'project/list', data={'uid': self.uid})
 
     def create_project(self, name: str, plan: str):
-        return self.__request('post', 'project/create', json={'uid': self.uid, 'name': name, 'plan': plan})
+        return self.__request('post', 'project/create', data={'uid': self.uid, 'name': name, 'plan': plan})
 
     def upload(self, file_path: str, project_id: str, model_id: str):
         file = {'model': open(file_path, 'rb')}
