@@ -233,7 +233,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 if tries > 5:
                     # Admit failure and return
                     warnings.warn("Exchange failed to provide updated data within the timeout.")
-                    return response
+                    return self.cast_type(response, return_as)
                 try:
                     data_append = [self.get_product_history(symbol,
                                                             epoch_stop - resolution_seconds,
@@ -248,10 +248,9 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
 
             response = response.append(data_append, ignore_index=True)
 
-            return self.cast_type(response, return_as)
+        return self.cast_type(response, return_as)
 
-    @staticmethod
-    def cast_type(response: pd.DataFrame, return_as: str):
+    def cast_type(self, response: pd.DataFrame, return_as: str):
         if return_as != 'df' and return_as != 'deque':
             return response.to_dict(return_as)
         elif return_as == 'deque':
