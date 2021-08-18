@@ -445,9 +445,8 @@ class AlpacaInterface(ExchangeInterface):
                                                start_date.timestamp(),
                                                end_date.timestamp(),
                                                int(resolution_seconds))
-        if return_as == 'list':
-            return history.to_dict('list')
-        return history
+
+        return super().cast_type(history, return_as)
         # return_df = pd.DataFrame(bars)
         # return_df.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
         # inplace=True)

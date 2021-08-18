@@ -28,6 +28,7 @@ def price_event(price, symbol, state: StrategyState):
     curr_diff = diff[-1]
     is_cross_up = slope_sma50 > 0 and curr_diff >= 0 and prev_diff < 0
     is_cross_down = slope_sma50 < 0 and curr_diff <= 0 and prev_diff > 0
+    print("SMA50:", sma50[-1], ", SMA200:", sma200[-1])
     # comparing prev diff with current diff will show a cross
     if is_cross_up and not variables['owns_position']:
         interface.market_order(symbol, 'buy', interface.cash)
