@@ -423,6 +423,11 @@ def compare_dictionaries(dict1, dict2, force_exchange_specific=True) -> bool:
                       ", but is " + str(type(dict2[key])) + " in dict2.")
                 return False
             else:
+                # If it's a dictionary, go inside of it
+                if isinstance(type(value), dict):
+                    if not compare_dictionaries(value, dict2[key], force_exchange_specific=False):
+                        return False
+
                 valid_keys.append(key)
                 # This code can more specifically compare the key pairs
                 # if dict1[key] == dict2[key]:
