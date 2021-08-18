@@ -71,42 +71,49 @@ class Strategy:
         self.__variables[hashed][key] = value
 
     def add_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
-                        init: typing.Callable = None, synced: bool = False):
+                        init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False):
         """
         Add Price Event
         Args:
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
             symbol: Currency pair to create the price event for
             resolution: The resolution that the callback will be run - in seconds
-            init: Callback function to allow a setup for the strategy variable. This
-                can be used for accumulating price data
+            init: Callback function to allow a setup for the strategy variable. Example usages include
+                downloading price data before usage
+            teardown: A function to run when the strategy is stopped or interrupted. Example usages include liquidating
+                positions, writing or cleaning up data or anything else useful
             synced: Sync the function to
         """
-        self.__custom_price_event(callback, symbol, resolution, init, synced)
+        self.__custom_price_event(callback, symbol, resolution, init, synced, teardown=teardown)
 
     def add_bar_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
-                      init: typing.Callable = None):
+                      init: typing.Callable = None, teardown: typing.Callable = None):
         """
         Add Price Event
         Args:
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
             symbol: Currency pair to create the price event for
             resolution: The resolution that the callback will be run - in seconds
-            init: Callback function to allow a setup for the strategy variable. This
-                can be used for accumulating price data
+            init: Callback function to allow a setup for the strategy variable. Example usages include
+                downloading price data before usage
+            teardown: A function to run when the strategy is stopped or interrupted. Example usages include liquidating
+                positions, writing or cleaning up data or anything else useful
         """
-        self.__custom_price_event(callback, symbol, resolution, init, synced=True, bar=True)
+        self.__custom_price_event(callback, symbol, resolution, init, synced=True, bar=True, teardown=teardown)
 
     def __custom_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
-                             init: typing.Callable = None, synced: bool = False, bar: bool = False):
+                             init: typing.Callable = None, synced: bool = False, bar: bool = False,
+                             teardown: typing.Callable = None):
         """
         Add Price Event
         Args:
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
             symbol: Currency pair to create the price event for
             resolution: The resolution that the callback will be run - in seconds
-            init: Callback function to allow a setup for the strategy variable. This
-                can be used for accumulating price data
+            init: Callback function to allow a setup for the strategy variable. Example usages include
+                downloading price data before usage
+            teardown: A function to run when the strategy is stopped or interrupted. Example usages include liquidating
+                positions, writing or cleaning up data or anything else useful
             synced: Sync the function to
             bar: Get the OHLCV data for a valid exchange interval
         """
@@ -137,6 +144,7 @@ class Strategy:
                                   state_object=state,
                                   synced=synced,
                                   init=init,
+                                  teardown=teardown,
                                   ohlc=bar,
                                   symbol=symbol)
             )
@@ -154,6 +162,7 @@ class Strategy:
                                   synced=synced,
                                   ohlc=bar,
                                   init=init,
+                                  teardown=teardown,
                                   symbol=symbol)
             )
 
