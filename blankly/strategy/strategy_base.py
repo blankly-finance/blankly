@@ -144,7 +144,8 @@ class Strategy:
                                   state_object=state,
                                   synced=synced,
                                   init=init,
-                                  teardown=teardown,
+                                  teardown=self.__simplified_teardown,
+                                  user_teardown=teardown,
                                   ohlc=bar,
                                   symbol=symbol)
             )
@@ -162,7 +163,8 @@ class Strategy:
                                   synced=synced,
                                   ohlc=bar,
                                   init=init,
-                                  teardown=teardown,
+                                  teardown=self.__simplified_teardown,
+                                  user_teardown=teardown,
                                   symbol=symbol)
             )
 
@@ -171,6 +173,12 @@ class Strategy:
         Function to skip & ignore callbacks
         """
         pass
+
+    @staticmethod
+    def __simplified_teardown(**kwargs):
+        user_teardown = kwargs['user_teardown']
+        if user_teardown is not None:
+            user_teardown(kwargs['state'])
 
     def __price_event_rest(self, **kwargs):
         callback = kwargs['callback']

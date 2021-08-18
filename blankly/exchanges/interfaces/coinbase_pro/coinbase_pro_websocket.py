@@ -123,7 +123,7 @@ class Tickers(ABCExchangeWebsocket):
             if received_string['type'] == 'snapshot':
                 try:
                     self.__pre_event_callback(received_string)
-                except:
+                except Exception:
                     traceback.print_exc()
 
         counter = 0

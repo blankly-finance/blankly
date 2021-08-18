@@ -58,7 +58,7 @@ def test_marketorder_comprehensive(oanda_interface: OandaInterface) -> None:
     while not resp:
         try:
             resp = oanda_interface.get_order(EUR_USD, market_buy_order.get_id())
-        except:
+        except Exception:
             time.sleep(1)
             num_retries += 1
             if num_retries > 10:
@@ -73,7 +73,7 @@ def test_marketorder_comprehensive(oanda_interface: OandaInterface) -> None:
     while not resp:
         try:
             resp = oanda_interface.get_order(EUR_USD, market_buy_order.get_id())
-        except:
+        except Exception:
             time.sleep(1)
             num_retries += 1
             if num_retries > 10:
@@ -117,7 +117,7 @@ def test_limitorder_comprehensive(oanda_interface: OandaInterface) -> None:
     while not resp:
         try:
             resp = oanda_interface.get_order(EUR_USD, limit_buy_order.get_id())
-        except:
+        except Exception:
             time.sleep(1)
             num_retries += 1
             if num_retries > 10:

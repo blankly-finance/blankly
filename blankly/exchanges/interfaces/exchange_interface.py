@@ -22,6 +22,7 @@ from datetime import datetime as dt
 from typing import Union
 from collections import deque
 
+import pandas as pd
 from dateutil import parser
 
 import blankly.utils.utils as utils
@@ -246,7 +247,11 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                     break
 
             response = response.append(data_append, ignore_index=True)
-        
+
+            return self.cast_type(response, return_as)
+
+    @staticmethod
+    def cast_type(response: pd.DataFrame, return_as: str):
         if return_as != 'df' and return_as != 'deque':
             return response.to_dict(return_as)
         elif return_as == 'deque':

@@ -40,6 +40,8 @@ class Scheduler:
             initially_stopped: Keep the scheduler halted until start() is run
             synced: Align the scheduler with intervals in UTC. ex: if the interval is '1h' then with sync it will only
               run at *:00
+            Keyword Arguments:
+                teardown: Fill with a function to run on keyboard interrupt (teardown=callable) and def callable()
         """
         if isinstance(interval, str):
             interval = time_interval_to_seconds(interval)
@@ -123,6 +125,15 @@ class Scheduler:
                 func(**kwargs)
             except Exception:
                 traceback.print_exc()
+            except KeyboardInterrupt:
+                try:
+                    teardown = kwargs['teardown']
+                    del kwargs['teardown']
+                    if callable(teardown):
+                        teardown(**kwargs)
+                except KeyError:
+                    pass
+                break
             base_time += interval
             if self.synced:
                 kwargs['ohlcv_time'] += interval

@@ -425,6 +425,9 @@ def compare_dictionaries(dict1, dict2, force_exchange_specific=True) -> bool:
             else:
                 # If it's a dictionary, go inside of it
                 if isinstance(type(value), dict):
+                    print("comparing:")
+                    print(value)
+                    print(dict2[key])
                     if not compare_dictionaries(value, dict2[key], force_exchange_specific=False):
                         return False
 

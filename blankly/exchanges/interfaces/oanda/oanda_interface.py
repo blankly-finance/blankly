@@ -304,7 +304,7 @@ class OandaInterface(ExchangeInterface):
 
         history = utils.get_ohlcv(df, row_divisor, from_zero=True)
 
-        return history
+        return super().cast_type(history)
 
     def get_order_filter(self, symbol: str):
         assert isinstance(self.calls, OandaAPI)
