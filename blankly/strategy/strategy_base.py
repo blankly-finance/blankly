@@ -17,6 +17,7 @@
 """
 
 import datetime
+import threading
 import time
 import typing
 import warnings
@@ -61,6 +62,12 @@ class Strategy:
 
         # Attempt to report the strategy
         blankly.reporter.export_strategy(self)
+
+        # Create a lock for the teardown so nothing happens while its going on
+        self.lock = threading.Lock()
+
+        # This will be updated when the teardown() function completes
+        self.torndown = False
 
     @property
     def variables(self):
@@ -144,13 +151,12 @@ class Strategy:
                                   state_object=state,
                                   synced=synced,
                                   init=init,
-                                  teardown=self.__simplified_teardown,
-                                  user_teardown=teardown,
+                                  teardown=teardown,
                                   ohlc=bar,
                                   symbol=symbol)
             )
             exchange_type = self.__exchange.get_type()
-            self.__ticker_websockets.append([symbol, exchange_type, init, state])
+            self.__ticker_websockets.append([symbol, exchange_type, init, state, teardown])
         else:
             # Use the API
             self.__schedulers.append(
@@ -163,8 +169,7 @@ class Strategy:
                                   synced=synced,
                                   ohlc=bar,
                                   init=init,
-                                  teardown=self.__simplified_teardown,
-                                  user_teardown=teardown,
+                                  teardown=teardown,
                                   symbol=symbol)
             )
 
@@ -173,12 +178,6 @@ class Strategy:
         Function to skip & ignore callbacks
         """
         pass
-
-    @staticmethod
-    def __simplified_teardown(**kwargs):
-        user_teardown = kwargs['user_teardown']
-        if user_teardown is not None:
-            user_teardown(kwargs['state'])
 
     def __price_event_rest(self, **kwargs):
         callback = kwargs['callback']
@@ -254,7 +253,8 @@ class Strategy:
     def __orderbook_event(self, tick, symbol, user_callback, state_object):
         user_callback(tick, symbol, state_object)
 
-    def add_orderbook_event(self, callback: typing.Callable, symbol: str, init: typing.Callable = None):
+    def add_orderbook_event(self, callback: typing.Callable, symbol: str, init: typing.Callable = None,
+                            teardown: typing.Callable = None):
         """
         Add Orderbook Event
         Args:
@@ -262,6 +262,8 @@ class Strategy:
             symbol: Currency pair to create the orderbook for
             init: Callback function to allow a setup for the strategy variable. This
                 can be used for accumulating price data
+            teardown: A function to run when the strategy is stopped or interrupted. Example usages include liquidating
+                positions, writing or cleaning up data or anything else useful:
         """
         self.__scheduling_pair.append([symbol, None])
         callback_hash = hash((callback, symbol))
@@ -284,7 +286,7 @@ class Strategy:
                                                 state_object=state)
 
         exchange_type = self.__exchange.get_type()
-        self.__orderbook_websockets.append([symbol, exchange_type, init, state])
+        self.__orderbook_websockets.append([symbol, exchange_type, init, state, teardown])
 
         # Set this to true so that we can throw a warning in the backtest
         self.__using_orderbook = True
@@ -307,6 +309,30 @@ class Strategy:
             if i[2] is not None:
                 i[2](i[0], i[3])
             self.Ticker_Manager.restart_ticker(i[0], i[1])
+
+    def teardown(self):
+        self.lock.acquire()
+        for i in self.__schedulers:
+            i.stop_scheduler()
+            kwargs = i.get_kwargs()
+            teardown = kwargs['teardown']
+            state_object = kwargs['state_object']
+            if callable(teardown):
+                teardown(state_object)
+
+        for i in self.__orderbook_websockets:
+            self.Orderbook_Manager.close_websocket(override_symbol=i[0], override_exchange=i[1])
+            # Call the stored teardown
+            teardown_func = i[4]
+            if callable(teardown_func):
+                teardown_func(i[3])
+
+        for i in self.__ticker_websockets:
+            self.Ticker_Manager.close_websocket(override_symbol=i[0], override_exchange=i[1])
+        self.lock.release()
+
+        # Show that all teardowns have finished
+        self.torndown = True
 
     def time(self) -> float:
         if self.backtesting_controller is not None and self.backtesting_controller.time is not None:
