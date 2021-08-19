@@ -53,16 +53,17 @@ def price_event(price, symbol, state: StrategyState):
         variables['has_bought'] = False
 
 
-alpaca = Alpaca()
-s = Strategy(alpaca)
+if __name__ == "__main__":
+    alpaca = Alpaca()
+    s = Strategy(alpaca)
 
-# Add a bunch of stocks to watch for 2 years
-s.add_price_event(price_event, 'SNAP', resolution='1d', init=init)
-s.add_price_event(price_event, 'PBFX', resolution='1d', init=init)
-s.add_price_event(price_event, 'NCLH', resolution='1d', init=init)
+    # Add a bunch of stocks to watch for 2 years
+    s.add_price_event(price_event, 'SNAP', resolution='1d', init=init)
+    s.add_price_event(price_event, 'PBFX', resolution='1d', init=init)
+    s.add_price_event(price_event, 'NCLH', resolution='1d', init=init)
 
-s.add_price_event(price_event, 'CRBP', resolution='1d', init=init)
-s.add_price_event(price_event, 'D', resolution='1d', init=init)
-s.add_price_event(price_event, 'GME', resolution='1d', init=init)
+    s.add_price_event(price_event, 'CRBP', resolution='1d', init=init)
+    s.add_price_event(price_event, 'D', resolution='1d', init=init)
+    s.add_price_event(price_event, 'GME', resolution='1d', init=init)
 
-print(s.backtest(initial_values={'USD': 10000}, to='2y'))
+    print(s.backtest(initial_values={'USD': 10000}, to='2y'))

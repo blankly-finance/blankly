@@ -40,8 +40,6 @@ class Scheduler:
             initially_stopped: Keep the scheduler halted until start() is run
             synced: Align the scheduler with intervals in UTC. ex: if the interval is '1h' then with sync it will only
               run at *:00
-            Keyword Arguments:
-                teardown: Fill with a function to run on keyboard interrupt (teardown=callable) and def callable()
         """
         if isinstance(interval, str):
             interval = time_interval_to_seconds(interval)
@@ -54,6 +52,8 @@ class Scheduler:
         self.__interval = interval
         self.__kwargs = kwargs
         self.__callback = function
+
+        self.__lock = threading.Lock()
 
         if not initially_stopped:
             self.start()
@@ -88,6 +88,9 @@ class Scheduler:
         Get the seconds between each scheduler run
         """
         return self.__interval
+
+    def make_daemon(self):
+        self.__thread.setDaemon(True)
 
     def get_kwargs(self):
         """
@@ -125,15 +128,6 @@ class Scheduler:
                 func(**kwargs)
             except Exception:
                 traceback.print_exc()
-            except KeyboardInterrupt:
-                try:
-                    teardown = kwargs['teardown']
-                    del kwargs['teardown']
-                    if callable(teardown):
-                        teardown(**kwargs)
-                except KeyError:
-                    pass
-                break
             base_time += interval
             if self.synced:
                 kwargs['ohlcv_time'] += interval

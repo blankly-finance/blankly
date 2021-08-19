@@ -49,11 +49,12 @@ def price_event(price, symbol, state: StrategyState):
         variables['has_bought'] = False
 
 
-coinbase = CoinbasePro()
-s = Strategy(coinbase)
-# creating an init allows us to run the same function for
-# different tickers and resolutions
-s.add_price_event(price_event, 'BTC-USD', resolution='1d', init=init)
-# s.add_price_event(price_event, 'AAPL', resolution='1d', init=init)
-history = s.backtest(to='1y', initial_values={'USD': 100})
-print(history)
+if __name__ == "__main__":
+    coinbase = CoinbasePro()
+    s = Strategy(coinbase)
+    # creating an init allows us to run the same function for
+    # different tickers and resolutions
+    s.add_price_event(price_event, 'BTC-USD', resolution='1d', init=init)
+    # s.add_price_event(price_event, 'AAPL', resolution='1d', init=init)
+    history = s.backtest(to='1y', initial_values={'USD': 100})
+    print(history)
