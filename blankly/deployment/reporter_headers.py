@@ -61,3 +61,11 @@ class Reporter:
         Export a strategy event that has occurred
         """
         pass
+
+    def email(self, email_str: str):
+        """
+        Send an email to your user account email
+
+        This is only active during live deployment on blankly services because it relies on backend infrastructure
+        """
+        pass
