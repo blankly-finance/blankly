@@ -53,4 +53,4 @@ class Signal:
             'teardown': teardown,
             'formatter': formatter
         }
-
+        self.interface = exchange.interface
