@@ -30,11 +30,18 @@ class Signal:
     def __init__(self, exchange: Exchange,
                  evaluator: typing.Callable,
                  symbols: List[str],
+                 resolution: typing.Union[str, float],
                  init: typing.Callable = None,
                  teardown: typing.Callable = None,
                  formatter: typing.Callable = None):
         """
         Create a new signal.
+
+        Function Signatures:
+        init(signal_state: blankly.SignalState)
+        evaluator(symbol: str, signal_state: blankly.SignalState)
+        teardown(signalState: blankly.SignalState)
+        formatter(raw_results: dict, signal_state: blankly.SignalState)
 
         This heavily differs from Strategy objects. While a Strategy is optimized for the implementation of
          short or long-term trading strategies, a Signal is optimized for long-term monitoring & reporting of many
@@ -45,6 +52,7 @@ class Signal:
             exchange: An exchange object to construct the signal on
             evaluator: The function that can take information about a signal & classify that signal based on parameters
             symbols: A list of symbols to run on.
+            resolution: The resolution for the signal to run like '1w' or '3d' or 86400
             init: Optional setup code to run when the program starts
             teardown: Optional teardown code to run before the program finishes
             formatter: Optional formatting function that pretties the results form the evaluator
@@ -68,12 +76,18 @@ class Signal:
         self.raw_results = {}
         self.formatted_results = {}
 
+        self.resolution = resolution
+
+        blankly.reporter.export_signal(self)
+
         self.__run()
 
     def __run(self):
         init = self.__callables['init']
         if callable(init):
             init(self.signal_state)
+
+        self.symbols = self.signal_state.symbols
 
         # Evaluate using the evaluator function
         # 'symbol': {
@@ -92,6 +106,8 @@ class Signal:
         for i in self.symbols:
             self.raw_results[i] = evaluator(i, self.signal_state)
 
+        self.symbols = self.signal_state.symbols
+
         # Copy the evaluator results so that they can be formatted
         self.formatted_results = deepcopy(self.raw_results)
 
@@ -100,19 +116,24 @@ class Signal:
             # Mutate the copied dictionary
             self.formatted_results = formatter(self.formatted_results, self.signal_state)
 
+        self.symbols = self.signal_state.symbols
+
         teardown = self.__callables['teardown']
         if callable(teardown):
             teardown(self.signal_state)
 
-    def notify(self, output: str = None):
+        self.symbols = self.signal_state.symbols
+
+    def notify(self, message: str = None):
         """
         Send an email to your organization email. This only works while deployed live.
 
-        output: Optionally fill this with a different string to notify with. If not filled it will notify using the
-         formatted results evaluated on construction
+        Args:
+            message: Optionally fill this with a different string to notify with. If not filled it will notify using the
+             formatted results evaluated on construction
         """
         use_str = self.formatted_results
-        if output is not None:
-            use_str = output
+        if message is not None:
+            use_str = message
 
         blankly.reporter.email(use_str)

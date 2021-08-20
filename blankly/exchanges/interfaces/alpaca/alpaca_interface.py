@@ -60,7 +60,7 @@ class AlpacaInterface(ExchangeInterface):
         filtered_assets = []
         products = self.calls.list_assets(status=None, asset_class=None)
         for i in products:
-            if i['symbol'] not in filtered_assets:
+            if i['symbol'] not in filtered_assets and i['status'] != 'inactive':
                 filtered_assets.append(i['symbol'])
             else:
                 # TODO handle duplicate symbols

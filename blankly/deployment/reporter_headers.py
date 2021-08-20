@@ -19,11 +19,13 @@
 from typing import Any
 
 from blankly.strategy.strategy_base import Strategy
+from blankly.strategy.signal import Signal
 
 
 class Reporter:
     def __init__(self):
         self.__live_vars = {}
+        self.__signal = None
         pass
 
     def export_live_var(self, var: Any, name: str, description: str = None):
@@ -55,6 +57,18 @@ class Reporter:
             strategy (Strategy): The strategy object to monitor
         """
         pass
+
+    def export_signal(self, signal: Signal):
+        """
+        Export a signal object to the backend for monitoring
+
+        Args:
+            signal: A signal object to export
+        """
+        if self.__signal is None:
+            self.__signal = signal
+        else:
+            raise RuntimeError("Currently only a single signal can be exported per model.")
 
     def log_strategy_event(self, strategy_object, event_name, **kwargs):
         """

@@ -22,6 +22,8 @@ from blankly.exchanges.interfaces.alpaca.alpaca import Alpaca
 from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.strategy import Strategy as Strategy
 from blankly.strategy import StrategyState as StrategyState
+from blankly.strategy.signal import Signal
+from blankly.strategy.signal_state import SignalState
 
 from blankly.exchanges.managers.ticker_manager import TickerManager
 from blankly.exchanges.managers.orderbook_manager import OrderbookManager
