@@ -27,7 +27,7 @@ if __name__ == "__main__":
     coinbase_strategy = blankly.Strategy(coinbase_pro)
 
     # Run the price event function every time we check for a new price - by default that is 15 seconds
-    coinbase_strategy.add_price_event(price_event, symbol='BTC-USD', resolution='30m', init=init)
+    coinbase_strategy.add_price_event(price_event, symbol='BTC-USD', resolution='1h', init=init)
 
     # Start the strategy. This will begin each of the price event ticks
     coinbase_strategy.start()
