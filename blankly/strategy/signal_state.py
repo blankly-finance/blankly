@@ -19,12 +19,13 @@
 import time
 
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface as Interface
-from blankly.utils.utils import AttributeDict
+from blankly.utils.utils import AttributeDict, format_with_new_line
 
 
 class SignalState:
     interface: Interface
     variables: AttributeDict
+    symbols: list
 
     def __init__(self, signal):
         """
@@ -36,6 +37,7 @@ class SignalState:
 
         self.signal = signal
         self.variables = AttributeDict({})
+        self.symbols = signal.symbols
 
     @property
     def interface(self) -> Interface:
@@ -50,3 +52,9 @@ class SignalState:
         Get the current time. This will only the current time because it is not in a backtesting framework
         """
         return time.time()
+
+    def __str__(self):
+        output = ""
+        output = format_with_new_line(output, 'Time: ', self.time)
+        output = format_with_new_line(output, 'Symbols: ', self.symbols)
+        return format_with_new_line(output, 'Variables: ', self.variables)

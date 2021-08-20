@@ -604,7 +604,7 @@ class AttributeDict(dict):
 
 def format_with_new_line(original_string, *components):
     for i in components:
-        original_string += i
+        original_string += str(i)
 
     original_string += '\n'
 
