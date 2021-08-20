@@ -17,7 +17,7 @@
 """
 
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface as Interface
-from blankly.utils.utils import AttributeDict, get_base_asset, get_quote_asset
+from blankly.utils.utils import AttributeDict, get_base_asset, get_quote_asset, format_with_new_line, pretty_print_JSON
 
 
 class StrategyState:
@@ -48,3 +48,17 @@ class StrategyState:
         This will automatically switch to match the correct times during backtesting
         """
         return self.strategy.time()
+
+    def __str__(self):
+        output = ""
+        output = format_with_new_line(output, "Symbol: ", self.symbol)
+
+        output = format_with_new_line(output, "Time: ", self.time)
+
+        output = format_with_new_line(output, "Resolution: ", self.resolution)
+
+        output = format_with_new_line(output, "Variables: ")
+
+        output = format_with_new_line(output, pretty_print_JSON(self.variables, actually_print=False))
+
+        return output

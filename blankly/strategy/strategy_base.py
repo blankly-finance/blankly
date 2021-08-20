@@ -73,8 +73,8 @@ class Strategy:
     def variables(self):
         return self.__variables
 
-    def modify_variable(self, callable, key, value):
-        hashed = hash(callable)
+    def modify_variable(self, callable_: typing.Callable, key, value):
+        hashed = hash(callable_)
         self.__variables[hashed][key] = value
 
     def add_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
@@ -250,7 +250,8 @@ class Strategy:
 
         callback(data, symbol, state)
 
-    def __orderbook_event(self, tick, symbol, user_callback, state_object):
+    @staticmethod
+    def __orderbook_event(tick, symbol, user_callback, state_object):
         user_callback(tick, symbol, state_object)
 
     def add_orderbook_event(self, callback: typing.Callable, symbol: str, init: typing.Callable = None,
