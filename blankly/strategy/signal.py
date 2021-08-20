@@ -16,7 +16,41 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import typing
+
+from typing import List
+from blankly.exchanges.exchange import Exchange
+
 
 class Signal:
-    def __init__(self, evaluator, init=None, teardown=None):
-        pass
+    def __init__(self, exchange: Exchange,
+                 evaluator: typing.Callable,
+                 symbols: List[str],
+                 init: typing.Callable = None,
+                 teardown: typing.Callable = None,
+                 formatter: typing.Callable = None):
+        """
+        Create a new signal.
+
+        This heavily differs from Strategy objects. While a Strategy is optimized for the implementation of
+         short or long-term trading strategies, a Signal is optimized for long-term monitoring & reporting of many
+         symbols. Signals are designed to be scheduled to run over intervals of days & weeks. When deployed live,
+         a signal-based script will only start when scheduled, then exit entirely.
+
+        Args:
+            exchange: An exchange object to construct the signal on
+            evaluator: The function that can take information about a signal & classify that signal based on parameters
+            symbols: A list of symbols to run on.
+            init: Optional setup code to run when the program starts
+            teardown: Optional teardown code to run before the program finishes
+            formatter: Optional formatting function that pretties the results form the evaluator
+        """
+        self.exchange = exchange
+        self.symbols = symbols
+        self.__callables = {
+            'evaluator': evaluator,
+            'init': init,
+            'teardown': teardown,
+            'formatter': formatter
+        }
+

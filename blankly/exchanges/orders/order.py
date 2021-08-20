@@ -49,8 +49,10 @@ class Order:
         self.__order = order
         self.Interface = interface
 
-    def add_new_line(self, input_string, new_line, newline=True):
-        input_string += str(new_line)
+    @staticmethod
+    def add_new_line(input_string, *components, newline=True):
+        for i in components:
+            input_string += str(i)
         if newline:
             input_string += "\n"
         return input_string
@@ -66,20 +68,15 @@ class Order:
         return_string = self.add_new_line(return_string, pretty_print_JSON(self.get_status(full=True),
                                                                            actually_print=False))
 
-        return_string = self.add_new_line(return_string, "ID: ", newline=False)
-        return_string = self.add_new_line(return_string, self.get_id())
+        return_string = self.add_new_line(return_string, "ID: ", self.get_id())
 
-        return_string = self.add_new_line(return_string, "Symbol: ", newline=False)
-        return_string = self.add_new_line(return_string, self.get_asset_id())
+        return_string = self.add_new_line(return_string, "Symbol: ", self.get_asset_id())
 
-        return_string = self.add_new_line(return_string, "Purchase Time: ", newline=False)
-        return_string = self.add_new_line(return_string, self.get_purchase_time())
+        return_string = self.add_new_line(return_string, "Purchase Time: ", self.get_purchase_time())
 
-        return_string = self.add_new_line(return_string, "Type: ", newline=False)
-        return_string = self.add_new_line(return_string, self.get_type())
+        return_string = self.add_new_line(return_string, "Type: ", self.get_type())
 
-        return_string = self.add_new_line(return_string, "Side: ", newline=False)
-        return_string = self.add_new_line(return_string, self.get_side())
+        return_string = self.add_new_line(return_string, "Side: ", self.get_side())
 
         return return_string
 

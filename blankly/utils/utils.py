@@ -602,6 +602,15 @@ class AttributeDict(dict):
         self[attr] = value
 
 
+def format_with_new_line(original_string, *components):
+    for i in components:
+        original_string += i
+
+    original_string += '\n'
+
+    return original_string
+
+
 def trunc(number: float, decimals: int) -> float:
     """
     Truncate a number instead of rounding (ex: trunc(9.9999999, 2) == 9.99 instead of round(9.9999999, 2) == 10.0)
