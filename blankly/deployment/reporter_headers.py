@@ -90,22 +90,26 @@ class Reporter:
         """
         pass
 
-    def email(self, email_str: str):
+    def email(self, email_str: str, smtp_server: str = None, sender_email: str = None, receiver_email: str = None,
+              password: str = None, port: int = 25):
         """
         Send an email to your user account email
 
         This is only active during live deployment on blankly services because it relies on backend infrastructure
         """
-        notify_preferences = load_notify_preferences()
-        port = notify_preferences['port']
-        smtp_server = notify_preferences['stmp_server']
-        sender_email = notify_preferences['sender_email']
-        receiver_email = notify_preferences['receiver_email']
-        password = notify_preferences['password']
+        if smtp_server and sender_email and receiver_email and password and port:
+            pass
+        else:
+            notify_preferences = load_notify_preferences()
+            port = notify_preferences['port']
+            smtp_server = notify_preferences['smtp_server']
+            sender_email = notify_preferences['sender_email']
+            receiver_email = notify_preferences['receiver_email']
+            password = notify_preferences['password']
+
         message = email_str
 
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
             server.login(sender_email, password)
             server.sendmail(sender_email, receiver_email, message)
-

@@ -16,6 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import blankly
+
 import datetime
 import json
 import sys
@@ -196,7 +198,8 @@ def load_notify_preferences(override_path=None) -> dict:
                 preferences = load_json_file(override_path)
         except FileNotFoundError:
             raise FileNotFoundError("To send emails locally, make sure a notify.json file is placed in the same "
-                                    "folder as the project working directory. This is not necessary when deployed on"
+                                    "folder as the project working directory. Or fill the blankly.reporter.email "
+                                    "arguments to always use your SMTP server. This is not necessary when deployed on "
                                     "blankly cloud.")
         preferences = __compare_dicts(default_notify_settings, preferences)
         notify_cache = preferences
@@ -656,3 +659,42 @@ def trunc(number: float, decimals: int) -> float:
     """
     stepper = 10.0 ** decimals
     return math_trunc(stepper * number) / stepper
+
+
+class Email:
+    """
+    Object wrapper for simplifying interaction with SMTP servers & the blankly.reporter.email function.
+
+    Alternatively a notify.json can be created which automatically integrates with blankly.reporter.email()
+    """
+    def __init__(self, smtp_server: str, sender_email: str, password: str, port: int = 465):
+        """
+        Create the email wrapper:
+
+        Args:
+            smtp_server: The address of the smtp server
+            sender_email: The email attached to the smtp account
+            password: The password to log into SMTP
+            port: SMTP port - sometimes will fail if not 465
+        """
+        self.__server = smtp_server
+        self.__sender_email = sender_email
+        self.__password = password
+        self.__port = port
+
+    def send(self, receiver_email: str, message: str):
+        """
+        Send an email to the receiver_email specified
+
+        Args:
+            receiver_email (str): The email that the message is sent to
+            message (str): The body of the message
+        """
+        print(message)
+        print(self.__server)
+        print(self.__sender_email)
+        print(receiver_email)
+        print(self.__password)
+        print(self.__port)
+        blankly.reporter.email(email_str=message, smtp_server=self.__server, sender_email=self.__sender_email,
+                               receiver_email=receiver_email, password=self.__password, port=self.__port)
