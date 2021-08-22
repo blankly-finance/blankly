@@ -69,14 +69,13 @@ class Signal:
             'formatter': formatter
         }
         self.interface = exchange.interface
+        self.resolution = resolution
 
         # Creat the signal state and pass in this signal object
         self.signal_state = SignalState(self)
 
         self.raw_results = {}
         self.formatted_results = {}
-
-        self.resolution = resolution
 
         blankly.reporter.export_signal(self)
 
@@ -123,6 +122,8 @@ class Signal:
             teardown(self.signal_state)
 
         self.symbols = self.signal_state.symbols
+
+        blankly.reporter.export_signal_result(self)
 
     def notify(self, message: str = None):
         """

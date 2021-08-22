@@ -70,7 +70,17 @@ class Reporter:
         else:
             raise RuntimeError("Currently only a single signal can be exported per model.")
 
-    def log_strategy_event(self, strategy_object, event_name, **kwargs):
+    def export_signal_result(self, signal: Signal):
+        """
+        Re-export for the finished signal result
+
+        Args:
+            signal: A signal object to export
+        """
+
+        pass
+
+    def log_strategy_event(self, strategy_object, event_name, response, **kwargs):
         """
         Export a strategy event that has occurred
         """

@@ -42,7 +42,7 @@ class StrategyLogger(ABCExchangeInterface):
         out = self.interface.get_account(symbol)
 
         # Log this with the account info as well as the account it was attached to
-        blankly.reporter.log_strategy_event(self.strategy, 'get_account', symbol=symbol, account=out)
+        blankly.reporter.log_strategy_event(self.strategy, 'get_account', out, symbol=symbol, account=out)
         return out
     
     def get_products(self):
@@ -69,7 +69,7 @@ class StrategyLogger(ABCExchangeInterface):
         out = self.interface.market_order(symbol, side, funds)
 
         # Record this market order along with the arguments
-        blankly.reporter.log_strategy_event(self.strategy, 'market_order',
+        blankly.reporter.log_strategy_event(self.strategy, 'market_order', out,
                                             symbol=symbol, side=side,
                                             funds=funds)
         return out
@@ -78,7 +78,7 @@ class StrategyLogger(ABCExchangeInterface):
         out = self.interface.limit_order(symbol, side, price, size)
 
         # Record limit order along with the arguments
-        blankly.reporter.log_strategy_event(self.strategy, 'limit_order',
+        blankly.reporter.log_strategy_event(self.strategy, 'limit_order', out,
                                             symbol=symbol, side=side,
                                             price=price, size=size)
         return out
@@ -87,7 +87,7 @@ class StrategyLogger(ABCExchangeInterface):
         out = self.interface.cancel_order(symbol, order_id)
 
         # Record the cancellation along with the arguments
-        blankly.reporter.log_strategy_event(self.strategy, 'cancel_order',
+        blankly.reporter.log_strategy_event(self.strategy, 'cancel_order', out,
                                             symbol=symbol, order_id=order_id)
         return out
 

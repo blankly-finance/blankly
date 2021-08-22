@@ -38,6 +38,7 @@ class SignalState:
         self.signal = signal
         self.variables = AttributeDict({})
         self.symbols = signal.symbols
+        self.resolution = signal.resolution
 
     @property
     def interface(self) -> Interface:
