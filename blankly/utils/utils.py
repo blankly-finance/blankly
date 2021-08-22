@@ -61,6 +61,9 @@ settings_path_override = None
 backtest_cache = None
 backtest_path_override = None
 
+notify_cache = None
+notify_path_override = None
+
 # Copy of settings to compare defaults vs overrides
 default_global_settings = {
     "settings": {
@@ -94,7 +97,14 @@ default_backtest_settings = {
     "resample_account_value_for_metrics": "1d",
     "quote_account_value_in": "USD",
     "ignore_user_exceptions": False
+}
 
+default_notify_settings = {
+    "port": 465,
+    "smtp_server": "smtp.website.com",
+    "sender_email": "email_attached_to_smtp_account@web.com",
+    "receiver_email": "email_to_send_to@web.com",
+    'password': 'my_password'
 }
 
 
@@ -167,6 +177,31 @@ def load_user_preferences(override_path=None) -> dict:
         return preferences
     else:
         return settings_cache
+
+
+def load_notify_preferences(override_path=None) -> dict:
+    global notify_cache
+    global notify_path_override
+
+    if override_path is None and notify_path_override is not None:
+        override_path = notify_path_override
+    elif override_path is not None:
+        notify_path_override = override_path
+
+    if notify_cache is None:
+        try:
+            if override_path is None:
+                preferences = load_json_file('./notify.json')
+            else:
+                preferences = load_json_file(override_path)
+        except FileNotFoundError:
+            raise FileNotFoundError("To send emails locally, make sure a notify.json file is placed in the same "
+                                    "folder as the project working directory. This is not necessary when deployed on"
+                                    "blankly cloud.")
+        preferences = __compare_dicts(default_notify_settings, preferences)
+        notify_cache = preferences
+
+        return preferences
 
 
 def pretty_print_JSON(json_object, actually_print=True):
