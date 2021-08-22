@@ -16,8 +16,12 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import smtplib
+import ssl
+
 from typing import Any
 
+from blankly.utils.utils import load_notify_preferences
 from blankly.strategy.strategy_base import Strategy
 from blankly.strategy.signal import Signal
 
@@ -92,4 +96,16 @@ class Reporter:
 
         This is only active during live deployment on blankly services because it relies on backend infrastructure
         """
-        pass
+        notify_preferences = load_notify_preferences()
+        port = notify_preferences['port']
+        smtp_server = notify_preferences['stmp_server']
+        sender_email = notify_preferences['sender_email']
+        receiver_email = notify_preferences['receiver_email']
+        password = notify_preferences['password']
+        message = email_str
+
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+            server.login(sender_email, password)
+            server.sendmail(sender_email, receiver_email, message)
+
