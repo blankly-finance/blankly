@@ -690,11 +690,5 @@ class Email:
             receiver_email (str): The email that the message is sent to
             message (str): The body of the message
         """
-        print(message)
-        print(self.__server)
-        print(self.__sender_email)
-        print(receiver_email)
-        print(self.__password)
-        print(self.__port)
         blankly.reporter.email(email_str=message, smtp_server=self.__server, sender_email=self.__sender_email,
                                receiver_email=receiver_email, password=self.__password, port=self.__port)
