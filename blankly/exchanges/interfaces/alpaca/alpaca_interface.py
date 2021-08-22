@@ -390,8 +390,8 @@ class AlpacaInterface(ExchangeInterface):
 
     def history(self,
                 symbol: str,
-                to: Union[str, int] = None,
-                resolution: Union[str, float] = '1d',
+                to: Union[str, int] = 200,
+                resolution: Union[str, int] = '1d',
                 start_date: Union[str, dt, float] = None,
                 end_date: Union[str, dt, float] = None,
                 return_as: str = 'df'):

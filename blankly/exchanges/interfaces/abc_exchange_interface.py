@@ -62,7 +62,7 @@ class ABCExchangeInterface(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_products(self):
+    def get_products(self) -> list:
         """
         Get all trading pairs on the exchange & some information about the exchange limits.
 
