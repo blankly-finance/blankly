@@ -397,10 +397,6 @@ class AlpacaInterface(ExchangeInterface):
                 return_as: str = 'df'):
 
         assert isinstance(self.calls, alpaca_trade_api.REST)
-        if not to and not start_date:
-            raise ValueError("history() call needs only 1 of {start_date, to} defined")
-        if to and start_date:
-            raise ValueError("history() call needs only 1 of {start_date, to} defined")
 
         if not end_date:
             end_date = dt.now(tz=timezone.utc)
