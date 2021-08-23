@@ -176,6 +176,9 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 end_date: Union[str, dt, float] = None,
                 return_as: str = 'df'):
 
+        if start_date is not None and end_date is not None:
+            to = None
+
         to_present = False
         if end_date is None:
             to_present = True
@@ -291,7 +294,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
 
         return date
 
-    def __evaluate_multiples(self, valid_resolutions: list, resolution_seconds: float):
+    def evaluate_multiples(self, valid_resolutions: list, resolution_seconds: float):
         found_multiple = -1
         for multiple in reversed(valid_resolutions):
             if resolution_seconds % multiple == 0:

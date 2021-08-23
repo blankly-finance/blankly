@@ -321,7 +321,7 @@ class AlpacaInterface(ExchangeInterface):
             resolution = supported_multiples[min(range(len(supported_multiples)),
                                              key=lambda i: abs(supported_multiples[i] - resolution))]
 
-        found_multiple, row_divisor = self.__evaluate_multiples(supported_multiples, resolution)
+        found_multiple, row_divisor = super().evaluate_multiples(supported_multiples, resolution)
 
         if found_multiple == 60:
             time_interval = TimeFrame.Minute
