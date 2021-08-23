@@ -19,10 +19,8 @@
 import time
 import warnings
 from datetime import datetime as dt, timezone
-from typing import Union
 
 import alpaca_trade_api
-import dateparser
 import pandas as pd
 from alpaca_trade_api.rest import APIError as AlpacaAPIError, TimeFrame
 from dateutil import parser
@@ -40,7 +38,7 @@ NY = 'America/New_York'
 
 class AlpacaInterface(ExchangeInterface):
     def __init__(self, authenticated_API: API, preferences_path: str):
-        super().__init__('alpaca', authenticated_API, preferences_path)
+        super().__init__('alpaca', authenticated_API, preferences_path, valid_resolutions=[60, 60*5, 60*15, 60*60*24])
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
     def init_exchange(self):
@@ -356,100 +354,68 @@ class AlpacaInterface(ExchangeInterface):
 
         return utils.get_ohlcv(bars, row_divisor, from_zero=False)
 
-    def __evaluate_multiples(self, alpaca_v1_resolutions, resolution_seconds):
-        found_multiple = -1
-        for multiple in reversed(alpaca_v1_resolutions):
-            if resolution_seconds % multiple == 0:
-                found_multiple = multiple
-                break
-        if found_multiple < 0:
-            raise ValueError("alpaca currently does not support this specific resolution, please make the resolution a "
-                             "multiple of 1 minute, 1 hour or 1 day")
+    # def history(self,
+    #             symbol: str,
+    #             to: Union[str, int] = 200,
+    #             resolution: Union[str, int] = '1d',
+    #             start_date: Union[str, dt, float] = None,
+    #             end_date: Union[str, dt, float] = None,
+    #             return_as: str = 'df'):
+    #
+    #     assert isinstance(self.calls, alpaca_trade_api.REST)
+    #
+    #     if not end_date:
+    #         end_date = dt.now(tz=timezone.utc)
+    #
+    #     end_date = self.__convert_times(end_date)
+    #
+    #     if start_date:
+    #         start_date = self.__convert_times(start_date)
+    #
+    #     alpaca_v1_resolutions = [60 * 1, 60 * 5, 60 * 15, 60 * 60 * 24]
+    #
+    #     # convert resolution into epoch seconds
+    #     resolution_seconds = time_interval_to_seconds(resolution)
+    #
+    #     found_multiple, row_divisor = self.__evaluate_multiples(alpaca_v1_resolutions, resolution_seconds)
+    #
+    #     if found_multiple == 60:
+    #         time_interval = '1Min'
+    #     elif found_multiple == 60 * 5:
+    #         time_interval = '5Min'
+    #     elif found_multiple == 60 * 15:
+    #         time_interval = '15Min'
+    #     elif found_multiple == 60 * 60 * 24:
+    #         time_interval = '1D'
+    #     else:
+    #         time_interval = 'failed'
+    #
+    #     if to:
+    #         aggregated_limit = to * row_divisor
+    #         bars = self.calls.get_barset(symbol, time_interval, limit=int(aggregated_limit),
+    #         end=end_date.isoformat())[
+    #             symbol]
+    #         return_df = pd.DataFrame(bars)
+    #         return_df.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
+    #                          inplace=True)
+    #
+    #         history = utils.get_ohlcv(return_df, row_divisor, from_zero=True)
+    #
+    #     else:
+    #         # bars = self.calls.get_barset(symbol, time_interval, start=start_date.isoformat(),
+    #         # end=end_date.isoformat())[symbol]
+    #         history = self.get_product_history(symbol,
+    #                                            start_date.timestamp(),
+    #                                            end_date.timestamp(),
+    #                                            int(resolution_seconds))
+    #
+    #     return super().cast_type(history, return_as)
+    #     # return_df = pd.DataFrame(bars)
+    #     # return_df.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
+    #     # inplace=True)
+    #     #
+    #     # return utils.get_ohlcv_2(return_df, row_divisor)
 
-        row_divisor = resolution_seconds / found_multiple
-        row_divisor = int(row_divisor)
-
-        if row_divisor > 100:
-            raise Warning("The resolution you requested is an extremely high of the base resolutions supported and may "
-                          "slow down the performance of your model: {} * {}".format(found_multiple, row_divisor))
-
-        return found_multiple, row_divisor
-
-    def __convert_times(self, date):
-        # convert start_date to datetime object
-        if isinstance(date, str):
-            date = dateparser.parse(date)
-        elif isinstance(date, float):
-            date = dt.fromtimestamp(date)
-
-        # end_date object is naive datetime, so need to convert
-        if date.tzinfo is None or date.tzinfo.utcoffset(date) is None:
-            date = date.replace(tzinfo=timezone.utc)
-
-        return date
-
-    def history(self,
-                symbol: str,
-                to: Union[str, int] = 200,
-                resolution: Union[str, int] = '1d',
-                start_date: Union[str, dt, float] = None,
-                end_date: Union[str, dt, float] = None,
-                return_as: str = 'df'):
-
-        assert isinstance(self.calls, alpaca_trade_api.REST)
-
-        if not end_date:
-            end_date = dt.now(tz=timezone.utc)
-
-        end_date = self.__convert_times(end_date)
-
-        if start_date:
-            start_date = self.__convert_times(start_date)
-
-        alpaca_v1_resolutions = [60 * 1, 60 * 5, 60 * 15, 60 * 60 * 24]
-
-        # convert resolution into epoch seconds
-        resolution_seconds = time_interval_to_seconds(resolution)
-
-        found_multiple, row_divisor = self.__evaluate_multiples(alpaca_v1_resolutions, resolution_seconds)
-
-        if found_multiple == 60:
-            time_interval = '1Min'
-        elif found_multiple == 60 * 5:
-            time_interval = '5Min'
-        elif found_multiple == 60 * 15:
-            time_interval = '15Min'
-        elif found_multiple == 60 * 60 * 24:
-            time_interval = '1D'
-        else:
-            time_interval = 'failed'
-
-        if to:
-            aggregated_limit = to * row_divisor
-            bars = self.calls.get_barset(symbol, time_interval, limit=int(aggregated_limit), end=end_date.isoformat())[
-                symbol]
-            return_df = pd.DataFrame(bars)
-            return_df.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
-                             inplace=True)
-
-            history = utils.get_ohlcv(return_df, row_divisor, from_zero=True)
-
-        else:
-            # bars = self.calls.get_barset(symbol, time_interval, start=start_date.isoformat(),
-            # end=end_date.isoformat())[symbol]
-            history = self.get_product_history(symbol,
-                                               start_date.timestamp(),
-                                               end_date.timestamp(),
-                                               int(resolution_seconds))
-
-        return super().cast_type(history, return_as)
-        # return_df = pd.DataFrame(bars)
-        # return_df.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
-        # inplace=True)
-        #
-        # return utils.get_ohlcv_2(return_df, row_divisor)
-
-    # TODO: tbh not sure how this one works or if it applies to alpaca
     def get_order_filter(self, symbol: str):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         current_price = self.get_price(symbol)

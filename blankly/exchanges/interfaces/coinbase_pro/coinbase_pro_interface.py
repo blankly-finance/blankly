@@ -32,7 +32,7 @@ from blankly.utils.exceptions import APIException, InvalidOrder
 
 class CoinbaseProInterface(ExchangeInterface):
     def __init__(self, exchange_name, authenticated_API):
-        super().__init__(exchange_name, authenticated_API)
+        super().__init__(exchange_name, authenticated_API, valid_resolutions=[60, 300, 900, 3600, 21600, 86400])
 
     def init_exchange(self):
         fees = self.calls.get_fees()
