@@ -417,7 +417,7 @@ class AlpacaInterface(ExchangeInterface):
     #     #
     #     # return utils.get_ohlcv_2(return_df, row_divisor)
 
-    def overriden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
+    def overriden_history(self, symbol, epoch_start, epoch_stop, resolution_seconds, **kwargs) -> pd.DataFrame:
         to = kwargs['to']
         if to:
             resolution_seconds = self.valid_resolutions[min(range(len(self.valid_resolutions)),
@@ -437,11 +437,13 @@ class AlpacaInterface(ExchangeInterface):
             response.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v":
                             "volume"}, inplace=True)
 
+            response['volume'] = response['volume'].astype(float)
+
         else:
             response = self.get_product_history(symbol,
                                                 epoch_start,
                                                 epoch_stop,
-                                                int(resolution))
+                                                int(resolution_seconds))
 
         return response
 
