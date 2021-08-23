@@ -220,7 +220,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         else:
             epoch_start = utils.convert_input_to_epoch(start_date)
 
-        response = self.overriden_history(symbol, epoch_start, epoch_stop, resolution, to=to,)
+        response = self.overriden_history(symbol, epoch_start, epoch_stop, resolution_seconds, to=to,)
 
         # Add a check to make sure that coinbase pro has updated
         if to_present and self.get_exchange_type() == "coinbase_pro":
