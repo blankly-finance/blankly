@@ -35,7 +35,12 @@ from blankly.utils.exceptions import APIException
 
 class OandaInterface(ExchangeInterface):
     def __init__(self, authenticated_API: OandaAPI, preferences_path: str):
-        super().__init__('oanda', authenticated_API, preferences_path)
+        super().__init__('oanda', authenticated_API, preferences_path, valid_resolutions=[5, 10, 15, 30, 60,
+                                                                                          60 * 2, 60 * 4, 60 * 5,
+                                                                                          60 * 10, 60 * 15, 60 * 30,
+                                                                                          60 * 60, 60 * 60 * 24,
+                                                                                          60 * 60 * 24 * 7,
+                                                                                          60 * 60 * 24 * 30])
         assert isinstance(self.calls, OandaAPI)
 
     def init_exchange(self):
@@ -387,9 +392,9 @@ class OandaInterface(ExchangeInterface):
         return order
 
     @staticmethod
-    def __evaluate_multiples(alpaca_v1_resolutions, resolution_seconds):
+    def __evaluate_multiples(valid_resolutions, resolution_seconds):
         found_multiple = -1
-        for multiple in reversed(alpaca_v1_resolutions):
+        for multiple in reversed(valid_resolutions):
             if resolution_seconds % multiple == 0:
                 found_multiple = multiple
                 break

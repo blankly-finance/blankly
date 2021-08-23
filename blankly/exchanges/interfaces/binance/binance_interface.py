@@ -31,7 +31,9 @@ from blankly.exchanges.orders.market_order import MarketOrder
 
 class BinanceInterface(ExchangeInterface):
     def __init__(self, exchange_name, authenticated_API):
-        super().__init__(exchange_name, authenticated_API)
+        super().__init__(exchange_name, authenticated_API, valid_resolutions=[60, 180, 300, 900, 1800, 3600, 7200,
+                                                                              14400, 21600, 28800, 43200, 86400, 259200,
+                                                                              604800, 2592000])
 
     def init_exchange(self):
         try:
