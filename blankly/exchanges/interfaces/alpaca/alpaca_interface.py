@@ -21,6 +21,7 @@ import warnings
 from datetime import datetime as dt, timezone
 
 import alpaca_trade_api
+import dateparser
 import pandas as pd
 from alpaca_trade_api.rest import APIError as AlpacaAPIError, TimeFrame
 from dateutil import parser
@@ -415,6 +416,47 @@ class AlpacaInterface(ExchangeInterface):
     #     # inplace=True)
     #     #
     #     # return utils.get_ohlcv_2(return_df, row_divisor)
+
+    def overriden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
+        to = kwargs['to']
+        if to:
+            resolution_seconds = self.valid_resolutions[min(range(len(self.valid_resolutions)),
+                                                            key=lambda i: abs(self.valid_resolutions[i] -
+                                                                              resolution_seconds))]
+            resolution_lookup = {
+                60: '1Min',
+                300: '5Min',
+                900: '15Min',
+                86400: '1D'
+            }
+            time_interval = resolution_lookup[resolution_seconds]
+            response = self.calls.get_barset(symbol, time_interval, limit=to,
+                                             end=utils.ISO8601_from_epoch(epoch_stop))[symbol]
+
+            response = pd.DataFrame(response)
+            response.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v":
+                            "volume"}, inplace=True)
+
+        else:
+            response = self.get_product_history(symbol,
+                                                epoch_start,
+                                                epoch_stop,
+                                                int(resolution))
+
+        return response
+
+    def __convert_times(self, date):  # There aren't any usages of this
+        # convert start_date to datetime object
+        if isinstance(date, str):
+            date = dateparser.parse(date)
+        elif isinstance(date, float):
+            date = dt.fromtimestamp(date)
+
+        # end_date object is naive datetime, so need to convert
+        if date.tzinfo is None or date.tzinfo.utcoffset(date) is None:
+            date = date.replace(tzinfo=timezone.utc)
+
+        return date
 
     def get_order_filter(self, symbol: str):
         assert isinstance(self.calls, alpaca_trade_api.REST)

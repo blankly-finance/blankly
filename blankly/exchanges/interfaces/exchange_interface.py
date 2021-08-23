@@ -34,7 +34,7 @@ from blankly.utils.time_builder import time_interval_to_seconds
 
 # TODO: need to add a cancel all orders function
 class ExchangeInterface(ABCExchangeInterface, abc.ABC):
-    def __init__(self, exchange_name, authenticated_API, preferences_path=None, valid_resolutions: list = None):
+    def __init__(self, exchange_name, authenticated_API, preferences_path=None, valid_resolutions=None):
         self.exchange_name = exchange_name
         self.calls = authenticated_API
         self.valid_resolutions = valid_resolutions
@@ -220,32 +220,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         else:
             epoch_start = utils.convert_input_to_epoch(start_date)
 
-        if self.get_exchange_type() != "alpaca":
-            response = self.get_product_history(symbol, epoch_start, epoch_stop, resolution_seconds)
-        else:
-            if to:
-                resolution_seconds = self.valid_resolutions[min(range(len(self.valid_resolutions)),
-                                                            key=lambda i: abs(self.valid_resolutions[i] -
-                                                                              resolution_seconds))]
-                resolution_lookup = {
-                    60: '1Min',
-                    300: '5Min',
-                    900: '15Min',
-                    86400: '1D'
-                }
-                time_interval = resolution_lookup[resolution_seconds]
-                response = self.calls.get_barset(symbol, time_interval, limit=to,
-                                                 end=self.__convert_times(end_date).isoformat())[symbol]
-
-                response = pd.DataFrame(response)
-                response.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
-                                inplace=True)
-
-            else:
-                response = self.get_product_history(symbol,
-                                                    self.__convert_times(start_date).timestamp(),
-                                                    self.__convert_times(end_date).timestamp(),
-                                                    int(resolution_seconds))
+        response = self.overriden_history(symbol, epoch_start, epoch_stop, resolution, to=to,)
 
         # Add a check to make sure that coinbase pro has updated
         if to_present and self.get_exchange_type() == "coinbase_pro":
@@ -281,18 +256,8 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
 
         return self.cast_type(response, return_as)
 
-    def __convert_times(self, date):
-        # convert start_date to datetime object
-        if isinstance(date, str):
-            date = dateparser.parse(date)
-        elif isinstance(date, float):
-            date = dt.fromtimestamp(date)
-
-        # end_date object is naive datetime, so need to convert
-        if date.tzinfo is None or date.tzinfo.utcoffset(date) is None:
-            date = date.replace(tzinfo=timezone.utc)
-
-        return date
+    def overriden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
+        return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
     def evaluate_multiples(self, valid_resolutions: list, resolution_seconds: float):
         found_multiple = -1
@@ -301,7 +266,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 found_multiple = multiple
                 break
         if found_multiple < 0:
-            raise ValueError("alpaca currently does not support this specific resolution, please make the resolution a "
+            raise ValueError("This exchange currently does not support this specific resolution, try making it a "
                              "multiple of 1 minute, 1 hour or 1 day")
 
         row_divisor = resolution_seconds / found_multiple
