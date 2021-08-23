@@ -9,7 +9,7 @@ SIGNAL_PERIOD = 9
 
 
 def init(symbol, state: StrategyState):
-    interface: Interface = state.interface
+    interface = state.interface
     resolution = state.resolution
     variables = state.variables
     # initialize the historical data
