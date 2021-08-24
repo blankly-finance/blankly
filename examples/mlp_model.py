@@ -13,10 +13,10 @@ def init(symbol, state: StrategyState):
     interface: Interface = state.interface
     resolution = state.resolution
     variables = state.variables
-    X, y = make_classification(n_samples=500, n_features=3, n_informative=3, n_redundant=0, random_state=1)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=1)
+    x, y = make_classification(n_samples=500, n_features=3, n_informative=3, n_redundant=0, random_state=1)
+    x_train, x_test, y_train, y_test = train_test_split(x, y, stratify=y, random_state=1)
     # initialize the historical data
-    variables['model'] = MLPClassifier(random_state=1, max_iter=10000).fit(X_train, y_train)
+    variables['model'] = MLPClassifier(random_state=1, max_iter=10000).fit(x_train, y_train)
     variables['history'] = interface.history(symbol, 300, resolution, return_as='list')['close']
     variables['has_bought'] = False
 

@@ -39,7 +39,10 @@ def price_event(price, symbol, state: StrategyState):
         variables['owns_position'] = False
 
 
-alpaca = Alpaca()
-s = Strategy(alpaca)
-s.add_price_event(price_event, 'MSFT', resolution='1d', init=init)
-s.backtest(initial_values={'USD': 10000}, to='2y')
+if __name__ == "__main__":
+    alpaca = Alpaca()
+    s = Strategy(alpaca)
+    s.add_price_event(price_event, 'MSFT', resolution='1d', init=init)
+    s.backtest(initial_values={'USD': 10000}, to='2y')
+    # Or just run it directly on the exchange
+    # s.start()
