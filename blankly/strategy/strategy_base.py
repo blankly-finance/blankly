@@ -243,7 +243,11 @@ class Strategy:
             data = get_ohlcv_from_list(list(reversed(ticker_feed[close_index:open_index])), last_price)
 
         else:
-            data = self.Ticker_Manager.get_most_recent_tick(override_symbol=symbol)['price']
+            try:
+                data = self.Ticker_Manager.get_most_recent_tick(override_symbol=symbol)['price']
+            except TypeError:
+                warnings.warn("No valid data yet - using rest.")
+                data = self.Interface.get_price(symbol)
 
         state.variables = variables
         state.resolution = resolution

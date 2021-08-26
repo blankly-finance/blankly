@@ -32,6 +32,24 @@ from blankly.exchanges.auth.auth_constructor import load_auth
 from blankly.exchanges.interfaces.alpaca.alpaca_websocket_utils import parse_alpaca_timestamp, switch_type
 
 
+def subscribe(ws, channel, symbol):
+    ws.send(
+        msgpack.packb({
+            'action': 'subscribe',
+            channel: tuple([symbol]),
+        })
+    )
+
+
+def unsubscribe(ws, channel):
+    ws.send(
+        msgpack.packb({
+            'action': 'unsubscribe',
+            channel: (),
+        })
+    )
+
+
 def create_ticker_connection(symbol, url, channel):
     ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE}, header={'Content-Type': 'application/msgpack'})
     _, auth = load_auth('alpaca')
@@ -46,16 +64,17 @@ def create_ticker_connection(symbol, url, channel):
     if response[0]['msg'] != 'connected':
         warnings.warn("Connection failed.")
 
-    ws.send(
-        msgpack.packb({
-            'action': 'subscribe',
-            channel: tuple([symbol]),
-        })
-    )
-
+    subscribe(ws, channel, symbol)
     response = msgpack.unpackb(ws.recv())
     if response[0]['msg'] != 'authenticated':
-        warnings.warn("Authentication failed.")
+        if response[0]['msg'] == 'connection limit exceeded':
+            # Unsubscribe and resubscribe
+            unsubscribe(ws, channel)
+            print(msgpack.unpackb(ws.recv()))
+            subscribe(ws, channel, symbol)
+            print(msgpack.unpackb(ws.recv()))
+        else:
+            warnings.warn("Authentication failed.")
 
     return ws
 
@@ -142,12 +161,15 @@ class Tickers(ABCExchangeWebsocket):
             # In case the user closes while its reading from the websocket, this will let it expire
             persist_connected = self.ws.connected
             try:
-                received = msgpack.unpackb(self.ws.recv())[0]  # type: dict
+                received = self.ws.recv()
+                received = msgpack.unpackb(received)[0]  # type: dict
                 # Modify time to use epoch
 
                 if 't' in received:
                     received['t'] = parse_alpaca_timestamp(received['t'])
                     recent_time = received['t']
+                elif 'code' in received:
+                    continue
                 else:
                     recent_time = time.time()
 
