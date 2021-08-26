@@ -430,7 +430,8 @@ class AlpacaInterface(ExchangeInterface):
                 86400: '1D'
             }
             time_interval = resolution_lookup[resolution_seconds]
-            response = self.calls.get_barset(symbol, time_interval, limit=to,
+            response = self.calls.get_barset(symbol, time_interval, limit=int(((epoch_stop-epoch_start) /
+                                                                               resolution_seconds)),
                                              end=utils.ISO8601_from_epoch(epoch_stop))[symbol]
 
             response = pd.DataFrame(response)
