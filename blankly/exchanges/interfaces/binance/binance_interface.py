@@ -644,27 +644,30 @@ class BinanceInterface(ExchangeInterface):
         data_frame = pd.DataFrame(history_block, columns=['time', 'open', 'high', 'low', 'close', 'volume',
                                                           'close time', 'quote asset volume', 'number of trades',
                                                           'taker buy base asset volume',
-                                                          'taker buy quote asset volume', 'ignore'])
+                                                          'taker buy quote asset volume', 'ignore'], dtype=None)
         # Clear the ignore column, why is that there binance?
         del data_frame['ignore']
+
         # Want them in this order: ['time (epoch)', 'low', 'high', 'open', 'close', 'volume']
 
+        # Time is so big it has to be cast separately for windows
+        data_frame['time'] = data_frame['time'].div(1000).astype(int)
+
         # Cast dataframe
-        data_frame = data_frame.astype({'time': int,
-                                        'open': float,
-                                        'high': float,
-                                        'low': float,
-                                        'close': float,
-                                        'volume': float,
-                                        'close time': int,
-                                        'quote asset volume': float,
-                                        'number of trades': int,
-                                        'taker buy base asset volume': float,
-                                        'taker buy quote asset volume': float
-                                        })
+        data_frame = data_frame.astype({
+            'open': float,
+            'high': float,
+            'low': float,
+            'close': float,
+            'volume': float,
+            'close time': int,
+            'quote asset volume': float,
+            'number of trades': int,
+            'taker buy base asset volume': float,
+            'taker buy quote asset volume': float
+        })
 
         # Convert time to seconds
-        data_frame['time'] = data_frame['time'].div(1000).astype(int)
         return data_frame.reindex(columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 
     """
