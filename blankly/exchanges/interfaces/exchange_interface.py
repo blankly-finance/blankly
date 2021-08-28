@@ -34,14 +34,13 @@ from blankly.utils.time_builder import time_interval_to_seconds
 
 # TODO: need to add a cancel all orders function
 class ExchangeInterface(ABCExchangeInterface, abc.ABC):
-    def __init__(self, exchange_name, authenticated_API, preferences_path=None, valid_resolutions=None):
+    def __init__(self, exchange_name, authenticated_api, preferences_path=None, valid_resolutions=None):
         self.exchange_name = exchange_name
-        self.calls = authenticated_API
+        self.calls = authenticated_api
         self.valid_resolutions = valid_resolutions
         # Reload user preferences here
         self.user_preferences = utils.load_user_preferences(preferences_path)
 
-        # TODO, improve creation of its own properties
         self.exchange_properties = None
         # Some exchanges like binance will not return a value of 0.00 if there is no balance
         self.available_currencies = {}
@@ -184,7 +183,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
             to_present = True
 
         # convert resolution into epoch seconds
-        resolution_seconds = time_interval_to_seconds(resolution)
+        resolution_seconds = int(time_interval_to_seconds(resolution))
 
         if end_date is None:
             # Figure out the next point and then subtract to the last stamp
@@ -220,7 +219,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         else:
             epoch_start = utils.convert_input_to_epoch(start_date)
 
-        response = self.overriden_history(symbol, epoch_start, epoch_stop, resolution_seconds, to=to,)
+        response = self.overridden_history(symbol, epoch_start, epoch_stop, resolution_seconds, to=to,)
 
         # Add a check to make sure that coinbase pro has updated
         if to_present and self.get_exchange_type() == "coinbase_pro":
@@ -256,10 +255,11 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
 
         return self.cast_type(response, return_as)
 
-    def overriden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
+    def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
         return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
-    def evaluate_multiples(self, valid_resolutions: list, resolution_seconds: float):
+    @staticmethod
+    def evaluate_multiples(valid_resolutions: list, resolution_seconds: float):
         found_multiple = -1
         for multiple in reversed(valid_resolutions):
             if resolution_seconds % multiple == 0:
@@ -278,7 +278,8 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
 
         return found_multiple, row_divisor
 
-    def cast_type(self, response: pd.DataFrame, return_as: str):
+    @staticmethod
+    def cast_type(response: pd.DataFrame, return_as: str):
         if return_as != 'df' and return_as != 'deque':
             return response.to_dict(return_as)
         elif return_as == 'deque':
@@ -323,7 +324,8 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
     Accepted -> live -> done -> settled
     """
 
-    def homogenize_order_status(self, exchange, status):
+    @staticmethod
+    def homogenize_order_status(exchange, status):
         if exchange == "binance":
             if status == "new":
                 return "open"

@@ -152,7 +152,7 @@ def main():
         bot = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/rsi.py')
         create_and_write_file('bot.py', bot.text)
 
-        print("Writing defaults...")
+        print("Writing deployment defaults...")
         # Interpret defaults and write to this folder
         py_version = platform.python_version_tuple()
         deploy = {
@@ -161,10 +161,10 @@ def main():
             "requirements": "./requirements.txt",
             "working_directory": "."
         }
-        create_and_write_file('deploy.json', json.dumps(deploy, indent=2))
+        create_and_write_file('blankly.json', json.dumps(deploy, indent=2))
 
         # Write in a blank requirements file
-        create_and_write_file('requirements.txt', None)
+        create_and_write_file('requirements.txt', 'blankly')
 
         try:
             os.mkdir('./blankly_dist')
