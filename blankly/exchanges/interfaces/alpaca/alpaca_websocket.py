@@ -195,7 +195,7 @@ class Tickers(ABCExchangeWebsocket):
                     traceback.print_exc()
 
                 counter += 1
-            except Exception as e:
+            except Exception:
                 traceback.print_exc()
                 if persist_connected:
                     pass

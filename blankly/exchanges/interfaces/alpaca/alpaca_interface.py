@@ -417,7 +417,7 @@ class AlpacaInterface(ExchangeInterface):
     #     #
     #     # return utils.get_ohlcv_2(return_df, row_divisor)
 
-    def overriden_history(self, symbol, epoch_start, epoch_stop, resolution_seconds, **kwargs) -> pd.DataFrame:
+    def overridden_history(self, symbol, epoch_start, epoch_stop, resolution_seconds, **kwargs) -> pd.DataFrame:
         to = kwargs['to']
         if to:
             resolution_seconds = self.valid_resolutions[min(range(len(self.valid_resolutions)),
@@ -430,8 +430,7 @@ class AlpacaInterface(ExchangeInterface):
                 86400: '1D'
             }
             time_interval = resolution_lookup[resolution_seconds]
-            response = self.calls.get_barset(symbol, time_interval, limit=int(((epoch_stop-epoch_start) /
-                                                                               resolution_seconds)),
+            response = self.calls.get_barset(symbol, time_interval, limit=to,
                                              end=utils.ISO8601_from_epoch(epoch_stop))[symbol]
 
             response = pd.DataFrame(response)
@@ -448,7 +447,8 @@ class AlpacaInterface(ExchangeInterface):
 
         return response
 
-    def __convert_times(self, date):  # There aren't any usages of this
+    @staticmethod
+    def __convert_times(date):  # There aren't any usages of this
         # convert start_date to datetime object
         if isinstance(date, str):
             date = dateparser.parse(date)

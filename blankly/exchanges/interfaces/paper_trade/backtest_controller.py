@@ -28,7 +28,6 @@ from bokeh.palettes import Category10_10
 from bokeh.plotting import ColumnDataSource, figure, show
 
 import blankly.exchanges.interfaces.paper_trade.metrics as metrics
-import blankly.utils.utils
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
 from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface

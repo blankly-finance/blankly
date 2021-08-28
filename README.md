@@ -139,7 +139,7 @@ if __name__ == "__main__":
 
 ## Bugs
 
-Please report any bugs or issues on the Github's Issues page.
+Please report any bugs or issues on the GitHub's Issues page.
 
 ## Disclaimer 
 
