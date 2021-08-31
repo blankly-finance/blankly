@@ -364,9 +364,9 @@ class BackTestController:
         self.interface.evaluate_traded_account_assets()
         column_keys = list.copy(self.interface.traded_assets)
 
-        # Comically if you don't include USD at any point there will be an error
-        if 'USD' not in column_keys:
-            column_keys.append("USD")
+        # Comically if you don't include the quote at any point there will be an error
+        if self.quote_currency not in column_keys:
+            column_keys.append(self.quote_currency)
         # If they start a price event on something they don't own, this should also be included
         for i in self.price_events:
             base_asset = get_base_asset(i['asset_id'])
