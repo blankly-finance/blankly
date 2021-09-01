@@ -430,10 +430,24 @@ class AlpacaInterface(ExchangeInterface):
                 86400: '1D'
             }
             time_interval = resolution_lookup[resolution_seconds]
-            response = self.calls.get_barset(symbol, time_interval, limit=to,
-                                             end=utils.ISO8601_from_epoch(epoch_stop))[symbol]
 
-            response = pd.DataFrame(response)
+            frames = []
+
+            while to > 1000:
+                # Create an end time by moving after the start time by 1000 datapoints
+                epoch_start += resolution_seconds * 1000
+
+                frames.append(self.calls.get_barset(symbol, time_interval, limit=1000,
+                                                    end=utils.ISO8601_from_epoch(epoch_start))[symbol])
+                to -= 1000
+
+            frames.append(self.calls.get_barset(symbol, time_interval, limit=to,
+                                                end=utils.ISO8601_from_epoch(epoch_stop))[symbol])
+
+            for i in range(len(frames)):
+                frames[i] = pd.DataFrame(frames[i])
+
+            response = pd.concat(frames, ignore_index=True)
             response.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v":
                             "volume"}, inplace=True)
 
