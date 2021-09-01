@@ -32,7 +32,7 @@ class Signal:
                  symbols: List[str],
                  resolution: typing.Union[str, float],
                  init: typing.Callable = None,
-                 teardown: typing.Callable = None,
+                 final: typing.Callable = None,
                  formatter: typing.Callable = None):
         """
         Create a new signal.
@@ -54,7 +54,8 @@ class Signal:
             symbols: A list of symbols to run on.
             resolution: The resolution for the signal to run like '1w' or '3d' or 86400
             init: Optional setup code to run when the program starts
-            teardown: Optional teardown code to run before the program finishes
+            final: Optional teardown code to run before the program finishes. This will be run every time the
+             signal finishes a cycle
             formatter: Optional formatting function that pretties the results form the evaluator
         """
 
@@ -65,7 +66,7 @@ class Signal:
         self.__callables = {
             'evaluator': evaluator,
             'init': init,
-            'teardown': teardown,
+            'teardown': final,
             'formatter': formatter
         }
         self.interface = exchange.interface

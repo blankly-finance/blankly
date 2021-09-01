@@ -47,6 +47,7 @@ class InterfaceHomogeneity(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.interfaces = []
+        cls.data_interfaces = []
 
         # Coinbase Pro definition and appending
         cls.Coinbase_Pro = blankly.CoinbasePro(portfolio_name="Sandbox Portfolio",
@@ -54,13 +55,21 @@ class InterfaceHomogeneity(unittest.TestCase):
                                                settings_path="./tests/config/settings.json")
         cls.Coinbase_Pro_Interface = cls.Coinbase_Pro.get_interface()
         cls.interfaces.append(cls.Coinbase_Pro_Interface)
+        cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
 
-        # binance definition and appending
+        # Binance definition and appending
         cls.Binance = blankly.Binance(portfolio_name="Spot Test Key",
                                       keys_path='./tests/config/keys.json',
                                       settings_path="./tests/config/settings.json")
         cls.Binance_Interface = cls.Binance.get_interface()
         cls.interfaces.append(cls.Binance_Interface)
+
+        # Create a Binance interface that is specifically for grabbing data
+        cls.Binance_data = blankly.Binance(portfolio_name="Data Key",
+                                           keys_path='./tests/config/keys.json',
+                                           settings_path="./tests/config/settings_live_enabled.json")
+        cls.Binance_Interface_data = cls.Binance.get_interface()
+        cls.data_interfaces.append(cls.Binance_data)
 
         # alpaca definition and appending
         cls.alpaca = blankly.Alpaca(portfolio_name="alpaca test portfolio",
@@ -68,16 +77,23 @@ class InterfaceHomogeneity(unittest.TestCase):
                                     settings_path="./tests/config/settings.json")
         cls.Alpaca_Interface = cls.alpaca.get_interface()
         cls.interfaces.append(cls.Alpaca_Interface)
+        cls.data_interfaces.append(cls.Alpaca_Interface)
 
         # Paper trade wraps binance
         cls.paper_trade_binance = blankly.PaperTrade(cls.Binance)
         cls.paper_trade_binance_interface = cls.paper_trade_binance.get_interface()
         cls.interfaces.append(cls.paper_trade_binance_interface)
 
+        # Create another for data keys
+        cls.paper_trade_binance_data = blankly.PaperTrade(cls.Binance_data)
+        cls.paper_trade_binance_interface_data = cls.paper_trade_binance_data.get_interface()
+        cls.data_interfaces.append(cls.paper_trade_binance_interface_data)
+
         # Another wraps coinbase pro
         cls.paper_trade_coinbase_pro = blankly.PaperTrade(cls.Coinbase_Pro)
         cls.paper_trade_coinbase_pro_interface = cls.paper_trade_coinbase_pro.get_interface()
         cls.interfaces.append(cls.paper_trade_coinbase_pro_interface)
+        cls.data_interfaces.append(cls.paper_trade_coinbase_pro_interface)
 
     def test_get_products(self):
         responses = []
@@ -261,7 +277,7 @@ class InterfaceHomogeneity(unittest.TestCase):
     
     def test_single_point_history(self):
         responses = []
-        for i in self.interfaces:
+        for i in self.data_interfaces:
             if i.get_exchange_type() == "binance":
                 responses.append(i.history('BTC-USDT', 1))
             elif i.get_exchange_type() == "alpaca":
@@ -278,7 +294,7 @@ class InterfaceHomogeneity(unittest.TestCase):
 
     def test_point_based_history(self):
         responses = []
-        for i in self.interfaces:
+        for i in self.data_interfaces:
             if i.get_exchange_type() == "binance":
                 responses.append(i.history('BTC-USDT', 150, resolution='1m'))
             elif i.get_exchange_type() == "alpaca":
@@ -296,19 +312,19 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
 
         # TODO update these to use the binance live keys
-        today: dt = dateparser.parse(str(dt.now().date()))
+        arbitrary_date: dt = dateparser.parse("8/23/21")
 
         # This won't work at the start of the
-        end_date = today.replace(day=today.day-1)
-        close_stop = str(today.replace(day=today.day-2).date())
+        end_date = arbitrary_date.replace(day=arbitrary_date.day-1)
+        close_stop = str(arbitrary_date.replace(day=arbitrary_date.day-2).date())
 
         expected_hours = end_date.day * 24 - (24*2)
 
         end_date_str = str(end_date.date())
 
         # This won't run until the fourth day of the month because of binance
-        if today.month == end_date.month - 1:
-            for i in self.interfaces:
+        if arbitrary_date.month == end_date.month - 1:
+            for i in self.data_interfaces:
                 if i.get_exchange_type() == "binance":
                     responses.append((i.history('BTC-USDT', to=expected_hours, resolution='1h', end_date=end_date_str),
                                       'binance'))

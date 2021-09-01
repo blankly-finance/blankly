@@ -54,6 +54,12 @@ class SignalState:
         """
         return time.time()
 
+    def notify(self, message=None) -> None:
+        """
+        Send the formatted results as an email
+        """
+        self.signal.notify(message)
+
     def __str__(self):
         output = ""
         output = format_with_new_line(output, 'Time: ', self.time)
