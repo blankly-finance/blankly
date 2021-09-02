@@ -126,6 +126,7 @@ def load_backtest_preferences(override_path=None) -> dict:
         override_path = backtest_path_override
     elif override_path is not None:
         backtest_path_override = override_path
+        backtest_cache = None
 
     if backtest_cache is None:
         try:
@@ -164,6 +165,7 @@ def load_user_preferences(override_path=None) -> dict:
         override_path = settings_path_override
     elif override_path is not None:
         settings_path_override = override_path
+        settings_cache = None
 
     if settings_cache is None:
         try:
@@ -189,6 +191,7 @@ def load_notify_preferences(override_path=None) -> dict:
         override_path = notify_path_override
     elif override_path is not None:
         notify_path_override = override_path
+        notify_cache = None
 
     if notify_cache is None:
         try:
