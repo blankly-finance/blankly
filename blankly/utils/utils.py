@@ -34,40 +34,8 @@ from sklearn.linear_model import LinearRegression
 
 from blankly.utils.time_builder import time_interval_to_seconds
 
-
-# Recursively check if the user has all the preferences, inform when defaults are missing
-def __compare_dicts(default_settings, user_settings):
-    for k, v in default_settings.items():
-        if isinstance(v, dict):
-            if k in user_settings:
-                __compare_dicts(v, user_settings[k])
-            else:
-                warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
-                                 "\""
-                warnings.warn(warning_string)
-                user_settings[k] = v
-        else:
-            if k in user_settings:
-                continue
-            else:
-                warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
-                                 "\""
-                warnings.warn(warning_string)
-                user_settings[k] = v
-    return user_settings
-
-
-settings_cache = None
-settings_path_override = None
-
-backtest_cache = None
-backtest_path_override = None
-
-notify_cache = None
-notify_path_override = None
-
 # Copy of settings to compare defaults vs overrides
-default_global_settings = {
+default_general_settings = {
     "settings": {
         "account_update_time": 5000,
         "use_sandbox": False,
@@ -89,16 +57,21 @@ default_global_settings = {
 }
 
 default_backtest_settings = {
-    "use_price": "close",
-    "smooth_prices": False,
-    "GUI_output": True,
-    "show_tickers_with_zero_delta": False,
-    "save_initial_account_value": False,
-    "show_progress_during_backtest": False,
-    "cache_location": "./price_caches",
-    "resample_account_value_for_metrics": "1d",
-    "quote_account_value_in": "USD",
-    "ignore_user_exceptions": False
+    "price_data": {
+        "assets": []
+    },
+    "settings": {
+        "use_price": "close",
+        "smooth_prices": False,
+        "GUI_output": True,
+        "show_tickers_with_zero_delta": False,
+        "save_initial_account_value": True,
+        "show_progress_during_backtest": True,
+        "cache_location": "./price_caches",
+        "resample_account_value_for_metrics": "1d",
+        "quote_account_value_in": "USD",
+        "ignore_user_exceptions": False
+    }
 }
 
 default_notify_settings = {
@@ -117,97 +90,104 @@ def load_json_file(override_path=None):
     return json_file
 
 
-def load_backtest_preferences(override_path=None) -> dict:
-    global backtest_cache
-    global backtest_path_override
+class __BlanklySettings:
+    def __init__(self, default_path: str, default_settings: dict, not_found_err: str):
+        """
+        Create a class that can manage caching for loading and writing to user preferences with a low overhead.
 
-    # Allow this override to be evaluated anywhere
-    if override_path is None and backtest_path_override is not None:
-        override_path = backtest_path_override
-    elif override_path is not None:
-        backtest_path_override = override_path
-        backtest_cache = None
+        This can dramatically accelerate instantiation of new interfaces or other objects
 
-    if backtest_cache is None:
-        try:
-            if override_path is None:
-                preferences = load_json_file('backtest.json')
+        Args:
+            default_path: The default path to look for settings - such as ./settings.json
+            default_settings: The default settings in which to compare the loaded settings to. This helps the user
+             learn if they're missing important settings and avoids keyerrors later on
+            not_found_err: A string that is shown if the file they specify is not found
+        """
+        self.__settings_cache = {}
+        self.__default_path = default_path
+        self.__default_settings = default_settings
+        self.__not_found_err = not_found_err
+
+    # Recursively check if the user has all the preferences, inform when defaults are missing
+    def __compare_dicts(self, default_settings, user_settings):
+        for k, v in default_settings.items():
+            if isinstance(v, dict):
+                if k in user_settings:
+                    self.__compare_dicts(v, user_settings[k])
+                else:
+                    warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
+                                     "\""
+                    warnings.warn(warning_string)
+                    user_settings[k] = v
             else:
-                preferences = load_json_file(override_path)
-        except FileNotFoundError:
-            raise FileNotFoundError("To perform a backtest, make sure a backtest.json file is placed in the same "
-                                    "folder as the project working directory!")
-        # Just compare the settings because everything else could be chaotic
-        preferences['settings'] = __compare_dicts(default_backtest_settings, preferences['settings'])
-        backtest_cache = preferences
-        return preferences
-    else:
-        return backtest_cache
+                if k in user_settings:
+                    continue
+                else:
+                    warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
+                                     "\""
+                    warnings.warn(warning_string)
+                    user_settings[k] = v
+        return user_settings
+
+    def load(self, override_path=None) -> dict:
+        # Make overrides sticky by changing how the default is set. This is cool because the user can put settings in
+        # obscure locations and then continue to load from them
+        if override_path is not None:
+            self.__default_path = override_path
+
+        if self.__default_path not in self.__settings_cache:
+            try:
+                preferences = load_json_file(self.__default_path)
+            except FileNotFoundError:
+                raise FileNotFoundError(self.__not_found_err)
+            preferences = self.__compare_dicts(self.__default_settings, preferences)
+            self.__settings_cache[self.__default_path] = preferences
+            return preferences
+        else:
+            return self.__settings_cache[self.__default_path]
+
+    def write(self, json_information: dict, override_path: str = None):
+        # In this case on writes it doesn't change the default path if its overridden globally
+        if override_path is None:
+            self.__settings_cache[self.__default_path] = json_information
+            f = open(self.__default_path, "w")
+        else:
+            self.__settings_cache[override_path] = json_information
+            f = open(override_path, "w")
+        print("writing")
+        print(json_information)
+        f.write(json.dumps(json_information, indent=2))
 
 
-def write_backtest_preferences(json_file, override_path=None):
-    global backtest_cache
-    backtest_cache = json_file
+general_settings = __BlanklySettings('./settings.json', default_general_settings,
+                                     "Make sure a settings.json file is placed in the same folder as the project "
+                                     "working directory!")
 
-    if override_path is not None:
-        f = open(override_path, "w")
-    else:
-        f = open('backtest.json', "w")
-    f.write(json.dumps(json_file, indent=2))
+backtest_settings = __BlanklySettings('./backtest.json', default_backtest_settings,
+                                      "To perform a backtest, make sure a backtest.json file is placed in the same "
+                                      "folder as the project working directory!")
+
+notify_settings = __BlanklySettings('./notify.json', default_notify_settings,
+                                    "To send emails locally, make sure a notify.json file is placed in the same folder "
+                                    "as the project working directory. You can also fill the blankly.reporter.email "
+                                    "arguments to always use your SMTP server. This is not necessary when deployed on "
+                                    "blankly cloud as it will use our own SMTP information.")
 
 
 def load_user_preferences(override_path=None) -> dict:
-    global settings_cache
-    global settings_path_override
+    return general_settings.load(override_path)
 
-    # Allow this override to be evaluated anywhere
-    if override_path is None and settings_path_override is not None:
-        override_path = settings_path_override
-    elif override_path is not None:
-        settings_path_override = override_path
-        settings_cache = None
 
-    if settings_cache is None:
-        try:
-            if override_path is None:
-                preferences = load_json_file('./settings.json')
-            else:
-                preferences = load_json_file(override_path)
-        except FileNotFoundError:
-            raise FileNotFoundError("Make sure a settings.json file is placed in the same folder as the project "
-                                    "working directory!")
-        preferences = __compare_dicts(default_global_settings, preferences)
-        settings_cache = preferences
-        return preferences
-    else:
-        return settings_cache
+def load_backtest_preferences(override_path=None) -> dict:
+    return backtest_settings.load(override_path)
+
+
+def write_backtest_preferences(json_file, override_path=None):
+    backtest_settings.write(json_file, override_path)
 
 
 def load_notify_preferences(override_path=None) -> dict:
-    global notify_cache
-    global notify_path_override
-
-    if override_path is None and notify_path_override is not None:
-        override_path = notify_path_override
-    elif override_path is not None:
-        notify_path_override = override_path
-        notify_cache = None
-
-    if notify_cache is None:
-        try:
-            if override_path is None:
-                preferences = load_json_file('./notify.json')
-            else:
-                preferences = load_json_file(override_path)
-        except FileNotFoundError:
-            raise FileNotFoundError("To send emails locally, make sure a notify.json file is placed in the same "
-                                    "folder as the project working directory. Or fill the blankly.reporter.email "
-                                    "arguments to always use your SMTP server. This is not necessary when deployed on "
-                                    "blankly cloud.")
-        preferences = __compare_dicts(default_notify_settings, preferences)
-        notify_cache = preferences
-
-        return preferences
+    return notify_settings.load(override_path)
 
 
 def pretty_print_JSON(json_object, actually_print=True):
