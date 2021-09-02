@@ -78,13 +78,12 @@ def test_get_price(coinbase_interface: CoinbaseProInterface) -> None:
 
 def test_start_with_end_history(coinbase_interface: CoinbaseProInterface) -> None:
     # This initial selection could fail because of the slightly random day that they delete their data
-    # TODO fix this with interface_homogeneity to use live binance keys
-    start_dt = dateparser.parse("2021-08-4")
-    start = str(start_dt.replace(day=1).date())
-    stop = str(start_dt.date())
+    stop_dt = dateparser.parse("2021-08-04")
+    start = "2021-01-04"
+    stop = str(stop_dt.date())
 
     # The dates are offset by one because the time is the open time
-    close_stop = str(dt.today().replace(day=start_dt.day - 1).date())
+    close_stop = str(stop_dt.replace(day=stop_dt.day - 1).date())
 
     resp = coinbase_interface.history('BTC-USD', resolution='1h', start_date=start, end_date=stop)
 
