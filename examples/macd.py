@@ -1,3 +1,7 @@
+"""
+    This simulates a macd strategy running once a day across many stocks
+"""
+
 from blankly import Strategy, StrategyState, Interface
 from blankly import Alpaca
 from blankly.utils import trunc

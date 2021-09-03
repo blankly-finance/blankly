@@ -1,3 +1,8 @@
+"""
+    This shows how you can easily wrap in your own logic. Pull in your own scripts to make them backtestable and make
+    them run live
+"""
+
 from blankly import Strategy, StrategyState, Interface
 from blankly import Alpaca
 

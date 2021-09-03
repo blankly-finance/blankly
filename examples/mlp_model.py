@@ -1,3 +1,10 @@
+"""
+    This file shows how machine learning can be wrapped into trading decision very easily.
+
+    A model is trained in the init() function, then prediction is run in the price event. This is simulated to run
+    once a day
+"""
+
 import numpy as np
 from blankly import trunc
 from blankly import Strategy, StrategyState, Interface
