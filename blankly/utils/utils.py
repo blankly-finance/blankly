@@ -75,11 +75,17 @@ default_backtest_settings = {
 }
 
 default_notify_settings = {
+  "email": {
     "port": 465,
     "smtp_server": "smtp.website.com",
     "sender_email": "email_attached_to_smtp_account@web.com",
     "receiver_email": "email_to_send_to@web.com",
-    'password': 'my_password'
+    "password": "my_password"
+  },
+  "text": {
+    "phone_number": "1234567683",
+    "provider": "verizon"
+  }
 }
 
 
