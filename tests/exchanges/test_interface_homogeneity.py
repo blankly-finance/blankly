@@ -379,7 +379,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         intervals_ago_date = dt.fromtimestamp(intervals_ago).strftime('%Y-%m-%d')
 
         responses = []
-        for i in self.interfaces:
+        for i in self.data_interfaces:
             if i.get_exchange_type() == "binance":
                 responses.append(i.get_product_history('BTC-USDT', intervals_ago, current_time, 3600))
             elif i.get_exchange_type() == "alpaca":
