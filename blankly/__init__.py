@@ -20,16 +20,16 @@ from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro import CoinbasePro
 from blankly.exchanges.interfaces.binance.binance import Binance
 from blankly.exchanges.interfaces.alpaca.alpaca import Alpaca
 from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
-from blankly.strategy import Strategy as Strategy
-from blankly.strategy import StrategyState as StrategyState
-from blankly.strategy.signal import Signal
-from blankly.strategy.signal_state import SignalState
+from blankly.framework.strategy import Strategy as Strategy
+from blankly.framework.strategy import StrategyState as StrategyState
+from blankly.framework.signal.signal import Signal
+from blankly.framework.signal.signal_state import SignalState
 
 from blankly.exchanges.managers.ticker_manager import TickerManager
 from blankly.exchanges.managers.orderbook_manager import OrderbookManager
 from blankly.exchanges.managers.general_stream_manager import GeneralManager
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface as Interface
-from blankly.strategy.blankly_bot import BlanklyBot
+from blankly.framework.multiprocessing.blankly_bot import BlanklyBot
 from blankly.utils.utils import trunc
 import blankly.utils.utils as utils
 from blankly.utils.scheduler import Scheduler
