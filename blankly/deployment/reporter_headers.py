@@ -90,22 +90,54 @@ class Reporter:
         """
         pass
 
-    def email(self, email_str: str, smtp_server: str = None, sender_email: str = None, receiver_email: str = None,
-              password: str = None, port: int = 25):
+    def text(self, message_str: str):
+        """
+        Send a text message to your number
+
+        Args:
+            message_str: The message body to be sent to your phone number
+        """
+        notify_preferences = load_notify_preferences()
+        provider = notify_preferences['text']['provider']
+        phone_number = notify_preferences['text']['phone_number']
+
+        email_lookup = {
+            'att': '@txt.att.net',
+            'boost': '@smsmyboostmobile.com',
+            'cricket': '@sms.cricketwireless.net',
+            'sprint': '@messaging.sprintpcs.com',
+            't_mobile': '@tmomail.net',
+            'us_cellular': '@email.uscc.net',
+            'verizon': '@vtext.com',
+            'virgin_mobile': '@vmobl.com'
+        }
+        try:
+            email = email_lookup[provider]
+        except KeyError:
+            raise KeyError("Provider not found. Check the notify.json documentation to see supported providers.")
+
+        self.email(message_str, override_receiver=phone_number + email)
+
+    def email(self, email_str: str, override_receiver: str = None):
         """
         Send an email to your user account email
 
         This is only active during live deployment on blankly services because it relies on backend infrastructure
+
+        Args:
+            email_str: The body of the email to send
+            override_receiver: Change the address that the email is being sent to. This is used to rapidly switch to
+             text messages
         """
-        if smtp_server and sender_email and receiver_email and password and port:
-            pass
-        else:
-            notify_preferences = load_notify_preferences()
-            port = notify_preferences['port']
-            smtp_server = notify_preferences['smtp_server']
-            sender_email = notify_preferences['sender_email']
-            receiver_email = notify_preferences['receiver_email']
-            password = notify_preferences['password']
+        notify_preferences = load_notify_preferences()
+        port = notify_preferences['email']['port']
+        smtp_server = notify_preferences['email']['smtp_server']
+        sender_email = notify_preferences['email']['sender_email']
+        receiver_email = notify_preferences['email']['receiver_email']
+        password = notify_preferences['email']['password']
+
+        if override_receiver is not None:
+            receiver_email = override_receiver
 
         message = email_str
 
