@@ -96,17 +96,17 @@ class Exchange(ABCExchange, abc.ABC):
         """
         return self.models[coin]["model"]
 
-    def get_model_state(self, currency):
+    def get_model_state(self, symbol):
         """
         Returns JUST the model state, as opposed to all the data returned by get_asset_state()
 
         This is also used for querying a general state from a multiprocessed bot
         Args:
-            currency: Currency that the selected model is running on.
+            symbol: Currency that the selected model is running on.
         """
-        return (self.__get_model(currency)).get_state()
+        return (self.__get_model(symbol)).get_state()
 
-    def get_full_state(self, currency):
+    def get_full_state(self, symbol):
         """
         Makes API calls to determine the state of the currency. This also returns the state of the model on that
         currency.
@@ -114,42 +114,42 @@ class Exchange(ABCExchange, abc.ABC):
         This is also used only for multiprocessed models
 
         Args:
-            currency: Currency to filter for. This filters model information and the exchange information.
+            symbol: Currency to filter for. This filters model information and the exchange information.
         """
-        state = self.get_asset_state(currency)
+        state = self.get_asset_state(symbol)
 
         return {
             "account": state,
-            "model": self.get_model_state(currency)
+            "model": self.get_model_state(symbol)
         }
 
-    def write_value(self, currency, key, value):
+    def write_value(self, symbol, key, value):
         """
         Write a key/value pair to a bot attached to a particular currency pair
 
         This is also used only for multiprocessed bots.
 
         Args:
-            currency: Change state on bot attached to this currency
+            symbol: Change state on bot attached to this currency
             key: Key to assign a value to
             value: Value to assign to the key
         """
-        self.__get_model(currency).update_state(key, value)
+        self.__get_model(symbol).update_state(key, value)
 
-    def append_model(self, model, coin_id, args=None):
+    def append_model(self, model, symbol, args=None):
         """
         Append the models to the exchange, these can be run
         Args:
             model: Model object to be used. This is objects inheriting blankly_bot
-            coin_id: the currency to use, such as "BTC-USD"
+            symbol: the currency to use, such as "BTC-USD"
             args: Args to pass into the model when it is run. This can be any datatype, the object is passed
         """
         added_model = model
-        self.models[coin_id] = {
+        self.models[symbol] = {
             "model": added_model,
             "args": args
         }
-        model.setup(self.__type, coin_id, self.preferences, self.get_full_state(coin_id),
+        model.setup(self.__type, symbol, self.preferences, self.get_full_state(symbol),
                     self.interface)
 
     @abc.abstractmethod

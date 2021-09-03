@@ -1,3 +1,7 @@
+"""
+    This shows a simple golden cross example on MSFT, checking at a 1d resolution over two years
+"""
+
 from blankly import Strategy, StrategyState, Interface
 from blankly import Alpaca
 from blankly.utils import trunc

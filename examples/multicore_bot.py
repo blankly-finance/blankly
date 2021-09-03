@@ -1,3 +1,7 @@
+"""
+    This file shows how multicore bots can be spawned & used to carry out intensive but separate tasks
+"""
+
 import time
 import blankly
 # Have feedback? Use this: https://forms.gle/4oAjG9MKRTYKX2hP9
@@ -52,7 +56,7 @@ if __name__ == "__main__":
 
     # Create the bot and add it to run as a coinbase_pro bitcoin model.
     bot = Bot()
-    portfolio.append_model(model=bot, coin_id="BTC-USD", args=[])
+    portfolio.append_model(model=bot, symbol="BTC-USD", args=[])
 
     # This starts the main() function of the model and puts it on a different process (computer core)
     # The main() function is in the class above

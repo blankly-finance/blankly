@@ -128,7 +128,9 @@ class Signal:
 
     def notify(self, message: str = None):
         """
-        Send an email to your organization email. This only works while deployed live.
+        Send an email and text message to yourself. When deployed live this will come from an official blankly email &
+         phone number. When run locally it will use information found in your notify.json file.
+         **Note that you need the SMTP configuration to send text messages
 
         Args:
             message: Optionally fill this with a different string to notify with. If not filled it will notify using the
