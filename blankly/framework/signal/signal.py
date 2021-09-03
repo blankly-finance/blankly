@@ -22,7 +22,7 @@ from typing import List
 
 import blankly
 from blankly.exchanges.exchange import Exchange
-from blankly.strategy.signal_state import SignalState
+from blankly.framework.signal.signal_state import SignalState
 from copy import deepcopy
 
 
