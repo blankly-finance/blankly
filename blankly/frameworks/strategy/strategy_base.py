@@ -28,7 +28,7 @@ import blankly
 from blankly.exchanges.exchange import Exchange
 from blankly.exchanges.interfaces.paper_trade.backtest_controller import BackTestController
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
-from blankly.framework.strategy.strategy_state import StrategyState
+from blankly.frameworks.strategy.strategy_state import StrategyState
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import AttributeDict
 from blankly.utils.utils import get_ohlcv_from_list

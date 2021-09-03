@@ -22,8 +22,8 @@ import ssl
 from typing import Any
 
 from blankly.utils.utils import load_notify_preferences
-from blankly.framework.strategy import Strategy
-from blankly.framework.signal.signal import Signal
+from blankly.frameworks.strategy import Strategy
+from blankly.frameworks.signal.signal import Signal
 
 
 class Reporter:
