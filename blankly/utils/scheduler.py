@@ -30,7 +30,7 @@ class Scheduler:
     def __init__(self, function: typing.Callable,
                  interval: typing.Union[str, float],
                  initially_stopped: bool = False,
-                 synced: bool = True, **kwargs):
+                 synced: bool = False, **kwargs):
         """
         Wrapper for functions that run at a set interval
         Args:

@@ -17,8 +17,8 @@
 """
 
 import typing
-
 from typing import List
+from blankly.frameworks.signal.signal_runner import SignalRunner
 
 import blankly
 from blankly.exchanges.exchange import Exchange
@@ -58,6 +58,10 @@ class Signal:
              signal finishes a cycle
             formatter: Optional formatting function that pretties the results form the evaluator
         """
+        self.resolution = blankly.utils.time_interval_to_seconds(resolution)
+
+        if not blankly.is_deployed and blankly._signal_runner is None:
+            blankly._signal_runner = SignalRunner(self.resolution)
 
         self.exchange = exchange
         self.symbols = symbols
@@ -70,7 +74,6 @@ class Signal:
             'formatter': formatter
         }
         self.interface = exchange.interface
-        self.resolution = resolution
 
         # Creat the signal state and pass in this signal object
         self.signal_state = SignalState(self)
@@ -78,7 +81,9 @@ class Signal:
         self.raw_results = {}
         self.formatted_results = {}
 
-        blankly.reporter.export_signal(self)
+        # Note that only a single signal can be exported at a time for a model
+        if blankly.is_deployed:
+            blankly.reporter.export_signal(self)
 
         self.__run()
 
