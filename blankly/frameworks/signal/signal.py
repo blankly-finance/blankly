@@ -22,7 +22,7 @@ from typing import List
 
 import blankly
 from blankly.exchanges.exchange import Exchange
-from blankly.framework.signal.signal_state import SignalState
+from blankly.frameworks.signal.signal_state import SignalState
 from copy import deepcopy
 
 
@@ -139,3 +139,5 @@ class Signal:
             use_str = message
 
         blankly.reporter.email(use_str)
+
+        blankly.reporter.text(use_str)
