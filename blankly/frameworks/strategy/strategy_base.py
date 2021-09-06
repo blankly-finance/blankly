@@ -38,14 +38,14 @@ from blankly.exchanges.strategy_logger import StrategyLogger
 class Strategy:
     def __init__(self, exchange: Exchange, currency_pair='BTC-USD'):
         self.__exchange = exchange
-        self.Ticker_Manager = blankly.TickerManager(self.__exchange.get_type(), currency_pair)
-        self.Orderbook_Manager = blankly.OrderbookManager(self.__exchange.get_type(), currency_pair)
+        self.ticker_manager = blankly.TickerManager(self.__exchange.get_type(), currency_pair)
+        self.orderbook_manager = blankly.OrderbookManager(self.__exchange.get_type(), currency_pair)
 
         self.__scheduling_pair = []  # Object to hold a currency and the resolution its pulled at: ["BTC-USD", 60]
-        self.Interface = StrategyLogger(interface=exchange.get_interface(), strategy=self)
+        self.interface = StrategyLogger(interface=exchange.get_interface(), strategy=self)
 
         # Create a cache for the current interface, and a wrapped paper trade object for user backtesting
-        self.__interface_cache = self.Interface
+        self.__interface_cache = self.interface
         self.__paper_trade_exchange = blankly.PaperTrade(self.__exchange)
         self.__schedulers = []
         self.__variables = {}
@@ -141,7 +141,7 @@ class Strategy:
 
         if resolution < 60:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
-            self.Ticker_Manager.create_ticker(self.__idle_event, override_symbol=symbol)
+            self.ticker_manager.create_ticker(self.__idle_event, override_symbol=symbol)
             self.__schedulers.append(
                 blankly.Scheduler(self.__price_event_websocket, resolution,
                                   initially_stopped=True,
@@ -195,15 +195,15 @@ class Strategy:
             while True:
                 # Sometimes coinbase doesn't download recent data correctly
                 try:
-                    data = self.Interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
+                    data = self.interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
                     if data['time'] + resolution == ohlcv_time:
                         break
                 except IndexError:
                     pass
                 time.sleep(.5)
-            data['price'] = self.Interface.get_price(symbol)
+            data['price'] = self.interface.get_price(symbol)
         else:
-            data = self.Interface.get_price(symbol)
+            data = self.interface.get_price(symbol)
 
         callback(data, symbol, state)
 
@@ -218,7 +218,7 @@ class Strategy:
         if ohlc:
             close_time = kwargs['ohlcv_time']
             open_time = close_time-resolution
-            ticker_feed = list(reversed(self.Ticker_Manager.get_feed(override_symbol=symbol)))
+            ticker_feed = list(reversed(self.ticker_manager.get_feed(override_symbol=symbol)))
             #     tick        tick
             #      |    ohlcv close                            ohlcv open
             # 0    |   -20          -40            -60        -80
@@ -244,10 +244,10 @@ class Strategy:
 
         else:
             try:
-                data = self.Ticker_Manager.get_most_recent_tick(override_symbol=symbol)['price']
+                data = self.ticker_manager.get_most_recent_tick(override_symbol=symbol)['price']
             except TypeError:
                 warnings.warn("No valid data yet - using rest.")
-                data = self.Interface.get_price(symbol)
+                data = self.interface.get_price(symbol)
 
         state.variables = variables
         state.resolution = resolution
@@ -283,7 +283,7 @@ class Strategy:
         variables = self.__variables[callback_hash]
 
         # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
-        self.Orderbook_Manager.create_orderbook(self.__orderbook_event, initially_stopped=True,
+        self.orderbook_manager.create_orderbook(self.__orderbook_event, initially_stopped=True,
                                                 override_symbol=symbol,
                                                 symbol=symbol,
                                                 user_callback=callback,
@@ -307,13 +307,13 @@ class Strategy:
             # Index 2 contains the initialization function for the assigned websockets array
             if i[2] is not None:
                 i[2](i[0], i[3])
-            self.Orderbook_Manager.restart_ticker(i[0], i[1])
+            self.orderbook_manager.restart_ticker(i[0], i[1])
 
         for i in self.__ticker_websockets:
             # Index 2 contains the initialization function for the assigned websockets array
             if i[2] is not None:
                 i[2](i[0], i[3])
-            self.Ticker_Manager.restart_ticker(i[0], i[1])
+            self.ticker_manager.restart_ticker(i[0], i[1])
 
     def teardown(self):
         self.lock.acquire()
@@ -326,14 +326,14 @@ class Strategy:
                 teardown(state_object)
 
         for i in self.__orderbook_websockets:
-            self.Orderbook_Manager.close_websocket(override_symbol=i[0], override_exchange=i[1])
+            self.orderbook_manager.close_websocket(override_symbol=i[0], override_exchange=i[1])
             # Call the stored teardown
             teardown_func = i[4]
             if callable(teardown_func):
                 teardown_func(i[3])
 
         for i in self.__ticker_websockets:
-            self.Ticker_Manager.close_websocket(override_symbol=i[0], override_exchange=i[1])
+            self.ticker_manager.close_websocket(override_symbol=i[0], override_exchange=i[1])
         self.lock.release()
 
         # Show that all teardowns have finished
@@ -430,7 +430,7 @@ class Strategy:
             epoch = datetime.datetime.utcfromtimestamp(0)
             end = (end_date - epoch).total_seconds()
 
-        self.Interface = self.__paper_trade_exchange.get_interface()
+        self.interface = self.__paper_trade_exchange.get_interface()
         self.backtesting_controller = BackTestController(self.__paper_trade_exchange,
                                                          backtest_settings_path=settings_path,
                                                          callbacks=callbacks
@@ -473,5 +473,5 @@ class Strategy:
         results = self.backtesting_controller.run()
 
         # Clean up
-        self.Interface = self.__interface_cache
+        self.interface = self.__interface_cache
         return results

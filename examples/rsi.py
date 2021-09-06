@@ -8,10 +8,14 @@ def price_event(price, symbol, state: StrategyState):
     rsi = blankly.indicators.rsi(state.variables['history'])
     if rsi[-1] < 30:
         # Dollar cost average buy
+        print("buying...")
         state.interface.market_order(symbol, side='buy', funds=10)
     elif rsi[-1] > 70:
         # Dollar cost average sell
+        print("selling...")
         state.interface.market_order(symbol, side='sell', funds=10)
+    else:
+        print("no action...")
 
 
 def init(symbol, state: StrategyState):
