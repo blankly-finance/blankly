@@ -37,3 +37,6 @@ class SignalRunner:
         # The execute function to run the modules
         main_script_abs = os.path.abspath(self.__main)
         runpy.run_path(main_script_abs, {}, "__main__")
+
+    def stop(self):
+        self.__scheduler.stop_scheduler()

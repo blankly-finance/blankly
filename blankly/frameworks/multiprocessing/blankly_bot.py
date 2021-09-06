@@ -35,9 +35,9 @@ class BlanklyBot:
     exchange_type: str
     initial_state: dict
     # Define the given types for the user
-    Orderbook_Manager: OrderbookManager
-    Ticker_Manager: TickerManager
-    Interface: ABCExchangeInterface
+    orderbook_manager: OrderbookManager
+    ticker_manager: TickerManager
+    interface: ABCExchangeInterface
     coinbase_pro_direct: CoinbaseProAPI
     binance_direct: Binance_API
 
@@ -70,7 +70,7 @@ class BlanklyBot:
         self.__state = Manager().dict({})
         self.exchange_type = exchange_type
         self.user_preferences = user_preferences
-        self.Interface = copy.deepcopy(interface)
+        self.interface = copy.deepcopy(interface)
         # Coin id is the currency and which market its on
         self.symbol = currency_pair
         self.direct_calls = interface.get_calls()
@@ -97,8 +97,8 @@ class BlanklyBot:
         """
         Create any objects that need to be process-specific in the other process
         """
-        self.Ticker_Manager = blankly.TickerManager(self.exchange_type, self.symbol)
-        self.Orderbook_Manager = blankly.OrderbookManager(self.exchange_type, self.symbol)
+        self.ticker_manager = blankly.TickerManager(self.exchange_type, self.symbol)
+        self.orderbook_manager = blankly.OrderbookManager(self.exchange_type, self.symbol)
         self.main(args)
 
     """

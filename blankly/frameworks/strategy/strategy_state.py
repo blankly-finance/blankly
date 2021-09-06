@@ -39,7 +39,7 @@ class StrategyState:
         """
         Get the interface object that the strategy is running on. Use this to interact with your exchange.
         """
-        return self.strategy.Interface
+        return self.strategy.interface
 
     @property
     def time(self) -> float:

@@ -13,13 +13,13 @@ class Bot(blankly.BlanklyBot):
         Main function to write any general analysis or bot management logic
         """
         # Create a demo ticker object. The price event function will run at every tick
-        self.Ticker_Manager.create_ticker(callback=self.price_event)
+        self.ticker_manager.create_ticker(callback=self.price_event)
 
         # Add a heartbeat example to report to GUI or main
         self.update_state("heartbeat", 0)
 
         # This will work on any supported exchange
-        print("Interface call: " + str(self.Interface.get_fees()))
+        print("Interface call: " + str(self.interface.get_fees()))
 
         # You can also bypass the interface and make calls directly to the exchange:
         try:

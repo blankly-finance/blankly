@@ -39,7 +39,9 @@ class CoinbaseProInterface(ExchangeInterface):
         try:
             if fees['message'] == "Invalid API Key":
                 raise LookupError("Invalid API Key - are you trying to use your normal exchange keys "
-                                  "while in sandbox mode?")
+                                  "while in sandbox mode? \nTry toggling the \'use_sandbox\' setting "
+                                  "in your settings.json or check if the keys were input correctly into your "
+                                  "keys.json.")
         except KeyError:
             pass
         self.__exchange_properties = {

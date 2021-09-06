@@ -12,6 +12,6 @@
     "cache_location": "./price_caches",
     "resample_account_value_for_metrics": "1d",
     "quote_account_value_in": "USD",
-    "ignore_user_exceptions": false
+    "ignore_user_exceptions": true
   }
 }
