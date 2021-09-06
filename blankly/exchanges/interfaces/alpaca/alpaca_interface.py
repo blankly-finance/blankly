@@ -451,8 +451,13 @@ class AlpacaInterface(ExchangeInterface):
             response.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v":
                             "volume"}, inplace=True)
 
-            response['volume'] = response['volume'].astype(float)
-
+            response = response.astype({
+                'open': float,
+                'high': float,
+                'low': float,
+                'close': float,
+                'volume': float,
+            })
         else:
             response = self.get_product_history(symbol,
                                                 epoch_start,
