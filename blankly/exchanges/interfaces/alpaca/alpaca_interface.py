@@ -44,7 +44,15 @@ class AlpacaInterface(ExchangeInterface):
 
     def init_exchange(self):
         assert isinstance(self.calls, alpaca_trade_api.REST)
-        account_info = self.calls.get_account()
+        try:
+            account_info = self.calls.get_account()
+        except alpaca_trade_api.rest.APIError as e:
+            print(e.__str__())
+            print(e)
+            raise APIException(e.__str__() + ". Are you trying to use your normal exchange keys "
+                               "while in sandbox mode? \nTry toggling the \'use_sandbox\' setting "
+                               "in your settings.json or check if the keys were input correctly into your "
+                               "keys.json.")
         try:
             if account_info['account_blocked']:
                 warnings.warn('Your alpaca account is indicated as blocked for trading....')
