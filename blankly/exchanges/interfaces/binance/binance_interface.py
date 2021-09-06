@@ -41,7 +41,9 @@ class BinanceInterface(ExchangeInterface):
             account = self.calls.get_account()
         except binance.exceptions.BinanceAPIException:
             raise exceptions.APIException("Invalid API Key, IP, or permissions for action - are you trying "
-                                          "to use your normal exchange keys while in sandbox mode?")
+                                          "to use your normal exchange keys while in sandbox mode? "
+                                          "\nTry toggling the \'use_sandbox\' setting in your settings.json or check "
+                                          "if the keys were input correctly into your keys.json.")
         self.__exchange_properties = {
             "maker_fee_rate": account['makerCommission'] / 100,
             "taker_fee_rate": account['takerCommission'] / 100,
