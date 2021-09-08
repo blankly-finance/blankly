@@ -47,8 +47,6 @@ class AlpacaInterface(ExchangeInterface):
         try:
             account_info = self.calls.get_account()
         except alpaca_trade_api.rest.APIError as e:
-            print(e.__str__())
-            print(e)
             raise APIException(e.__str__() + ". Are you trying to use your normal exchange keys "
                                "while in sandbox mode? \nTry toggling the \'use_sandbox\' setting "
                                "in your settings.json or check if the keys were input correctly into your "
