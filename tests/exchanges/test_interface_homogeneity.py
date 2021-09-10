@@ -205,14 +205,14 @@ class InterfaceHomogeneity(unittest.TestCase):
         time.sleep(3)
         self.check_limit_order(binance_buy, 'buy', .01, 'BTC-USDT')
 
-        coinbase_buy = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'buy', .01, .001)
-        self.check_limit_order(coinbase_buy, 'buy', .001, 'BTC-USD')
+        coinbase_buy = self.Coinbase_Pro_Interface.limit_order('LINK-USD', 'buy', .01, 1)
+        self.check_limit_order(coinbase_buy, 'buy', 1, 'BTC-USD')
 
         binance_sell = self.Binance_Interface.limit_order('BTC-USDT', 'sell', int(binance_limits['max_price']-30), .01)
         self.check_limit_order(binance_sell, 'sell', .01, 'BTC-USDT')
 
-        coinbase_sell = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'sell', 100000, .001)
-        self.check_limit_order(coinbase_sell, 'sell', .001, 'BTC-USD')
+        coinbase_sell = self.Coinbase_Pro_Interface.limit_order('LINK-USD', 'sell', 100000, 1)
+        self.check_limit_order(coinbase_sell, 'sell', 1, 'LINK-USD')
 
         limits = [binance_buy, coinbase_buy, binance_sell, coinbase_sell]
         responses = []
@@ -220,7 +220,7 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         cancels = []
 
-        coinbase_open = self.Coinbase_Pro_Interface.get_open_orders('BTC-USD')
+        coinbase_open = self.Coinbase_Pro_Interface.get_open_orders('LINK-USD')
         for i in [coinbase_buy, coinbase_sell]:
             found = False
             for j in coinbase_open:
@@ -295,12 +295,13 @@ class InterfaceHomogeneity(unittest.TestCase):
     def test_point_based_history(self):
         responses = []
         for i in self.data_interfaces:
+            print(i.get_exchange_type())
             if i.get_exchange_type() == "binance":
-                responses.append(i.history('BTC-USDT', 150, resolution='1m'))
+                responses.append(i.history('BTC-USDT', 150, resolution='1h'))
             elif i.get_exchange_type() == "alpaca":
-                responses.append(i.history('MSFT', 150, resolution='1m'))
+                responses.append(i.history('MSFT', 150, resolution='1h'))
             else:
-                responses.append(i.history('BTC-USD', 150, resolution='1m'))
+                responses.append(i.history('BTC-USD', 150, resolution='1h'))
         for i in responses:
             self.check_product_history_columns(i)
 
