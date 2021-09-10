@@ -54,6 +54,7 @@ class InterfaceHomogeneity(unittest.TestCase):
                                                keys_path='./tests/config/keys.json',
                                                settings_path="./tests/config/settings.json")
         cls.Coinbase_Pro_Interface = cls.Coinbase_Pro.get_interface()
+        # TODO put this back
         # cls.interfaces.append(cls.Coinbase_Pro_Interface)
         # cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
 
@@ -92,6 +93,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         # Another wraps coinbase pro
         cls.paper_trade_coinbase_pro = blankly.PaperTrade(cls.Coinbase_Pro)
         cls.paper_trade_coinbase_pro_interface = cls.paper_trade_coinbase_pro.get_interface()
+        # TODO put this back
         # cls.interfaces.append(cls.paper_trade_coinbase_pro_interface)
         # cls.data_interfaces.append(cls.paper_trade_coinbase_pro_interface)
 
@@ -158,25 +160,24 @@ class InterfaceHomogeneity(unittest.TestCase):
         time.sleep(.5)
         self.assertTrue(compare_dictionaries(binance_buy.get_status(full=True), binance_sell.get_status(full=True)))
 
+        # TODO put this back
         # coinbase_buy = self.Coinbase_Pro_Interface.market_order('BTC-USD', 'buy', 20)
         # coinbase_sell = self.Coinbase_Pro_Interface.market_order('BTC-USD', 'sell', 20)
 
         # self.assertTrue(compare_dictionaries(coinbase_buy.get_response(), coinbase_sell.get_response()))
         # self.assertTrue(compare_dictionaries(coinbase_buy.get_status(full=True), coinbase_sell.get_status(full=True)))
 
-        response_list = [# coinbase_buy.get_response(),
-                         # coinbase_sell.get_response(),
-                         binance_buy.get_response(),
-                         binance_sell.get_response()
-                         ]
+        response_list = [binance_buy.get_response(), binance_sell.get_response()]
+        # TODO put this back
+        # coinbase_buy.get_response(),
+        # coinbase_sell.get_response(),
 
         time.sleep(1)
 
-        status_list = [# coinbase_buy.get_status(full=True),
-                       # coinbase_sell.get_status(full=True),
-                       binance_buy.get_status(full=True),
-                       binance_sell.get_status(full=True)
-                       ]
+        status_list = [binance_buy.get_status(full=True), binance_sell.get_status(full=True)]
+        # TODO put this back
+        # coinbase_buy.get_status(full=True),
+        # coinbase_sell.get_status(full=True),
 
         self.assertTrue(compare_responses(response_list))
 
@@ -205,21 +206,26 @@ class InterfaceHomogeneity(unittest.TestCase):
         time.sleep(3)
         self.check_limit_order(binance_buy, 'buy', .01, 'BTC-USDT')
 
+        # TODO put this back
         # coinbase_buy = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'buy', .01, 1)
         # self.check_limit_order(coinbase_buy, 'buy', 1, 'BTC-USD')
 
         binance_sell = self.Binance_Interface.limit_order('BTC-USDT', 'sell', int(binance_limits['max_price']-30), .01)
         self.check_limit_order(binance_sell, 'sell', .01, 'BTC-USDT')
 
+        # TODO put this back
         # coinbase_sell = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'sell', 100000, 1)
         # self.check_limit_order(coinbase_sell, 'sell', 1, 'BTC-USD')
 
-        limits = [binance_buy, binance_sell, ] # coinbase_buy, coinbase_sell]
+        limits = [binance_buy, binance_sell, ]
+        # TODO put this back
+        # coinbase_buy, coinbase_sell]
         responses = []
         status = []
 
         cancels = []
 
+        # TODO put this back
         # coinbase_open = self.Coinbase_Pro_Interface.get_open_orders('BTC-USD')
         # for i in [coinbase_buy, ]: # coinbase_sell]:
         #     found = False
@@ -247,6 +253,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_buy.get_id()))
         cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_sell.get_id()))
 
+        # TODO put this back
         # cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_sell.get_id()))
         # cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_buy.get_id()))
 
