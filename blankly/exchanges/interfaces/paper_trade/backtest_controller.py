@@ -157,10 +157,11 @@ class BackTestController:
         # Ensure everything is up to date
         self.sync_prices(save)
 
-    def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval, state_object, ohlc, init):
+    def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval, state_object, ohlc, init,
+                                    teardown):
         if isinstance(time_interval, str):
             time_interval = time_interval_to_seconds(time_interval)
-        self.price_events.append([callback, asset_id, time_interval, state_object, ohlc, init])
+        self.price_events.append([callback, asset_id, time_interval, state_object, ohlc, init, teardown])
 
     def __determine_price(self, asset_id, epoch):
         # Custom linear search algorithm, returns last index when failed
@@ -335,7 +336,8 @@ class BackTestController:
                 'state_object': self.price_events[i][3],
                 'next_run': self.initial_time,
                 'ohlc': self.price_events[i][4],
-                'init': self.price_events[i][5]
+                'init': self.price_events[i][5],
+                'teardown': self.price_events[i][6]
             }
 
         if prices == {} or self.price_events == []:
@@ -459,6 +461,12 @@ class BackTestController:
                     price_data.append(available_dict)
 
                     no_trade.append(no_trade_dict)
+
+            # Finally run the teardown functions
+            for i in self.price_events:
+                # Pull the teardown and pass the state object
+                if callable(i['teardown']):
+                    i['teardown'](i['state_object'])
         except Exception:
             traceback.print_exc()
 

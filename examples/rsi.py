@@ -1,8 +1,7 @@
 import blankly
-from blankly import StrategyState
 
 
-def price_event(price, symbol, state: StrategyState):
+def price_event(price, symbol, state: blankly.StrategyState):
     """ This function will give an updated price every 15 seconds from our definition below """
     state.variables['history'].append(price)
     rsi = blankly.indicators.rsi(state.variables['history'])
@@ -18,7 +17,7 @@ def price_event(price, symbol, state: StrategyState):
         print("no action...")
 
 
-def init(symbol, state: StrategyState):
+def init(symbol, state: blankly.StrategyState):
     # Download price data to give context to the algo
     state.variables['history'] = state.interface.history(symbol, to='1y', return_as='list')['close']
 

@@ -295,7 +295,11 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             try:
                 return trade_local.get_account(symbol)
             except KeyError:
-                raise KeyError("Symbol not found.")
+                if self.backtesting:
+                    raise KeyError("Symbol not found. This can be caused by an invalid quote currency "
+                                   "in backtest.json.")
+                else:
+                    raise KeyError("Symbol not found.")
 
     def market_order(self, symbol, side, funds) -> MarketOrder:
         if not self.backtesting:

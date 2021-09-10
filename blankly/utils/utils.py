@@ -160,8 +160,6 @@ class __BlanklySettings:
         else:
             self.__settings_cache[override_path] = json_information
             f = open(override_path, "w")
-        print("writing")
-        print(json_information)
         f.write(json.dumps(json_information, indent=2))
 
 
