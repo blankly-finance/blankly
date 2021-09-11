@@ -41,9 +41,9 @@ paper trading, sandbox testing, and live cross-exchange deployment without modif
 
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
 
-## Optimize Like Crazy
+# Optimize Like Crazy
 
-### Run across symbols and exchanges
+## Run across symbols and exchanges
 
 ```python
 # Authenticate instantly
@@ -55,7 +55,7 @@ stocks.interface.market_order('AAPL', 'buy', 10)
 crypto.interface.market_order('BTC-USD', 'buy', 10)
 ```
 
-### Backtest
+## Backtest
 
 ```python
 def strategy(price, symbol, state):
@@ -73,13 +73,13 @@ strategy.add_price_event(strategy, 'AAPL', '1h')
 strategy.backtest(to='1y')
 ```
 
-### High Quality Backtest Result
+## High Quality Backtest Result
 
 View accurate holdings over time:
 
 ![Image](https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/backtest_result.png?alt=media&token=4ef8ff1d-034c-474b-a662-f46393fe5597)
 
-### Run Live
+## Run Live
 
 Seamlessly run your model live!
 
@@ -192,6 +192,8 @@ if __name__ == "__main__":
 🔴  = planned but not yet in development
 
 * Interface calls take ~300 µs extra to homogenize the exchange data.
+
+# Other Info
 
 ## Bugs
 
