@@ -1,4 +1,7 @@
+
+
 <br />
+
 <div align="center">
    <img style="margin: 0 auto; padding-bottom: 15px; padding-top: 30px" width=70%" src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/blankly-github-logo.png?alt=media&token=8f436cd2-3d28-432c-867a-afef780f4260">
 </div>
@@ -38,9 +41,60 @@ paper trading, sandbox testing, and live cross-exchange deployment without modif
 
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
 
-## Getting Started
+## Optimize Like Crazy
 
-### Installation
+### Run across symbols and exchanges
+
+```python
+# Authenticate instantly
+stocks = blankly.Alpaca()
+crypto = blankly.CoinbasePro()
+
+# Easily perform the same actions across exchanges & asset types
+stocks.interface.market_order('AAPL', 'buy', 10)
+crypto.interface.market_order('BTC-USD', 'buy', 10)
+```
+
+### Backtest
+
+```python
+def strategy(price, symbol, state):
+	# Trading logic here
+  state.interface.market_order(symbol, 'buy', 10)
+  
+# Authenticate
+alpaca = blankly.Alpaca()
+strategy = blankly.Strategy(alpaca)
+
+# Check price every hour and send to the straetgy function
+strategy.add_price_event(strategy, 'AAPL', '1h')
+
+# Run the backtest
+strategy.backtest(to='1y')
+```
+
+### High Quality Backtest Result
+
+View accurate holdings over time:
+
+![Image](https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/backtest_result.png?alt=media&token=4ef8ff1d-034c-474b-a662-f46393fe5597)
+
+### Run Live
+
+Seamlessly run your model live!
+
+```python
+# Just turn this
+strategy.backtest(to='1y')
+# Into this
+strategy.start()
+```
+
+Dates, times, and scheduling adjust on the backend to make the experience instant.
+
+# Quickstart
+
+## Installation
 
 1. First install Blankly using `pip`. Blankly is hosted on [PyPi](https://pypi.org/project/Blankly/).
 
@@ -53,13 +107,17 @@ $ pip install blankly
 $ blankly init
 ```
 This will run our setup script in the current terminal working directory.
+
 The command will create the files `keys.json`, `settings.json`, `backtest.json`, `deploy.json` and an example script called `bot.py`.
+
+If you don't want to use our `init` command, you can find the same files in the `examples` folder under [`settings.json`](https://github.com/Blankly-Finance/Blankly/blob/main/examples/settings.json) and [`keys_example.json`](https://github.com/Blankly-Finance/Blankly/blob/main/examples/keys_example.json)
 
 3. From there, **insert your API keys** from your exchange into the generated `keys.json` file.
 
 More information can be found on our [docs](https://docs.blankly.finance)
 
-### Directory format
+## Directory format
+
 The working directory format should have at least these files:
 ```
 Project
@@ -68,8 +126,6 @@ Project
    |-settings.json
 ```
 
-If you don't want to use our `init` command, you can find the same files in the `examples` folder under [`settings.json`](https://github.com/Blankly-Finance/Blankly/blob/main/examples/settings.json) and [`keys.json`](https://github.com/Blankly-Finance/Blankly/blob/main/examples/keys_example.json)
-
 ### Additional Info
 Make sure you're using a supported version of python. The module is currently tested on these versions:
 
@@ -77,10 +133,10 @@ Make sure you're using a supported version of python. The module is currently te
 
 For more info, and ways to do more advanced things, check out our [getting started docs](https://docs.blankly.finance).
 
-## Example Use
+## RSI Example
 We have a pre-built cookbook examples that implement strategies such as RSI, MACD, and the Golden Cross found in our [examples](https://docs.blankly.finance/examples/golden-cross).
 
-We have made Blankly extremely easy to integrate with any existing models and price events to make it super easy to switch.
+The model below will run an RSI check every 30 minutes - **buying** below **30** and **selling** above **70** .
 
 ```python
 import blankly
