@@ -1,4 +1,4 @@
-from setuptools import find_packages, setup
+from setuptools import find_packages, setup, Extension
 from os import path
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, './README.md'), encoding='utf-8') as f:
@@ -19,6 +19,9 @@ setup(
     description='Rapidly build & deploy cross-exchange trading bots',  # Give a short description about your library
     long_description=long_description,
     long_description_content_type='text/markdown',
+    ext_modules=[
+        Extension("sum_test", ["./blankly/deployment/sum_test.cpp"])
+    ],
     author='blankly',
     entry_points={'console_scripts': ['blankly = blankly.deployment.cli:main']},
     author_email='contact@blankly.finance',
