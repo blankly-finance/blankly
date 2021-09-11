@@ -10,7 +10,7 @@
 extern "C" // required when using C++ compiler
 long long summation(int n, int* array) {
     // return type is 64 bit integer
-    std::cout << "Test Success" << endl;
+    std::cout << "Test Success" << std::endl;
     long long res = 0;
     for (int i = 0; i < n; ++i) {
         res += array[i];
