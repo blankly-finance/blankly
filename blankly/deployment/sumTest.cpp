@@ -7,6 +7,9 @@
 
 #include <iostream>
 
+void PyInit_deployment() {}
+
+
 extern "C" // required when using C++ compiler
 long long sumTest(int n, int* array) {
     // return type is 64 bit integer
