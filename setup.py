@@ -20,7 +20,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     ext_modules=[
-        Extension("sumTest", [path.join("blankly", "deployment", "sumTest.cpp")])
+        Extension("blankly.deployment.sumTest.*", [path.join("blankly", "deployment", "sumTest.cpp")])
     ],
     author='blankly',
     entry_points={'console_scripts': ['blankly = blankly.deployment.cli:main']},

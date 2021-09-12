@@ -8,7 +8,7 @@
 #include <iostream>
 
 extern "C" // required when using C++ compiler
-long long summation(int n, int* array) {
+long long sumTest(int n, int* array) {
     // return type is 64 bit integer
     std::cout << "Test Success" << std::endl;
     long long res = 0;
