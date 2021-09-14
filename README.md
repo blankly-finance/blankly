@@ -35,7 +35,7 @@
 
 ## Why Blankly? 
 
-Blankly is an elegant python library for interacting with many crypto and stock exchanges for automated portfolios in a consistent way. Blankly offers a powerful feature-set, optimized for speed and ease of use. 
+Blankly is an elegant python library for interacting with crypto, stocks, and forex for in a consistent and streamlined way. Now, no more reading API or struggling to get data. Blankly offers a powerful feature-set, optimized for speed and ease of use, better backtesting, and ultimately better models. 
 
 We're bridging the gap between local development systems & live APIs by building a framework which allows backtesting, 
 paper trading, sandbox testing, and live cross-exchange deployment without modifying a single line of trading logic.
