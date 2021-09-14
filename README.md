@@ -23,7 +23,6 @@
    
 
 </p>
-<br />
 <p align="center">
     <a target="_blank" href="https://docs.blankly.finance">View Docs</a>
     ·
