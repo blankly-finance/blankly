@@ -40,61 +40,9 @@ We're bridging the gap between local development systems & live APIs by building
 paper trading, sandbox testing, and live cross-exchange deployment without modifying a single line of trading logic.
 
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
+## Quickstart
 
-# Optimize Like Crazy
-
-## Run across symbols and exchanges
-
-```python
-# Authenticate instantly
-stocks = blankly.Alpaca()
-crypto = blankly.CoinbasePro()
-
-# Easily perform the same actions across exchanges & asset types
-stocks.interface.market_order('AAPL', 'buy', 10)
-crypto.interface.market_order('BTC-USD', 'buy', 10)
-```
-
-## Backtest
-
-```python
-def strategy(price, symbol, state):
-	# Trading logic here
-  state.interface.market_order(symbol, 'buy', 10)
-  
-# Authenticate
-alpaca = blankly.Alpaca()
-strategy = blankly.Strategy(alpaca)
-
-# Check price every hour and send to the straetgy function
-strategy.add_price_event(strategy, 'AAPL', '1h')
-
-# Run the backtest
-strategy.backtest(to='1y')
-```
-
-## High Quality Backtest Result
-
-View accurate holdings over time:
-
-![Image](https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/backtest_result.png?alt=media&token=4ef8ff1d-034c-474b-a662-f46393fe5597)
-
-## Run Live
-
-Seamlessly run your model live!
-
-```python
-# Just turn this
-strategy.backtest(to='1y')
-# Into this
-strategy.start()
-```
-
-Dates, times, and scheduling adjust on the backend to make the experience instant.
-
-# Quickstart
-
-## Installation
+### Installation
 
 1. First install Blankly using `pip`. Blankly is hosted on [PyPi](https://pypi.org/project/Blankly/).
 
@@ -106,7 +54,7 @@ $ pip install blankly
 ```bash
 $ blankly init
 ```
-This will run our setup script in the current terminal working directory.
+This will initialize your working directory.
 
 The command will create the files `keys.json`, `settings.json`, `backtest.json`, `deploy.json` and an example script called `bot.py`.
 
@@ -116,7 +64,7 @@ If you don't want to use our `init` command, you can find the same files in the 
 
 More information can be found on our [docs](https://docs.blankly.finance)
 
-## Directory format
+### Directory format
 
 The working directory format should have at least these files:
 ```
@@ -126,14 +74,33 @@ Project
    |-settings.json
 ```
 
-### Additional Info
+#### Additional Info
+
 Make sure you're using a supported version of python. The module is currently tested on these versions:
 
 - Python 3.7+
 
 For more info, and ways to do more advanced things, check out our [getting started docs](https://docs.blankly.finance).
 
+## Supported Exchanges
+
+| Exchange     | REST Support | Ticker Websocket | Order Book | Interface |
+| ------------ | ------------ | ---------------- | ---------- | --------- |
+| Coinbase Pro | 🟢           | 🟢               | 🟢        | 🟢        |
+| Binance      | 🟢           | 🟢               | 🟢        | 🟢       |
+| Alpaca       | 🟢         | 🟢             | 🟢      | 🟢        |
+| OANDA | 🟡 | 🟡 | 🟡 | 🟡 |
+
+🟢  = working
+
+🟡  = in development, some or most features are working
+
+🔴  = planned but not yet in development
+
+* Interface calls take ~300 µs extra to homogenize the exchange data.
+
 ## RSI Example
+
 We have a pre-built cookbook examples that implement strategies such as RSI, MACD, and the Golden Cross found in our [examples](https://docs.blankly.finance/examples/golden-cross).
 
 The model below will run an RSI check every 30 minutes - **buying** below **30** and **selling** above **70** .
@@ -171,45 +138,46 @@ if __name__ == "__main__":
     coinbase_strategy.add_price_event(price_event, symbol='BTC-USD', resolution='30m', init=init)
 
     # Start the strategy. This will begin each of the price event ticks
-    coinbase_strategy.start()
+    # coinbase_strategy.start()
     # Or backtest using this
-    # coinbase_strategy.backtest(to='1y', initial_values={'USD': 100000, 'BTC': 2})
+    coinbase_strategy.backtest(to='1y')
 ```
 
-## Supported Exchanges
+### High Quality Backtest Result
 
-| Exchange     | REST Support | Ticker Websocket | Order Book | Interface |
-| ------------ | ------------ | ---------------- | ---------- | --------- |
-| Coinbase Pro | 🟢           | 🟢               | 🟢        | 🟢        |
-| Binance      | 🟢           | 🟢               | 🟢        | 🟢       |
-| Alpaca       | 🟢         | 🟢             | 🟢      | 🟢        |
-| OANDA | 🟡 | 🟡 | 🟡 | 🟡 |
+View accurate holdings over time:
 
-🟢  = working
+![Image](https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/backtest_result.png?alt=media&token=4ef8ff1d-034c-474b-a662-f46393fe5597)
 
-🟡  = in development, some or most features are working
+### Run Live
 
-🔴  = planned but not yet in development
+Seamlessly run your model live!
 
-* Interface calls take ~300 µs extra to homogenize the exchange data.
+```python
+# Just turn this
+coinbase_strategy.backtest(to='1y')
+# Into this
+coinbase_strategy.start()
+```
 
-# Other Info
+Dates, times, and scheduling adjust on the backend to make the experience instant.
+## Other Info
 
-## Bugs
+### Bugs
 
 Please report any bugs or issues on the GitHub's Issues page.
 
-## Disclaimer 
+### Disclaimer 
 
 Trading is risky. We are not responsible for losses incurred using this software, software fitness for any particular purpose, or responsibility for any issues or bugs.
 This is free software.
 
-## Contributing
+### Contributing
 
 If you would like to support the project, pull requests are welcome.
 You can also contribute just by telling us what you think of Blankly: https://forms.gle/4oAjG9MKRTYKX2hP9
 
-## Licensing 
+### Licensing 
 
 **Blankly** is distributed under the [**LGPL License**](https://www.gnu.org/licenses/lgpl-3.0.en.html). See the [LICENSE](/LICENSE) for more details.
 
