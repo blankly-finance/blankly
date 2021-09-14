@@ -47,6 +47,7 @@ if __name__ == "__main__":
     alpaca = Alpaca()
     s = Strategy(alpaca)
     s.add_price_event(price_event, 'MSFT', resolution='1d', init=init)
+    s.add_price_event(price_event, 'AAPL', resolution='1d', init=init)
     s.backtest(initial_values={'USD': 10000}, to='2y')
     # Or just run it directly on the exchange
     # s.start()

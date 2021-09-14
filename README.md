@@ -77,6 +77,36 @@ strategy.add_price_event(price_event, 'MSFT', '15m')
 strategy.backtest(to='1y')
 ```
 
+#### Accurate Backtest Holdings
+
+<div align="center">
+  <img style="margin: 0 auto; padding-bottom: 15px; padding-top: 30px" width=100%" src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/backtest_result.png?alt=media&token=4ef8ff1d-034c-474b-a662-f46393fe5597">
+</div>
+
+#### Useful Metrics
+
+```bash
+cagr: 0.16389971631401057
+cum_returns: 0.16341583811462995
+sortino: 0.9357010686544994
+sharpe: 0.9194457112821073
+calmar: 1.103453797087196e-05
+volatility: 0.7740509744474758
+variance: 0.5991549110430868
+var: 156.2040441889991
+cvar: 6.508901021574862
+```
+### Switch to Live in One Line
+
+Seamlessly run your model live!
+
+```python
+# Just turn this
+strategy.backtest(to='1y')
+# Into this
+strategy.start()
+```
+
 ## Quickstart
 
 ### Installation
@@ -151,50 +181,50 @@ def price_event(price, symbol, state: StrategyState):
     """ This function will give an updated price every 15 seconds from our definition below """
     state.variables['history'].append(price)
     rsi = blankly.indicators.rsi(state.variables['history'])
-    if rsi[-1] < 30:
+    if rsi[-1] < 30 and not state.variables['has_bought']:
         # Dollar cost average buy
+        state.variables['has_bought'] = True
         state.interface.market_order(symbol, side='buy', funds=10)
-    elif rsi[-1] > 70:
+    elif rsi[-1] > 70 and state.variables['has_bought']:
         # Dollar cost average sell
+        state.variables['has_bought'] = False
         state.interface.market_order(symbol, side='sell', funds=10)
 
 
 def init(symbol, state: StrategyState):
     # Download price data to give context to the algo
     state.variables['history'] = state.interface.history(symbol, to='1y', return_as='list')['open']
+    state.variables['has_bought'] = False
 
 
 if __name__ == "__main__":
     # Authenticate coinbase pro strategy
-    coinbase_pro = blankly.CoinbasePro()
+    alpaca = blankly.Alpaca()
 
     # Use our strategy helper on coinbase pro
-    coinbase_strategy = blankly.Strategy(coinbase_pro)
+    strategy = blankly.Strategy(alpaca)
 
     # Run the price event function every time we check for a new price - by default that is 15 seconds
-    coinbase_strategy.add_price_event(price_event, symbol='BTC-USD', resolution='30m', init=init)
+    strategy.add_price_event(price_event, symbol='NCHL', resolution='30m', init=init)
+    strategy.add_price_event(price_event, symbol='CRBP', resolution='1h', init=init)
+    strategy.add_price_event(price_event, symbol='D', resolution='15m', init=init)
+    strategy.add_price_event(price_event, symbol='GME', resolution='30m', init=init)
 
     # Start the strategy. This will begin each of the price event ticks
     # coinbase_strategy.start()
     # Or backtest using this
-    coinbase_strategy.backtest(to='1y')
+    strategy.backtest(to='1y')
 ```
 
-### High Quality Backtest Result
-
-View accurate holdings over time:
-
-![Image](https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/backtest_result.png?alt=media&token=4ef8ff1d-034c-474b-a662-f46393fe5597)
-
-### Run Live
+### Run Example Live
 
 Seamlessly run your model live!
 
 ```python
 # Just turn this
-coinbase_strategy.backtest(to='1y')
+strategy.backtest(to='1y')
 # Into this
-coinbase_strategy.start()
+strategy.start()
 ```
 
 Dates, times, and scheduling adjust on the backend to make the experience instant.
