@@ -42,6 +42,42 @@ We're bridging the gap between local development systems & live APIs by building
 paper trading, sandbox testing, and live cross-exchange deployment without modifying a single line of trading logic.
 
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
+
+### Trade Stocks, Crypto, and Forex Seamlessly
+
+```python
+from blankly import Alpaca, CoinbasePro
+
+stocks = Alpaca()
+crypto = CoinbasePro()
+
+# Easily perform the same actions across exchanges & asset types
+stocks.interface.market_order('AAPL', 'buy', 10)
+crypto.interface.market_order('BTC-USD', 'buy', 10)
+```
+
+### Backtest Instantly Across Symbols
+
+```python
+from blankly import Alpaca, Strategy, StrategyState
+
+def price_event(price, symbol, state):
+	# Trading logic here
+  state.interface.market_order(symbol, 'buy', 10)
+  
+# Authenticate
+alpaca = Alpaca()
+strategy = Strategy(alpaca)
+
+# Check price every hour and send to the strategy function
+# Easily switch resolutions and data
+strategy.add_price_event(price_event, 'AAPL', '1h')
+strategy.add_price_event(price_event, 'MSFT', '15m')
+
+# Run the backtest
+strategy.backtest(to='1y')
+```
+
 ## Quickstart
 
 ### Installation
