@@ -7,7 +7,7 @@
 </div>
 <br />
 <div align="center">
-  <b>💨  Rapidly build and deploy quantitative models for stocks and crypto  🚀</b>
+  <b>💨  Rapidly build and deploy quantitative models for stocks, crypto, and forex  🚀</b>
 </div>
 <br />
 
