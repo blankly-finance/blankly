@@ -80,7 +80,7 @@ strategy.backtest(to='1y')
 #### Accurate Backtest Holdings
 
 <div align="center">
-  <img style="margin: 0 auto; padding-bottom: 15px; padding-top: 30px" width=100%" src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/screely-1631724902618.png?alt=media&token=e967e944-02c1-4b57-ad43-442d84f21b4f">
+  <img style="margin: 0 auto; padding-bottom: 15px; padding-top: 30px" width=100%" src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/screely-1631725027541.png?alt=media&token=1446fcf0-680b-4ee9-afcf-fbaea044eba7">
 </div>
 
 #### Useful Metrics
