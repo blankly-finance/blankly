@@ -43,7 +43,7 @@ class BacktestingWrapper:
         try:
             return self.frame['prices'][asset_id]
         except KeyError:
-            raise KeyError("Price not found in recent frame")
+            raise KeyError(f"Price not found in recent frame. Have prices for {asset_id} been downloaded?")
 
     def time(self):
         if self.backtesting:
