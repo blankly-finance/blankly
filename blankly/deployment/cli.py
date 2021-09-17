@@ -26,6 +26,8 @@ import time
 import requests
 import json
 import zipfile
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
 
 from blankly.deployment.api import API
 from blankly.utils.utils import load_json_file
@@ -64,6 +66,9 @@ subparsers = parser.add_subparsers(help='Different blankly commands.')
 
 init_parser = subparsers.add_parser('init', help='Sub command to create a blankly-enabled development environment.')
 init_parser.set_defaults(which='init')
+
+login_parser = subparsers.add_parser('login', help='Log in to your blankly account.')
+login_parser.set_defaults(which='login')
 
 deploy_parser = subparsers.add_parser('deploy', help='Sub command to deploy the model.')
 deploy_parser.set_defaults(which='deploy')
@@ -173,6 +178,24 @@ def main():
             print("Distribution folder already exists - skipping.")
 
         print("Done!")
+
+    elif which == 'login':
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                content_len = int(self.headers.get('Content-Length'))
+                post_body = self.rfile.read(content_len).decode('ascii')
+                post_body = json.loads(post_body)
+                print(post_body)
+                self.send_response(200)
+                self.send_header('Content-type', 'text/html')
+                self.end_headers()
+
+                message = "Hello, World!"
+                self.wfile.write(bytes(message, "utf8"))
+
+        server = HTTPServer(('', 8080), Handler)
+
+        server.handle_request()
 
     elif which == 'run':
         if args['path'] is None:
