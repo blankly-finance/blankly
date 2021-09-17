@@ -26,8 +26,6 @@ import time
 import requests
 import json
 import zipfile
-from http.server import BaseHTTPRequestHandler, HTTPServer
-
 
 from blankly.deployment.api import API
 from blankly.utils.utils import load_json_file
@@ -180,12 +178,13 @@ def main():
         print("Done!")
 
     elif which == 'login':
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self):
                 content_len = int(self.headers.get('Content-Length'))
                 post_body = self.rfile.read(content_len).decode('ascii')
                 post_body = json.loads(post_body)
-                print(post_body)
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
                 self.end_headers()
