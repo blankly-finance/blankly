@@ -20,7 +20,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     ext_modules=[
-        Extension("blankly.deployment.hello", [path.join("blankly", "deployment", "hello.cpp")])
+        # Extension("blankly.deployment.hello", [path.join("blankly", "deployment", "hello.cpp")])  # Disabled extension
     ],
     author='blankly',
     entry_points={'console_scripts': ['blankly = blankly.deployment.cli:main']},
