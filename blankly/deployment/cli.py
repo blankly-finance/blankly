@@ -55,7 +55,7 @@ def create_and_write_file(filename: str, default_contents: str = None):
         if default_contents is not None:
             file.write(default_contents)
     except FileExistsError:
-        pass
+        print("Already exists - skipping...")
 
 
 parser = argparse.ArgumentParser(description='Blankly CLI & deployment tool.')
@@ -84,24 +84,30 @@ run_parser.set_defaults(which='run')
 add_path_arg(run_parser)
 
 
-def zipdir(path, ziph):
+def zipdir(path, ziph, ignore_files: list):
     # From https://stackoverflow.com/a/1855118/8087739
     # Notice we're using this instead of shutil because it allows customization such as passwords and skipping
     # directories
     # ziph is zipfile handle
+
+    # Set all the ignored files to be absolute
+    for i in range(len(ignore_files)):
+        ignore_files[i] = os.path.abspath(ignore_files[i])
+
     for root, dirs, files in os.walk(path, topdown=True):
         for file in files:
             # (Modification) Skip everything that is in the blankly_dist folder
-            if root[-13:] != './blankly_dist':
+            filepath = os.path.join(root, file)
 
+            if not os.path.abspath(filepath) in ignore_files:
                 # This takes of the first part of the relative path and replaces it with /model/
-                relpath = os.path.relpath(os.path.join(root, file),
+                relpath = os.path.relpath(filepath,
                                           os.path.join(path, '..'))
                 relpath = os.path.normpath(relpath).split(os.sep)
                 relpath[0] = os.sep + 'model'
                 relpath = os.path.join(*relpath)
 
-                ziph.write(os.path.join(root, file), relpath)
+                ziph.write(filepath, relpath)
             else:
                 print('Skipping:', file, 'in folder', root)
 
@@ -120,6 +126,13 @@ def main():
         else:
             api = API()
 
+            try:
+                f = open(os.path.join(args['path'], 'blankly.json'))
+                deployment_options = json.load(f)
+            except FileNotFoundError:
+                raise FileNotFoundError("A blankly.json file must be present at the top level of the directory "
+                                        "specified.")
+
             print("Zipping...")
 
             with tempfile.TemporaryDirectory() as dist_directory:
@@ -128,9 +141,11 @@ def main():
 
                 model_path = os.path.join(dist_directory, 'model.zip')
                 zip_ = zipfile.ZipFile(model_path, 'w', zipfile.ZIP_DEFLATED)
-                zipdir(source, zip_)
+                zipdir(source, zip_, deployment_options['ignore_files'])
 
                 zip_.close()
+
+                time.sleep(25)
 
                 print("Uploading...")
                 print(api.upload(model_path, project_id='u4PB0Adpb4XAYd33qsH1', model_id='Fb0D0me8ubzVT7L75dO5'))
@@ -167,11 +182,13 @@ def main():
             "main_script": "./bot.py",
             "python_version": py_version[0] + "." + py_version[1],
             "requirements": "./requirements.txt",
-            "working_directory": "."
+            "working_directory": ".",
+            "ignore_files": ['']
         }
         create_and_write_file('blankly.json', json.dumps(deploy, indent=2))
 
         # Write in a blank requirements file
+        print("Writing requirements.txt defaults...")
         create_and_write_file('requirements.txt', 'blankly')
 
         print("Done!")
