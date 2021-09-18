@@ -26,6 +26,7 @@ import time
 import requests
 import json
 import zipfile
+import tempfile
 
 from blankly.deployment.api import API
 from blankly.utils.utils import load_json_file
@@ -91,10 +92,16 @@ def zipdir(path, ziph):
     for root, dirs, files in os.walk(path, topdown=True):
         for file in files:
             # (Modification) Skip everything that is in the blankly_dist folder
-            if root[0:14] != './blankly_dist':
-                ziph.write(os.path.join(root, file),
-                           os.path.relpath(os.path.join(root, file),
-                                           os.path.join(path, '..')))
+            if root[-13:] != './blankly_dist':
+
+                # This takes of the first part of the relative path and replaces it with /model/
+                relpath = os.path.relpath(os.path.join(root, file),
+                                          os.path.join(path, '..'))
+                relpath = os.path.normpath(relpath).split(os.sep)
+                relpath[0] = os.sep + 'model'
+                relpath = os.path.join(*relpath)
+
+                ziph.write(os.path.join(root, file), relpath)
             else:
                 print('Skipping:', file, 'in folder', root)
 
@@ -115,20 +122,18 @@ def main():
 
             print("Zipping...")
 
-            blankly_dist_folder = os.path.join(args['path'], './blankly_dist')
-            try:
-                os.mkdir(blankly_dist_folder)
-                print("Creating distribution folder...")
-            except FileExistsError:
-                pass
+            with tempfile.TemporaryDirectory() as dist_directory:
+                print(dist_directory)
+                source = os.path.abspath(args['path'])
 
-            model_path = os.path.join(blankly_dist_folder, 'model.zip')
-            zip_ = zipfile.ZipFile(model_path, 'w', zipfile.ZIP_DEFLATED)
-            zipdir('./', zip_)
+                model_path = os.path.join(dist_directory, 'model.zip')
+                zip_ = zipfile.ZipFile(model_path, 'w', zipfile.ZIP_DEFLATED)
+                zipdir(source, zip_)
 
-            zip_.close()
-            print("Uploading...")
-            print(api.upload(model_path, project_id='u4PB0Adpb4XAYd33qsH1', model_id='Fb0D0me8ubzVT7L75dO5'))
+                zip_.close()
+
+                print("Uploading...")
+                print(api.upload(model_path, project_id='u4PB0Adpb4XAYd33qsH1', model_id='Fb0D0me8ubzVT7L75dO5'))
 
     elif which == 'init':
         print("Initializing...")
@@ -169,12 +174,6 @@ def main():
         # Write in a blank requirements file
         create_and_write_file('requirements.txt', 'blankly')
 
-        try:
-            os.mkdir('./blankly_dist')
-            print("Creating distribution folder...")
-        except FileExistsError:
-            print("Distribution folder already exists - skipping.")
-
         print("Done!")
 
     elif which == 'login':
@@ -184,12 +183,14 @@ def main():
             def do_GET(self):
                 content_len = int(self.headers.get('Content-Length'))
                 post_body = self.rfile.read(content_len).decode('ascii')
-                post_body = json.loads(post_body)
+                token: str = json.loads(post_body)['token']
+
                 self.send_response(200)
                 self.send_header('Content-type', 'text/html')
+                self.send_header('Access-Control-Allow-Origin', '*')
                 self.end_headers()
 
-                message = "Hello, World!"
+                message = "Success"
                 self.wfile.write(bytes(message, "utf8"))
 
         server = HTTPServer(('', 8080), Handler)
@@ -253,4 +254,5 @@ def main():
                     time.sleep(5)
 
 
-main()
+if __name__ == "__main__":
+    main()
