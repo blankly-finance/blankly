@@ -16,7 +16,6 @@ build/
 develop-eggs/
 dist/
 # Also include the blankly dist
-blankly_dist/
 downloads/
 eggs/
 .eggs/
