@@ -96,7 +96,7 @@ variance: 0.5991549110430868
 var: 156.2040441889991
 cvar: 6.508901021574862
 ```
-### Switch to Live in One Line
+### Go Live in One Line
 
 Seamlessly run your model live!
 
@@ -106,6 +106,8 @@ strategy.backtest(to='1y')
 # Into this
 strategy.start()
 ```
+
+Dates, times, and scheduling adjust on the backend to make the experience instant.
 
 ## Quickstart
 
@@ -215,19 +217,6 @@ if __name__ == "__main__":
     # Or backtest using this
     strategy.backtest(to='1y')
 ```
-
-### Run Example Live
-
-Seamlessly run your model live!
-
-```python
-# Just turn this
-strategy.backtest(to='1y')
-# Into this
-strategy.start()
-```
-
-Dates, times, and scheduling adjust on the backend to make the experience instant.
 ## Other Info
 
 ### Bugs
