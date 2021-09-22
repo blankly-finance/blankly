@@ -163,30 +163,6 @@ class BackTestController:
             time_interval = time_interval_to_seconds(time_interval)
         self.price_events.append([callback, asset_id, time_interval, state_object, ohlc, init, teardown])
 
-    def __determine_price(self, asset_id, epoch):
-        # Custom linear search algorithm, returns last index when failed
-        def search(arr, size, x):
-            while True:
-                if self.__current_search_index == size:
-                    # Must be the last one in the list
-                    return self.__current_search_index - 1
-
-                if arr[self.__current_search_index] <= x <= arr[self.__current_search_index + 1]:
-                    # Found it in this range
-                    return self.__current_search_index
-                else:
-                    self.__current_search_index += 1
-        try:
-            prices = self.pd_prices[asset_id][self.use_price]  # type: pd.Series
-            times = self.pd_prices[asset_id]['time']  # type: pd.Series
-
-            # Iterate and find the correct quote price
-            index = search(times, times.size, epoch)
-            return prices[index]
-        except KeyError:
-            # Not a currency that we have data for at all
-            return 0
-
     def write_setting(self, key, value, save=False):
         """
         Write a setting to the .json preferences
@@ -247,7 +223,11 @@ class BackTestController:
                 currency_pair += self.quote_currency
 
             # Get price at time
-            price = self.__determine_price(currency_pair, local_time)
+            try:
+                price = self.interface.get_price(currency_pair)
+            except KeyError:
+                # Must be a currency we have no data for
+                price = 0
             value_total += price * true_available[i]
             no_trade_value += price * no_trade_available[i]
 
@@ -578,6 +558,32 @@ class BackTestController:
         resample_setting = self.preferences['settings']['resample_account_value_for_metrics']
         if isinstance(resample_setting, str) or is_number(resample_setting):
             # Backing arrays. We can't append directly to the dataframe so array has to also be made
+
+            def search_price(asset_id, epoch):
+                # In this case because each asset is called individually
+                def search(arr, size, x):
+                    while True:
+                        if self.__current_search_index == size:
+                            # Must be the last one in the list
+                            return self.__current_search_index - 1
+
+                        if arr[self.__current_search_index] <= x <= arr[self.__current_search_index + 1]:
+                            # Found it in this range
+                            return self.__current_search_index
+                        else:
+                            self.__current_search_index += 1
+                try:
+                    prices_ = self.pd_prices[asset_id][self.use_price]  # type: pd.Series
+                    times = self.pd_prices[asset_id]['time']  # type: pd.Series
+
+                    # Iterate and find the correct quote price
+                    index_ = search(times, times.size, epoch)
+                    # print('Found price for', asset_id, prices[index])
+                    return prices_[index_]
+                except KeyError:
+                    # Not a currency that we have data for at all
+                    return 0
+
             resampled_returns = pd.DataFrame(columns=['time', 'value'])
             resampled_backing_array = []
 
@@ -601,7 +607,7 @@ class BackTestController:
                 # Append this dict to the array
                 resampled_backing_array.append({
                     'time': epoch_start,
-                    'value': self.__determine_price('Account Value (' + self.quote_currency + ')', epoch_start)
+                    'value': search_price('Account Value (' + self.quote_currency + ')', epoch_start)
                 })
 
                 # Increase the epoch value
