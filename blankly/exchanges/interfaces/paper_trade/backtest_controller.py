@@ -228,7 +228,14 @@ class BackTestController:
         # No trade account total
         no_trade_value = 0
 
-        for i in true_account.keys():
+        # Save this up front so that it can be removed from the price calculation (its always a value of 1 anyway)
+        quote_value = true_account[self.quote_currency]['available'] + true_account[self.quote_currency]['hold']
+        try:
+            del true_account[self.quote_currency]
+        except KeyError:
+            pass
+
+        for i in list(true_account.keys()):
             # Funds on hold are still added
             true_available[i] = true_account[i]['available'] + true_account[i]['hold']
             no_trade_available[i] = self.initial_account[i]['available'] + self.initial_account[i]['hold']
@@ -248,7 +255,8 @@ class BackTestController:
         true_available['time'] = local_time
         no_trade_available['time'] = local_time
 
-        value_total += true_account[self.quote_currency]['available'] + true_account[self.quote_currency]['hold']
+        value_total += quote_value
+        true_available[self.quote_currency] = quote_value
 
         no_trade_value += self.initial_account[self.quote_currency]['available'] + \
                           self.initial_account[self.quote_currency]['hold']
