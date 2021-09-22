@@ -207,7 +207,7 @@ if __name__ == "__main__":
     strategy = blankly.Strategy(alpaca)
 
     # Run the price event function every time we check for a new price - by default that is 15 seconds
-    strategy.add_price_event(price_event, symbol='NCHL', resolution='30m', init=init)
+    strategy.add_price_event(price_event, symbol='NCLH', resolution='30m', init=init)
     strategy.add_price_event(price_event, symbol='CRBP', resolution='1h', init=init)
     strategy.add_price_event(price_event, symbol='D', resolution='15m', init=init)
     strategy.add_price_event(price_event, symbol='GME', resolution='30m', init=init)
