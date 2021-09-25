@@ -1,7 +1,5 @@
-from blankly.frameworks import strategy
 import blankly
 from blankly.utils import trunc
-
 
 
 def price_event(price, symbol, state: blankly.StrategyState):
@@ -15,9 +13,10 @@ def price_event(price, symbol, state: blankly.StrategyState):
         state.variables['owns_position'] = True
     elif rsi[-1] > 70 and state.variables['owns_position']:
         # Dollar cost average sell
-        curr_value = trunc(state.interface.account[symbol].available * price, 2)
+        curr_value = trunc(state.interface.account[state.base_asset].available * price, 2)
         state.interface.market_order(symbol, side='sell', funds=curr_value)
         state.variables['owns_position'] = False
+
 
 def init(symbol, state: blankly.StrategyState):
     # Download price data to give context to the algo
