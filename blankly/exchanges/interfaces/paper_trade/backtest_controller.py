@@ -92,6 +92,9 @@ class BackTestController:
         # Export a time for use in other classes
         self.time = None
 
+        # User added times
+        self.__user_added_times = []
+
     def sync_prices(self, save=True) -> dict:
         cache_folder = self.preferences['settings']["cache_location"]
         # Make sure the cache folder exists and read files
@@ -111,36 +114,119 @@ class BackTestController:
             identifier[3] = float(identifier[3])
             available_files.append(identifier)
 
-        assets = self.preferences['price_data']['assets']  # type: dict
-        for i in assets:
-            identifier = [i[0], i[1], i[2], i[3]]
-            string_identifier = to_string_key(identifier)
-            if identifier in available_files:
-                # Read the csv here
-                if tuple(identifier) not in self.price_dictionary.keys():
-                    print("Including: " + string_identifier + ".csv in backtest.")
-                    self.price_dictionary[tuple(identifier)] = pd.read_csv(os.path.join(cache_folder,
-                                                                                        string_identifier + ".csv")
-                                                                           )
-            else:
-                if tuple(identifier) not in self.price_dictionary.keys():
-                    print("No exact cache exists for " + str(identifier[0]) + " from " + str(identifier[1]) + " to " +
-                          str(identifier[2]) + " at " + str(identifier[3]) + "s resolution. Downloading...")
-                    download = self.interface.get_product_history(identifier[0], identifier[1], identifier[2],
-                                                                  identifier[3])
-                    self.price_dictionary[tuple(identifier)] = download
-                    if save:
-                        download.to_csv(os.path.join(cache_folder, string_identifier + ".csv"), index=False)
+        # This is only the downloaded data
+        local_history_blocks = {}
+        for i in available_files:
+            # Sort these into resolutions
+            asset = i[0]
 
-        # Merge all the same asset ids into the same dictionary spots
-        unique_assets = {}
-        for k, v in self.price_dictionary.items():
-            if k[0] in unique_assets:
-                unique_assets[k[0]] = pd.concat([unique_assets[k[0]], v], ignore_index=True)
-            else:
-                unique_assets[k[0]] = v
+            # Make sure to add the asset as a key
+            if asset not in list(local_history_blocks.keys()):
+                local_history_blocks[asset] = {}
 
-        return unique_assets
+            # Add each resolution to its own internal list
+            if local_history_blocks[i[3]] not in list(local_history_blocks[asset].keys()):
+                local_history_blocks[asset][i[3]] = [i]
+            else:
+                local_history_blocks[asset][i[3]].append(i)
+
+        def segment(conjoined_ranges: list) -> list:
+            """
+            Split a list with sets of even intervals into multiple lists. The list must be single increments in all
+            places except for the splits
+            """
+            ranges = []
+            segments = 0
+            for i in range(len(conjoined_ranges)-1):
+                i += 1
+                if conjoined_ranges[i] - conjoined_ranges[i-1] != 1:
+                    segmented_list = conjoined_ranges[segments:i]
+
+                    ranges.append((segmented_list[0], segmented_list[-1]))
+                    segments = i + 1
+
+            return ranges
+
+        # This is the data the user has requested: [asset_id, start_time, end_time, resolution]
+        needed_data = []
+        for i in self.__user_added_times:
+            asset = i[0]
+            start_time = i[1]
+            end_time = i[2]
+            resolution = i[3]
+
+            user_range = set(range(start_time, end_time))
+
+            download_ranges = []
+
+            # Attempt to find the same symbol/asset possibilities in the backtest blocks
+            try:
+                download_ranges = local_history_blocks[asset][resolution]
+            except KeyError:
+                pass
+
+            download_sets = []
+            for j in download_ranges:
+                download_sets.append(range(j[1], j[2]))
+
+            necessary_ranges = []
+            for j in download_sets:
+                necessary_ranges.append(user_range.difference(j))
+
+            df = pd.DataFrame
+
+            for j in necessary_ranges:
+                j = list(j)
+                pd.concat(df, self.interface.get_product_history(asset, j[0], j[-1], resolution))
+
+        # cache_folder = self.preferences['settings']["cache_location"]
+        # # Make sure the cache folder exists and read files
+        # try:
+        #     files = os.listdir(cache_folder)
+        # except FileNotFoundError:
+        #     files = []
+        #     os.mkdir(cache_folder)
+        #
+        # available_files = []
+        # for i in range(len(files)):
+        #     # example file name: 'BTC-USD.1622400000.1622510793.60.csv'
+        #     # Remove the .csv from each of the files: BTC-USD.1622400000.1622510793.60
+        #     identifier = files[i][:-4].split(",")
+        #     identifier[1] = float(identifier[1])
+        #     identifier[2] = float(identifier[2])
+        #     identifier[3] = float(identifier[3])
+        #     available_files.append(identifier)
+        #
+        # assets = self.preferences['price_data']['assets']  # type: dict
+        # for i in assets:
+        #     identifier = [i[0], i[1], i[2], i[3]]
+        #     string_identifier = to_string_key(identifier)
+        #     if identifier in available_files:
+        #         # Read the csv here
+        #         if tuple(identifier) not in self.price_dictionary.keys():
+        #             print("Including: " + string_identifier + ".csv in backtest.")
+        #             self.price_dictionary[tuple(identifier)] = pd.read_csv(os.path.join(cache_folder,
+        #                                                                                 string_identifier + ".csv")
+        #                                                                    )
+        #     else:
+        #         if tuple(identifier) not in self.price_dictionary.keys():
+        #             print("No exact cache exists for " + str(identifier[0]) + " from " + str(identifier[1]) + " to " +
+        #                   str(identifier[2]) + " at " + str(identifier[3]) + "s resolution. Downloading...")
+        #             download = self.interface.get_product_history(identifier[0], identifier[1], identifier[2],
+        #                                                           identifier[3])
+        #             self.price_dictionary[tuple(identifier)] = download
+        #             if save:
+        #                 download.to_csv(os.path.join(cache_folder, string_identifier + ".csv"), index=False)
+        #
+        # # Merge all the same asset ids into the same dictionary spots
+        # unique_assets = {}
+        # for k, v in self.price_dictionary.items():
+        #     if k[0] in unique_assets:
+        #         unique_assets[k[0]] = pd.concat([unique_assets[k[0]], v], ignore_index=True)
+        #     else:
+        #         unique_assets[k[0]] = v
+        #
+        # return unique_assets
 
     def add_prices(self, asset_id, start_time, end_time, resolution, save=False):
         # Create its unique identifier
@@ -148,7 +234,8 @@ class BackTestController:
 
         # If it's not loaded then write it to the file
         if tuple(identifier) not in self.price_dictionary.keys():
-            self.preferences['price_data']['assets'].append(identifier)
+            # self.preferences['price_data']['assets'].append(identifier)
+            self.__user_added_times.append(identifier)
             if save:
                 self.queue_backtest_write = True
         else:
