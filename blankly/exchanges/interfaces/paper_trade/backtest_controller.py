@@ -68,7 +68,8 @@ class BackTestController:
 
         self.pd_prices = None
 
-        self.sync_prices()
+        # User added times
+        self.__user_added_times = []
 
         self.use_price = None
 
@@ -92,10 +93,7 @@ class BackTestController:
         # Export a time for use in other classes
         self.time = None
 
-        # User added times
-        self.__user_added_times = []
-
-    def sync_prices(self, save=True) -> dict:
+    def sync_prices(self) -> dict:
         cache_folder = self.preferences['settings']["cache_location"]
         # Make sure the cache folder exists and read files
         try:
@@ -125,6 +123,8 @@ class BackTestController:
                 local_history_blocks[asset] = {}
 
             # Add each resolution to its own internal list
+            print(local_history_blocks)
+            print(i[3])
             if local_history_blocks[i[3]] not in list(local_history_blocks[asset].keys()):
                 local_history_blocks[asset][i[3]] = [i]
             else:
@@ -148,14 +148,14 @@ class BackTestController:
             return ranges
 
         # This is the data the user has requested: [asset_id, start_time, end_time, resolution]
-        needed_data = []
-        for i in self.__user_added_times:
-            asset = i[0]
-            start_time = i[1]
-            end_time = i[2]
-            resolution = i[3]
-
-            user_range = set(range(start_time, end_time))
+        final_prices = {}
+        for i in range(len(self.__user_added_times)):
+            if self.__user_added_times[i] is None:
+                continue
+            asset = self.__user_added_times[i][0]
+            start_time = self.__user_added_times[i][1]
+            end_time = self.__user_added_times[i][2]
+            resolution = self.__user_added_times[i][3]
 
             download_ranges = []
 
@@ -165,19 +165,72 @@ class BackTestController:
             except KeyError:
                 pass
 
-            download_sets = []
             for j in download_ranges:
-                download_sets.append(range(j[1], j[2]))
+                download_start_time = j[1]
+                download_end_time = j[2]
 
-            necessary_ranges = []
-            for j in download_sets:
-                necessary_ranges.append(user_range.difference(j))
+                contains_start = False
+                contains_end = False
+                if download_start_time <= start_time <= download_end_time:
+                    contains_start = True
+                elif download_start_time <= end_time <= download_end_time:
+                    contains_end = True
 
-            df = pd.DataFrame
+                if contains_start or contains_end:
+                    # Read in the whole thing if it has any sort of relevance on the data
+                    relevant_df = pd.read_csv(os.path.join(cache_folder,
+                                                           to_string_key(j) + ".csv"))
 
-            for j in necessary_ranges:
-                j = list(j)
-                pd.concat(df, self.interface.get_product_history(asset, j[0], j[-1], resolution))
+                    # If it only contains the start then it must be offset too high or is too long
+                    if contains_start and not contains_end:
+                        relevant_df = relevant_df[relevant_df['time'] <= end_time]
+
+                        # Set the end time to match the first time in the relevant dataframe
+                        self.__user_added_times[i][2] = relevant_df['time'].iloc[0]
+
+                    # If it only contains the end then it must be offset too low or is too short
+                    if contains_end and not contains_start:
+                        relevant_df = relevant_df[relevant_df['time'] >= start_time]
+
+                        # Set the start time to match the very last time of the relevant dataframe
+                        self.__user_added_times[i][1] = relevant_df['time'].iloc[-1]
+
+                    # If it contains start and end then it's just right
+                    if contains_end and contains_start:
+                        relevant_df = relevant_df[relevant_df['time'] >= start_time]
+                        relevant_df = relevant_df[relevant_df['time'] <= end_time]
+
+                        # This dataset has been completed so there is no need to continue
+                        self.__user_added_times[i] = None
+
+                    # Write these into the data array
+                    if asset not in list(final_prices.keys()):
+                        final_prices[asset] = relevant_df
+                    else:
+                        final_prices[asset] = pd.concat([final_prices[asset], relevant_df])
+
+            # If there is any data left to download do it here
+            if self.__user_added_times is not None and self.__user_added_times[i][1] < self.__user_added_times[i][2]:
+                print("No cached data found for " + asset + " from: " + str(self.__user_added_times[i][1]) + " to " +
+                      str(self.__user_added_times[i][2]) + " at a resolution of " + str(resolution) + " seconds.")
+                download = self.interface.get_product_history(asset,
+                                                              self.__user_added_times[i][1],
+                                                              self.__user_added_times[i][2],
+                                                              resolution)
+
+                download.to_csv(os.path.join(cache_folder, to_string_key(self.__user_added_times[i]) + ".csv"),
+                                index=False)
+
+                # Write these into the data array
+                if asset not in list(final_prices.keys()):
+                    final_prices[asset] = download
+                else:
+                    final_prices[asset] = pd.concat([final_prices[asset], download])
+
+        for i in list(final_prices.keys()):
+            final_prices[i] = final_prices[i].sort_values('time')
+
+        return final_prices
 
         # cache_folder = self.preferences['settings']["cache_location"]
         # # Make sure the cache folder exists and read files
@@ -230,7 +283,7 @@ class BackTestController:
 
     def add_prices(self, asset_id, start_time, end_time, resolution, save=False):
         # Create its unique identifier
-        identifier = [asset_id, start_time, end_time, resolution]
+        identifier = [asset_id, int(start_time), int(end_time), resolution]
 
         # If it's not loaded then write it to the file
         if tuple(identifier) not in self.price_dictionary.keys():
@@ -240,9 +293,6 @@ class BackTestController:
                 self.queue_backtest_write = True
         else:
             print("already identified")
-
-        # Ensure everything is up to date
-        self.sync_prices(save)
 
     def append_backtest_price_event(self, callback: typing.Callable, asset_id, time_interval, state_object, ohlc, init,
                                     teardown):
@@ -262,8 +312,6 @@ class BackTestController:
         self.preferences['settings'][key] = value
         if save:
             self.queue_backtest_write = True
-
-        self.sync_prices(save)
 
     def write_initial_price_values(self, account_dictionary):
         """
@@ -365,7 +413,7 @@ class BackTestController:
         if self.queue_backtest_write:
             write_backtest_preferences(self.preferences, self.backtest_settings_path)
 
-        prices = self.sync_prices(False)
+        prices = self.sync_prices()
 
         # Organize each price into this structure: [epoch, "BTC-USD", price, open, high, low, close, volume]
         use_price = self.preferences['settings']['use_price']
