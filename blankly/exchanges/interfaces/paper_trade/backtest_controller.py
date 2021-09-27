@@ -107,9 +107,9 @@ class BackTestController:
             # example file name: 'BTC-USD.1622400000.1622510793.60.csv'
             # Remove the .csv from each of the files: BTC-USD.1622400000.1622510793.60
             identifier = files[i][:-4].split(",")
-            identifier[1] = float(identifier[1])
-            identifier[2] = float(identifier[2])
-            identifier[3] = float(identifier[3])
+            identifier[1] = int(identifier[1])
+            identifier[2] = int(identifier[2])
+            identifier[3] = int(identifier[3])
             available_files.append(identifier)
 
         # This is only the downloaded data
@@ -123,9 +123,7 @@ class BackTestController:
                 local_history_blocks[asset] = {}
 
             # Add each resolution to its own internal list
-            print(local_history_blocks)
-            print(i[3])
-            if local_history_blocks[i[3]] not in list(local_history_blocks[asset].keys()):
+            if i[3] not in list(local_history_blocks[asset].keys()):
                 local_history_blocks[asset][i[3]] = [i]
             else:
                 local_history_blocks[asset][i[3]].append(i)
@@ -176,6 +174,14 @@ class BackTestController:
                 elif download_start_time <= end_time <= download_end_time:
                     contains_end = True
 
+                print(j)
+                print(start_time)
+                print(end_time)
+                print(download_start_time)
+                print(download_end_time)
+                print(contains_start)
+                print(contains_end)
+
                 if contains_start or contains_end:
                     # Read in the whole thing if it has any sort of relevance on the data
                     relevant_df = pd.read_csv(os.path.join(cache_folder,
@@ -183,17 +189,17 @@ class BackTestController:
 
                     # If it only contains the start then it must be offset too high or is too long
                     if contains_start and not contains_end:
-                        relevant_df = relevant_df[relevant_df['time'] <= end_time]
+                        relevant_df = relevant_df[relevant_df['time'] >= start_time]
 
                         # Set the end time to match the first time in the relevant dataframe
-                        self.__user_added_times[i][2] = relevant_df['time'].iloc[0]
+                        self.__user_added_times[i][1] = relevant_df['time'].iloc[-1]
 
                     # If it only contains the end then it must be offset too low or is too short
                     if contains_end and not contains_start:
-                        relevant_df = relevant_df[relevant_df['time'] >= start_time]
+                        relevant_df = relevant_df[relevant_df['time'] <= end_time]
 
                         # Set the start time to match the very last time of the relevant dataframe
-                        self.__user_added_times[i][1] = relevant_df['time'].iloc[-1]
+                        self.__user_added_times[i][2] = relevant_df['time'].iloc[0]
 
                     # If it contains start and end then it's just right
                     if contains_end and contains_start:
@@ -218,7 +224,10 @@ class BackTestController:
                                                               self.__user_added_times[i][2],
                                                               resolution)
 
-                download.to_csv(os.path.join(cache_folder, to_string_key(self.__user_added_times[i]) + ".csv"),
+                # Write the file but this time include very accurately the start and end times
+                download.to_csv(os.path.join(cache_folder, f'{asset},{self.__user_added_times[i][1]},'
+                                                           f'{self.__user_added_times[i][2] + resolution},'
+                                                           f'{resolution}.csv'),
                                 index=False)
 
                 # Write these into the data array
@@ -283,7 +292,7 @@ class BackTestController:
 
     def add_prices(self, asset_id, start_time, end_time, resolution, save=False):
         # Create its unique identifier
-        identifier = [asset_id, int(start_time), int(end_time), resolution]
+        identifier = [asset_id, int(start_time), int(end_time), int(resolution)]
 
         # If it's not loaded then write it to the file
         if tuple(identifier) not in self.price_dictionary.keys():

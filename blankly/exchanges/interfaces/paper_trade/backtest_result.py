@@ -56,7 +56,7 @@ class BacktestResult:
         return_string += self.dataframes['resampled_account_value'].__str__()
         return_string += "\n"
 
-        return_string += "blankly Metrics: \n"
+        return_string += "Blankly Metrics: \n"
         for i in self.metrics.keys():
             return_string += i + ": " + str(self.metrics[i]) + "\n"
 
