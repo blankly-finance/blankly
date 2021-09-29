@@ -165,7 +165,7 @@ class BackTestController:
 
             for j in download_ranges:
                 download_start_time = j[1]
-                download_end_time = j[2]
+                download_end_time = j[2] - resolution
 
                 contains_start = False
                 contains_end = False
@@ -173,14 +173,6 @@ class BackTestController:
                     contains_start = True
                 elif download_start_time <= end_time <= download_end_time:
                     contains_end = True
-
-                print(j)
-                print(start_time)
-                print(end_time)
-                print(download_start_time)
-                print(download_end_time)
-                print(contains_start)
-                print(contains_end)
 
                 if contains_start or contains_end:
                     # Read in the whole thing if it has any sort of relevance on the data
@@ -216,7 +208,8 @@ class BackTestController:
                         final_prices[asset] = pd.concat([final_prices[asset], relevant_df])
 
             # If there is any data left to download do it here
-            if self.__user_added_times is not None and self.__user_added_times[i][1] < self.__user_added_times[i][2]:
+            if self.__user_added_times is not None and \
+                    self.__user_added_times[i][2] - self.__user_added_times[i][1] > resolution:
                 print("No cached data found for " + asset + " from: " + str(self.__user_added_times[i][1]) + " to " +
                       str(self.__user_added_times[i][2]) + " at a resolution of " + str(resolution) + " seconds.")
                 download = self.interface.get_product_history(asset,
@@ -225,10 +218,11 @@ class BackTestController:
                                                               resolution)
 
                 # Write the file but this time include very accurately the start and end times
-                download.to_csv(os.path.join(cache_folder, f'{asset},{self.__user_added_times[i][1]},'
-                                                           f'{self.__user_added_times[i][2] + resolution},'
-                                                           f'{resolution}.csv'),
-                                index=False)
+                if self.preferences['settings']['continuous_caching']:
+                    download.to_csv(os.path.join(cache_folder, f'{asset},{self.__user_added_times[i][1]},'
+                                                               f'{self.__user_added_times[i][2]},'
+                                                               f'{resolution}.csv'),
+                                    index=False)
 
                 # Write these into the data array
                 if asset not in list(final_prices.keys()):
@@ -237,7 +231,7 @@ class BackTestController:
                     final_prices[asset] = pd.concat([final_prices[asset], download])
 
         for i in list(final_prices.keys()):
-            final_prices[i] = final_prices[i].sort_values('time')
+            final_prices[i] = final_prices[i].sort_values(by=['time'], ignore_index=True)
 
         return final_prices
 
@@ -427,10 +421,6 @@ class BackTestController:
         # Organize each price into this structure: [epoch, "BTC-USD", price, open, high, low, close, volume]
         use_price = self.preferences['settings']['use_price']
         self.use_price = use_price
-
-        # Sort each column by time
-        for column in prices.keys():
-            prices[column] = prices[column].sort_values('time')
 
         self.pd_prices = {**prices}
 
