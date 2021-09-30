@@ -424,9 +424,10 @@ class AlpacaInterface(ExchangeInterface):
 
     def overridden_history(self, symbol, epoch_start, epoch_stop, resolution_seconds, **kwargs) -> pd.DataFrame:
         to = kwargs['to']
+        # If it's a string alpaca is an edge case where epoch can be used
+        if to is not None and isinstance(to, str):
+            to = None
         if to:
-            if isinstance(to, str):
-                to = int(utils.time_interval_to_seconds(to)/resolution_seconds)
             resolution_seconds = self.valid_resolutions[min(range(len(self.valid_resolutions)),
                                                             key=lambda i: abs(self.valid_resolutions[i] -
                                                                               resolution_seconds))]

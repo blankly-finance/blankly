@@ -195,7 +195,6 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         else:
             if isinstance(end_date, str):
                 parsed_date = parser.parse(end_date)
-                print(parsed_date.timestamp())
             elif isinstance(end_date, float):
                 parsed_date = dt.fromtimestamp(end_date)
             else:
