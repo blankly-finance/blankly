@@ -129,7 +129,7 @@ class AlpacaInterface(ExchangeInterface):
             curr_symbol = position.pop('symbol')
             positions_dict[curr_symbol] = utils.AttributeDict({
                 'available': float(position.pop('qty')),
-                'hold': 0
+                'hold': 0.0
             })
 
         symbols = list(positions_dict.keys())
@@ -140,7 +140,7 @@ class AlpacaInterface(ExchangeInterface):
         account = self.calls.get_account()
         positions_dict['USD'] = utils.AttributeDict({
             'available': float(account['cash']),
-            'hold': 0
+            'hold': 0.0
         })
 
         for order in open_orders:
@@ -152,7 +152,7 @@ class AlpacaInterface(ExchangeInterface):
                     elif order['type'] == 'market':
                         dollar_amt = float(order['qty']) * snapshot_price[curr_symbol]['latestTrade']['p']
                     else:  # we dont have support for stop_order, stop_limit_order
-                        dollar_amt = 0
+                        dollar_amt = 0.0
                 else:  # this is the case for notional market buy
                     dollar_amt = order['notional']
 
@@ -168,12 +168,11 @@ class AlpacaInterface(ExchangeInterface):
                 positions_dict[curr_symbol]['available'] -= qty
                 positions_dict[curr_symbol]['hold'] += qty
 
-                # todo: this is incorrect
-                if symbol is not None and curr_symbol == symbol:
-                    return utils.AttributeDict({
-                        'available': positions_dict[curr_symbol]['available'],
-                        'hold': positions_dict[curr_symbol]['hold']
-                    })
+        if symbol is not None and symbol in positions_dict:
+            return utils.AttributeDict({
+                'available': float(positions_dict[symbol]['available']),
+                'hold': float(positions_dict[symbol]['hold'])
+            })
 
         if symbol == 'USD':
             return utils.AttributeDict({
@@ -186,8 +185,8 @@ class AlpacaInterface(ExchangeInterface):
             for i in self.__unique_assets:
                 if i not in positions_dict:
                     positions_dict[i] = utils.AttributeDict({
-                        'available': 0,
-                        'hold': 0
+                        'available': 0.0,
+                        'hold': 0.0
                     })
             return positions_dict
         else:

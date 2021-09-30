@@ -164,7 +164,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         # self.assertTrue(compare_dictionaries(coinbase_buy.get_response(), coinbase_sell.get_response()))
         # self.assertTrue(compare_dictionaries(coinbase_buy.get_status(full=True), coinbase_sell.get_status(full=True)))
 
-        response_list = [# coinbase_buy.get_response(),
+        response_list = [  # coinbase_buy.get_response(),
                          # coinbase_sell.get_response(),
                          binance_buy.get_response(),
                          binance_sell.get_response()
@@ -172,7 +172,7 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         time.sleep(1)
 
-        status_list = [# coinbase_buy.get_status(full=True),
+        status_list = [  # coinbase_buy.get_status(full=True),
                        # coinbase_sell.get_status(full=True),
                        binance_buy.get_status(full=True),
                        binance_sell.get_status(full=True)
@@ -214,7 +214,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         # coinbase_sell = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'sell', 100000, 1)
         # self.check_limit_order(coinbase_sell, 'sell', 1, 'BTC-USD')
 
-        limits = [binance_buy, binance_sell, ] # coinbase_buy, coinbase_sell]
+        limits = [binance_buy, binance_sell, ]  # coinbase_buy, coinbase_sell]
         responses = []
         status = []
 
