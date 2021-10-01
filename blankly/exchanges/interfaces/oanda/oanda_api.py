@@ -15,6 +15,7 @@ def api_error_handler(func):
         return resp
     return wrapper
 
+
 class OandaAPI:
     # documentation here: http://developer.oanda.com/rest-live-v20/account-ep/
     API_URL = 'https://api-fxtrade.oanda.com'
