@@ -27,6 +27,7 @@ import requests
 import json
 import zipfile
 import tempfile
+import webbrowser
 
 from blankly.deployment.api import API
 from blankly.utils.utils import load_json_file
@@ -197,22 +198,32 @@ def main():
         from http.server import BaseHTTPRequestHandler, HTTPServer
 
         class Handler(BaseHTTPRequestHandler):
-            def do_GET(self):
+            def do_OPTIONS(self):
+                self.send_response(200, "ok")
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
+                self.send_header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-type")
+                self.end_headers()
+
+            def do_POST(self, *args, **kwargs):
                 content_len = int(self.headers.get('Content-Length'))
                 post_body = self.rfile.read(content_len).decode('ascii')
                 token: str = json.loads(post_body)['token']
 
+                # set headers
                 self.send_response(200)
-                self.send_header('Content-type', 'text/html')
-                self.send_header('Access-Control-Allow-Origin', '*')
+                self.send_header('Access-Control-Allow-Credentials', 'true')
+                self.send_header('Access-Control-Allow-Origin', 'http://localhost:*')
+                self.send_header("Content-type", "text/html")
                 self.end_headers()
 
-                message = "Success"
-                self.wfile.write(bytes(message, "utf8"))
+                print(token)
 
-        server = HTTPServer(('', 8080), Handler)
+        server = HTTPServer(('', 9082), Handler)
 
-        server.handle_request()
+        webbrowser.open_new('https://app.blankly.finance/auth/signin?redirectUrl=/deploy')
+
+        server.serve_forever()
 
     elif which == 'run':
         if args['path'] is None:

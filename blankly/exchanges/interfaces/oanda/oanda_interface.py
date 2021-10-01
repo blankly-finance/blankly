@@ -367,8 +367,8 @@ class OandaInterface(ExchangeInterface):
             order['time_in_force'] = 'GTC'
             renames = [['instrument', 'symbol'],
                        ['createTime', 'created_at'],
-                       ['state', 'status'], # TODO: handle status
-                       ['units', 'funds']] # TODO: I think this is wrong
+                       ['state', 'status'],  # TODO: handle status
+                       ['units', 'funds']]  # TODO: I think this is wrong
             order = utils.rename_to(renames, order)
 
         elif order['type'] == "LIMIT":
