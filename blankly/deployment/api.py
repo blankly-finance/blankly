@@ -17,7 +17,6 @@
 """
 
 import requests
-import os
 
 blankly_frontend_api_url = "http://localhost:3000"
 
@@ -43,10 +42,13 @@ class API:
             data: Optional JSON to be attached to the request body dictionary
             file: Optional file uploaded in bytes: file = {'file': open(file_path, 'rb')}
         """
-        route = os.path.join(self.url, route)
+        url = self.url
+        if url[-1] != '/' and route[0] != '/':
+            url += '/'
+        url += route
 
         kwargs = {
-            'url': route,
+            'url': url,
             'params': params,
             'json': json,
             'files': file,
@@ -80,6 +82,7 @@ class API:
         return self.__request('post', 'project/create', data={'uid': self.uid, 'name': name, 'plan': plan})
 
     def upload(self, file_path: str, project_id: str, model_id: str):
+        file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
         return self.__request('post', 'model/upload', file=file, data={'projectId': project_id,
                                                                        'userId': self.uid,
