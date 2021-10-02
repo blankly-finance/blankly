@@ -84,6 +84,57 @@ run_parser.set_defaults(which='run')
 
 add_path_arg(run_parser)
 
+token = None
+
+
+def login():
+    global token
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+    import urllib.parse
+
+    def set_token(new_value):
+        global token
+        token = new_value
+
+    class Handler(BaseHTTPRequestHandler):
+        token: str
+
+        def do_OPTIONS(self):
+            self.send_response(200, "ok")
+            self.send_header('Access-Control-Allow-Origin', 'https://app.blankly.finance')
+            self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+            self.send_header("Access-Control-Allow-Headers", 'Accept,Origin,Content-Type,X-LS-CORS-Template,'
+                                                             'X-LS-Auth-Token,X-LS-Auth-User-Token,Content-Type,'
+                                                             'X-LS-Sync-Result,X-LS-Sequence,token')
+            self.end_headers()
+
+        def do_GET(self):
+            args = urllib.parse.parse_qs(self.path[2:])
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+
+            file = requests.get('https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/login_success.'
+                                'html?alt=media&token=41d734e2-0a88-44c4-b1dd-7e081fd019e7')
+
+            self.wfile.write(bytes(file.text, "utf8"))
+
+            if 'token' in args:
+                set_token(args['token'][0])
+            else:
+                print("Failed to get token.")
+
+        def log_message(self, format_, *args):
+            return
+
+    server = HTTPServer(('', 9082), Handler)
+
+    webbrowser.open_new('https://app.blankly.finance/auth/signin?redirectUrl=/deploy')
+
+    server.handle_request()
+
+    return token
+
 
 def zipdir(path, ziph, ignore_files: list):
     # From https://stackoverflow.com/a/1855118/8087739
@@ -195,35 +246,7 @@ def main():
         print("Done!")
 
     elif which == 'login':
-        from http.server import BaseHTTPRequestHandler, HTTPServer
-
-        class Handler(BaseHTTPRequestHandler):
-            def do_OPTIONS(self):
-                self.send_response(200, "ok")
-                self.send_header('Access-Control-Allow-Origin', '*')
-                self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS')
-                self.send_header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-type")
-                self.end_headers()
-
-            def do_POST(self, *args, **kwargs):
-                content_len = int(self.headers.get('Content-Length'))
-                post_body = self.rfile.read(content_len).decode('ascii')
-                token: str = json.loads(post_body)['token']
-
-                # set headers
-                self.send_response(200)
-                self.send_header('Access-Control-Allow-Credentials', 'true')
-                self.send_header('Access-Control-Allow-Origin', 'http://localhost:*')
-                self.send_header("Content-type", "text/html")
-                self.end_headers()
-
-                print(token)
-
-        server = HTTPServer(('', 9082), Handler)
-
-        webbrowser.open_new('https://app.blankly.finance/auth/signin?redirectUrl=/deploy')
-
-        server.serve_forever()
+        print(login())
 
     elif which == 'run':
         if args['path'] is None:
