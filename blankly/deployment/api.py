@@ -22,13 +22,14 @@ blankly_frontend_api_url = "http://localhost:3000"
 
 
 class API:
-    def __init__(self, override_url: str = None):
+    def __init__(self, token, override_url: str = None):
         if override_url:
             self.url = override_url
         else:
             self.url = blankly_frontend_api_url
 
-        self.uid = "u4PB0Adpb4XAYd33qsH1"  # TODO this is unclear right now
+        self.token = None
+        self.token = self.exchange_token(token)
 
     def __request(self, type_: str, route: str, json: dict = None, params: dict = None, file=None, data: dict = None):
         """
@@ -52,8 +53,12 @@ class API:
             'params': params,
             'json': json,
             'files': file,
-            'data': data
+            'data': data,
         }
+
+        # Add the token if we have it
+        if self.token is not None:
+            kwargs['headers'] = {'token': self.token}
 
         if type_ == "get":
             out = requests.get(**kwargs)
@@ -64,7 +69,17 @@ class API:
         else:
             raise LookupError("Request type is not implemented or does not exist.")
 
-        return out.json()
+        try:
+            return out.json()
+        except ValueError:
+            print(f'Invalid Response: {out}')
+            return None
+
+    def exchange_token(self, token):
+        """
+        Get the JWT from the refresh token
+        """
+        return self.__request('post', 'auth/token', data={'refreshToken': token})['idToken']
 
     def get_details(self, project_id: str, model_id: str):
         """
@@ -76,14 +91,13 @@ class API:
         return self.__request('get', 'model/status', data={'projectId': project_id, 'modelId': model_id})
 
     def list_projects(self):
-        return self.__request('get', 'project/list', data={'uid': self.uid})
+        return self.__request('get', 'project/list')
 
     def create_project(self, name: str, plan: str):
-        return self.__request('post', 'project/create', data={'uid': self.uid, 'name': name, 'plan': plan})
+        return self.__request('post', 'project/create')
 
     def upload(self, file_path: str, project_id: str, model_id: str):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
         return self.__request('post', 'model/upload', file=file, data={'projectId': project_id,
-                                                                       'userId': self.uid,
                                                                        'modelId': model_id}, params={'we got': True})

@@ -152,7 +152,7 @@ def login(remove_cache=False):
             self.wfile.write(bytes(file.text, "utf8"))
 
             # Send this to the global static variable to use the info out of this
-            if 'token' in args:
+            if 'token' in args and args['token'] is not None:
                 set_token(args['token'][0])
             else:
                 print("Failed to get token.")
@@ -173,7 +173,6 @@ def login(remove_cache=False):
     while token is None:
         server.handle_request()
 
-    print("writing the new token")
     cached_token_file = open(os.path.join(temp_folder, file_name), "w")
     json.dump({'token': token}, cached_token_file)
 
@@ -220,7 +219,11 @@ def main():
             deploy_parser.print_help()
             return
         else:
-            api = API()
+            token_ = login()
+
+            # TODO this refresh token *must* be exchanged for a JWT
+
+            api = API(token_)
 
             try:
                 f = open(os.path.join(args['path'], 'blankly.json'))
@@ -241,7 +244,7 @@ def main():
                 zip_.close()
 
                 print("Uploading...")
-                print(api.upload(model_path, project_id='u4PB0Adpb4XAYd33qsH1', model_id='Fb0D0me8ubzVT7L75dO5'))
+                api.upload(model_path, project_id='u4PB0Adpb4XAYd33qsH1', model_id='Fb0D0me8ubzVT7L75dO5')
 
     elif which == 'init':
         print("Initializing...")
