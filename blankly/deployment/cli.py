@@ -84,15 +84,43 @@ run_parser.set_defaults(which='run')
 
 add_path_arg(run_parser)
 
+# Create a global token value for use in the double nested function below
 token = None
 
 
-def login():
+def login(remove_cache=False):
+    # Set the token as global here
     global token
     from http.server import BaseHTTPRequestHandler, HTTPServer
     import urllib.parse
 
+    fd, path = tempfile.mkstemp(prefix='blankly_auth_')
+    temp_folder = os.path.dirname(path)
+    file_name = os.path.basename(path)
+    for i in os.listdir(temp_folder):
+        # Check to see if one exists at this location
+        if i[0:13] == 'blankly_auth_' and i != file_name:
+            # If we're not removing cache this will use the old files to look for the token
+            if not remove_cache:
+                # If its different than the one that was just created, remove the one just created
+                os.remove(os.path.join(temp_folder, file_name))
+                # Reassign file name just in case its needed below to write into the file
+                # Note that we protect against corrupted files below by overwriting any contents in case
+                #  'token' not in token_file
+                file_name = i
+                # Now just read the token from it
+                f = open(os.path.join(temp_folder, file_name))
+                token_file = json.load(f)
+
+                if 'token' in token_file:
+                    # Exit cleanly here finding the old refresh token
+                    return token_file['token']
+            # If we are removing cache then these files should just be deleted
+            else:
+                os.remove(os.path.join(temp_folder, i))
+
     def set_token(new_value):
+        # Set the token as global here as well
         global token
         token = new_value
 
@@ -100,6 +128,7 @@ def login():
         token: str
 
         def do_OPTIONS(self):
+            # This options call is not used however these headers were hard to figure out so I'm leaving them
             self.send_response(200, "ok")
             self.send_header('Access-Control-Allow-Origin', 'https://app.blankly.finance')
             self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
@@ -109,16 +138,20 @@ def login():
             self.end_headers()
 
         def do_GET(self):
+            # Parse the URL
             args = urllib.parse.parse_qs(self.path[2:])
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
 
+            # Perform a GET request to pull down a successful response
             file = requests.get('https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/login_success.'
                                 'html?alt=media&token=41d734e2-0a88-44c4-b1dd-7e081fd019e7')
 
+            # Write that back to the user
             self.wfile.write(bytes(file.text, "utf8"))
 
+            # Send this to the global static variable to use the info out of this
             if 'token' in args:
                 set_token(args['token'][0])
             else:
@@ -129,9 +162,20 @@ def login():
 
     server = HTTPServer(('', 9082), Handler)
 
-    webbrowser.open_new('https://app.blankly.finance/auth/signin?redirectUrl=/deploy')
+    # Attempt to open the page
+    url = 'https://app.blankly.finance/auth/signin?redirectUrl=/deploy'
+    webbrowser.open_new(url)
 
-    server.handle_request()
+    print('Log in on on the pop-up window or navigate to: \nhttps://app.blankly.finance/auth/'
+          'signin?redirectUrl=/deploy')
+
+    # Continue waiting for GETs while the token is undefined
+    while token is None:
+        server.handle_request()
+
+    print("writing the new token")
+    cached_token_file = open(os.path.join(temp_folder, file_name), "w")
+    json.dump({'token': token}, cached_token_file)
 
     return token
 
@@ -188,7 +232,6 @@ def main():
             print("Zipping...")
 
             with tempfile.TemporaryDirectory() as dist_directory:
-                print(dist_directory)
                 source = os.path.abspath(args['path'])
 
                 model_path = os.path.join(dist_directory, 'model.zip')
@@ -196,8 +239,6 @@ def main():
                 zipdir(source, zip_, deployment_options['ignore_files'])
 
                 zip_.close()
-
-                time.sleep(25)
 
                 print("Uploading...")
                 print(api.upload(model_path, project_id='u4PB0Adpb4XAYd33qsH1', model_id='Fb0D0me8ubzVT7L75dO5'))
@@ -246,7 +287,7 @@ def main():
         print("Done!")
 
     elif which == 'login':
-        print(login())
+        print(login(remove_cache=True))
 
     elif which == 'run':
         if args['path'] is None:
