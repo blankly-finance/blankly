@@ -647,6 +647,16 @@ def trunc(number: float, decimals: int) -> float:
     return math_trunc(stepper * number) / stepper
 
 
+def info_print(message):
+    """
+    This prints directly to stderr which allows a way to distinguish package info calls/errors from generic stdout
+
+    Args:
+        message: The message to print. INFO: will be prepended
+    """
+    print('INFO: ' + message, file=sys.stderr)
+
+
 class Email:
     """
     Object wrapper for simplifying interaction with SMTP servers & the blankly.reporter.email function.

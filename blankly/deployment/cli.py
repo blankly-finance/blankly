@@ -221,8 +221,6 @@ def main():
         else:
             token_ = login()
 
-            # TODO this refresh token *must* be exchanged for a JWT
-
             api = API(token_)
 
             try:
