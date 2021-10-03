@@ -323,7 +323,7 @@ class AlpacaInterface(ExchangeInterface):
 
         supported_multiples = [60, 3600, 86400]
         if resolution not in supported_multiples:
-            warnings.warn("Granularity is not an accepted granularity...rounding to nearest valid value.")
+            utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
             resolution = supported_multiples[min(range(len(supported_multiples)),
                                              key=lambda i: abs(supported_multiples[i] - resolution))]
 
@@ -345,13 +345,13 @@ class AlpacaInterface(ExchangeInterface):
             if e.code == 42210000:
                 warning_string = "Your alpaca subscription does not permit querying data from the last 15 minutes. " \
                                  "Blankly is adjusting your query."
-                warnings.warn(warning_string)
+                utils.info_print(warning_string)
                 epoch_stop = time.time() - (build_minute() * 15)
                 if epoch_stop >= epoch_start:
                     return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
                 else:
-                    warning_string = "No data range queried after time adjustmnet."
-                    warnings.warn(warning_string)
+                    warning_string = "No data range queried after time adjustment."
+                    utils.info_print(warning_string)
                     return pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
             else:
                 raise e

@@ -21,7 +21,6 @@ import blankly
 import datetime
 import json
 import sys
-import warnings
 from datetime import datetime as dt, timezone
 from math import ceil, trunc as math_trunc
 from typing import Union
@@ -123,7 +122,7 @@ class __BlanklySettings:
                 else:
                     warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
                                      "\""
-                    warnings.warn(warning_string)
+                    info_print(warning_string)
                     user_settings[k] = v
             else:
                 if k in user_settings:
@@ -131,7 +130,7 @@ class __BlanklySettings:
                 else:
                     warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
                                      "\""
-                    warnings.warn(warning_string)
+                    info_print(warning_string)
                     user_settings[k] = v
         return user_settings
 

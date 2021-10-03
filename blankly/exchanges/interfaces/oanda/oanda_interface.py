@@ -237,7 +237,7 @@ class OandaInterface(ExchangeInterface):
 
         multiples_keys = supported_multiples.keys()
         if resolution not in multiples_keys:
-            warnings.warn("Granularity is not an accepted granularity...rounding to nearest valid value.")
+            utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
             resolution = multiples_keys[min(range(len(multiples_keys)),
                                             key=lambda i: abs(multiples_keys[i] - resolution))]
 

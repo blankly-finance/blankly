@@ -21,6 +21,7 @@ import warnings
 
 from blankly.exchanges.auth.auth_constructor import load_auth
 from blankly.utils.exceptions import AuthError
+from blankly.utils.utils import info_print
 
 
 class ABCAuth(abc.ABC):
@@ -63,8 +64,8 @@ class ABCAuth(abc.ABC):
                 error_message += str(str(i) + " is needed, but not defined.\n")
 
         if len(keys_dict.keys()) > 0:
-            warnings.warn(f"Additional keys for Exchange: {self.exchange} Portfolio: {self.portfolio_name} will be"
-                          f" ignored.")
+            info_print(f"Additional keys for Exchange: {self.exchange} Portfolio: {self.portfolio_name} will be"
+                       f" ignored.")
 
         if error_message != "":
             raise AuthError(error_message)

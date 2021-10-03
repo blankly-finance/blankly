@@ -445,7 +445,7 @@ class CoinbaseProInterface(ExchangeInterface):
 
         accepted_grans = [60, 300, 900, 3600, 21600, 86400]
         if resolution not in accepted_grans:
-            warnings.warn("Granularity is not an accepted granularity...rounding to nearest valid value.")
+            utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
             resolution = accepted_grans[min(range(len(accepted_grans)),
                                             key=lambda i: abs(accepted_grans[i] - resolution))]
 

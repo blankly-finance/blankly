@@ -16,15 +16,15 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import warnings
-
 import numpy as np
 import pandas as pd
+
+from blankly.utils.utils import info_print
 
 
 def cagr(start_value, end_value, years):
     if end_value < start_value:
-        warnings.warn('End Value less than Start Value makes CAGR meaningless, returning 0')
+        info_print('End Value less than Start Value makes CAGR meaningless, returning 0')
         return 0.0
     return (end_value / start_value) ** (1 / years) - 1
 
