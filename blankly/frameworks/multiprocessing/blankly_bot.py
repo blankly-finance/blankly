@@ -17,7 +17,6 @@
 """
 
 import copy
-import warnings
 from multiprocessing import Manager, Process
 
 from binance.client import Client as Binance_API
@@ -27,6 +26,7 @@ from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInter
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as CoinbaseProAPI
 from blankly.exchanges.managers.orderbook_manager import OrderbookManager
 from blankly.exchanges.managers.ticker_manager import TickerManager
+from blankly.utils.utils import info_print
 
 
 class BlanklyBot:
@@ -129,4 +129,4 @@ class BlanklyBot:
         self.__state.pop(key)
 
     def main(self, args):
-        warnings.warn("No user-created main function to run, stopping...")
+        info_print("No user-created main function to run, stopping...")

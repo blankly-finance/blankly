@@ -30,7 +30,7 @@ from blankly.exchanges.interfaces.paper_trade.backtest_controller import BackTes
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
 from blankly.frameworks.strategy.strategy_state import StrategyState
 from blankly.utils.time_builder import time_interval_to_seconds
-from blankly.utils.utils import AttributeDict
+from blankly.utils.utils import AttributeDict, info_print
 from blankly.utils.utils import get_ohlcv_from_list
 from blankly.exchanges.strategy_logger import StrategyLogger
 
@@ -257,7 +257,7 @@ class Strategy:
             try:
                 data = self.ticker_manager.get_most_recent_tick(override_symbol=symbol)['price']
             except TypeError:
-                warnings.warn("No valid data yet - using rest.")
+                info_print("No valid data yet - using rest.")
                 data = self.interface.get_price(symbol)
 
         state.variables = variables
@@ -462,7 +462,7 @@ class Strategy:
                     self.backtesting_controller.add_prices(i[0], start, end, i[1], save=save)
 
         else:
-            warnings.warn("User-specified start and end time not given. Defaulting to using only cached data.")
+            info_print("User-specified start and end time not given. Defaulting to using only cached data.")
 
         if self.__using_orderbook:
             warning_string = "Artificial orderbook generation is not yet supported for backtesting - " \

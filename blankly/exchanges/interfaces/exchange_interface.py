@@ -247,7 +247,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 except IndexError:
                     # If there is no recent data on the exchange this will be an empty dataframe.
                     # This happens for low volume
-                    warnings.warn("Most recent bar at this resolution does not yet exist - skipping.")
+                    utils.info_print("Most recent bar at this resolution does not yet exist - skipping.")
                     break
 
             response = response.append(data_append, ignore_index=True)

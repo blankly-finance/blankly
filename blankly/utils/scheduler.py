@@ -19,11 +19,11 @@ import threading
 import time
 import traceback
 import typing
-import warnings
 from datetime import datetime as dt
 
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import ceil_date
+from blankly.utils.utils import info_print
 
 
 class Scheduler:
@@ -81,7 +81,7 @@ class Scheduler:
                                              args=(self.__callback, self.__interval, self.__kwargs))
             self.__thread.start()
         else:
-            warnings.warn("Scheduler already started and force not enabled...skipping start.")
+            info_print("Scheduler already started and force not enabled...skipping start.")
 
     def get_interval(self):
         """

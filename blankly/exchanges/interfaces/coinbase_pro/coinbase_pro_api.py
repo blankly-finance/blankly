@@ -18,13 +18,13 @@ import hashlib
 import hmac
 import json
 import time
-import warnings
 
 import requests
 from requests.auth import AuthBase
 
 # Create custom authentication for Exchange
 from blankly.exchanges.auth.abc_auth import ABCAuth
+from blankly.utils.utils import info_print
 
 
 class CoinbaseExchangeAuth(AuthBase):
@@ -126,7 +126,7 @@ class API:
 
         """
         if level == 3:
-            warnings.warn("Abuse of polling at level 3 can result in a block. Consider using the websocket.")
+            info_print("Abuse of polling at level 3 can result in a block. Consider using the websocket.")
 
         params = {'level': level}
         return requests.get(self.__api_url + "products/{}/book".format(product_id), params=params).json()

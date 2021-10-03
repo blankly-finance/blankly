@@ -597,7 +597,7 @@ class BinanceInterface(ExchangeInterface):
         accepted_grans = [60, 180, 300, 900, 1800, 3600, 7200, 14400,
                           21600, 28800, 43200, 86400, 259200, 604800, 2592000]
         if resolution not in accepted_grans:
-            warnings.warn("Granularity is not an accepted granularity...rounding to nearest valid value.")
+            utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
             resolution = accepted_grans[min(range(len(accepted_grans)),
                                             key=lambda i: abs(accepted_grans[i] - resolution))]
         lookup_dict = {

@@ -21,12 +21,12 @@ import ssl
 import threading
 import time
 import traceback
-import warnings
 
 import msgpack
 from websocket import create_connection
 
 import blankly
+from blankly.utils.utils import info_print
 from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
 from blankly.exchanges.auth.auth_constructor import load_auth
 from blankly.exchanges.interfaces.alpaca.alpaca_websocket_utils import parse_alpaca_timestamp, switch_type
@@ -62,7 +62,7 @@ def create_ticker_connection(symbol, url, channel):
     # Check if the response is valid
     response = msgpack.unpackb(ws.recv())
     if response[0]['msg'] != 'connected':
-        warnings.warn("Connection failed.")
+        info_print("Connection failed.")
 
     subscribe(ws, channel, symbol)
     response = msgpack.unpackb(ws.recv())
@@ -74,7 +74,7 @@ def create_ticker_connection(symbol, url, channel):
             subscribe(ws, channel, symbol)
             print(msgpack.unpackb(ws.recv()))
         else:
-            warnings.warn("Authentication failed.")
+            info_print("Authentication failed.")
 
     return ws
 

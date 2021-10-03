@@ -26,6 +26,7 @@ import websocket
 import blankly
 import blankly.exchanges.interfaces.binance.binance_websocket_utils as websocket_utils
 from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
+from blankly.utils.utils import info_print
 
 
 class Tickers(ABCExchangeWebsocket):
@@ -90,8 +91,7 @@ class Tickers(ABCExchangeWebsocket):
             self.__thread.start()
         else:
             if self.__thread.is_alive():
-                print("Already running...")
-                pass
+                info_print("Already running...")
             else:
                 # Use recursion to restart, continue appending to time feed and ticker feed
                 self.ws = None
