@@ -348,7 +348,12 @@ class AlpacaInterface(ExchangeInterface):
                 utils.info_print(warning_string)
                 epoch_stop = time.time() - (build_minute() * 15)
                 if epoch_stop >= epoch_start:
-                    return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+                    try:
+                        return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+                    except TypeError:
+                        # If you query a timeframe with no data the API throws a Nonetype issue so just return something
+                        #  empty if that happens
+                        return pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
                 else:
                     warning_string = "No data range queried after time adjustment."
                     utils.info_print(warning_string)
