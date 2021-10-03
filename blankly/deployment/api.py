@@ -100,4 +100,4 @@ class API:
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
         return self.__request('post', 'model/upload', file=file, data={'projectId': project_id,
-                                                                       'modelId': model_id}, params={'we got': True})
+                                                                       'modelId': model_id}, params={'flag': True})
