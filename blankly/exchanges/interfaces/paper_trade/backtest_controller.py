@@ -45,6 +45,86 @@ def to_string_key(separated_list):
     return output
 
 
+def split(base_range, local_segments) -> typing.Tuple[list, list]:
+    """
+    Find the negative given from a range and a set of other ranges
+
+    Args:
+        base_range: Backing array containing a range such as [1, 10]
+        local_segments: An array of segments that we have such as [-5, 5], [6,7]
+    Returns:
+        The output of the example inputs above would be [[8, 10]]
+    """
+    used_ranges = []
+    positive_ranges = []  # These are the ranges that we have downloaded
+    negative_ranges = []  # These are the ranges that we need
+
+    def intersection(as_, ae, bs, be):
+        """
+        Find the intersection of two ranges
+        Implementation from https://scicomp.stackexchange.com/a/26260
+
+        Args:
+            as_: Low of first range
+            ae: High of first range
+            bs: Low of second range
+            be: High of second range
+        """
+        if bs > ae or as_ > be:
+            return None
+        else:
+            os_ = max(as_, bs)
+            oe = min(ae, be)
+            return [os_, oe]
+    for i in local_segments:
+        intersection_range = intersection(base_range[0], base_range[1], i[0], i[1])
+        if intersection_range is None:
+            continue
+        # We now know every single downloaded range that we need to keep
+        used_ranges.append(i)
+
+        # Now these are all intersections that we will filter to find the negative ranges to download
+        positive_ranges.append(intersection_range)
+
+    # Create a list of indexes that need to be pushed into a single list, arrays like  [1, 5] and [3, 7] would need to
+    #  become [1, 7]
+
+    # First we have to sort the lists to have the same starting value
+    positive_ranges = sorted(positive_ranges, key=lambda x: x[0])
+
+    aggregate_indexes = []
+    for i in range(len(positive_ranges) - 1):
+        intersection_range = intersection(positive_ranges[i][0], positive_ranges[i][1],
+                                          positive_ranges[i + 1][0],     positive_ranges[i + 1][1])
+        if intersection_range is not None:
+            aggregate_indexes.append([i, i + 1])
+
+    # Now aggregate from the last result
+    for i in aggregate_indexes:
+        # Pull the lower bound right out of the lower index from the aggregate_indexes approach
+        lower_bound = positive_ranges[i[0]][0]
+
+        positive_ranges[i[0]] = None
+
+        # Push that same lower bound into the array that was above it
+        positive_ranges[i[1]][0] = lower_bound
+
+    # Filter out the None's that were added
+    positive_ranges = [x for x in positive_ranges if not (x is None)]
+
+    # Now just try to find the gaps in the positive ranges and those are our negative ranges
+    for i in range(len(positive_ranges) - 1):
+        negative_ranges.append([positive_ranges[i][1], positive_ranges[i+1][0]])
+
+    if positive_ranges[0][0] > base_range[0]:
+        negative_ranges.append([base_range[0], positive_ranges[0][0]])
+
+    if positive_ranges[-1][1] < base_range[1]:
+        negative_ranges.append([base_range[1], positive_ranges[-1][1]])
+
+    return used_ranges, negative_ranges
+
+
 class BackTestController:
     def __init__(self, paper_trade_exchange: PaperTrade, backtest_settings_path: str = None, callbacks: list = None):
         self.preferences = load_backtest_preferences(backtest_settings_path)
@@ -128,22 +208,22 @@ class BackTestController:
             else:
                 local_history_blocks[asset][i[3]].append(i)
 
-        def segment(conjoined_ranges: list) -> list:
-            """
-            Split a list with sets of even intervals into multiple lists. The list must be single increments in all
-            places except for the splits
-            """
-            ranges = []
-            segments = 0
-            for i in range(len(conjoined_ranges)-1):
-                i += 1
-                if conjoined_ranges[i] - conjoined_ranges[i-1] != 1:
-                    segmented_list = conjoined_ranges[segments:i]
-
-                    ranges.append((segmented_list[0], segmented_list[-1]))
-                    segments = i + 1
-
-            return ranges
+        # def segment(conjoined_ranges: list) -> list:
+        #     """
+        #     Split a list with sets of even intervals into multiple lists. The list must be single increments in all
+        #     places except for the splits
+        #     """
+        #     ranges = []
+        #     segments = 0
+        #     for i in range(len(conjoined_ranges)-1):
+        #         i += 1
+        #         if conjoined_ranges[i] - conjoined_ranges[i-1] != 1:
+        #             segmented_list = conjoined_ranges[segments:i]
+        #
+        #             ranges.append((segmented_list[0], segmented_list[-1]))
+        #             segments = i + 1
+        #
+        #     return ranges
 
         # This is the data the user has requested: [asset_id, start_time, end_time, resolution]
         final_prices = {}
@@ -151,9 +231,12 @@ class BackTestController:
             if self.__user_added_times[i] is None:
                 continue
             asset = self.__user_added_times[i][0]
-            start_time = self.__user_added_times[i][1]
-            end_time = self.__user_added_times[i][2]
             resolution = self.__user_added_times[i][3]
+            start_time = self.__user_added_times[i][1]
+            end_time = self.__user_added_times[i][2] - resolution
+
+            if end_time < start_time:
+                raise RuntimeError("Must include more data to run the backtest.")
 
             download_ranges = []
 
@@ -163,64 +246,77 @@ class BackTestController:
             except KeyError:
                 pass
 
-            for j in download_ranges:
-                download_start_time = j[1]
-                download_end_time = j[2] - resolution
+            for j in range(len(download_ranges)):
+                download_ranges[j] = download_ranges[j][1:3]
 
-                contains_start = False
-                contains_end = False
-                if download_start_time <= start_time <= download_end_time:
-                    contains_start = True
-                elif download_start_time <= end_time <= download_end_time:
-                    contains_end = True
+            used_ranges, negative_ranges = split([start_time, end_time], download_ranges)
 
-                if contains_start or contains_end:
-                    # Read in the whole thing if it has any sort of relevance on the data
-                    relevant_df = pd.read_csv(os.path.join(cache_folder,
-                                                           to_string_key(j) + ".csv"))
+            # for j in download_ranges:
+            #     download_start_time = j[1]
+            #     download_end_time = j[2] - resolution
+            #
+            #     contains_start = False
+            #     contains_end = False
+            #     if download_start_time <= start_time <= download_end_time:
+            #         contains_start = True
+            #     elif download_start_time <= end_time <= download_end_time:
+            #         contains_end = True
+            #
+            #     if contains_start or contains_end:
+            #         # Read in the whole thing if it has any sort of relevance on the data
+            #         relevant_df = pd.read_csv(os.path.join(cache_folder,
+            #                                                to_string_key(j) + ".csv"))
+            #
+            #         # If it only contains the start then it must be offset too high or is too long
+            #         if contains_start and not contains_end:
+            #             relevant_df = relevant_df[relevant_df['time'] >= start_time]
+            #
+            #             # Set the end time to match the first time in the relevant dataframe
+            #             self.__user_added_times[i][1] = relevant_df['time'].iloc[-1]
+            #
+            #         # If it only contains the end then it must be offset too low or is too short
+            #         if contains_end and not contains_start:
+            #             relevant_df = relevant_df[relevant_df['time'] <= end_time]
+            #
+            #             # Set the start time to match the very last time of the relevant dataframe
+            #             self.__user_added_times[i][2] = relevant_df['time'].iloc[0]
+            #
+            #         # If it contains start and end then it's just right
+            #         if contains_end and contains_start:
+            #             relevant_df = relevant_df[relevant_df['time'] >= start_time]
+            #             relevant_df = relevant_df[relevant_df['time'] <= end_time]
+            #
+            #             # This dataset has been completed so there is no need to continue
+            #             self.__user_added_times[i] = None
+            #
+            #         # Write these into the data array
+            #         if asset not in list(final_prices.keys()):
+            #             final_prices[asset] = relevant_df
+            #         else:
+            #             final_prices[asset] = pd.concat([final_prices[asset], relevant_df])
 
-                    # If it only contains the start then it must be offset too high or is too long
-                    if contains_start and not contains_end:
-                        relevant_df = relevant_df[relevant_df['time'] >= start_time]
+            relevant_data = []
+            for j in used_ranges:
+                relevant_data.append(pd.read_csv(os.path.join(cache_folder, to_string_key([asset, j[0], j[1],
+                                                                                           resolution]) + ".csv")))
 
-                        # Set the end time to match the first time in the relevant dataframe
-                        self.__user_added_times[i][1] = relevant_df['time'].iloc[-1]
-
-                    # If it only contains the end then it must be offset too low or is too short
-                    if contains_end and not contains_start:
-                        relevant_df = relevant_df[relevant_df['time'] <= end_time]
-
-                        # Set the start time to match the very last time of the relevant dataframe
-                        self.__user_added_times[i][2] = relevant_df['time'].iloc[0]
-
-                    # If it contains start and end then it's just right
-                    if contains_end and contains_start:
-                        relevant_df = relevant_df[relevant_df['time'] >= start_time]
-                        relevant_df = relevant_df[relevant_df['time'] <= end_time]
-
-                        # This dataset has been completed so there is no need to continue
-                        self.__user_added_times[i] = None
-
-                    # Write these into the data array
-                    if asset not in list(final_prices.keys()):
-                        final_prices[asset] = relevant_df
-                    else:
-                        final_prices[asset] = pd.concat([final_prices[asset], relevant_df])
+            if len(relevant_data) > 0:
+                final_prices[asset] = pd.concat(relevant_data)
 
             # If there is any data left to download do it here
-            if self.__user_added_times is not None and \
-                    self.__user_added_times[i][2] - self.__user_added_times[i][1] > resolution:
-                print("No cached data found for " + asset + " from: " + str(self.__user_added_times[i][1]) + " to " +
-                      str(self.__user_added_times[i][2]) + " at a resolution of " + str(resolution) + " seconds.")
+            for j in negative_ranges:
+                print("No cached data found for " + asset + " from: " + str(j[0]) + " to " +
+                      str(j[1]) + " at a resolution of " + str(resolution) + " seconds.")
                 download = self.interface.get_product_history(asset,
-                                                              self.__user_added_times[i][1],
-                                                              self.__user_added_times[i][2],
+                                                              j[0],
+                                                              j[1],
                                                               resolution)
 
                 # Write the file but this time include very accurately the start and end times
                 if self.preferences['settings']['continuous_caching']:
-                    download.to_csv(os.path.join(cache_folder, f'{asset},{self.__user_added_times[i][1]},'
-                                                               f'{self.__user_added_times[i][2]},'
+                    download.to_csv(os.path.join(cache_folder, f'{asset},'
+                                                               f'{j[0]},'
+                                                               f'{j[1]},'
                                                                f'{resolution}.csv'),
                                     index=False)
 
