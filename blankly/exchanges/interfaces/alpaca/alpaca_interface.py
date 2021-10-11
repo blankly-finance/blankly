@@ -133,8 +133,13 @@ class AlpacaInterface(ExchangeInterface):
             })
 
         symbols = list(positions_dict.keys())
-        open_orders = self.calls.list_orders(status='open', symbols=symbols)
-        snapshot_price = self.calls.get_snapshots(symbols=symbols)
+        # Catch an edge case bug that if there are no positions it won't try to snapshot
+        if len(symbols) != 0:
+            open_orders = self.calls.list_orders(status='open', symbols=symbols)
+            snapshot_price = self.calls.get_snapshots(symbols=symbols)
+        else:
+            open_orders = []
+            snapshot_price = {}
 
         # now grab the available cash in the account
         account = self.calls.get_account()
@@ -340,7 +345,12 @@ class AlpacaInterface(ExchangeInterface):
         epoch_stop_str = dt.fromtimestamp(epoch_stop, tz=timezone.utc).isoformat()
 
         try:
-            bars = self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str, adjustment='raw').df
+            try:
+                bars = self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str, adjustment='raw').df
+            except TypeError:
+                # If you query a timeframe with no data the API throws a Nonetype issue so just return something
+                #  empty if that happens
+                return pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
         except AlpacaAPIError as e:
             if e.code == 42210000:
                 warning_string = "Your alpaca subscription does not permit querying data from the last 15 minutes. " \
