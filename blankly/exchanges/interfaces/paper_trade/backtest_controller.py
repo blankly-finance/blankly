@@ -57,8 +57,6 @@ def split(base_range, local_segments) -> typing.Tuple[list, list]:
     """
 
     # If we don't have any local segments there is no need for any of this, just download the whole set
-    if len(local_segments) == 0:
-        return [], [base_range]
     used_ranges = []
     positive_ranges = []  # These are the ranges that we have downloaded
     negative_ranges = []  # These are the ranges that we need
@@ -120,11 +118,19 @@ def split(base_range, local_segments) -> typing.Tuple[list, list]:
     for i in range(len(positive_ranges) - 1):
         negative_ranges.append([positive_ranges[i][1], positive_ranges[i+1][0]])
 
-    if positive_ranges[0][0] > base_range[0]:
-        negative_ranges.append([base_range[0], positive_ranges[0][0]])
+    try:
+        # Now we just have to make sure to check the bounds
+        # If the very first value we have is greater than what we requested
+        if positive_ranges[0][0] > base_range[0]:
+            # We then need the base range up to our first positive value
+            negative_ranges.append([base_range[0], positive_ranges[0][0]])
 
-    if positive_ranges[-1][1] < base_range[1]:
-        negative_ranges.append([base_range[1], positive_ranges[-1][1]])
+        # If the last positive range is less than our requested final
+        if positive_ranges[-1][1] < base_range[1]:
+            # The actual value is from the last positive range value to our requested final value
+            negative_ranges.append([positive_ranges[-1][1], base_range[1]])
+    except IndexError:
+        return [], [base_range]
 
     return used_ranges, negative_ranges
 
@@ -331,8 +337,12 @@ class BackTestController:
                 else:
                     final_prices[asset] = pd.concat([final_prices[asset], download])
 
-        for i in list(final_prices.keys()):
-            final_prices[i] = final_prices[i].sort_values(by=['time'], ignore_index=True)
+            # After all the negative ranges are appended, we need to sort & trim
+            final_prices[asset] = final_prices[asset].sort_values(by=['time'], ignore_index=True)
+
+            # Now make sure to just trim our times to hit the start and end times
+            final_prices[asset] = final_prices[asset][final_prices[asset]['time'] >= start_time]
+            final_prices[asset] = final_prices[asset][final_prices[asset]['time'] <= end_time + resolution]  # Add back
 
         return final_prices
 
