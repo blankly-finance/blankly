@@ -55,6 +55,10 @@ def split(base_range, local_segments) -> typing.Tuple[list, list]:
     Returns:
         The output of the example inputs above would be [[8, 10]]
     """
+
+    # If we don't have any local segments there is no need for any of this, just download the whole set
+    if len(local_segments) == 0:
+        return [], [base_range]
     used_ranges = []
     positive_ranges = []  # These are the ranges that we have downloaded
     negative_ranges = []  # These are the ranges that we need
@@ -236,7 +240,7 @@ class BackTestController:
             end_time = self.__user_added_times[i][2] - resolution
 
             if end_time < start_time:
-                raise RuntimeError("Must include more data to run the backtest.")
+                raise RuntimeError("Must specify  a longer timeframe to run the backtest.")
 
             download_ranges = []
 
@@ -316,7 +320,8 @@ class BackTestController:
                 if self.preferences['settings']['continuous_caching']:
                     download.to_csv(os.path.join(cache_folder, f'{asset},'
                                                                f'{j[0]},'
-                                                               f'{j[1]},'
+                                                               f'{j[1]+resolution},'  # This adds resolution back to the
+                                                                                      #  exported time series
                                                                f'{resolution}.csv'),
                                     index=False)
 
