@@ -110,14 +110,22 @@ def login(remove_cache=False):
                 file_name = i
                 # Now just read the token from it
                 f = open(os.path.join(temp_folder, file_name))
-                token_file = json.load(f)
+                try:
+                    token_file = json.load(f)
 
-                if 'token' in token_file:
-                    # Exit cleanly here finding the old refresh token
-                    return token_file['token']
+                    if 'token' in token_file:
+                        # Exit cleanly here finding the old refresh token
+                        return token_file['token']
+                except json.decoder.JSONDecodeError:
+                    # If it fails then don't return anything
+                    #  just continue with re-logging in
+                    pass
             # If we are removing cache then these files should just be deleted
             else:
                 os.remove(os.path.join(temp_folder, i))
+
+            # Be
+            break
 
     def set_token(new_value):
         # Set the token as global here as well
