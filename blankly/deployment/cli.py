@@ -123,8 +123,7 @@ def login(remove_cache=False):
             # If we are removing cache then these files should just be deleted
             else:
                 os.remove(os.path.join(temp_folder, i))
-
-            # Be
+            # Be sure to leave the loop
             break
 
     def set_token(new_value):
