@@ -17,6 +17,7 @@
 """
 
 import requests
+from blankly.utils.utils import info_print
 
 blankly_frontend_api_url = "http://localhost:3000"
 
@@ -60,14 +61,17 @@ class API:
         if self.token is not None:
             kwargs['headers'] = {'token': self.token}
 
-        if type_ == "get":
-            out = requests.get(**kwargs)
-        elif type_ == "post":
-            out = requests.post(**kwargs)
-        elif type_ == "delete":
-            out = requests.delete(**kwargs)
-        else:
-            raise LookupError("Request type is not implemented or does not exist.")
+        try:
+            if type_ == "get":
+                out = requests.get(**kwargs)
+            elif type_ == "post":
+                out = requests.post(**kwargs)
+            elif type_ == "delete":
+                out = requests.delete(**kwargs)
+            else:
+                raise LookupError("Request type is not implemented or does not exist.")
+        except requests.exceptions.ConnectionError:
+            raise requests.exceptions.ConnectionError("Failed to connect to deployment service.")
 
         try:
             return out.json()
