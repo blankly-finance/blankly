@@ -26,10 +26,10 @@ def init(symbol, state: blankly.StrategyState):
 
 if __name__ == "__main__":
     # Authenticate coinbase pro strategy
-    alpaca = blankly.Alpaca()
+    exchange = blankly.Alpaca()
 
     # Use our strategy helper on coinbase pro
-    strategy = blankly.Strategy(alpaca)
+    strategy = blankly.Strategy(exchange)
 
     # Run the price event function every time we check for a new price - by default that is 15 seconds
     strategy.add_price_event(price_event, symbol='AAPL', resolution='1d', init=init)

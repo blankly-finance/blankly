@@ -427,6 +427,7 @@ class Strategy:
         start = None
         end = None
 
+        # Even if they specified start/end unevenly it will be overwritten with any to argument
         if to is not None:
             start = time.time() - time_interval_to_seconds(to)
             end = time.time()
@@ -440,6 +441,10 @@ class Strategy:
             end_date = pd.to_datetime(end_date)
             epoch = datetime.datetime.utcfromtimestamp(0)
             end = (end_date - epoch).total_seconds()
+
+        # If start/ends are specify unevenly
+        if (start_date is None and end_date is not None) or (start_date is not None and end_date is None):
+            raise ValueError("Both start and end dates must be set or use the 'to' argument.")
 
         self.interface = self.__paper_trade_exchange.get_interface()
         self.backtesting_controller = BackTestController(self.__paper_trade_exchange,
@@ -460,7 +465,6 @@ class Strategy:
                 # None means live which is orderbook, which we skip anyway
                 if i[1] is not None:
                     self.backtesting_controller.add_prices(i[0], start, end, i[1], save=save)
-
         else:
             info_print("User-specified start and end time not given. Defaulting to using only cached data.")
 
