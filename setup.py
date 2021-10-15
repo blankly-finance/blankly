@@ -42,7 +42,6 @@ setup(
         'requests',
         'scikit-learn',
         'websocket-client',
-        'pyzmq'
     ],
     classifiers=[
         # Possible: "3 - Alpha", "4 - Beta" or "5 - Production/Stable"
