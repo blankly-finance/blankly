@@ -407,6 +407,10 @@ class Strategy:
                 cache_location: str = './price_caches'
                     Set a location for the price cache csv's to be written to
 
+                continuous_caching: bool
+                    Utilize the advanced price caching system built into the backtest. Automatically aggregate and prune
+                    downloaded data.
+
                 resample_account_value_for_metrics: str or bool = '1d' or False
                     Because backtest data can be input at a variety of resolutions, account value often needs to be
                         recalculated at consistent intervals for use in metrics & indicators.

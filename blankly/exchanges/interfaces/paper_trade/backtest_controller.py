@@ -197,9 +197,10 @@ class BackTestController:
             # example file name: 'BTC-USD.1622400000.1622510793.60.csv'
             # Remove the .csv from each of the files: BTC-USD.1622400000.1622510793.60
             identifier = files[i][:-4].split(",")
-            identifier[1] = int(identifier[1])
-            identifier[2] = int(identifier[2])
-            identifier[3] = int(identifier[3])
+            # Cast to float first before
+            identifier[1] = int(float(identifier[1]))
+            identifier[2] = int(float(identifier[2]))
+            identifier[3] = int(float(identifier[3]))
             available_files.append(identifier)
 
         # This is only the downloaded data

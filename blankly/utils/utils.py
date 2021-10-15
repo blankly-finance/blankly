@@ -67,6 +67,7 @@ default_backtest_settings = {
         "save_initial_account_value": True,
         "show_progress_during_backtest": True,
         "cache_location": "./price_caches",
+        "continuous_caching": True,
         "resample_account_value_for_metrics": "1d",
         "quote_account_value_in": "USD",
         "ignore_user_exceptions": False
