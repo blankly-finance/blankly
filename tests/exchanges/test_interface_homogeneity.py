@@ -54,8 +54,8 @@ class InterfaceHomogeneity(unittest.TestCase):
                                                keys_path='./tests/config/keys.json',
                                                settings_path="./tests/config/settings.json")
         cls.Coinbase_Pro_Interface = cls.Coinbase_Pro.get_interface()
-        # cls.interfaces.append(cls.Coinbase_Pro_Interface)
-        # cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
+        cls.interfaces.append(cls.Coinbase_Pro_Interface)
+        cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
 
         # Binance definition and appending
         cls.Binance = blankly.Binance(portfolio_name="Spot Test Key",
@@ -92,8 +92,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         # Another wraps coinbase pro
         cls.paper_trade_coinbase_pro = blankly.PaperTrade(cls.Coinbase_Pro)
         cls.paper_trade_coinbase_pro_interface = cls.paper_trade_coinbase_pro.get_interface()
-        # cls.interfaces.append(cls.paper_trade_coinbase_pro_interface)
-        # cls.data_interfaces.append(cls.paper_trade_coinbase_pro_interface)
+        cls.interfaces.append(cls.paper_trade_coinbase_pro_interface)
+        cls.data_interfaces.append(cls.paper_trade_coinbase_pro_interface)
 
     def test_get_products(self):
         responses = []
@@ -158,22 +158,22 @@ class InterfaceHomogeneity(unittest.TestCase):
         time.sleep(.5)
         self.assertTrue(compare_dictionaries(binance_buy.get_status(full=True), binance_sell.get_status(full=True)))
 
-        # coinbase_buy = self.Coinbase_Pro_Interface.market_order('BTC-USD', 'buy', 20)
-        # coinbase_sell = self.Coinbase_Pro_Interface.market_order('BTC-USD', 'sell', 20)
+        coinbase_buy = self.Coinbase_Pro_Interface.market_order('BTC-USD', 'buy', 20)
+        coinbase_sell = self.Coinbase_Pro_Interface.market_order('BTC-USD', 'sell', 20)
 
-        # self.assertTrue(compare_dictionaries(coinbase_buy.get_response(), coinbase_sell.get_response()))
-        # self.assertTrue(compare_dictionaries(coinbase_buy.get_status(full=True), coinbase_sell.get_status(full=True)))
+        self.assertTrue(compare_dictionaries(coinbase_buy.get_response(), coinbase_sell.get_response()))
+        self.assertTrue(compare_dictionaries(coinbase_buy.get_status(full=True), coinbase_sell.get_status(full=True)))
 
-        response_list = [  # coinbase_buy.get_response(),
-                         # coinbase_sell.get_response(),
+        response_list = [coinbase_buy.get_response(),
+                         coinbase_sell.get_response(),
                          binance_buy.get_response(),
                          binance_sell.get_response()
                          ]
 
         time.sleep(1)
 
-        status_list = [  # coinbase_buy.get_status(full=True),
-                       # coinbase_sell.get_status(full=True),
+        status_list = [coinbase_buy.get_status(full=True),
+                       coinbase_sell.get_status(full=True),
                        binance_buy.get_status(full=True),
                        binance_sell.get_status(full=True)
                        ]
@@ -205,28 +205,28 @@ class InterfaceHomogeneity(unittest.TestCase):
         time.sleep(3)
         self.check_limit_order(binance_buy, 'buy', .01, 'BTC-USDT')
 
-        # coinbase_buy = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'buy', .01, 1)
-        # self.check_limit_order(coinbase_buy, 'buy', 1, 'BTC-USD')
+        coinbase_buy = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'buy', .01, 1)
+        self.check_limit_order(coinbase_buy, 'buy', 1, 'BTC-USD')
 
         binance_sell = self.Binance_Interface.limit_order('BTC-USDT', 'sell', int(binance_limits['max_price']-30), .01)
         self.check_limit_order(binance_sell, 'sell', .01, 'BTC-USDT')
 
-        # coinbase_sell = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'sell', 100000, 1)
-        # self.check_limit_order(coinbase_sell, 'sell', 1, 'BTC-USD')
+        coinbase_sell = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'sell', 100000, 1)
+        self.check_limit_order(coinbase_sell, 'sell', 1, 'BTC-USD')
 
-        limits = [binance_buy, binance_sell, ]  # coinbase_buy, coinbase_sell]
+        limits = [binance_buy, binance_sell, coinbase_buy, coinbase_sell]
         responses = []
         status = []
 
         cancels = []
 
-        # coinbase_open = self.Coinbase_Pro_Interface.get_open_orders('BTC-USD')
-        # for i in [coinbase_buy, ]: # coinbase_sell]:
-        #     found = False
-        #     for j in coinbase_open:
-        #         if i.get_id() == j['id']:
-        #             found = True
-        #     self.assertTrue(found)
+        coinbase_open = self.Coinbase_Pro_Interface.get_open_orders('BTC-USD')
+        for i in [coinbase_buy, ]: # coinbase_sell]:
+            found = False
+            for j in coinbase_open:
+                if i.get_id() == j['id']:
+                    found = True
+            self.assertTrue(found)
 
         binance_open = self.Binance_Interface.get_open_orders('BTC-USDT')
         for i in [binance_buy, binance_sell]:
@@ -247,8 +247,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_buy.get_id()))
         cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_sell.get_id()))
 
-        # cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_sell.get_id()))
-        # cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_buy.get_id()))
+        cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_sell.get_id()))
+        cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_buy.get_id()))
 
         self.assertTrue(compare_responses(cancels, force_exchange_specific=False))
 
@@ -301,7 +301,8 @@ class InterfaceHomogeneity(unittest.TestCase):
             elif i.get_exchange_type() == "alpaca":
                 responses.append(i.history('MSFT', 150, resolution='1h'))
             else:
-                responses.append(i.history('BTC-USD', 150, resolution='1h'))
+                # Test this one a 1 day resolution due to low volume
+                responses.append(i.history('BTC-USD', 150, resolution='1d'))
         for i in responses:
             self.check_product_history_columns(i)
 
@@ -384,10 +385,13 @@ class InterfaceHomogeneity(unittest.TestCase):
             if i.get_exchange_type() == "binance":
                 responses.append(i.get_product_history('BTC-USDT', intervals_ago, current_time, 3600))
             elif i.get_exchange_type() == "alpaca":
+                # Alpaca has trading hours :(
                 # responses.append(i.get_product_history('MSFT', intervals_ago, current_time, 3600))
                 pass
             else:
-                responses.append(i.get_product_history('BTC-USD', intervals_ago, current_time, 3600))
+                # Coinbase pro has low volume hours on the sandbox exchange
+                # responses.append(i.get_product_history('BTC-USD', intervals_ago, current_time, build_hour()))
+                pass
 
         for i in responses:
             self.check_product_history_columns(i)
