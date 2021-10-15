@@ -159,7 +159,7 @@ class AlpacaInterface(ExchangeInterface):
                     else:  # we dont have support for stop_order, stop_limit_order
                         dollar_amt = 0.0
                 else:  # this is the case for notional market buy
-                    dollar_amt = order['notional']
+                    dollar_amt = float(order['notional'])
 
                 positions_dict['USD']['available'] -= dollar_amt
                 positions_dict['USD']['hold'] += dollar_amt
