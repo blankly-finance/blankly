@@ -40,6 +40,7 @@ default_general_settings = {
         "use_sandbox": False,
         "use_sandbox_websockets": False,
         "websocket_buffer_size": 10000,
+        "test_connectivity_on_auth": True,
 
         "coinbase_pro": {
             "cash": "USD"

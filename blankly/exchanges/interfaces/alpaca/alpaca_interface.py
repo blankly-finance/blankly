@@ -39,11 +39,11 @@ NY = 'America/New_York'
 
 class AlpacaInterface(ExchangeInterface):
     def __init__(self, authenticated_API: API, preferences_path: str):
+        self.__unique_assets = None
         super().__init__('alpaca', authenticated_API, preferences_path, valid_resolutions=[60, 60*5, 60*15, 60*60*24])
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
     def init_exchange(self):
-        assert isinstance(self.calls, alpaca_trade_api.REST)
         try:
             account_info = self.calls.get_account()
         except alpaca_trade_api.rest.APIError as e:
@@ -57,11 +57,6 @@ class AlpacaInterface(ExchangeInterface):
         except KeyError:
             raise LookupError("alpaca API call failed")
 
-        self.__exchange_properties = {
-            "maker_fee_rate": 0,
-            "taker_fee_rate": 0
-        }
-
         filtered_assets = []
         products = self.calls.list_assets(status=None, asset_class=None)
         for i in products:
@@ -70,7 +65,6 @@ class AlpacaInterface(ExchangeInterface):
             else:
                 # TODO handle duplicate symbols
                 pass
-
         self.__unique_assets = filtered_assets
 
     def get_products(self) -> dict:
@@ -184,6 +178,10 @@ class AlpacaInterface(ExchangeInterface):
                 'available': positions_dict['USD']['available'],
                 'hold': positions_dict['USD']['hold']
             })
+
+        # Note that now __unique assets could be uninitialized:
+        if self.__unique_assets is None:
+            self.init_exchange()
 
         # This is a patch fix that should be fixed to be more optimized
         if symbol is None:

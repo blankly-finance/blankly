@@ -32,25 +32,21 @@ from blankly.exchanges.orders.market_order import MarketOrder
 
 class BinanceInterface(ExchangeInterface):
     def __init__(self, exchange_name, authenticated_API):
+        # Initialize this as None so that it can be filled & cached when needed
+        self.__available_currencies = None
         super().__init__(exchange_name, authenticated_API, valid_resolutions=[60, 180, 300, 900, 1800, 3600, 7200,
                                                                               14400, 21600, 28800, 43200, 86400, 259200,
                                                                               604800, 2592000])
 
     def init_exchange(self):
         try:
-            account = self.calls.get_account()
+            symbols = self.calls.get_exchange_info()["symbols"]
         except binance.exceptions.BinanceAPIException:
             raise exceptions.APIException("Invalid API Key, IP, or permissions for action - are you trying "
                                           "to use your normal exchange keys while in sandbox mode? "
                                           "\nTry toggling the \'use_sandbox\' setting in your settings.json or check "
                                           "if the keys were input correctly into your keys.json.")
-        self.__exchange_properties = {
-            "maker_fee_rate": account['makerCommission'] / 100,
-            "taker_fee_rate": account['takerCommission'] / 100,
-            "buyer_fee_rate": account['buyerCommission'] / 100,  # I'm not sure of the case when these are nonzero
-            "seller_fee_rate": account['sellerCommission'] / 100,
-        }
-        symbols = self.calls.get_exchange_info()["symbols"]
+
         assets = []
         for i in symbols:
             assets.append(i["baseAsset"])
@@ -195,6 +191,10 @@ class BinanceInterface(ExchangeInterface):
             ["free", "available"],
             ["locked", "hold"],
         ]
+
+        # Note that it's now a possibility that the available currencies were never downloaded, so we can do that now
+        if self.__available_currencies is None:
+            self.init_exchange()
 
         accounts = self.calls.get_account()["balances"]
 
