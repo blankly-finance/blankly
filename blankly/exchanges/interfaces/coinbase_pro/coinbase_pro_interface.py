@@ -35,6 +35,7 @@ class CoinbaseProInterface(ExchangeInterface):
         super().__init__(exchange_name, authenticated_API, valid_resolutions=[60, 300, 900, 3600, 21600, 86400])
 
     def init_exchange(self):
+        # This is purely an authentication check which can be disabled in settings
         fees = self.calls.get_fees()
         try:
             if fees['message'] == "Invalid API Key":
@@ -44,10 +45,6 @@ class CoinbaseProInterface(ExchangeInterface):
                                   "keys.json.")
         except KeyError:
             pass
-        self.__exchange_properties = {
-            "maker_fee_rate": fees['maker_fee_rate'],
-            "taker_fee_rate": fees['taker_fee_rate']
-        }
 
     def get_products(self):
         needed = self.needed['get_products']

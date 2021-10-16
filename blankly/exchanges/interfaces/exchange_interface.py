@@ -19,8 +19,7 @@
 import abc
 import time
 import warnings
-import dateparser
-from datetime import datetime as dt, timezone
+from datetime import datetime as dt
 from typing import Union
 from collections import deque
 
@@ -44,7 +43,9 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         self.exchange_properties = None
         # Some exchanges like binance will not return a value of 0.00 if there is no balance
         self.available_currencies = {}
-        self.init_exchange()
+
+        if self.user_preferences['settings']['test_connectivity_on_auth']:
+            self.init_exchange()
 
         self.needed = {
             '__init_exchange__': [
@@ -136,6 +137,8 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
     def init_exchange(self):
         """
         Create the properties for the exchange.
+
+        This is never run if test_connectivity_on_auth is set to false
         """
         pass
 

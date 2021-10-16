@@ -35,6 +35,7 @@ from blankly.utils.exceptions import APIException
 
 class OandaInterface(ExchangeInterface):
     def __init__(self, authenticated_API: OandaAPI, preferences_path: str):
+        self.default_trunc = None
         super().__init__('oanda', authenticated_API, preferences_path, valid_resolutions=[5, 10, 15, 30, 60,
                                                                                           60 * 2, 60 * 4, 60 * 5,
                                                                                           60 * 10, 60 * 15, 60 * 30,
@@ -48,10 +49,6 @@ class OandaInterface(ExchangeInterface):
         account_info = self.calls.get_account()
         assert account_info['account']['id'] is not None, "Oanda exchange account does not exist"
 
-        self.__exchange_properties = {
-            "maker_fee_rate": 0,
-            "taker_fee_rate": 0
-        }
         self.default_trunc = self._get_default_truncation()
 
     def get_products(self) -> dict:
@@ -125,6 +122,10 @@ class OandaInterface(ExchangeInterface):
     # funds is the base asset (EUR_CAD the base asset is CAD)
     def market_order(self, symbol: str, side: str, funds: float) -> MarketOrder:
         assert isinstance(self.calls, OandaAPI)
+
+        # Make sure that default trunc has been established - init may have been skipped
+        if self.default_trunc is None:
+            self.init_exchange()
 
         qty_to_buy = funds / self.get_price(symbol)
         qty_to_buy = utils.trunc(qty_to_buy, self.default_trunc)
