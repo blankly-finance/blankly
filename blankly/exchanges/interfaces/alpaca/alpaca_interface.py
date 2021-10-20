@@ -216,7 +216,7 @@ class AlpacaInterface(ExchangeInterface):
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
-    def limit_order(self, symbol: str, side: str, price: float, quantity: int) -> LimitOrder:
+    def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
         needed = self.needed['limit_order']
 
         renames = [
@@ -225,7 +225,7 @@ class AlpacaInterface(ExchangeInterface):
         ]
 
         order = {
-            'quantity': quantity,
+            'quantity': size,
             'side': side,
             'price': price,
             'symbol': symbol,
@@ -235,7 +235,7 @@ class AlpacaInterface(ExchangeInterface):
                                            side=side,
                                            type='limit',
                                            time_in_force='gtc',
-                                           qty=quantity,
+                                           qty=size,
                                            limit_price=price)
 
         response['created_at'] = parser.isoparse(response['created_at']).timestamp()

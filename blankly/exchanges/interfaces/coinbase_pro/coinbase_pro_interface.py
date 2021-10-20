@@ -171,11 +171,11 @@ class CoinbaseProInterface(ExchangeInterface):
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
-    def limit_order(self, product_id, side, price, size) -> LimitOrder:
+    def limit_order(self, symbol, side, price, size) -> LimitOrder:
         """
         Used for buying or selling limit orders
         Args:
-            product_id: currency to buy
+            symbol: currency to buy
             side: buy/sell
             price: price to set limit order
             size: amount of currency (like BTC) for the limit to be valued
@@ -204,10 +204,10 @@ class CoinbaseProInterface(ExchangeInterface):
             'size': size,
             'side': side,
             'price': price,
-            'symbol': product_id,
+            'symbol': symbol,
             'type': 'limit'
         }
-        response = self.calls.place_limit_order(product_id, side, price, size=size)
+        response = self.calls.place_limit_order(symbol, side, price, size=size)
         if "message" in response:
             raise InvalidOrder("Invalid Order: " + response["message"])
         response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])

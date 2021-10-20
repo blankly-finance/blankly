@@ -160,19 +160,19 @@ class OandaInterface(ExchangeInterface):
         resp = utils.isolate_specific(needed, resp)
         return MarketOrder(order, resp, self)
 
-    def limit_order(self, symbol: str, side: str, price: float, quantity: int) -> LimitOrder:
+    def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
         assert isinstance(self.calls, OandaAPI)
         if side == "buy":
             pass
         elif side == "sell":
-            quantity *= -1
+            size *= -1
         else:
             raise ValueError("side needs to be either sell or buy")
 
-        resp = self.calls.place_limit_order(symbol, quantity, price)
+        resp = self.calls.place_limit_order(symbol, size, price)
         needed = self.needed['limit_order']
         order = {
-            'size': quantity,
+            'size': size,
             'side': side,
             'price': price,
             'symbol': symbol,
@@ -183,7 +183,7 @@ class OandaInterface(ExchangeInterface):
         resp['id'] = resp['orderCreateTransaction']['id']
         resp['created_at'] = resp['orderCreateTransaction']['time']
         resp['price'] = price
-        resp['size'] = quantity
+        resp['size'] = size
         resp['status'] = "active"
         resp['time_in_force'] = 'GTC'
         resp['type'] = 'limit'
