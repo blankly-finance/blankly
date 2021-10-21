@@ -129,45 +129,52 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
-    def check_market_order(self, order1: MarketOrder, side, funds):
+    def check_market_order(self, order1: MarketOrder, side, size):
         """
         Test if a market order passes these checks.
         Args:
             order1 (dict): The market order to test - has to be type MarketOrder
             side (str): Market side (buy/sell)
-            funds (float): Amount of money used in purchase (pre-fees)
+            size (float): Amount of base currency used in purchase (pre-fees)
         """
         self.assertEqual(order1.get_side(), side)
-        self.assertLess(order1.get_funds(), funds)
+        self.assertEqual(order1.get_size(), size)
         self.assertEqual(order1.get_type(), 'market')
 
     def test_market_order(self):
         # Make sure to buy back the funds we're loosing from fees - minimum balance of .1 bitcoin
         btc_account = self.Binance_Interface.get_account(symbol="BTC")['available']
         if btc_account < .1:
-            price = self.Binance_Interface.get_price("BTC-USDT")
-            self.Binance_Interface.market_order("BTC-USDT", "buy", price * .1)
+            self.Binance_Interface.market_order("BTC-USDT", "buy", .1)
 
-        binance_buy = self.Binance_Interface.market_order('BTC-USDT', 'buy', 25)
-        binance_sell = self.Binance_Interface.market_order('BTC-USDT', 'sell', 25)
+        binance_buy = self.Binance_Interface.market_order('BTC-USDT', 'buy', .01)
+        binance_sell = self.Binance_Interface.market_order('BTC-USDT', 'sell', .01)
 
-        self.check_market_order(binance_buy, 'buy', 25)
-        self.check_market_order(binance_sell, 'sell', 25)
+        self.check_market_order(binance_buy, 'buy', .01)
+        self.check_market_order(binance_sell, 'sell', .01)
 
         self.assertTrue(compare_dictionaries(binance_buy.get_response(), binance_sell.get_response()))
         time.sleep(.5)
         self.assertTrue(compare_dictionaries(binance_buy.get_status(full=True), binance_sell.get_status(full=True)))
 
-        coinbase_buy = self.Coinbase_Pro_Interface.market_order('BTC-USD', 'buy', 20)
-        coinbase_sell = self.Coinbase_Pro_Interface.market_order('BTC-USD', 'sell', 20)
+        coinbase_buy = self.Coinbase_Pro_Interface.market_order('BTC-USD', 'buy', .01)
+        coinbase_sell = self.Coinbase_Pro_Interface.market_order('BTC-USD', 'sell', .01)
 
         self.assertTrue(compare_dictionaries(coinbase_buy.get_response(), coinbase_sell.get_response()))
         self.assertTrue(compare_dictionaries(coinbase_buy.get_status(full=True), coinbase_sell.get_status(full=True)))
 
+        alpaca_buy = self.Alpaca_Interface.market_order('AAPL', 'buy', 1)
+        alpaca_sell = self.Alpaca_Interface.market_order('AAPL', 'sell', 1)
+
+        self.assertTrue(compare_dictionaries(alpaca_buy.get_response(), alpaca_buy.get_response()))
+        self.assertTrue(compare_dictionaries(alpaca_sell.get_status(full=True), alpaca_sell.get_status(full=True)))
+
         response_list = [coinbase_buy.get_response(),
                          coinbase_sell.get_response(),
                          binance_buy.get_response(),
-                         binance_sell.get_response()
+                         binance_sell.get_response(),
+                         alpaca_buy.get_response(),
+                         alpaca_sell.get_response()
                          ]
 
         time.sleep(1)
@@ -175,7 +182,9 @@ class InterfaceHomogeneity(unittest.TestCase):
         status_list = [coinbase_buy.get_status(full=True),
                        coinbase_sell.get_status(full=True),
                        binance_buy.get_status(full=True),
-                       binance_sell.get_status(full=True)
+                       binance_sell.get_status(full=True),
+                       alpaca_buy.get_status(full=True),
+                       alpaca_sell.get_status(full=True)
                        ]
 
         self.assertTrue(compare_responses(response_list))
@@ -188,7 +197,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertEqual(limit_order.get_time_in_force(), 'GTC')
         # TODO fix status homogeneity
         # self.assertEqual(limit_order.get_status(), {'status': 'new'})
-        self.assertEqual(limit_order.get_quantity(), size)
+        self.assertEqual(limit_order.get_size(), size)
         self.assertEqual(limit_order.get_asset_id(), product_id)
 
     def test_limit_order(self):

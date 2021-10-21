@@ -247,13 +247,13 @@ class BinanceInterface(ExchangeInterface):
                 })
         return utils.AttributeDict(parsed_dictionary)
 
-    def market_order(self, symbol, side, funds) -> MarketOrder:
+    def market_order(self, symbol, side, size) -> MarketOrder:
         """
         Used for buying or selling market orders
         Args:
             symbol: asset to buy
             side: buy/sell
-            funds: desired amount of quote asset to use
+            size: desired amount of base asset to use
         """
         needed = self.needed['market_order']
         """
@@ -309,7 +309,7 @@ class BinanceInterface(ExchangeInterface):
             ["cummulativeQuoteQty", "funds"]
         ]
         order = {
-            'funds': funds,
+            'size': size,
             'side': side,
             'symbol': symbol,
             'type': 'market'
@@ -317,12 +317,13 @@ class BinanceInterface(ExchangeInterface):
         modified_symbol = utils.to_exchange_symbol(symbol, "binance")
         # The interface here will be the query of order status from this object, because orders are dynamic
         # creatures
-        response = self.calls.order_market(symbol=modified_symbol, side=side, quoteOrderQty=funds)
+        response = self.calls.order_market(symbol=modified_symbol, side=side, quantity=size)
         response['side'] = response['side'].lower()
         response['type'] = response['type'].lower()
         response['status'] = super().homogenize_order_status('binance', response['status'].lower())
         response["transactTime"] = response["transactTime"] / 1000
-        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance')
+        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance',
+                                                     quote_guess=utils.get_quote_asset(symbol))
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
@@ -795,6 +796,11 @@ class BinanceInterface(ExchangeInterface):
             },
             'market_order': {
                 "fractionable": True,
+
+                "base_min_size": min_quantity,  # Minimum size to buy
+                "base_max_size": max_quantity,  # Maximum size to buy
+                "base_increment": base_increment,  # Specifies the minimum increment for the base_asset.
+
                 "quote_increment": quote_increment,  # Specifies the min order price as well as the price increment.
                 "buy": {
                     "min_funds": min_market_notational,

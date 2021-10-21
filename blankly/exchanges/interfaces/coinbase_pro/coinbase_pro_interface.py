@@ -130,13 +130,13 @@ class CoinbaseProInterface(ExchangeInterface):
 
         return parsed_dictionary
 
-    def market_order(self, symbol, side, funds) -> MarketOrder:
+    def market_order(self, symbol, side, size) -> MarketOrder:
         """
         Used for buying or selling market orders
         Args:
             symbol: currency to buy
             side: buy/sell
-            funds: desired amount of quote currency to use
+            size: desired amount of base currency to buy or sell
         """
         needed = self.needed['market_order']
         """
@@ -158,12 +158,12 @@ class CoinbaseProInterface(ExchangeInterface):
         }
         """
         order = {
-            'funds': funds,
+            'size': size,
             'side': side,
             'symbol': symbol,
             'type': 'market'
         }
-        response = self.calls.place_market_order(symbol, side, funds=funds)
+        response = self.calls.place_market_order(symbol, side, size=size)
         if "message" in response:
             raise InvalidOrder("Invalid Order: " + response["message"])
         response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
@@ -526,15 +526,19 @@ class CoinbaseProInterface(ExchangeInterface):
         if products is None:
             raise LookupError("Specified market not found")
 
+        base_min_size = float(products.pop('base_min_size'))
+        base_max_size = float(products.pop('base_max_size'))
+        base_increment = float(products.pop('base_increment'))
+
         return {
             "symbol": products.pop('id'),
             "base_asset": products.pop('base_currency'),
             "quote_asset": products.pop('quote_currency'),
             "max_orders": 1000000000000,
             "limit_order": {
-                "base_min_size": float(products.pop('base_min_size')),  # Minimum size to buy
-                "base_max_size": float(products.pop('base_max_size')),  # Maximum size to buy
-                "base_increment": float(products.pop('base_increment')),  # Specifies the minimum increment
+                "base_min_size": base_min_size,  # Minimum size to buy
+                "base_max_size": base_max_size,  # Maximum size to buy
+                "base_increment": base_increment,  # Specifies the minimum increment
                 # for the base_asset.
                 "price_increment": float(products['quote_increment']),
 
@@ -543,6 +547,11 @@ class CoinbaseProInterface(ExchangeInterface):
             },
             'market_order': {
                 "fractionable": True,
+
+                "base_min_size": base_min_size,  # Minimum size to buy
+                "base_max_size": base_max_size,  # Maximum size to buy
+                "base_increment": base_increment,  # Specifies the minimum increment
+
                 "quote_increment": float(products.pop('quote_increment')),  # Specifies the min order price as well
                 # as the price increment.
                 "buy": {

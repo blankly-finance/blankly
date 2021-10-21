@@ -93,12 +93,6 @@ class LimitOrder(Order):
         """
         return self.__response["time_in_force"]
 
-    def get_quantity(self) -> float:
-        """
-        Get the quantity of order, Ex: .004 bitcoin
-        """
-        return self.__response["size"]
-
     def __str__(self):
         return_string = super().__str__()
 
@@ -109,9 +103,6 @@ class LimitOrder(Order):
 
         return_string = self.add_new_line(return_string, "Price: ", newline=False)
         return_string = self.add_new_line(return_string, self.get_price())
-
-        return_string = self.add_new_line(return_string, "Quantity: ", newline=False)
-        return_string = self.add_new_line(return_string, self.get_quantity())
 
         return return_string
 

@@ -65,13 +65,13 @@ class StrategyLogger(ABCExchangeInterface):
                                       resolution=resolution, start_date=start_date,
                                       end_date=end_date, return_as=return_as)
     
-    def market_order(self, symbol: str, side: str, funds: float) -> MarketOrder:
-        out = self.interface.market_order(symbol, side, funds)
+    def market_order(self, symbol: str, side: str, size: float) -> MarketOrder:
+        out = self.interface.market_order(symbol, side, size)
 
         # Record this market order along with the arguments
         blankly.reporter.log_strategy_event(self.strategy, 'market_order', out,
                                             symbol=symbol, side=side,
-                                            funds=funds)
+                                            funds=size)
         return out
     
     def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:

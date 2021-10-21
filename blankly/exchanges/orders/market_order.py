@@ -65,19 +65,8 @@ class MarketOrder(Order):
         self.__homogenized_result = None
         super().__init__(self.__response, self.__order, self.Interface)
 
-    def get_funds(self) -> float:
-        """
-        Get the funds exchanged in a market order. This will include fees.
-        """
-        return self.__response["funds"]
-
     def __str__(self):
         return_string = super().__str__()
-
-        return_string = self.add_new_line(return_string, "Market Order Parameters: ")
-
-        return_string = self.add_new_line(return_string, "Funds: ", newline=False)
-        return_string = self.add_new_line(return_string, self.get_funds())
 
         return return_string
 

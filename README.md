@@ -60,10 +60,12 @@ crypto.interface.market_order('BTC-USD', 'buy', 10)
 ```python
 from blankly import Alpaca, Strategy, StrategyState
 
+
 def price_event(price, symbol, state):
-	# Trading logic here
-  state.interface.market_order(symbol, 'buy', 10)
-  
+    # Trading logic here
+    state.interface.market_order(symbol, 'buy', 10)
+
+
 # Authenticate
 alpaca = Alpaca()
 strategy = Strategy(alpaca)
@@ -183,14 +185,18 @@ def price_event(price, symbol, state: StrategyState):
     """ This function will give an updated price every 15 seconds from our definition below """
     state.variables['history'].append(price)
     rsi = blankly.indicators.rsi(state.variables['history'])
+    
+    # Trade 10 dollars of it only
+    funds = 10/price
+    
     if rsi[-1] < 30 and not state.variables['has_bought']:
         # Dollar cost average buy
         state.variables['has_bought'] = True
-        state.interface.market_order(symbol, side='buy', funds=10)
+        state.interface.market_order(symbol, side='buy', size=funds)
     elif rsi[-1] > 70 and state.variables['has_bought']:
         # Dollar cost average sell
         state.variables['has_bought'] = False
-        state.interface.market_order(symbol, side='sell', funds=10)
+        state.interface.market_order(symbol, side='sell', size=funds)
 
 
 def init(symbol, state: StrategyState):
