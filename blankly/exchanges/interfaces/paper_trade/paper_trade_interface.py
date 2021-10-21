@@ -301,37 +301,39 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 else:
                     raise KeyError("Symbol not found.")
 
-    def market_order(self, symbol, side, funds) -> MarketOrder:
+    def market_order(self, symbol, side, size) -> MarketOrder:
         if not self.backtesting:
             print("Paper Trading...")
         needed = self.needed['market_order']
         order = {
-            'funds': funds,
+            'size': size,
             'side': side,
             'symbol': symbol,
             'type': 'market'
         }
         creation_time = self.time()
         price = self.get_price(symbol)
+        funds = price*size
 
         market_limits = self.get_order_filter(symbol)
 
-        min_funds = market_limits['market_order'][side]["min_funds"]
+        min_size = market_limits['market_order']["base_min_size"]
 
-        max_funds = market_limits['market_order'][side]["max_funds"]
+        max_size = market_limits['market_order']["base_max_size"]
 
-        if funds < min_funds:
-            raise InvalidOrder("Funds is too small. Minimum is: " + str(min_funds))
+        if size < min_size:
+            raise InvalidOrder("Size is too small. Minimum is: " + str(min_size))
 
-        if funds > max_funds:
-            raise InvalidOrder("Funds is too large. Maximum is: " + str(max_funds))
+        if size > max_size:
+            raise InvalidOrder("Size is too large. Maximum is: " + str(max_size))
 
-        quote_increment = market_limits['market_order']['quote_increment']
-        quote_decimals = self.__get_decimals(quote_increment)
+        base_increment = market_limits['market_order']['base_increment']
+        base_decimals = self.__get_decimals(base_increment)
 
         # Test if funds has more decimals than the increment. The increment is the maximum resolution of the quote.
-        if self.__get_decimals(funds) > quote_decimals:
-            raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(quote_increment))
+        if self.__get_decimals(size) > base_decimals:
+            raise InvalidOrder("Size resolution is too high, the highest resolution allowed for this symbol is: " +
+                               str(base_increment) + ". You specified " + str(size) + ".")
 
         if self.get_exchange_type() == 'alpaca':
             # This could break, but there appears that 10 decimals is about right for alpaca
@@ -339,10 +341,10 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         else:
             quantity_decimals = self.__get_decimals(market_limits['limit_order']['base_increment'])
 
-        qty = utils.trunc(funds / price, quantity_decimals)
+        qty = size
 
         # Test the purchase
-        trade_local.test_trade(symbol, side, qty, price, quote_decimals, quantity_decimals)
+        trade_local.test_trade(symbol, side, qty, price, base_decimals, quantity_decimals)
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
         # TODO the force typing here isn't strictly necessary because its run int the isolate_specific anyway
@@ -350,8 +352,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             'symbol': str(symbol),
             'id': str(coinbase_pro_id),
             'created_at': str(creation_time),
-            'funds': str(utils.trunc(funds - funds * float((self.__exchange_properties["maker_fee_rate"])),
-                                     quote_decimals)),
+            'funds': str(utils.trunc(size - size * float((self.__exchange_properties["taker_fee_rate"])),
+                                     base_decimals)),
+            'size': str(size),
             'status': 'done',
             'type': 'market',
             'side': str(side)
@@ -374,21 +377,21 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             trade_local.trade_local(symbol=symbol,
                                     side=side,
                                     base_delta=utils.trunc(qty -
-                                                           qty * float((self.__exchange_properties["maker_fee_rate"])),
+                                                           qty * float((self.__exchange_properties["taker_fee_rate"])),
                                                            quantity_decimals),
                                     # Gain filled size after fees
                                     quote_delta=utils.trunc(funds * -1,
-                                                            quote_decimals),  # Loose the original fund amount
-                                    quote_resolution=quote_decimals, base_resolution=quantity_decimals)
+                                                            base_decimals),  # Loose the original fund amount
+                                    quote_resolution=base_decimals, base_resolution=quantity_decimals)
         elif side == "sell":
             trade_local.trade_local(symbol=symbol,
                                     side=side,
                                     base_delta=utils.trunc(float(qty * -1), quantity_decimals),
                                     # Loose size before any fees
                                     quote_delta=utils.trunc(funds - funds *
-                                                            float((self.__exchange_properties["maker_fee_rate"])),
-                                                            quote_decimals),  # Gain executed value after fees
-                                    quote_resolution=quote_decimals, base_resolution=quantity_decimals)
+                                                            float((self.__exchange_properties["taker_fee_rate"])),
+                                                            base_decimals),  # Gain executed value after fees
+                                    quote_resolution=base_decimals, base_resolution=quantity_decimals)
         else:
             raise APIException("Invalid trade side: " + str(side))
 
