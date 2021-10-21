@@ -77,19 +77,19 @@ def test_trade(currency_pair, side, qty, quote_price, quote_resolution, base_res
     if side == 'buy':
         quote = utils.get_quote_asset(currency_pair)
         account = local_account.account[quote]
-        current_funds = utils.trunc(account['available'], quote_resolution)
+        current_funds = local_account.account[quote]['available']
         purchase_funds = utils.trunc(quote_price * qty, quote_resolution)
 
         # If you have more funds than the purchase requires then return true
         if current_funds >= purchase_funds:
             return True
         else:
-            raise InvalidOrder("Insufficient funds. Available:" +
+            raise InvalidOrder("Insufficient funds. Available: " +
                                str(current_funds) +
                                " hold: " +
                                str(account['hold']) +
                                " requested: " +
-                               str(qty) + ".")
+                               str(purchase_funds) + ".")
 
     elif side == 'sell':
         base = utils.get_base_asset(currency_pair)

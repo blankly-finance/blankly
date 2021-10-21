@@ -46,13 +46,13 @@ def price_event(price, symbol, state: StrategyState):
     is_cross_down = slope_macd < 0 and curr_macd <= curr_signal_macd < prev_macd
     if is_cross_up:
         # If there is a buy signal, buy with 40% of cash available (that 40% has to be more than 10 dollars though)
-        cash = trunc((interface.cash * .4)/price, 2)
+        cash = trunc(interface.cash * .4, 2)
         if cash > 10:
-            interface.market_order(symbol, 'buy', 1)
+            interface.market_order(symbol, 'buy', int(cash/price))
             variables['has_bought'] = True
     elif is_cross_down and variables['has_bought']:
         # Sell all of the position. We also have to own a position after buying
-        interface.market_order(symbol, 'sell', int(interface.get_account(state.base_asset)['available']))
+        interface.market_order(symbol, 'sell', int(interface.account[symbol].available))
         variables['has_bought'] = False
 
 

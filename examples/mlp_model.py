@@ -45,14 +45,14 @@ def price_event(price, symbol, state: StrategyState):
     ma100_value = scaler.fit_transform(ma100_values)[-1]
     value = np.array([rsi_value, ma_value, ma100_value]).reshape(1, 3)
     prediction = model.predict_proba(value)[0][1]
+
     # comparing prev diff with current diff will show a cross
     if prediction > 0.4 and not variables['has_bought']:
-        interface.market_order(symbol, 'buy', interface.cash)
+        interface.market_order(symbol, 'buy', trunc(interface.cash/price, 8))
         variables['has_bought'] = True
     elif prediction <= 0.4 and variables['has_bought']:
-        curr_value = interface.account[state.base_asset].available * price
         # truncate is required due to float precision
-        interface.market_order(symbol, 'sell', trunc(curr_value, 2))
+        interface.market_order(symbol, 'sell', interface.account[state.base_asset]['available'])
         variables['has_bought'] = False
 
 

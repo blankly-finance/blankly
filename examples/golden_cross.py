@@ -13,7 +13,7 @@ def init(symbol, state: StrategyState):
     resolution = state.resolution
     variables = state.variables
     # initialize the historical data
-    variables['history'] = interface.history(symbol, 800, resolution, end_date=state.time, return_as='deque')['close']
+    variables['history'] = interface.history(symbol, 1200, resolution, end_date=state.time, return_as='deque')['close']
     variables['owns_position'] = False
 
 
@@ -34,20 +34,19 @@ def price_event(price, symbol, state: StrategyState):
     is_cross_down = slope_sma50 < 0 and curr_diff <= 0 and prev_diff > 0
     # comparing prev diff with current diff will show a cross
     if is_cross_up and not variables['owns_position']:
-        interface.market_order(symbol, 'buy', interface.cash)
+        interface.market_order(symbol, 'buy', int(interface.cash/price))
         variables['owns_position'] = True
     elif is_cross_down and variables['owns_position']:
         # use strategy.base_asset if on CoinbasePro or Binance
-        curr_value = trunc(interface.account[symbol].available * price, 2)
-        interface.market_order(symbol, 'sell', curr_value)
+        interface.market_order(symbol, 'sell', interface.account[symbol].available)
         variables['owns_position'] = False
 
 
 if __name__ == "__main__":
     alpaca = Alpaca()
     s = Strategy(alpaca)
-    s.add_price_event(price_event, 'MSFT', resolution='1d', init=init)
-    s.add_price_event(price_event, 'AAPL', resolution='1d', init=init)
+    s.add_price_event(price_event, 'NCLH', resolution='1h', init=init)
+    s.add_price_event(price_event, 'GME', resolution='1h', init=init)
     s.backtest(initial_values={'USD': 10000}, to='2y')
     # Or just run it directly on the exchange
     # s.start()
