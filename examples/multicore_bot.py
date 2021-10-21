@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     # This creates an authenticated exchange and chooses the first portfolio in the keys.json file
     # You can use portfolio_name="my cool portfolio" if want a certain one
-    portfolio = blankly.CoinbasePro()  # You could also use blankly.binance()
+    portfolio = blankly.CoinbasePro()  # You could also use blankly.Binance()
 
     # Create the bot and add it to run as a coinbase_pro bitcoin model.
     bot = Bot()

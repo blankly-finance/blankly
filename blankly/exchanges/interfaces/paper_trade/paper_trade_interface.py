@@ -322,10 +322,10 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         max_size = market_limits['market_order']["base_max_size"]
 
         if size < min_size:
-            raise InvalidOrder("Size is too small. Minimum is: " + str(min_size))
+            raise InvalidOrder(f"Size is too small. Minimum is: {min_size}. You requested {size}.")
 
         if size > max_size:
-            raise InvalidOrder("Size is too large. Maximum is: " + str(max_size))
+            raise InvalidOrder(f"Size is too large. Maximum is: {min_size}. You requested {size}.")
 
         base_increment = market_limits['market_order']['base_increment']
         base_decimals = self.__get_decimals(base_increment)
@@ -344,7 +344,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         qty = size
 
         # Test the purchase
-        trade_local.test_trade(symbol, side, qty, price, base_decimals, quantity_decimals)
+        trade_local.test_trade(symbol, side, qty, price, market_limits['market_order']["quote_increment"],
+                               quantity_decimals)
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
         # TODO the force typing here isn't strictly necessary because its run int the isolate_specific anyway

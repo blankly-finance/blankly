@@ -8,12 +8,12 @@ def price_event(price, symbol, state: blankly.StrategyState):
     rsi = blankly.indicators.rsi(state.variables['history'])
     if rsi[-1] < 30 and not state.variables['owns_position']:
         # Dollar cost average buy
-        buy = trunc(state.interface.cash * 0.5, 2)
+        buy = int(state.interface.cash/price)
         state.interface.market_order(symbol, side='buy', size=buy)
         state.variables['owns_position'] = True
     elif rsi[-1] > 70 and state.variables['owns_position']:
         # Dollar cost average sell
-        curr_value = trunc(state.interface.account[state.base_asset].available * price, 2)
+        curr_value = int(state.interface.account[state.base_asset].available)
         state.interface.market_order(symbol, side='sell', size=curr_value)
         state.variables['owns_position'] = False
 
@@ -26,17 +26,17 @@ def init(symbol, state: blankly.StrategyState):
 
 if __name__ == "__main__":
     # Authenticate coinbase pro strategy
-    exchange = blankly.Alpaca()
+    exchange = blankly.CoinbasePro()
 
     # Use our strategy helper on coinbase pro
     strategy = blankly.Strategy(exchange)
 
     # Run the price event function every time we check for a new price - by default that is 15 seconds
-    strategy.add_price_event(price_event, symbol='AAPL', resolution='1d', init=init)
-    strategy.add_price_event(price_event, symbol='MSFT', resolution='1d', init=init)
+    strategy.add_price_event(price_event, symbol='BTC-USD', resolution='1d', init=init)
+    # strategy.add_price_event(price_event, symbol='MSFT', resolution='1d', init=init)
 
     # Start the strategy. This will begin each of the price event ticks
     # strategy.start()
     # Or backtest using this
-    results = strategy.backtest(to='1y', initial_values={'USD': 100})
+    results = strategy.backtest(to='1y', initial_values={'USD': 10000})
     print(results)
