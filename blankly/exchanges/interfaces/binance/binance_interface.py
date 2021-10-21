@@ -555,13 +555,10 @@ class BinanceInterface(ExchangeInterface):
         # TODO: make sure this supports with binance Coin (BNB) discount
         account = self.calls.get_account()
         # Get rid of the stuff we really don't need this time
-        account.pop('canTrade')
-        account.pop('canWithdraw')
-        account.pop('canDeposit')
         account.pop('balances')
         # Rename makers and takers
-        account['maker_fee_rate'] = account.pop('makerCommission') / 100
-        account['taker_fee_rate'] = account.pop('takerCommission') / 100
+        account['maker_fee_rate'] = account.pop('makerCommission') / 10000
+        account['taker_fee_rate'] = account.pop('takerCommission') / 10000
         # Isolate
         return utils.isolate_specific(needed, account)
 
