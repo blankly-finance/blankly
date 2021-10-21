@@ -5,6 +5,7 @@ def is_sub_dict(dict1: dict, dict2: dict) -> bool:
 
     return True
 
+
 def validate_response(needed, resp):
     # verify resp is correct
     for key_type in needed:

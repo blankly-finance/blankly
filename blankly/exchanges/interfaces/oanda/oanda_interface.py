@@ -120,14 +120,14 @@ class OandaInterface(ExchangeInterface):
         return positions_dict
 
     # funds is the base asset (EUR_CAD the base asset is CAD)
-    def market_order(self, symbol: str, side: str, funds: float) -> MarketOrder:
+    def market_order(self, symbol: str, side: str, size: float) -> MarketOrder:
         assert isinstance(self.calls, OandaAPI)
 
         # Make sure that default trunc has been established - init may have been skipped
         if self.default_trunc is None:
             self.init_exchange()
 
-        qty_to_buy = funds / self.get_price(symbol)
+        qty_to_buy = size
         qty_to_buy = utils.trunc(qty_to_buy, self.default_trunc)
 
         # we need to round qty_to_buy
@@ -143,7 +143,7 @@ class OandaInterface(ExchangeInterface):
 
         needed = self.needed['market_order']
         order = {
-            'funds': qty_to_buy,
+            'size': qty_to_buy,
             'side': side,
             'symbol': symbol,
             'type': 'market'
@@ -152,7 +152,7 @@ class OandaInterface(ExchangeInterface):
         resp['symbol'] = resp['orderCreateTransaction']['instrument']
         resp['id'] = resp['orderCreateTransaction']['id']
         resp['created_at'] = resp['orderCreateTransaction']['time']
-        resp['funds'] = qty_to_buy
+        resp['size'] = qty_to_buy
         resp['status'] = "active"
         resp['type'] = 'market'
         resp['side'] = side
@@ -330,6 +330,11 @@ class OandaInterface(ExchangeInterface):
         price = self.get_price(symbol)
         resp['market_order'] = {
             "fractionable": True,
+
+            "base_min_size": float(resp['minimumTradeSize']),  # Minimum size to buy
+            "base_max_size": float(resp['maximumOrderUnits']),  # Maximum size to buy
+            "base_increment": 10 ** (-1 * int(resp['tradeUnitsPrecision'])),  # Specifies the minimum increment
+
             "quote_increment": 0.01,
             "buy": {
                 "min_funds": float(resp['minimumTradeSize']) * price,
@@ -369,7 +374,7 @@ class OandaInterface(ExchangeInterface):
             renames = [['instrument', 'symbol'],
                        ['createTime', 'created_at'],
                        ['state', 'status'],  # TODO: handle status
-                       ['units', 'funds']]  # TODO: I think this is wrong
+                       ['units', 'size']]
             order = utils.rename_to(renames, order)
 
         elif order['type'] == "LIMIT":

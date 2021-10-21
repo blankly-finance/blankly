@@ -68,7 +68,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 ["symbol", str],
                 ["id", str],
                 ["created_at", float],
-                ["funds", float],
+                ["size", float],
                 ["status", str],
                 ["type", str],
                 ["side", str]

@@ -88,13 +88,13 @@ class ABCExchangeInterface(abc.ABC):
     def market_order(self,
                      symbol: str,
                      side: str,
-                     funds: float) -> MarketOrder:
+                     size: float) -> MarketOrder:
         """
         Used for buying or selling market orders
         Args:
             symbol: asset to buy
             side: buy/sell
-            funds: desired amount of quote asset to use
+            size: desired amount of base asset to use
         """
         pass
 

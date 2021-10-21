@@ -82,7 +82,7 @@ def test_get_buy_sell_order(binance_interface: BinanceInterface) -> None:
     print(btc_usd_id)
     assert btc_usd_id
 
-    market_buy_order = binance_interface.market_order(btc_usd_id, 'buy', 200)
+    market_buy_order = binance_interface.market_order(btc_usd_id, 'buy', .01)
 
     time.sleep(1.5)
 
@@ -99,7 +99,7 @@ def test_get_buy_sell_order(binance_interface: BinanceInterface) -> None:
     assert resp["side"] == "buy"
     assert resp["type"] == "market"
 
-    market_sell_order = binance_interface.market_order(btc_usd_id, 'sell', 200)
+    market_sell_order = binance_interface.market_order(btc_usd_id, 'sell', .01)
     # this test has been flaky, so lets add a sleep for engine to process order
     time.sleep(1)
     # wait until order is filled

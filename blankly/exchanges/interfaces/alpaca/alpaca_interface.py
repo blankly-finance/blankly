@@ -196,21 +196,21 @@ class AlpacaInterface(ExchangeInterface):
             # If it didn't get recognized above we end up here
             raise KeyError("Symbol not found.")
 
-    def market_order(self, symbol, side, funds) -> MarketOrder:
+    def market_order(self, symbol, side, size) -> MarketOrder:
         assert isinstance(self.calls, alpaca_trade_api.REST)
         needed = self.needed['market_order']
 
         renames = [
-            ['notional', 'funds']
+            ['qty', 'size']
         ]
 
         order = {
-            'funds': funds,
+            'size': size,
             'side': side,
             'symbol': symbol,
             'type': 'market'
         }
-        response = self.calls.submit_order(symbol, side=side, type='market', time_in_force='day', notional=funds)
+        response = self.calls.submit_order(symbol, side=side, type='market', time_in_force='day', qty=size)
         response['created_at'] = parser.isoparse(response['created_at']).timestamp()
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
@@ -288,6 +288,8 @@ class AlpacaInterface(ExchangeInterface):
             order = utils.rename_to(renames, order)
 
         elif order['type'] == "market":
+            print("xxxx")
+            print(order)
             if order['notional']:
                 renames = [
                     ["notional", "funds"]
@@ -295,9 +297,7 @@ class AlpacaInterface(ExchangeInterface):
                 order = utils.rename_to(renames, order)
 
             else:  # market order of number of shares
-                qty = order['qty']
-                price = self.calls.get_last_trade(symbol=order['symbol'])
-                order['funds'] = qty * price
+                order['size'] = order.pop('qty')
 
         # TODO: test stop_limit orders
         elif order['type'] == "stop_limit":
@@ -558,6 +558,14 @@ class AlpacaInterface(ExchangeInterface):
             },
             'market_order': {
                 "fractionable": fractionable,
+
+                # TODO alpaca is very broken right now and is only allowing whole number quantity so these are
+                #  overridden. If I see anyone creating an issue about this it better be that I can finally allow
+                #  fractional back
+                "base_min_size": 1,  # Minimum size to buy
+                "base_max_size": base_max_size,  # Maximum size to buy
+                "base_increment": 1,  # Specifies the minimum increment for the base_asset.
+
                 "quote_increment": quote_increment,  # Specifies the min order price as well as the price increment.
                 "buy": {
                     "min_funds": min_funds_buy,

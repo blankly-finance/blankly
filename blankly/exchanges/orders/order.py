@@ -78,6 +78,9 @@ class Order:
 
         return_string = self.add_new_line(return_string, "Side: ", self.get_side())
 
+        return_string = self.add_new_line(return_string, "Size: ", newline=False)
+        return_string = self.add_new_line(return_string, self.get_size())
+
         return return_string
 
     def get_response(self) -> dict:
@@ -128,3 +131,9 @@ class Order:
         Get the order side such as buy/sell as a str.
         """
         return self.__response["side"]
+
+    def get_size(self) -> float:
+        """
+        Get the size of order, Ex: .004 bitcoin
+        """
+        return self.__response["size"]
