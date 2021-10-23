@@ -36,26 +36,26 @@ def cum_returns(start_value, end_value):
 def sortino(returns, n=252, risk_free_rate=None):
     returns = pd.Series(returns)
     if risk_free_rate:
-        mean = returns.mean() - risk_free_rate
+        mean = returns.mean() * n - risk_free_rate
     else:
-        mean = returns.mean()
-    std_neg = returns[returns < 0].std()
-    return mean / std_neg * np.sqrt(n)
+        mean = returns.mean() * n
+    std_neg = returns[returns < 0].std() * np.sqrt(n)
+    return mean / std_neg
 
 
 def sharpe(returns, n=252, risk_free_rate=None):
     returns = pd.Series(returns)
     if risk_free_rate:
-        mean = returns.mean() - risk_free_rate
+        mean = returns.mean() * n - risk_free_rate
     else:
-        mean = returns.mean()
-    std = returns.std()
-    return mean / std * np.sqrt(n)
+        mean = returns.mean() * n
+    std = returns.std() * np.sqrt(n)
+    return mean / std 
 
 
 def calmar(returns, n=252):
     return_series = pd.Series(returns)
-    return return_series.mean() * np.sqrt(n) / abs(max_drawdown(return_series))
+    return return_series.mean() * n / abs(max_drawdown(return_series))
 
 
 def volatility(returns, n=None):
@@ -88,7 +88,5 @@ def cvar(initial_value, returns, alpha):
 
 def max_drawdown(returns):
     return_series = pd.Series(returns)
-    pct_returns = (return_series + 1).cumprod() - 1
-    peak = pct_returns.cummax()
-    dd = (1 + peak) / (1 + pct_returns)
-    return dd.min()
+    pct_returns = (return_series + 1).cumprod()
+    return np.ptp(pct_returns) / pct_returns.max()
