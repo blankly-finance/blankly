@@ -452,10 +452,10 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         max_price = float(order_filter['limit_order']["max_price"])
 
         if price < min_price:
-            raise InvalidOrder("Order quantity is too small. Minimum is: " + str(min_price))
+            raise InvalidOrder("Limit price is too small. Minimum is: " + str(min_price))
 
         if price > max_price:
-            raise InvalidOrder("Order quantity is too large. Maximum is: " + str(max_price))
+            raise InvalidOrder("Limit price is too large. Maximum is: " + str(max_price))
 
         # Check if the passed parameters are more accurate than either of the max base resolution or max price
         # resolution
