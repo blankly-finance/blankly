@@ -50,7 +50,7 @@ def sharpe(returns, n=252, risk_free_rate=None):
     else:
         mean = returns.mean() * n
     std = returns.std() * np.sqrt(n)
-    return mean / std 
+    return mean / std
 
 
 def calmar(returns, n=252):
