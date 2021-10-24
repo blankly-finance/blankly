@@ -191,6 +191,15 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         self.assertTrue(compare_responses(status_list))
 
+        # Be sure to cancel the alpaca orders if not executed
+        alpaca_orders = self.Alpaca_Interface.get_open_orders()
+        for i in alpaca_orders:
+            if i['type'] == "market":
+                try:
+                    self.Alpaca_Interface.cancel_order(i['symbol'], i['id'])
+                except Exception:
+                    print("Failed canceling order - may have already executed")
+
     def check_limit_order(self, limit_order: LimitOrder, expected_side: str, size, product_id):
         self.assertEqual(limit_order.get_side(), expected_side)
         self.assertEqual(limit_order.get_type(), 'limit')
@@ -223,27 +232,31 @@ class InterfaceHomogeneity(unittest.TestCase):
         coinbase_sell = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'sell', 100000, 1)
         self.check_limit_order(coinbase_sell, 'sell', 1, 'BTC-USD')
 
-        limits = [binance_buy, binance_sell, coinbase_buy, coinbase_sell]
+        alpaca_buy = self.Alpaca_Interface.limit_order('AAPL', 'buy', 10, 1)
+        self.check_limit_order(alpaca_buy, 'buy', 1, 'AAPL')
+
+        alpaca_sell = self.Alpaca_Interface.limit_order('AAPL', 'sell', 1000000000, 1)
+        self.check_limit_order(alpaca_sell, 'sell', 1, 'AAPL')
+
+        limits = [binance_buy, binance_sell, coinbase_buy, coinbase_sell, alpaca_sell, alpaca_buy]
         responses = []
         status = []
 
         cancels = []
 
-        coinbase_open = self.Coinbase_Pro_Interface.get_open_orders('BTC-USD')
-        for i in [coinbase_buy, ]: # coinbase_sell]:
-            found = False
-            for j in coinbase_open:
-                if i.get_id() == j['id']:
-                    found = True
-            self.assertTrue(found)
+        # Just scan through both simultaneously to reduce code copying
+        open_orders = self.Coinbase_Pro_Interface.get_open_orders('BTC-USD')
+        open_orders = open_orders + self.Binance_Interface.get_open_orders('BTC-USDT')
+        open_orders = open_orders + self.Alpaca_Interface.get_open_orders('AAPL')
 
-        binance_open = self.Binance_Interface.get_open_orders('BTC-USDT')
-        for i in [binance_buy, binance_sell]:
+        self.assertTrue(compare_responses(open_orders))
+        for i in limits:
             found = False
-            for j in binance_open:
+            for j in open_orders:
                 if i.get_id() == j['id']:
                     found = True
-                    compare_dictionaries(i.get_response(), j)
+                    self.assertTrue(compare_dictionaries(i.get_response(), j))
+                    break
             self.assertTrue(found)
 
         for i in limits:
@@ -258,6 +271,9 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_sell.get_id()))
         cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_buy.get_id()))
+
+        cancels.append(self.Alpaca_Interface.cancel_order('AAPL', alpaca_buy.get_id()))
+        cancels.append(self.Alpaca_Interface.cancel_order('AAPL', alpaca_sell.get_id()))
 
         self.assertTrue(compare_responses(cancels, force_exchange_specific=False))
 

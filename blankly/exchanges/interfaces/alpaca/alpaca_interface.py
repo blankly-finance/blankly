@@ -288,8 +288,6 @@ class AlpacaInterface(ExchangeInterface):
             order = utils.rename_to(renames, order)
 
         elif order['type'] == "market":
-            print("xxxx")
-            print(order)
             if order['notional']:
                 renames = [
                     ["notional", "funds"]
