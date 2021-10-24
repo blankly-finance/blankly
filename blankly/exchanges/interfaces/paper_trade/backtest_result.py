@@ -58,7 +58,12 @@ class BacktestResult:
 
         return_string += "Blankly Metrics: \n"
         for i in self.metrics.keys():
-            return_string += i + ": " + str(self.metrics[i]) + "\n"
+            spaces_needed = 33 - len(i)
+            user_metrics_line = i + ": " + (' ' * spaces_needed) + str(self.metrics[i])
+            if i[-3:] == "(%)":
+                user_metrics_line += "%"
+            user_metrics_line += "\n"
+            return_string += user_metrics_line
 
         if self.user_callbacks != {}:
             return_string += "\n"
