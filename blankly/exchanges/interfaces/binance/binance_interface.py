@@ -462,7 +462,8 @@ class BinanceInterface(ExchangeInterface):
             ["orderId", "id"],
             ["origQty", "size"],
             ["cummulativeQuoteQty", "funds"],
-            ["time", "created_at"]
+            ["time", "created_at"],
+            ["timeInForce", "time_in_force"]
         ]
 
         if symbol is not None:
