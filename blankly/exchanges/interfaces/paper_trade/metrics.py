@@ -23,43 +23,43 @@ from blankly.utils.time_builder import build_year
 def cagr(backtest_data):
     account_values = backtest_data['resampled_account_value']
     years = (account_values['time'].iloc[-1] - account_values['time'].iloc[0]) / build_year()
-    return metrics.cagr(account_values['value'].iloc[0], account_values['value'].iloc[-1], years)
+    return round(metrics.cagr(account_values['value'].iloc[0], account_values['value'].iloc[-1], years), 2) * 100
 
 
 def cum_returns(backtest_data):
     account_values = backtest_data['resampled_account_value']
-    return metrics.cum_returns(account_values['value'][0], account_values['value'].iloc[-1])
+    return round(metrics.cum_returns(account_values['value'][0], account_values['value'].iloc[-1]), 2) * 100
 
 
 def sortino(backtest_data):
     # TODO: Need to pass in the specific resolution
     # Defaulting to 1d
     returns = backtest_data['returns']['value']
-    return metrics.sortino(returns)
+    return round(metrics.sortino(returns), 2)
 
 
 def sharpe(backtest_data):
     # TODO: Need to pass in the specific resolution
     # Defaulting to 1d
     returns = backtest_data['returns']['value']
-    return metrics.sharpe(returns)
+    return round(metrics.sharpe(returns), 2)
 
 
 def calmar(backtest_data):
     # TODO: Need to pass in the specific resolution
     # Defaulting to 1d
     returns = backtest_data['returns']['value']
-    return metrics.calmar(returns)
+    return round(metrics.calmar(returns), 2)
 
 
 def volatility(backtest_data):
     returns = backtest_data['returns']['value']
-    return metrics.volatility(returns)
+    return round(metrics.volatility(returns), 2)
 
 
 def variance(backtest_data):
     returns = backtest_data['returns']['value']
-    return metrics.variance(returns)
+    return round(metrics.variance(returns), 2)
 
 
 def beta(backtest_data):
@@ -69,21 +69,21 @@ def beta(backtest_data):
     # Use SP500 as default for all of them (can we get this data?)
     # Or pick one of the assets as a baseline
     returns = backtest_data['returns']['value']
-    return metrics.beta(returns)
+    return round(metrics.beta(returns), 2)
 
 
 def var(backtest_data):
     returns = backtest_data['returns']['value']
     account_values = backtest_data['resampled_account_value']
-    return metrics.var(account_values['value'][0], returns, 0.95)
+    return round(metrics.var(account_values['value'][0], returns, 0.95), 2)
 
 
 def cvar(backtest_data):
     returns = backtest_data['returns']['value']
     account_values = backtest_data['resampled_account_value']
-    return metrics.cvar(account_values['value'][0], returns, 0.95)
+    return round(metrics.cvar(account_values['value'][0], returns, 0.95), 2)
 
 
 def max_drawdown(backtest_data):
     values = backtest_data['returns']['value']
-    return metrics.max_drawdown(values)
+    return abs(round(metrics.max_drawdown(values), 2))
