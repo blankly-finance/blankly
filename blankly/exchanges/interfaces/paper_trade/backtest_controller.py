@@ -869,7 +869,7 @@ class BackTestController:
             returns = resampled_returns.copy(deep=True)
 
             # Default diff parameters should do it
-            returns['value'] = returns['value'].diff()
+            returns['value'] = returns['value'].pct_change()
 
             # Now write it to our dictionary
             dataframes['returns'] = returns
