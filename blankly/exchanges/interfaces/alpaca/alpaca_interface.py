@@ -369,6 +369,8 @@ class AlpacaInterface(ExchangeInterface):
         bars.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
                     inplace=True)
 
+        if bars.empty:
+            return pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
         return utils.get_ohlcv(bars, row_divisor, from_zero=False)
 
     # def history(self,
