@@ -86,4 +86,4 @@ def cvar(backtest_data):
 
 def max_drawdown(backtest_data):
     values = backtest_data['returns']['value']
-    return abs(round(metrics.max_drawdown(values), 2))
+    return abs(round(metrics.max_drawdown(values), 2)) * 100
