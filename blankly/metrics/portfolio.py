@@ -14,6 +14,8 @@
 
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+    Big thanks to John from Codearmo
 """
 
 import numpy as np
@@ -87,6 +89,7 @@ def cvar(initial_value, returns, alpha):
 
 
 def max_drawdown(returns):
+    returns = pd.Series(returns)
     cumulative = (returns + 1).cumprod()
     peak = cumulative.expanding(min_periods=1).max()
     dd = (cumulative / peak) - 1
