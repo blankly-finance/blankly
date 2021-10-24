@@ -87,6 +87,7 @@ def cvar(initial_value, returns, alpha):
 
 
 def max_drawdown(returns):
-    return_series = pd.Series(returns)
-    pct_returns = (return_series + 1).cumprod()
-    return np.ptp(pct_returns) / pct_returns.max()
+    cumulative = (returns + 1).cumprod()
+    peak = cumulative.expanding(min_periods=1).max()
+    dd = (cumulative / peak) - 1
+    return dd.min()
