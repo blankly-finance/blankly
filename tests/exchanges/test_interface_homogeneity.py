@@ -245,9 +245,15 @@ class InterfaceHomogeneity(unittest.TestCase):
         cancels = []
 
         # Just scan through both simultaneously to reduce code copying
-        open_orders = self.Coinbase_Pro_Interface.get_open_orders('BTC-USD')
-        open_orders = open_orders + self.Binance_Interface.get_open_orders('BTC-USDT')
-        open_orders = open_orders + self.Alpaca_Interface.get_open_orders('AAPL')
+        all_orders = self.Coinbase_Pro_Interface.get_open_orders('BTC-USD')
+        all_orders = all_orders + self.Binance_Interface.get_open_orders('BTC-USDT')
+        all_orders = all_orders + self.Alpaca_Interface.get_open_orders('AAPL')
+
+        # Filter for limit orders
+        open_orders = []
+        for i in all_orders:
+            if i['type'] == 'limit':
+                open_orders.append(i)
 
         self.assertTrue(compare_responses(open_orders))
         for i in limits:
