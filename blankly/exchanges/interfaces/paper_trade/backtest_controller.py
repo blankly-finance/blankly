@@ -887,6 +887,7 @@ class BackTestController:
                     return math_callable(dict_of_dataframes)
                 except ZeroDivisionError:
                     return 'failed'
+            metrics_indicators['Max Drawdown (%)'] = attempt(metrics.max_drawdown, dataframes)
             metrics_indicators['Sortino Ratio'] = attempt(metrics.sortino, dataframes)
             metrics_indicators['Sharpe Ratio'] = attempt(metrics.sharpe, dataframes)
             metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, dataframes)
@@ -894,7 +895,6 @@ class BackTestController:
             metrics_indicators['Variance'] = attempt(metrics.variance, dataframes)
             metrics_indicators['Value-at-Risk'] = attempt(metrics.var, dataframes)
             metrics_indicators['Conditional Value-at-Risk'] = attempt(metrics.cvar, dataframes)
-            metrics_indicators['Max Drawdown (%)'] = attempt(metrics.max_drawdown, dataframes)
             # metrics_indicators['beta'] = attempt(metrics.beta, dataframes)
             # -----=====*****=====-----
 
