@@ -65,7 +65,7 @@ def volatility(returns, n=None):
 
 
 def variance(returns, n=None):
-    return np.var(returns) * np.sqrt(n) if n else np.var(returns)
+    return np.nanvar(returns) * np.sqrt(n) if n else np.nanvar(returns)
 
 
 def beta(returns, market_base_returns):
