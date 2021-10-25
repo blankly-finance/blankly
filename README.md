@@ -223,6 +223,9 @@ if __name__ == "__main__":
 ```
 ## Other Info
 
+### Subscribe to our news!
+https://blankly.substack.com/p/coming-soon
+
 ### Bugs
 
 Please report any bugs or issues on the GitHub's Issues page.
