@@ -58,7 +58,7 @@ def volatility(backtest_data):
 
 
 def variance(backtest_data):
-    returns = backtest_data['returns']['value']
+    returns = backtest_data['returns']['value'] * 100
     return round(metrics.variance(returns), 2)
 
 
