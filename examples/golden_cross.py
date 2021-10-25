@@ -38,14 +38,14 @@ def price_event(price, symbol, state: StrategyState):
         variables['owns_position'] = True
     elif is_cross_down and variables['owns_position']:
         # use strategy.base_asset if on CoinbasePro or Binance
-        interface.market_order(symbol, 'sell', interface.account[symbol].available)
+        interface.market_order(symbol, 'sell', int(interface.account[symbol].available))
         variables['owns_position'] = False
 
 
 if __name__ == "__main__":
     alpaca = Alpaca()
     s = Strategy(alpaca)
-    s.add_price_event(price_event, 'NCLH', resolution='1h', init=init)
+    s.add_price_event(price_event, 'SNAP', resolution='1h', init=init)
     s.add_price_event(price_event, 'GME', resolution='1h', init=init)
     s.backtest(initial_values={'USD': 10000}, to='2y')
     # Or just run it directly on the exchange

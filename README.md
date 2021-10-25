@@ -20,7 +20,7 @@
    <a target="_blank" href="https://github.com/Blankly-Finance/Blankly/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/blankly?color=gree"></a>
    <a target="_blank" href="https://github.com/Blankly-Finance/Blankly/stargazers"><img src="https://img.shields.io/github/stars/blankly-finance/blankly?style=social"></a>
    
-   
+
 
 </p>
 <p align="center">
@@ -51,8 +51,8 @@ stocks = Alpaca()
 crypto = CoinbasePro()
 
 # Easily perform the same actions across exchanges & asset types
-stocks.interface.market_order('AAPL', 'buy', 10)
-crypto.interface.market_order('BTC-USD', 'buy', 10)
+stocks.interface.market_order('AAPL', 'buy', 1)
+crypto.interface.market_order('BTC-USD', 'buy', 1)
 ```
 
 ### Backtest Instantly Across Symbols
@@ -63,7 +63,7 @@ from blankly import Alpaca, Strategy, StrategyState
 
 def price_event(price, symbol, state):
     # Trading logic here
-    state.interface.market_order(symbol, 'buy', 10)
+    state.interface.market_order(symbol, 'buy', 1)
 
 
 # Authenticate
@@ -88,15 +88,17 @@ strategy.backtest(to='1y')
 #### Useful Metrics
 
 ```bash
-cagr: 0.16389971631401057
-cum_returns: 0.16341583811462995
-sortino: 0.9357010686544994
-sharpe: 0.9194457112821073
-calmar: 1.103453797087196e-05
-volatility: 0.7740509744474758
-variance: 0.5991549110430868
-var: 156.2040441889991
-cvar: 6.508901021574862
+Blankly Metrics: 
+Compound Annual Growth Rate (%):   54.0%
+Cumulative Returns (%):            136.0%
+Max Drawdown (%):                  60.0%
+Variance (%):                      26.15%
+Sortino Ratio:                     0.9
+Sharpe Ratio:                      0.73
+Calmar Ratio:                      0.99
+Volatility:                        0.05
+Value-at-Risk:                     358.25
+Conditional Value-at-Risk:         34.16
 ```
 ### Go Live in One Line
 
