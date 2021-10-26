@@ -217,7 +217,7 @@ if __name__ == "__main__":
     strategy.add_price_event(price_event, symbol='GME', resolution='30m', init=init)
 
     # Start the strategy. This will begin each of the price event ticks
-    # coinbase_strategy.start()
+    # strategy.start()
     # Or backtest using this
     strategy.backtest(to='1y')
 ```
