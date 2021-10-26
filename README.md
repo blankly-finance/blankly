@@ -207,7 +207,7 @@ if __name__ == "__main__":
     # Authenticate on alpaca to create a strategy
     alpaca = blankly.Alpaca()
 
-    # Use our strategy helper on coinbase pro
+    # Use our strategy helper on alpaca
     strategy = blankly.Strategy(alpaca)
 
     # Run the price event function every time we check for a new price - by default that is 15 seconds
