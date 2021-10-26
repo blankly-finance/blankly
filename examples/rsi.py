@@ -1,5 +1,4 @@
 import blankly
-from blankly.utils import trunc
 
 
 def price_event(price, symbol, state: blankly.StrategyState):
