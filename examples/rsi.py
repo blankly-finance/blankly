@@ -32,7 +32,6 @@ if __name__ == "__main__":
 
     # Run the price event function every time we check for a new price - by default that is 15 seconds
     strategy.add_price_event(price_event, symbol='BTC-USD', resolution='1d', init=init)
-    # strategy.add_price_event(price_event, symbol='MSFT', resolution='1d', init=init)
 
     # Start the strategy. This will begin each of the price event ticks
     # strategy.start()
