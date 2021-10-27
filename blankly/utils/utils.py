@@ -535,6 +535,35 @@ def get_ohlcv(candles, n, from_zero: bool):
     return new_candles
 
 
+def aggregate_candles(history: pd.DataFrame, aggregation_size: int):
+    """
+    Aggregate history data (such as turn 1m data into 15m data)
+
+    Args:
+        history: A blankly generated dataframe
+        aggregation_size: How many rows of history to aggregate - ex: aggregation_size=15 on 1m data produces
+         15m intervals
+    """
+    aggregated = pd.DataFrame()
+    splits = split_df(history, aggregation_size)
+    for i in splits:
+        # Build candles from the split dataframes
+        frame: dict = i[1].to_dict()
+        try:
+            tick = {
+                'time': list(frame['time'].values())[0],
+                'open': list(frame['open'].values())[0],
+                'high': max(frame['high'].values()),
+                'low': min(frame['low'].values()),
+                'close': list(frame['close'].values())[-1],
+                'volume': sum(frame['volume'].values()),
+            }
+        except IndexError:
+            continue
+        aggregated = aggregated.append(tick, ignore_index=True)
+    return aggregated
+
+
 def get_ohlcv_from_list(tick_list: list, last_price: float):
     """
     Created with the purpose of parsing ticker data into a viable OHLCV pattern. The
