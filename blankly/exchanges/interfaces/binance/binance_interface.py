@@ -511,7 +511,7 @@ class BinanceInterface(ExchangeInterface):
         ]
 
         symbol = utils.to_exchange_symbol(symbol, 'binance')
-        response = self.calls.get_order(symbol=symbol, orderId=int(order_id))
+        response = self.calls.get_order(symbol=symbol, orderId=order_id)
 
         response = utils.rename_to(renames, response)
         response['type'] = response['type'].lower()
