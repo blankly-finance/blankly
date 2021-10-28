@@ -25,7 +25,9 @@
 <p align="center">
     <a target="_blank" href="https://docs.blankly.finance">View Docs</a>
     ·
-    <a href="https://blankly.finance">Our Website</a>
+    <a target="_blank" href="https://blankly.finance">Our Website</a>
+    ·
+    <a target="_blank" href="https://blankly.substack.com">Join Our Newsletter</a>
     ·
     <a href="#quickstart">Getting Started</a>
   </p>
