@@ -21,6 +21,7 @@
    <a target="_blank" href="https://github.com/Blankly-Finance/Blankly/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/blankly?color=gree"></a>
    <a target="_blank" href="https://github.com/Blankly-Finance/Blankly/stargazers"><img src="https://img.shields.io/github/stars/blankly-finance/blankly?style=social"></a>
    <a target="_blank" href="https://discord.gg/XWcmy7Y9bb"><img src="https://img.shields.io/discord/821563936297451530.svg?color=7289da&label=Blankly%20Discord&logo=discord&style=flat"></a>
+   <a target="_blank" href="https://reddit.com/r/blankly"><img src="https://badgen.net/reddit/subscribers/r/blankly"></a>
 </p>
 <p align="center">
     <a target="_blank" href="https://docs.blankly.finance">View Docs</a>
