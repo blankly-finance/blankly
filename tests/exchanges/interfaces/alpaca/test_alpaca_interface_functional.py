@@ -80,7 +80,7 @@ def test_get_buy_sell(alpaca_interface: AlpacaInterface) -> None:
 
     num_retries = 0
     # wait until order is filled
-    while alpaca_interface.get_order('AAPL', market_order.get_id())['funds'] is None:
+    while alpaca_interface.get_order('AAPL', market_order.get_id())['size'] is None:
         time.sleep(1)
         num_retries += 1
         if num_retries > 10:
