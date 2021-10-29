@@ -20,6 +20,23 @@ import blankly.metrics as metrics
 from blankly.utils.time_builder import build_year
 
 
+def periods_per_year(period : int) -> float:
+    """
+    Find how many trading periods occur within a trading year
+
+    Args:
+        period: the number of seconds in each trading period
+    Returns:
+        number of trading periods in each year
+        
+    """
+    # TODO: update logic to account for strategies that do not hold overnight
+    # 24 hours becomes 6.5 (hours the market is open) AND the risk_free_rate
+    # goes to zero
+    trading_seconds_per_year = 252.0 * 24.0 * 60.0 * 60.0
+    ppy = trading_seconds_per_year/period
+    return ppy
+
 def cagr(backtest_data):
     account_values = backtest_data['resampled_account_value']
     years = (account_values['time'].iloc[-1] - account_values['time'].iloc[0]) / build_year()
@@ -32,24 +49,23 @@ def cum_returns(backtest_data):
 
 
 def sortino(backtest_data):
-    # TODO: Need to pass in the specific resolution
-    # Defaulting to 1d
     returns = backtest_data['returns']['value']
-    return round(metrics.sortino(returns), 2)
+    risk_free_rate = backtest_data['risk_free_return_rate']
+    ppy = periods_per_year(backtest_data['trading_period'])
+    return round(metrics.sortino(returns, ppy, risk_free_rate), 2)
 
 
 def sharpe(backtest_data):
-    # TODO: Need to pass in the specific resolution
-    # Defaulting to 1d
     returns = backtest_data['returns']['value']
-    return round(metrics.sharpe(returns), 2)
+    risk_free_rate = backtest_data['risk_free_return_rate']
+    ppy = periods_per_year(backtest_data['trading_period'])
+    return round(metrics.sharpe(returns, ppy, risk_free_rate), 2)
 
 
 def calmar(backtest_data):
-    # TODO: Need to pass in the specific resolution
-    # Defaulting to 1d
     returns = backtest_data['returns']['value']
-    return round(metrics.calmar(returns), 2)
+    ppy = periods_per_year(backtest_data['trading_period'])
+    return round(metrics.calmar(returns, ppy), 2)
 
 
 def volatility(backtest_data):
