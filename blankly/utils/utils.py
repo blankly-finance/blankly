@@ -71,7 +71,8 @@ default_backtest_settings = {
         "continuous_caching": True,
         "resample_account_value_for_metrics": "1d",
         "quote_account_value_in": "USD",
-        "ignore_user_exceptions": False
+        "ignore_user_exceptions": False,
+        "risk_free_return_rate" : 0.0
     }
 }
 
