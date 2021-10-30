@@ -421,10 +421,13 @@ class Strategy:
                         Multiple types of quote currency (ex: USD and EUR) are not supported because
                         there is no datasource for quoting pairs such as EUR-USD until forex integration.
 
-                ignore_user_exceptions: bool = False
+                ignore_user_exceptions: bool = True
                     Set this to True to handle user exceptions identically to how they're handled by strategy calls.
                         False means that the backtest will immediately stop & attempt to generate a report if something
                         in the user calls goes wrong. True will replicate strategy errors.
+
+                ignore_user_exceptions: float = 0.0
+                    Set this to be the theoretical rate of return with no risk
         """
 
         start = None
