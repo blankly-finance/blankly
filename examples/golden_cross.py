@@ -45,8 +45,10 @@ def price_event(price, symbol, state: StrategyState):
 if __name__ == "__main__":
     alpaca = Alpaca()
     s = Strategy(alpaca)
-    s.add_price_event(price_event, 'SNAP', resolution='1h', init=init)
-    s.add_price_event(price_event, 'GME', resolution='1h', init=init)
-    s.backtest(initial_values={'USD': 10000}, to='2y')
+    s.add_price_event(price_event, 'TSLA', resolution='1h', init=init)
+    s.add_price_event(price_event, 'AAPL', resolution='1h', init=init)
+    results = s.backtest(initial_values={'USD': 10000}, to='2y')
+    print(results)
+    
     # Or just run it directly on the exchange
     # s.start()

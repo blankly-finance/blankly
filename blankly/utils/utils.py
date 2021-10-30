@@ -23,7 +23,7 @@ import json
 import sys
 from datetime import datetime as dt, timezone
 from math import ceil, trunc as math_trunc
-from typing import Union
+from typing import Callable, Union
 
 import dateutil.parser as dp
 import numpy as np
@@ -33,60 +33,157 @@ from sklearn.linear_model import LinearRegression
 
 from blankly.utils.time_builder import time_interval_to_seconds
 
+def is_in_list( val, allowable : Union[float, int, str, list[float], list[int], list[str]]) -> bool:
+    if is_list(val) == False:
+        allowable = [allowable]
+    return val in allowable
+
+def is_bool(val) -> bool:
+    return isinstance(val, bool)
+
+def is_positive( val ) -> bool:
+    return is_num(val) and val >= 0    
+
+def is_num( val ) -> bool:
+    return np.isreal(val) & isinstance(val,(int, float))
+
+def in_range( val , range : tuple, inclusive : bool = True ) -> bool:
+    max_val = max(range)
+    min_val = min(range)
+    
+    if isinstance(val, (int, float)) == False:
+        return False
+
+    if inclusive:
+        does_pass = min_val <= val and val <= max_val
+    else:
+        does_pass = min_val < val and val < max_val
+
+    return is_num(val) and does_pass 
+
+def is_list(val) -> bool:
+    return isinstance(val, list)
+
+def let_pass(vals):
+    return True
+
+def are_valid_elements( vals, element_constraint : Callable) -> bool:
+    
+    does_pass = is_list(vals)
+    for val in vals:
+        does_pass &= element_constraint(val)
+    
+    return does_pass
+
+# TODO Implement logic to check for valid phone number
+def is_valid_phone_number(vals):
+    return True
+
+# TODO implement logic to check for valid email
+def is_valid_email(vals):
+    return True
+    
+    
+        
+class Json_Value_Checker():
+
+    def __init__(self, default_val, logic_check : Union[Callable, bool], logic_check_args : dict = None):
+       
+        self.__default_arg = default_val
+        self.__check_callback = logic_check
+        self.__callback_args = logic_check_args
+
+    def is_valid(self, user_arg) -> bool:
+
+        if isinstance(self.__check_callback, bool):
+            return self.__check_callback
+
+        # Check if a dictionary of arguments was provided and add it to the call
+        if self.__callback_args is None:
+            valid = self.__check_callback(user_arg)
+        else:
+            valid = self.__check_callback(user_arg, **self.__callback_args)
+
+        # If the user's argument is valid, do nothing
+        if valid:
+            return user_arg
+
+        # Print a warning and revert to the default value
+        else:
+
+            warning_string =  f"User provided a value of {user_arg} that did not meet the constraints enforced by: {self.__check_callback.__name__} "
+            warning_string += f"Overwriting user-provided value with the default value: {self.default} \n"
+        
+            if self.__callback_args is not None:
+                warning_string += "Arguments passed to constraint function: \n"
+                warning_string += [f"\t - {k} : {v} \n" for k, v in self.__callback_args.items()]
+            
+            info_print(warning_string)
+
+            return self.default
+
+    @property
+    def default(self):
+        return self.__default_arg
+
+    
+
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
-        "account_update_time": 5000,
-        "use_sandbox": False,
-        "use_sandbox_websockets": False,
-        "websocket_buffer_size": 10000,
-        "test_connectivity_on_auth": True,
+        "account_update_time"       : Json_Value_Checker(5000, in_range, {"range" : (0,10000)}),
+        "use_sandbox"               : Json_Value_Checker(False, is_bool),
+        "use_sandbox_websockets"    : Json_Value_Checker(False, is_bool),
+        "websocket_buffer_size"     : Json_Value_Checker(10000, in_range, {"range" : (0,10000)}),
+        "test_connectivity_on_auth" : Json_Value_Checker(True, is_bool),
 
         "coinbase_pro": {
-            "cash": "USD"
+            "cash"  : Json_Value_Checker("USD", is_in_list, {"allowable" : "USD"})
         },
         "binance": {
-            "cash": "USDT",
-            "binance_tld": "us"
+            "cash"          : Json_Value_Checker("USDT",is_in_list, {"allowable" : "USDT"}),
+            "binance_tld"   : Json_Value_Checker("us", is_in_list, {"allowable" : "us"})
         },
         "alpaca": {
-            "websocket_stream": "iex",
-            "cash": "USD"
+            "websocket_stream"  : Json_Value_Checker("iex", is_in_list, {"allowable" : "iex"}),
+            "cash"              : Json_Value_Checker("USD", is_in_list, {"allowable" : "USD"})
         }
     }
 }
 
 default_backtest_settings = {
     "price_data": {
-        "assets": []
+        "assets": Json_Value_Checker([],are_valid_elements, {"element_constraint" : is_num})
     },
     "settings": {
-        "use_price": "close",
-        "smooth_prices": False,
-        "GUI_output": True,
-        "show_tickers_with_zero_delta": False,
-        "save_initial_account_value": True,
-        "show_progress_during_backtest": True,
-        "cache_location": "./price_caches",
-        "continuous_caching": True,
-        "resample_account_value_for_metrics": "1d",
-        "quote_account_value_in": "USD",
-        "ignore_user_exceptions": False,
-        "risk_free_return_rate" : 0.0
+        "use_price"                     : Json_Value_Checker("close", is_in_list, {"allowable" : ["close", "open", "high", "low"]}),
+        "smooth_prices"                 : Json_Value_Checker(False, is_bool),
+        "GUI_output"                    : Json_Value_Checker(True, is_bool),
+        "show_tickers_with_zero_delta"  : Json_Value_Checker(False, is_bool),
+        "save_initial_account_value"    : Json_Value_Checker(True, is_bool),
+        "show_progress_during_backtest" : Json_Value_Checker(True, is_bool),
+
+        "cache_location" : Json_Value_Checker("./price_caches", let_pass),
+
+        "continuous_caching"                : Json_Value_Checker(True, is_bool),
+        "resample_account_value_for_metrics": Json_Value_Checker("USD", is_in_list, {"allowable" : ["1m", "1hr", "1d", "1w", "1y"]}),
+        "quote_account_value_in"            : Json_Value_Checker("USD", is_in_list, {"allowable" : "USD"}),
+        "ignore_user_exceptions"            : Json_Value_Checker(False, is_bool),
+        "risk_free_return_rate"             : Json_Value_Checker(0.0, in_range, {"range" : (0,1)})
     }
 }
 
 default_notify_settings = {
   "email": {
-    "port": 465,
-    "smtp_server": "smtp.website.com",
-    "sender_email": "email_attached_to_smtp_account@web.com",
-    "receiver_email": "email_to_send_to@web.com",
-    "password": "my_password"
+    "port": Json_Value_Checker(465, is_in_list, {"allowable" :[25, 2525, 587, 465, 25, 2526] }),
+    "smtp_server": Json_Value_Checker("smtp.website.com", let_pass),
+    "sender_email": Json_Value_Checker("email_attached_to_smtp_account@web.com", is_valid_email),
+    "receiver_email": Json_Value_Checker("email_to_send_to@web.com", is_valid_email),
+    "password": Json_Value_Checker("my_password", let_pass)
   },
   "text": {
-    "phone_number": "1234567683",
-    "provider": "verizon"
+    "phone_number": Json_Value_Checker("1234567683", is_valid_phone_number),
+    "provider": Json_Value_Checker("verizon", is_in_list, {"allowable" : ["verizon", "att", "boost", "cricket", "sprint", "t_mobile", "us_cellular", "virgin_mobile"]})
   }
 }
 
@@ -126,15 +223,22 @@ class __BlanklySettings:
                     warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
                                      "\""
                     info_print(warning_string)
-                    user_settings[k] = v
+                    user_settings[k] = v.default
             else:
+
+                # V is an instance of Json_Value_Checker 
+                v : Json_Value_Checker
+
                 if k in user_settings:
-                    continue
+
+                    ## Now check if the values for each setting are appropriate
+                    user_settings[k] = v.is_valid(user_settings[k]) 
+
                 else:
-                    warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
+                    warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v.default) + \
                                      "\""
                     info_print(warning_string)
-                    user_settings[k] = v
+                    user_settings[k] = v.default
         return user_settings
 
     def load(self, override_path=None) -> dict:
