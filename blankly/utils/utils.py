@@ -24,6 +24,7 @@ import sys
 from datetime import datetime as dt, timezone
 from math import ceil, trunc as math_trunc
 from typing import Callable, Union
+import re
 
 import dateutil.parser as dp
 import numpy as np
@@ -33,25 +34,81 @@ from sklearn.linear_model import LinearRegression
 
 from blankly.utils.time_builder import time_interval_to_seconds
 
-def is_in_list( val, allowable : Union[float, int, str, list[float], list[int], list[str]]) -> bool:
-    if is_list(val) == False:
+def is_in_list( val, allowable, case_sensitive : bool = False) -> bool:
+    """
+    Check if provided value is in the allowable list
+    
+    Args:
+        val : value to check. Can be of any type
+        allowable: list (or single element) to compare the val field to
+        case_sensitive: boolean flag for use when comparing strings
+    """
+
+    # Force any single element allowable args to be a list
+    if is_list(allowable) == False:
         allowable = [allowable]
+
+    # If the results are not case sensitive, force comparison
+    # on lower-case, so the user does not get an error from using caps
+    if is_string(val) and not case_sensitive:
+        val = val.lower()
+
     return val in allowable
 
 def is_bool(val) -> bool:
+    """
+    Check if the provided argument is a boolean type
+    """
     return isinstance(val, bool)
 
 def is_positive( val ) -> bool:
-    return is_num(val) and val >= 0    
+    """
+    Check if the provided argument is numeric and positive
+    """
+    return is_num(val) and val >= 0   
+
+def is_string(val) -> bool:
+    """
+    Check if the provided argument is a string
+    """
+    return isinstance(val, str)
 
 def is_num( val ) -> bool:
+    """
+    Check if the provided argument is real and an int or float
+    """
     return np.isreal(val) & isinstance(val,(int, float))
 
-def in_range( val , range : tuple, inclusive : bool = True ) -> bool:
-    max_val = max(range)
-    min_val = min(range)
+def is_timeframe(val : str, allowable : list[str]) -> bool:
+    """
+    Check if the provided val argument is in the list of allowable args
+
+    Args:
+        val : string to evaluate
+        allowable: list of timeframe suffixes ex: ["d", "m", "y"]
+    """
+    if not is_string(val):
+        return False
+
+    magnitude = int(val[:-1])
+    base = val[-1]
+    return is_positive(magnitude) and is_in_list(base, allowable)
+
+def in_range( val , allowable_range : tuple, inclusive : bool = True ) -> bool:
+    """
+    Check if the provided val is within the specified range
+
+    Args:
+        val : int or float to check
+        allowable_range : tuple specifying the min and max value
+        inclusive : boolean flag to specify if the value can be equal to
+            the provide min and max range. Default of True means if the value
+            is equal to the min or max, the function returns True
+    """
+    max_val = max(allowable_range)
+    min_val = min(allowable_range)
     
-    if isinstance(val, (int, float)) == False:
+    if not is_num(val):
         return False
 
     if inclusive:
@@ -59,131 +116,200 @@ def in_range( val , range : tuple, inclusive : bool = True ) -> bool:
     else:
         does_pass = min_val < val and val < max_val
 
-    return is_num(val) and does_pass 
+    return does_pass 
 
 def is_list(val) -> bool:
+    """
+    Check if the provided argument is a list
+    """
     return isinstance(val, list)
 
-def let_pass(vals):
+def let_pass(vals) -> bool:
+    """
+    Return true, regardless of the provided argument
+    """
     return True
-
-def are_valid_elements( vals, element_constraint : Callable) -> bool:
     
+def are_valid_elements(vals : list, element_constraint : Callable) -> bool:
+    """
+    Check if the elements of a list conform to the provided constraint
+
+    Args:
+        vals : list of values to iterate through and check
+        element_constraint : function reference used to check each element of the list
+    """
     does_pass = is_list(vals)
     for val in vals:
         does_pass &= element_constraint(val)
     
     return does_pass
 
-# TODO Implement logic to check for valid phone number
-def is_valid_phone_number(vals):
+def is_valid_phone_number(val):
+    """
+    Check if the provided argument is a valid phone number
+    """
+    # Regular Expression source, https://stackoverflow.com/questions/16699007/regular-expression-to-match-standard-10-digit-phone-number
+    REG_EX = r'^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$'
+    try:
+        re.fullmatch(REG_EX, val)
+    except:
+        return False
+
     return True
 
-# TODO implement logic to check for valid email
-def is_valid_email(vals):
+def is_valid_email(val):
+    """
+    Check if the provided argument is a valid email address
+    """
+    # Regular Expression soruce https://www.geeksforgeeks.org/check-if-email-address-valid-or-not-in-python/
+    REG_EX = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+
+    try:
+        re.fullmatch(REG_EX, val)
+    except:
+        return False
+
     return True
     
-    
         
-class Json_Value_Checker():
+class User_Input_Checker():
 
-    def __init__(self, default_val, logic_check : Union[Callable, bool], logic_check_args : dict = None):
-       
-        self.__default_arg = default_val
-        self.__check_callback = logic_check
-        self.__callback_args = logic_check_args
-
-    def is_valid(self, user_arg) -> bool:
-
-        if isinstance(self.__check_callback, bool):
-            return self.__check_callback
-
-        # Check if a dictionary of arguments was provided and add it to the call
-        if self.__callback_args is None:
-            valid = self.__check_callback(user_arg)
-        else:
-            valid = self.__check_callback(user_arg, **self.__callback_args)
-
-        # If the user's argument is valid, do nothing
-        if valid:
-            return user_arg
-
-        # Print a warning and revert to the default value
-        else:
-
-            warning_string =  f"User provided a value of {user_arg} that did not meet the constraints enforced by: {self.__check_callback.__name__} "
-            warning_string += f"Overwriting user-provided value with the default value: {self.default} \n"
+    def __init__(self, default_val, logic_check : Callable, logic_check_args : dict = None):
+        """
+        Create a new User Input Checker to ensure inputs from the user are valid.
         
-            if self.__callback_args is not None:
-                warning_string += "Arguments passed to constraint function: \n"
-                warning_string += [f"\t - {k} : {v} \n" for k, v in self.__callback_args.items()]
-            
-            info_print(warning_string)
-
-            return self.default
+        Args:
+            default_val : If there is an error with the user's input, this is the value the field will default to
+            logic_check : function reference that will be used to validate the user's input
+            logic_check_args : dictionary of arguments to be passed to the logic_check function. Dictionary
+                keys must match logic_check function keyword arguments.
+        """
+        self.__default_arg                  = default_val
+        self.__check_callback   : Callable  = logic_check
+        self.__callback_args    : dict      = logic_check_args
+        self.__warning_str      : str       = ""
+        self.__user_arg                     = None
+        self.__valid            : bool      = None
 
     @property
     def default(self):
+        """
+        Get the default argument provided by the user
+        """
         return self.__default_arg
-
     
+    @property
+    def valid(self) -> bool:
+        """
+        Get the boolean flag indicating if the user's input was valid.
+        Note, this field is None until is_valid() is called
+        """
+        return self.__valid
+
+    @property
+    def user_arg(self):
+        """
+        Get the original argument provided by the user
+        """
+        return self.__user_arg
+
+    @property
+    def warning_str(self) -> str:
+        """
+        Get the warning string that is constructed when a user's input is invalid
+        """
+        return self.__warning_str
+
+    def is_valid(self, user_arg) -> bool:   
+        """
+        Take the provided user_arg and run it through the logic_check function
+        """
+
+        # Save the provided user arg incase it is needed for error messages
+        self.__user_arg = user_arg
+
+        # Check if a dictionary of arguments was provided and add it to the call
+        if self.__callback_args is None:
+            user_input_valid = self.__check_callback(user_arg)
+        else:
+            user_input_valid = self.__check_callback(user_arg, **self.__callback_args)
+
+        if user_input_valid:
+            self.__valid = True
+
+        # Create warning message 
+        else:
+
+            warning_string =  [f"Provided value of \'{user_arg}\' did not meet the constraints enforced by: {self.__check_callback.__name__}(). "]
+            warning_string += [f"Overwriting user-provided value with the default value: \'{self.default}\' \n"]
+        
+            if self.__callback_args is not None:
+                warning_string += ["\t"*3 + "Arguments passed to constraint function: \n"]
+                warning_string += ["\t"*4 + f"\t - {k} : {v.__name__ if isinstance(v, Callable) else v} \n" for k, v in self.__callback_args.items()]
+            
+            # Join the lists of messages together and assign
+            self.__warning_str = "".join(warning_string)
+            self.__valid = False
+
+        return self.valid
+
 
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
-        "account_update_time"       : Json_Value_Checker(5000, in_range, {"range" : (0,10000)}),
-        "use_sandbox"               : Json_Value_Checker(False, is_bool),
-        "use_sandbox_websockets"    : Json_Value_Checker(False, is_bool),
-        "websocket_buffer_size"     : Json_Value_Checker(10000, in_range, {"range" : (0,10000)}),
-        "test_connectivity_on_auth" : Json_Value_Checker(True, is_bool),
+        "account_update_time"       : User_Input_Checker(5000, in_range, {"allowable_range" : (1000,10000)}),
+        "use_sandbox"               : User_Input_Checker(False, is_bool),
+        "use_sandbox_websockets"    : User_Input_Checker(False, is_bool),
+        "websocket_buffer_size"     : User_Input_Checker(10000, in_range, {"allowable_range" : (0,10000)}),
+        "test_connectivity_on_auth" : User_Input_Checker(True, is_bool),
 
         "coinbase_pro": {
-            "cash"  : Json_Value_Checker("USD", is_in_list, {"allowable" : "USD"})
+            "cash"  : User_Input_Checker("USD", is_in_list, {"allowable" : "USD", "case_sensitive" : True})
         },
         "binance": {
-            "cash"          : Json_Value_Checker("USDT",is_in_list, {"allowable" : "USDT"}),
-            "binance_tld"   : Json_Value_Checker("us", is_in_list, {"allowable" : "us"})
+            "cash"          : User_Input_Checker("USDT",is_in_list, {"allowable" : "USDT", "case_sensitive" : True}),
+            "binance_tld"   : User_Input_Checker("us", is_in_list, {"allowable" : "us"})
         },
         "alpaca": {
-            "websocket_stream"  : Json_Value_Checker("iex", is_in_list, {"allowable" : "iex"}),
-            "cash"              : Json_Value_Checker("USD", is_in_list, {"allowable" : "USD"})
+            "websocket_stream"  : User_Input_Checker("iex", is_in_list, {"allowable" : "iex"}),
+            "cash"              : User_Input_Checker("USD", is_in_list, {"allowable" : "USD", "case_sensitive" : True})
         }
     }
 }
 
 default_backtest_settings = {
     "price_data": {
-        "assets": Json_Value_Checker([],are_valid_elements, {"element_constraint" : is_num})
+        "assets": User_Input_Checker([],are_valid_elements, {"element_constraint" : is_string})
     },
     "settings": {
-        "use_price"                     : Json_Value_Checker("close", is_in_list, {"allowable" : ["close", "open", "high", "low"]}),
-        "smooth_prices"                 : Json_Value_Checker(False, is_bool),
-        "GUI_output"                    : Json_Value_Checker(True, is_bool),
-        "show_tickers_with_zero_delta"  : Json_Value_Checker(False, is_bool),
-        "save_initial_account_value"    : Json_Value_Checker(True, is_bool),
-        "show_progress_during_backtest" : Json_Value_Checker(True, is_bool),
+        "use_price"                     : User_Input_Checker("close", is_in_list, {"allowable" : ["close", "open", "high", "low"]}),
+        "smooth_prices"                 : User_Input_Checker(False, is_bool),
+        "GUI_output"                    : User_Input_Checker(True, is_bool),
+        "show_tickers_with_zero_delta"  : User_Input_Checker(False, is_bool),
+        "save_initial_account_value"    : User_Input_Checker(True, is_bool),
+        "show_progress_during_backtest" : User_Input_Checker(True, is_bool),
 
-        "cache_location" : Json_Value_Checker("./price_caches", let_pass),
+        "cache_location" : User_Input_Checker("./price_caches", is_string),
 
-        "continuous_caching"                : Json_Value_Checker(True, is_bool),
-        "resample_account_value_for_metrics": Json_Value_Checker("USD", is_in_list, {"allowable" : ["1m", "1hr", "1d", "1w", "1y"]}),
-        "quote_account_value_in"            : Json_Value_Checker("USD", is_in_list, {"allowable" : "USD"}),
-        "ignore_user_exceptions"            : Json_Value_Checker(False, is_bool),
-        "risk_free_return_rate"             : Json_Value_Checker(0.0, in_range, {"range" : (0,1)})
+        "continuous_caching"                : User_Input_Checker(True, is_bool),
+        "resample_account_value_for_metrics": User_Input_Checker("1d", is_timeframe, {"allowable" : ["s", "m", "h", "d", "w", "M","y", "D", "c", "l"]}),      
+        "quote_account_value_in"            : User_Input_Checker("USD", is_in_list, {"allowable" : "USD", "case_sensitive" : True}),
+        "ignore_user_exceptions"            : User_Input_Checker(False, is_bool),
+        "risk_free_return_rate"             : User_Input_Checker(0.0, in_range, {"allowable_range" : (0,0.1)})
     }
 }
 
 default_notify_settings = {
   "email": {
-    "port": Json_Value_Checker(465, is_in_list, {"allowable" :[25, 2525, 587, 465, 25, 2526] }),
-    "smtp_server": Json_Value_Checker("smtp.website.com", let_pass),
-    "sender_email": Json_Value_Checker("email_attached_to_smtp_account@web.com", is_valid_email),
-    "receiver_email": Json_Value_Checker("email_to_send_to@web.com", is_valid_email),
-    "password": Json_Value_Checker("my_password", let_pass)
+    "port"          : User_Input_Checker(465, is_in_list, {"allowable" :[25, 2525, 587, 465, 25, 2526] }),
+    "smtp_server"   : User_Input_Checker("smtp.website.com", is_string), # Assuming any errors will get caught on connection
+    "sender_email"  : User_Input_Checker("email_attached_to_smtp_account@web.com", is_valid_email),
+    "receiver_email": User_Input_Checker("email_to_send_to@web.com", is_valid_email),
+    "password"      : User_Input_Checker("my_password", is_string)
   },
   "text": {
-    "phone_number": Json_Value_Checker("1234567683", is_valid_phone_number),
-    "provider": Json_Value_Checker("verizon", is_in_list, {"allowable" : ["verizon", "att", "boost", "cricket", "sprint", "t_mobile", "us_cellular", "virgin_mobile"]})
+    "phone_number"  : User_Input_Checker("1234567683", is_valid_phone_number),
+    "provider"      : User_Input_Checker("verizon", is_in_list, {"allowable" : ["verizon", "att", "boost", "cricket", "sprint", "t_mobile", "us_cellular", "virgin_mobile"]})
   }
 }
 
@@ -226,13 +352,21 @@ class __BlanklySettings:
                     user_settings[k] = v.default
             else:
 
-                # V is an instance of Json_Value_Checker 
-                v : Json_Value_Checker
+                # V is an instance of User_Input_Checker 
+                v : User_Input_Checker
 
                 if k in user_settings:
+                    
+                    # Check if the user's input is valid
+                    if v.is_valid(user_settings[k]):
+                        continue
+                    
+                    else:
+                        warning_string = [f"User-provided value for key \'{k}\' is invalid: "]
+                        warning_string += v.warning_str
+                        info_print("".join(warning_string))
+                        user_settings[k] = v.default
 
-                    ## Now check if the values for each setting are appropriate
-                    user_settings[k] = v.is_valid(user_settings[k]) 
 
                 else:
                     warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v.default) + \
