@@ -2,4 +2,6 @@
 ### Incorrect
 - None
 ### Needed
-- None
+- aggregate_candles function in utils
+- Create a more descriptive error inside paper trade to point people towards blankly.trunc for their resolution problems
+- Make it easier to expect the "include your own models" should actually fail the import

@@ -542,6 +542,9 @@ class BackTestController:
             # Be sure to push these initial prices to the strategy
             self.interface.receive_price(k, v[use_price].iloc[0])
 
+            # Be sure to send in the initial time
+            self.interface.receive_time(v['time'].iloc[0])
+
             for index, row in frame.iterrows():
                 # TODO iterrows() is allegedly pretty slow
                 self.prices.append([row.time, k, row[use_price],
@@ -582,6 +585,9 @@ class BackTestController:
         # Initialize this before the callbacks so it works in the initialization functions
         self.time = self.initial_time
 
+        # Turn on backtesting immediately after setting the time
+        self.interface.set_backtesting(True)
+
         # Run the initialization functions for the price events
         print("\nInitializing...")
         for i in self.price_events:
@@ -591,8 +597,6 @@ class BackTestController:
         """
         Begin backtesting
         """
-
-        self.interface.set_backtesting(True)
 
         # Re-evaluate the traded assets account
         # This is mainly used if the user has an account with some value that gets added in at the backtest point

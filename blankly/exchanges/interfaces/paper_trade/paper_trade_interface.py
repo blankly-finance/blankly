@@ -85,6 +85,16 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             if (accounts[i]['available'] + accounts[i]['hold']) != 0 and i not in self.traded_assets:
                 self.traded_assets.append(i)
 
+    def is_backtesting(self):
+        """
+        Return the backtest time if we're backtesting, if not just return None. If it's None the caller
+         assumes no backtesting. The function being overridden always returns None
+        """
+        if self.backtesting:
+            return self.time()
+        else:
+            return None
+
     def __check_trading_assets(self, symbol: str):
         """
         Append a newly traded symbol to traded assets array. This is used to more efficiently evaluate
@@ -353,8 +363,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             'symbol': str(symbol),
             'id': str(coinbase_pro_id),
             'created_at': str(creation_time),
-            'funds': str(utils.trunc(size - size * float((self.__exchange_properties["taker_fee_rate"])),
-                                     base_decimals)),
+            # 'funds': str(utils.trunc(size - size * float((self.__exchange_properties["taker_fee_rate"])),
+            #                          base_decimals)),
             'size': str(size),
             'status': 'done',
             'type': 'market',
@@ -565,10 +575,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             return self.calls.get_fees()
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
-        if self.backtesting:
-            raise APIException("Cannot download product history during a backtest")
-        else:
-            return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
     def get_order_filter(self, symbol):
         # Don't re-query order filter if its cached

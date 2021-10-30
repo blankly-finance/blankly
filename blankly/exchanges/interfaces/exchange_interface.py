@@ -23,6 +23,7 @@ from datetime import datetime as dt
 from typing import Union
 from collections import deque
 
+import numpy
 import pandas as pd
 from dateutil import parser
 
@@ -178,6 +179,12 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 end_date: Union[str, dt, float] = None,
                 return_as: str = 'df'):
 
+        is_backtesting = self.is_backtesting()
+        if is_backtesting is not None and end_date is None:
+            # is_backtesting can only return a non None value if a function overrides the is_backtesting function
+            #  and says its backtesting by returning a valid time
+            end_date = is_backtesting
+
         if start_date is not None and end_date is not None:
             to = None
 
@@ -198,7 +205,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         else:
             if isinstance(end_date, str):
                 parsed_date = parser.parse(end_date)
-            elif isinstance(end_date, float):
+            elif isinstance(end_date, float) or isinstance(end_date, numpy.int64):
                 parsed_date = dt.fromtimestamp(end_date)
             else:
                 parsed_date = end_date
@@ -259,6 +266,12 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
 
     def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
         return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+
+    def is_backtesting(self):
+        """
+        Overridden by interfaces which have a valid backtesting boolean value
+        """
+        return None
 
     @staticmethod
     def evaluate_multiples(valid_resolutions: list, resolution_seconds: float):
