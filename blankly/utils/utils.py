@@ -172,7 +172,7 @@ def is_valid_email(val):
     return True
     
         
-class User_Input_Checker():
+class User_Input_Parser():
 
     def __init__(self, default_val, logic_check : Callable, logic_check_args : dict = None):
         """
@@ -257,59 +257,59 @@ class User_Input_Checker():
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
-        "account_update_time"       : User_Input_Checker(5000, in_range, {"allowable_range" : (1000,10000)}),
-        "use_sandbox"               : User_Input_Checker(False, is_bool),
-        "use_sandbox_websockets"    : User_Input_Checker(False, is_bool),
-        "websocket_buffer_size"     : User_Input_Checker(10000, in_range, {"allowable_range" : (0,10000)}),
-        "test_connectivity_on_auth" : User_Input_Checker(True, is_bool),
+        "account_update_time"       : User_Input_Parser(5000, in_range, {"allowable_range" : (1000,10000)}),
+        "use_sandbox"               : User_Input_Parser(False, is_bool),
+        "use_sandbox_websockets"    : User_Input_Parser(False, is_bool),
+        "websocket_buffer_size"     : User_Input_Parser(10000, in_range, {"allowable_range" : (0,10000)}),
+        "test_connectivity_on_auth" : User_Input_Parser(True, is_bool),
 
         "coinbase_pro": {
-            "cash"  : User_Input_Checker("USD", is_in_list, {"allowable" : "USD", "case_sensitive" : True})
+            "cash"  : User_Input_Parser("USD", is_in_list, {"allowable" : "USD", "case_sensitive" : True})
         },
         "binance": {
-            "cash"          : User_Input_Checker("USDT",is_in_list, {"allowable" : "USDT", "case_sensitive" : True}),
-            "binance_tld"   : User_Input_Checker("us", is_in_list, {"allowable" : "us"})
+            "cash"          : User_Input_Parser("USDT",is_in_list, {"allowable" : "USDT", "case_sensitive" : True}),
+            "binance_tld"   : User_Input_Parser("us", is_in_list, {"allowable" : "us"})
         },
         "alpaca": {
-            "websocket_stream"  : User_Input_Checker("iex", is_in_list, {"allowable" : "iex"}),
-            "cash"              : User_Input_Checker("USD", is_in_list, {"allowable" : "USD", "case_sensitive" : True})
+            "websocket_stream"  : User_Input_Parser("iex", is_in_list, {"allowable" : "iex"}),
+            "cash"              : User_Input_Parser("USD", is_in_list, {"allowable" : "USD", "case_sensitive" : True})
         }
     }
 }
 
 default_backtest_settings = {
     "price_data": {
-        "assets": User_Input_Checker([],are_valid_elements, {"element_constraint" : is_string})
+        "assets": User_Input_Parser([],are_valid_elements, {"element_constraint" : is_string})
     },
     "settings": {
-        "use_price"                     : User_Input_Checker("close", is_in_list, {"allowable" : ["close", "open", "high", "low"]}),
-        "smooth_prices"                 : User_Input_Checker(False, is_bool),
-        "GUI_output"                    : User_Input_Checker(True, is_bool),
-        "show_tickers_with_zero_delta"  : User_Input_Checker(False, is_bool),
-        "save_initial_account_value"    : User_Input_Checker(True, is_bool),
-        "show_progress_during_backtest" : User_Input_Checker(True, is_bool),
+        "use_price"                     : User_Input_Parser("close", is_in_list, {"allowable" : ["close", "open", "high", "low"]}),
+        "smooth_prices"                 : User_Input_Parser(False, is_bool),
+        "GUI_output"                    : User_Input_Parser(True, is_bool),
+        "show_tickers_with_zero_delta"  : User_Input_Parser(False, is_bool),
+        "save_initial_account_value"    : User_Input_Parser(True, is_bool),
+        "show_progress_during_backtest" : User_Input_Parser(True, is_bool),
 
-        "cache_location" : User_Input_Checker("./price_caches", is_string),
+        "cache_location" : User_Input_Parser("./price_caches", is_string),
 
-        "continuous_caching"                : User_Input_Checker(True, is_bool),
-        "resample_account_value_for_metrics": User_Input_Checker("1d", is_timeframe, {"allowable" : ["s", "m", "h", "d", "w", "M","y", "D", "c", "l"]}),      
-        "quote_account_value_in"            : User_Input_Checker("USD", is_in_list, {"allowable" : "USD", "case_sensitive" : True}),
-        "ignore_user_exceptions"            : User_Input_Checker(False, is_bool),
-        "risk_free_return_rate"             : User_Input_Checker(0.0, in_range, {"allowable_range" : (0,0.1)})
+        "continuous_caching"                : User_Input_Parser(True, is_bool),
+        "resample_account_value_for_metrics": User_Input_Parser("1d", is_timeframe, {"allowable" : ["s", "m", "h", "d", "w", "M","y", "D", "c", "l"]}),      
+        "quote_account_value_in"            : User_Input_Parser("USD", is_in_list, {"allowable" : "USD", "case_sensitive" : True}),
+        "ignore_user_exceptions"            : User_Input_Parser(False, is_bool),
+        "risk_free_return_rate"             : User_Input_Parser(0.0, in_range, {"allowable_range" : (0,0.1)})
     }
 }
 
 default_notify_settings = {
   "email": {
-    "port"          : User_Input_Checker(465, is_in_list, {"allowable" :[25, 2525, 587, 465, 25, 2526] }),
-    "smtp_server"   : User_Input_Checker("smtp.website.com", is_string), # Assuming any errors will get caught on connection
-    "sender_email"  : User_Input_Checker("email_attached_to_smtp_account@web.com", is_valid_email),
-    "receiver_email": User_Input_Checker("email_to_send_to@web.com", is_valid_email),
-    "password"      : User_Input_Checker("my_password", is_string)
+    "port"          : User_Input_Parser(465, is_in_list, {"allowable" :[25, 2525, 587, 465, 25, 2526] }),
+    "smtp_server"   : User_Input_Parser("smtp.website.com", is_string), # Assuming any errors will get caught on connection
+    "sender_email"  : User_Input_Parser("email_attached_to_smtp_account@web.com", is_valid_email),
+    "receiver_email": User_Input_Parser("email_to_send_to@web.com", is_valid_email),
+    "password"      : User_Input_Parser("my_password", is_string)
   },
   "text": {
-    "phone_number"  : User_Input_Checker("1234567683", is_valid_phone_number),
-    "provider"      : User_Input_Checker("verizon", is_in_list, {"allowable" : ["verizon", "att", "boost", "cricket", "sprint", "t_mobile", "us_cellular", "virgin_mobile"]})
+    "phone_number"  : User_Input_Parser("1234567683", is_valid_phone_number),
+    "provider"      : User_Input_Parser("verizon", is_in_list, {"allowable" : ["verizon", "att", "boost", "cricket", "sprint", "t_mobile", "us_cellular", "virgin_mobile"]})
   }
 }
 
@@ -353,7 +353,7 @@ class __BlanklySettings:
             else:
 
                 # V is an instance of User_Input_Checker 
-                v : User_Input_Checker
+                v : User_Input_Parser
 
                 if k in user_settings:
                     
