@@ -25,16 +25,16 @@ def init(symbol, state: blankly.StrategyState):
 
 if __name__ == "__main__":
     # Authenticate coinbase pro strategy
-    exchange = blankly.Alpaca()
+    exchange = blankly.CoinbasePro()
 
     # Use our strategy helper on coinbase pro
     strategy = blankly.Strategy(exchange)
 
     # Run the price event function every time we check for a new price - by default that is 15 seconds
-    strategy.add_price_event(price_event, symbol='AAPL', resolution='1d', init=init)
+    strategy.add_price_event(price_event, symbol='BTC-USD', resolution='1d', init=init)
 
     # Start the strategy. This will begin each of the price event ticks
     # strategy.start()
     # Or backtest using this
-    results = strategy.backtest(to='5y', initial_values={'USD': 10000})
+    results = strategy.backtest(to='1y', initial_values={'USD': 10000})
     print(results)
