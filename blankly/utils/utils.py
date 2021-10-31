@@ -349,7 +349,7 @@ class __BlanklySettings:
                     warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
                                      "\""
                     info_print(warning_string)
-                    user_settings[k] = v.default
+                    user_settings[k] = v
             else:
 
                 # V is an instance of User_Input_Checker 
