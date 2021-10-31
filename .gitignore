@@ -145,7 +145,5 @@ notify.json
 cython_debug/
 
 # User-Specific Files
-*.json
 *.code-workspace
-requirements.txt
-bot.py
+

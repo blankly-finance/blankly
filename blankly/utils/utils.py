@@ -23,7 +23,7 @@ import json
 import sys
 from datetime import datetime as dt, timezone
 from math import ceil, trunc as math_trunc
-from typing import Callable, Union
+from typing import Callable, Union, List
 import re
 
 import dateutil.parser as dp
@@ -34,7 +34,8 @@ from sklearn.linear_model import LinearRegression
 
 from blankly.utils.time_builder import time_interval_to_seconds
 
-def is_in_list( val, allowable, case_sensitive : bool = False) -> bool:
+
+def is_in_list(val, allowable, case_sensitive: bool = False) -> bool:
     """
     Check if provided value is in the allowable list
     
@@ -45,7 +46,7 @@ def is_in_list( val, allowable, case_sensitive : bool = False) -> bool:
     """
 
     # Force any single element allowable args to be a list
-    if is_list(allowable) == False:
+    if not is_list(allowable):
         allowable = [allowable]
 
     # If the results are not case sensitive, force comparison
@@ -55,17 +56,20 @@ def is_in_list( val, allowable, case_sensitive : bool = False) -> bool:
 
     return val in allowable
 
+
 def is_bool(val) -> bool:
     """
     Check if the provided argument is a boolean type
     """
     return isinstance(val, bool)
 
-def is_positive( val ) -> bool:
+
+def is_positive(val) -> bool:
     """
     Check if the provided argument is numeric and positive
     """
-    return is_num(val) and val >= 0   
+    return is_num(val) and val >= 0
+
 
 def is_string(val) -> bool:
     """
@@ -73,13 +77,19 @@ def is_string(val) -> bool:
     """
     return isinstance(val, str)
 
-def is_num( val ) -> bool:
+
+def is_int(val) -> bool:
+    return isinstance(val, int)
+
+
+def is_num(val) -> bool:
     """
     Check if the provided argument is real and an int or float
     """
-    return np.isreal(val) & isinstance(val,(int, float))
+    return np.isreal(val) & isinstance(val, (int, float))
 
-def is_timeframe(val : str, allowable : list[str]) -> bool:
+
+def is_timeframe(val: str, allowable: List[str]) -> bool:
     """
     Check if the provided val argument is in the list of allowable args
 
@@ -94,7 +104,8 @@ def is_timeframe(val : str, allowable : list[str]) -> bool:
     base = val[-1]
     return is_positive(magnitude) and is_in_list(base, allowable)
 
-def in_range( val , allowable_range : tuple, inclusive : bool = True ) -> bool:
+
+def in_range(val, allowable_range: tuple, inclusive: bool = True) -> bool:
     """
     Check if the provided val is within the specified range
 
@@ -107,16 +118,17 @@ def in_range( val , allowable_range : tuple, inclusive : bool = True ) -> bool:
     """
     max_val = max(allowable_range)
     min_val = min(allowable_range)
-    
+
     if not is_num(val):
         return False
 
     if inclusive:
-        does_pass = min_val <= val and val <= max_val
+        does_pass = min_val <= val <= max_val
     else:
-        does_pass = min_val < val and val < max_val
+        does_pass = min_val < val < max_val
 
-    return does_pass 
+    return does_pass
+
 
 def is_list(val) -> bool:
     """
@@ -124,13 +136,15 @@ def is_list(val) -> bool:
     """
     return isinstance(val, list)
 
+
 def let_pass(vals) -> bool:
     """
     Return true, regardless of the provided argument
     """
     return True
-    
-def are_valid_elements(vals : list, element_constraint : Callable) -> bool:
+
+
+def are_valid_elements(vals: list, element_constraint: Callable) -> bool:
     """
     Check if the elements of a list conform to the provided constraint
 
@@ -141,40 +155,23 @@ def are_valid_elements(vals : list, element_constraint : Callable) -> bool:
     does_pass = is_list(vals)
     for val in vals:
         does_pass &= element_constraint(val)
-    
+
     return does_pass
 
-def is_valid_phone_number(val):
-    """
-    Check if the provided argument is a valid phone number
-    """
-    # Regular Expression source, https://stackoverflow.com/questions/16699007/regular-expression-to-match-standard-10-digit-phone-number
-    REG_EX = r'^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$'
-    try:
-        re.fullmatch(REG_EX, val)
-    except:
-        return False
-
-    return True
 
 def is_valid_email(val):
     """
     Check if the provided argument is a valid email address
     """
     # Regular Expression soruce https://www.geeksforgeeks.org/check-if-email-address-valid-or-not-in-python/
-    REG_EX = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    reg_ex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
 
-    try:
-        re.fullmatch(REG_EX, val)
-    except:
-        return False
+    return re.fullmatch(reg_ex, val)
 
-    return True
-    
-        
-class User_Input_Parser():
 
-    def __init__(self, default_val, logic_check : Callable, logic_check_args : dict = None):
+class UserInputParser:
+
+    def __init__(self, default_val, logic_check: Callable, logic_check_args: dict = None):
         """
         Create a new User Input Checker to ensure inputs from the user are valid.
         
@@ -184,12 +181,12 @@ class User_Input_Parser():
             logic_check_args : dictionary of arguments to be passed to the logic_check function. Dictionary
                 keys must match logic_check function keyword arguments.
         """
-        self.__default_arg                  = default_val
-        self.__check_callback   : Callable  = logic_check
-        self.__callback_args    : dict      = logic_check_args
-        self.__warning_str      : str       = ""
-        self.__user_arg                     = None
-        self.__valid            : bool      = None
+        self.__default_arg = default_val
+        self.__check_callback: Callable = logic_check
+        self.__callback_args: dict = logic_check_args
+        self.__warning_str: str = ""
+        self.__user_arg = None
+        self.__valid: bool = None
 
     @property
     def default(self):
@@ -197,7 +194,7 @@ class User_Input_Parser():
         Get the default argument provided by the user
         """
         return self.__default_arg
-    
+
     @property
     def valid(self) -> bool:
         """
@@ -220,7 +217,7 @@ class User_Input_Parser():
         """
         return self.__warning_str
 
-    def is_valid(self, user_arg) -> bool:   
+    def is_valid(self, user_arg) -> bool:
         """
         Take the provided user_arg and run it through the logic_check function
         """
@@ -240,13 +237,16 @@ class User_Input_Parser():
         # Create warning message 
         else:
 
-            warning_string =  [f"Provided value of \'{user_arg}\' did not meet the constraints enforced by: {self.__check_callback.__name__}(). "]
+            warning_string = [
+                f"Provided value of \'{user_arg}\' did not meet the constraints enforced by: "
+                f"{self.__check_callback.__name__}(). "]
             warning_string += [f"Overwriting user-provided value with the default value: \'{self.default}\' \n"]
-        
+
             if self.__callback_args is not None:
-                warning_string += ["\t"*3 + "Arguments passed to constraint function: \n"]
-                warning_string += ["\t"*4 + f"\t - {k} : {v.__name__ if isinstance(v, Callable) else v} \n" for k, v in self.__callback_args.items()]
-            
+                warning_string += ["\t" * 3 + "Arguments passed to constraint function: \n"]
+                warning_string += ["\t" * 4 + f"\t - {k} : {v.__name__ if isinstance(v, Callable) else v} \n" for k, v
+                                   in self.__callback_args.items()]
+
             # Join the lists of messages together and assign
             self.__warning_str = "".join(warning_string)
             self.__valid = False
@@ -257,60 +257,63 @@ class User_Input_Parser():
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
-        "account_update_time"       : User_Input_Parser(5000, in_range, {"allowable_range" : (1000,10000)}),
-        "use_sandbox"               : User_Input_Parser(False, is_bool),
-        "use_sandbox_websockets"    : User_Input_Parser(False, is_bool),
-        "websocket_buffer_size"     : User_Input_Parser(10000, in_range, {"allowable_range" : (0,10000)}),
-        "test_connectivity_on_auth" : User_Input_Parser(True, is_bool),
+        "account_update_time": UserInputParser(5000, in_range, {"allowable_range": (1000, 10000)}),
+        "use_sandbox": UserInputParser(False, is_bool),
+        "use_sandbox_websockets": UserInputParser(False, is_bool),
+        "websocket_buffer_size": UserInputParser(10000, in_range, {"allowable_range": (0, 10000)}),
+        "test_connectivity_on_auth": UserInputParser(True, is_bool),
 
         "coinbase_pro": {
-            "cash"  : User_Input_Parser("USD", is_in_list, {"allowable" : "USD", "case_sensitive" : True})
+            "cash": UserInputParser("USD", is_in_list, {"allowable": "USD", "case_sensitive": True})
         },
         "binance": {
-            "cash"          : User_Input_Parser("USDT",is_in_list, {"allowable" : "USDT", "case_sensitive" : True}),
-            "binance_tld"   : User_Input_Parser("us", is_in_list, {"allowable" : "us"})
+            "cash": UserInputParser("USDT", is_in_list, {"allowable": "USDT", "case_sensitive": True}),
+            "binance_tld": UserInputParser("us", is_in_list, {"allowable": "us"})
         },
         "alpaca": {
-            "websocket_stream"  : User_Input_Parser("iex", is_in_list, {"allowable" : "iex"}),
-            "cash"              : User_Input_Parser("USD", is_in_list, {"allowable" : "USD", "case_sensitive" : True})
+            "websocket_stream": UserInputParser("iex", is_in_list, {"allowable": "iex"}),
+            "cash": UserInputParser("USD", is_in_list, {"allowable": "USD", "case_sensitive": True})
         }
     }
 }
 
 default_backtest_settings = {
     "price_data": {
-        "assets": User_Input_Parser([],are_valid_elements, {"element_constraint" : is_string})
+        "assets": UserInputParser([], are_valid_elements, {"element_constraint": is_string})
     },
     "settings": {
-        "use_price"                     : User_Input_Parser("close", is_in_list, {"allowable" : ["close", "open", "high", "low"]}),
-        "smooth_prices"                 : User_Input_Parser(False, is_bool),
-        "GUI_output"                    : User_Input_Parser(True, is_bool),
-        "show_tickers_with_zero_delta"  : User_Input_Parser(False, is_bool),
-        "save_initial_account_value"    : User_Input_Parser(True, is_bool),
-        "show_progress_during_backtest" : User_Input_Parser(True, is_bool),
+        "use_price": UserInputParser("close", is_in_list, {"allowable": ["close", "open", "high", "low"]}),
+        "smooth_prices": UserInputParser(False, is_bool),
+        "GUI_output": UserInputParser(True, is_bool),
+        "show_tickers_with_zero_delta": UserInputParser(False, is_bool),
+        "save_initial_account_value": UserInputParser(True, is_bool),
+        "show_progress_during_backtest": UserInputParser(True, is_bool),
 
-        "cache_location" : User_Input_Parser("./price_caches", is_string),
+        "cache_location": UserInputParser("./price_caches", is_string),
 
-        "continuous_caching"                : User_Input_Parser(True, is_bool),
-        "resample_account_value_for_metrics": User_Input_Parser("1d", is_timeframe, {"allowable" : ["s", "m", "h", "d", "w", "M","y", "D", "c", "l"]}),      
-        "quote_account_value_in"            : User_Input_Parser("USD", is_in_list, {"allowable" : "USD", "case_sensitive" : True}),
-        "ignore_user_exceptions"            : User_Input_Parser(False, is_bool),
-        "risk_free_return_rate"             : User_Input_Parser(0.0, in_range, {"allowable_range" : (0,0.1)})
+        "continuous_caching": UserInputParser(True, is_bool),
+        "resample_account_value_for_metrics": UserInputParser("1d", is_timeframe, {
+            "allowable": ["s", "m", "h", "d", "w", "M", "y", "D", "c", "l"]}),
+        "quote_account_value_in": UserInputParser("USD", is_in_list, {"allowable": "USD", "case_sensitive": True}),
+        "ignore_user_exceptions": UserInputParser(False, is_bool),
+        "risk_free_return_rate": UserInputParser(0.0, in_range, {"allowable_range": (0, 0.1)})
     }
 }
 
 default_notify_settings = {
-  "email": {
-    "port"          : User_Input_Parser(465, is_in_list, {"allowable" :[25, 2525, 587, 465, 25, 2526] }),
-    "smtp_server"   : User_Input_Parser("smtp.website.com", is_string), # Assuming any errors will get caught on connection
-    "sender_email"  : User_Input_Parser("email_attached_to_smtp_account@web.com", is_valid_email),
-    "receiver_email": User_Input_Parser("email_to_send_to@web.com", is_valid_email),
-    "password"      : User_Input_Parser("my_password", is_string)
-  },
-  "text": {
-    "phone_number"  : User_Input_Parser("1234567683", is_valid_phone_number),
-    "provider"      : User_Input_Parser("verizon", is_in_list, {"allowable" : ["verizon", "att", "boost", "cricket", "sprint", "t_mobile", "us_cellular", "virgin_mobile"]})
-  }
+    "email": {
+        "port": UserInputParser(465, is_in_list, {"allowable": [25, 2525, 587, 465, 25, 2526]}),
+        "smtp_server": UserInputParser("smtp.website.com", is_string),
+        # Assuming any errors will get caught on connection
+        "sender_email": UserInputParser("email_attached_to_smtp_account@web.com", is_valid_email),
+        "receiver_email": UserInputParser("email_to_send_to@web.com", is_valid_email),
+        "password": UserInputParser("my_password", is_string)
+    },
+    "text": {
+        "phone_number": UserInputParser("1234567683", is_int),
+        "provider": UserInputParser("verizon", is_in_list, {
+            "allowable": ["verizon", "att", "boost", "cricket", "sprint", "t_mobile", "us_cellular", "virgin_mobile"]})
+    }
 }
 
 
@@ -353,23 +356,22 @@ class __BlanklySettings:
             else:
 
                 # V is an instance of User_Input_Checker 
-                v : User_Input_Parser
+                v: UserInputParser
 
                 if k in user_settings:
-                    
+
                     # Check if the user's input is valid
                     if v.is_valid(user_settings[k]):
                         continue
-                    
+
                     else:
                         warning_string = [f"User-provided value for key \'{k}\' is invalid: "]
                         warning_string += v.warning_str
                         info_print("".join(warning_string))
                         user_settings[k] = v.default
-
-
                 else:
-                    warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v.default) + \
+                    warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(
+                        v.default) + \
                                      "\""
                     info_print(warning_string)
                     user_settings[k] = v.default
@@ -843,7 +845,6 @@ OVERESTIMATE_CONSTANT = 1.5
 
 
 def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_multiplier):
-
     nyse = mcal.get_calendar('NYSE')
     required_length = ceil(limit * OVERESTIMATE_CONSTANT)
     resolution = time_interval_to_seconds(resolution_str)
@@ -884,6 +885,7 @@ class AttributeDict(dict):
     Basically you can get and set attributes with a dot instead of [] - like dict.available rather than
      dict['available']
     """
+
     def __getattr__(self, attr):
         # Try catch is wrapped to support copying objects
         try:
@@ -932,6 +934,7 @@ class Email:
 
     Alternatively a notify.json can be created which automatically integrates with blankly.reporter.email()
     """
+
     def __init__(self, smtp_server: str, sender_email: str, password: str, port: int = 465):
         """
         Create the email wrapper:
