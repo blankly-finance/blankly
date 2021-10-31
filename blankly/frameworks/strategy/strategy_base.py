@@ -89,7 +89,8 @@ class Strategy:
         self.__variables[hashed][key] = value
 
     def add_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
-                        init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False):
+                        init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False,
+                        variables: dict = None):
         """
         Add Price Event
         Args:
@@ -101,11 +102,12 @@ class Strategy:
             teardown: A function to run when the strategy is stopped or interrupted. Example usages include liquidating
                 positions, writing or cleaning up data or anything else useful
             synced: Sync the function to
+            variables: A dictionary to initialize the state's internal values
         """
-        self.__custom_price_event(callback, symbol, resolution, init, synced, teardown=teardown)
+        self.__custom_price_event(callback, symbol, resolution, init, synced, teardown=teardown, variables=variables)
 
     def add_bar_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
-                      init: typing.Callable = None, teardown: typing.Callable = None):
+                      init: typing.Callable = None, teardown: typing.Callable = None, variables: dict = None):
         """
         Add Price Event
         Args:
@@ -116,12 +118,14 @@ class Strategy:
                 downloading price data before usage
             teardown: A function to run when the strategy is stopped or interrupted. Example usages include liquidating
                 positions, writing or cleaning up data or anything else useful
+            variables: A dictionary to initialize the state's internal values
         """
-        self.__custom_price_event(callback, symbol, resolution, init, synced=True, bar=True, teardown=teardown)
+        self.__custom_price_event(callback, symbol, resolution, init, synced=True, bar=True, teardown=teardown,
+                                  variables=variables)
 
     def __custom_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
                              init: typing.Callable = None, synced: bool = False, bar: bool = False,
-                             teardown: typing.Callable = None):
+                             teardown: typing.Callable = None, variables: dict = None):
         """
         Add Price Event
         Args:
@@ -135,6 +139,9 @@ class Strategy:
             synced: Sync the function to
             bar: Get the OHLCV data for a valid exchange interval
         """
+        # Make sure variables is always an empty dictionary if None
+        if variables is None:
+            variables = {}
         resolution = time_interval_to_seconds(resolution)
 
         if bar:
@@ -147,7 +154,7 @@ class Strategy:
                              "the ticker: {}".format(symbol))
         else:
             self.__hashes.append(callback_hash)
-        self.__variables[callback_hash] = AttributeDict({})
+        self.__variables[callback_hash] = AttributeDict(variables)
         state = StrategyState(self, self.__variables[callback_hash], symbol, resolution=resolution)
 
         if resolution < 60:
@@ -270,7 +277,7 @@ class Strategy:
         user_callback(tick, symbol, state_object)
 
     def add_orderbook_event(self, callback: typing.Callable, symbol: str, init: typing.Callable = None,
-                            teardown: typing.Callable = None):
+                            teardown: typing.Callable = None, variables: dict = None):
         """
         Add Orderbook Event
         Args:
@@ -280,7 +287,11 @@ class Strategy:
                 can be used for accumulating price data
             teardown: A function to run when the strategy is stopped or interrupted. Example usages include liquidating
                 positions, writing or cleaning up data or anything else useful:
+            variables: A dictionary to initialize the state's internal values
         """
+        # Make sure variables is always an empty dictionary if None
+        if variables is None:
+            variables = {}
         self.__scheduling_pair.append([symbol, None])
         callback_hash = hash((callback, symbol))
         if callback_hash in self.__hashes:
@@ -288,7 +299,7 @@ class Strategy:
                              "{}".format(symbol))
         else:
             self.__hashes.append(callback_hash)
-        self.__variables[callback_hash] = AttributeDict({})
+        self.__variables[callback_hash] = AttributeDict(variables)
         state = StrategyState(self, self.__variables[callback_hash], symbol=symbol)
 
         variables = self.__variables[callback_hash]

@@ -100,8 +100,9 @@ class API:
     def create_project(self, name: str, plan: str):
         return self.__request('post', 'project/create')
 
-    def upload(self, file_path: str, project_id: str, model_id: str):
+    def upload(self, file_path: str, project_id: str, model_id: str, user_id: str):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
         return self.__request('post', 'model/upload', file=file, data={'projectId': project_id,
-                                                                       'modelId': model_id}, params={'flag': True})
+                                                                       'modelId': model_id,
+                                                                       'userID': user_id})
