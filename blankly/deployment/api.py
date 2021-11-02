@@ -30,7 +30,11 @@ class API:
             self.url = blankly_frontend_api_url
 
         self.token = None
-        self.token = self.exchange_token(token)
+        self.auth_data = self.exchange_token(token)
+
+        self.token = self.auth_data['idToken']
+        self.user_id = self.auth_data['data']['user_id']
+        self.project_id = self.auth_data['data']['project_id']
 
     def __request(self, type_: str, route: str, json: dict = None, params: dict = None, file=None, data: dict = None):
         """
@@ -83,7 +87,7 @@ class API:
         """
         Get the JWT from the refresh token
         """
-        return self.__request('post', 'auth/token', data={'refreshToken': token})['idToken']
+        return self.__request('post', 'auth/token', data={'refreshToken': token})
 
     def get_details(self, project_id: str, model_id: str):
         """
@@ -100,9 +104,9 @@ class API:
     def create_project(self, name: str, plan: str):
         return self.__request('post', 'project/create')
 
-    def upload(self, file_path: str, project_id: str, model_id: str, user_id: str):
+    def upload(self, file_path: str, model_id: str):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
-        return self.__request('post', 'model/upload', file=file, data={'projectId': project_id,
+        return self.__request('post', 'model/upload', file=file, data={'projectId': self.project_id,
                                                                        'modelId': model_id,
-                                                                       'userID': user_id})
+                                                                       'userId': self.user_id})
