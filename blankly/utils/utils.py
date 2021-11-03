@@ -295,7 +295,8 @@ default_backtest_settings = {
         "resample_account_value_for_metrics": User_Input_Parser("1d", is_timeframe, {"allowable" : ["s", "m", "h", "d", "w", "M","y", "D", "c", "l"]}),      
         "quote_account_value_in"            : User_Input_Parser("USD", is_in_list, {"allowable" : "USD", "case_sensitive" : True}),
         "ignore_user_exceptions"            : User_Input_Parser(False, is_bool),
-        "risk_free_return_rate"             : User_Input_Parser(0.0, in_range, {"allowable_range" : (0,0.1)})
+        "risk_free_return_rate"             : User_Input_Parser(0.0, in_range, {"allowable_range" : (0,0.1)}),
+        "benchmark_symbol"                  : User_Input_Parser(None, is_string)
     }
 }
 

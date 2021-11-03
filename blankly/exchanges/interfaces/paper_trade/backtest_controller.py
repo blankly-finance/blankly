@@ -183,7 +183,9 @@ class BackTestController:
         # Export a time for use in other classes
         self.time = None
 
-    def sync_prices(self) -> dict:
+    def sync_prices(self, items : list[list[str, int, int, int]] = None) -> dict:
+
+        
         cache_folder = self.preferences['settings']["cache_location"]
         # Make sure the cache folder exists and read files
         try:
@@ -237,14 +239,17 @@ class BackTestController:
         #     return ranges
 
         # This is the data the user has requested: [asset_id, start_time, end_time, resolution]
+        if items is None:
+            items = self.__user_added_times
+
         final_prices = {}
-        for i in range(len(self.__user_added_times)):
-            if self.__user_added_times[i] is None:
+        for i in range(len(items)):
+            if items[i] is None:
                 continue
-            asset = self.__user_added_times[i][0]
-            resolution = self.__user_added_times[i][3]
-            start_time = self.__user_added_times[i][1]
-            end_time = self.__user_added_times[i][2] - resolution
+            asset = items[i][0]
+            resolution = items[i][3]
+            start_time = items[i][1]
+            end_time = items[i][2] - resolution
 
             if end_time < start_time:
                 raise RuntimeError("Must specify  a longer timeframe to run the backtest.")
@@ -528,6 +533,33 @@ class BackTestController:
         if self.queue_backtest_write:
             write_backtest_preferences(self.preferences, self.backtest_settings_path)
 
+
+        # # Get the symbol used for the bench mark
+        # benchmark_symbol = self.preferences["settings"]["benchmark_symbol"]
+
+        # if benchmark_symbol is not None:
+        #     # Get the smallest resolution from the user-added callbacks
+        #     min_resolution = time_interval_to_seconds("1l")
+        #     for i in self.__user_added_times:
+        #         resolution = i[3]
+        #         if resolution < min_resolution and resolution is not None:
+        #             min_resolution = resolution 
+
+        #     # Add the benchmark to the price events to sync_prices retrieves the require data
+        #     self.add_prices(benchmark_symbol, i[1], i[2], min_resolution)   
+
+        #     prices = self.sync_prices()
+        #     # Check if the benchmark symbol is included in the strategy
+        #     in_strategy = False
+        #     for event in self.price_events:
+        #         if event['asset_id'] == benchmark_symbol:
+        #             in_strategy = True
+
+        #     if in_strategy:
+        #         benchmark_prices = prices.popitem(benchmark_symbol)
+
+        # else:
+
         prices = self.sync_prices()
 
         # Organize each price into this structure: [epoch, "BTC-USD", price, open, high, low, close, volume]
@@ -535,6 +567,8 @@ class BackTestController:
         self.use_price = use_price
 
         self.pd_prices = {**prices}
+
+        
 
         for k, v in prices.items():
             frame = v  # type: pd.DataFrame
@@ -623,9 +657,7 @@ class BackTestController:
         #     column_keys.append(i['currency'])
 
         cycle_status = pd.DataFrame(columns=column_keys)
-
         no_trade_cycle_status = pd.DataFrame(columns=column_keys)
-
         # Append dictionaries to this to make the pandas dataframe
         price_data = []
 
@@ -718,6 +750,27 @@ class BackTestController:
             raise RuntimeError("Empty result - no valid backtesting events occurred. Was there an error?.")
 
         no_trade_cycle_status = no_trade_cycle_status.append(no_trade, ignore_index=True).sort_values(by=['time'])
+        
+
+        # Get the symbol used for the bench mark
+        benchmark_symbol = self.preferences["settings"]["benchmark_symbol"]
+
+        if benchmark_symbol != None:
+            # Get the smallest resolution from the user-added callbacks
+            min_resolution = time_interval_to_seconds("1l")
+            for i in self.__user_added_times:
+                resolution = i[3]
+                if resolution < min_resolution and resolution is not None:
+                    min_resolution = resolution 
+
+            benchmark_price = self.sync_prices([[benchmark_symbol, i[1], i[2], min_resolution]])[benchmark_symbol] 
+            benchmark_price = benchmark_price.sort_values(by=['time'])
+
+            # Calculate the portfolio value if just totally invested in benchmark
+            shares = self.initial_account[self.quote_currency]['available']/benchmark_price.iloc[0,:-1].values
+            benchmark_value = benchmark_price
+            benchmark_value.iloc[:, :-1] *= shares
+            bm_time = [dt.fromtimestamp(ts) for ts in benchmark_value['time']]
 
         figures = []
         # for i in self.prices:
@@ -737,6 +790,19 @@ class BackTestController:
             # display a tooltip whenever the cursor is vertically in line with a glyph
             mode='vline'
         )
+        
+        def add_trace(self, figure, time, data, label):
+            source = ColumnDataSource(data=dict(
+                        time=time,
+                        value=data.tolist()
+                    ))
+            figure.step('time', 'value',
+                    source=source,
+                    line_width=2,
+                    color=self.__next_color(),
+                    legend_label=label,
+                    mode="after",
+                    )    
 
         # Back up the epoch list so that it can be used later for re-sampling
         epoch_backup = cycle_status['time'].tolist()
@@ -749,30 +815,14 @@ class BackTestController:
             for column in cycle_status:
                 if column != 'time' and self.__account_was_used(column):
                     p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
-                    source = ColumnDataSource(data=dict(
-                        time=time,
-                        value=cycle_status[column].tolist()
-                    ))
-                    p.step('time', 'value',
-                           source=source,
-                           line_width=2,
-                           color=self.__next_color(),
-                           legend_label=column,
-                           mode="after",
-                           )
+                    add_trace(self, p, time, cycle_status[column], column)
 
                     # Replica of whats above to add the no-trade line to the backtest
                     if column == 'Account Value (' + self.quote_currency + ')':
-                        source = ColumnDataSource(data=dict(
-                            time=time,
-                            value=no_trade_cycle_status['Account Value (No Trades)'].tolist()
-                        ))
-                        p.step('time', 'value',
-                               source=source,
-                               line_width=2,
-                               color=self.__next_color(),
-                               legend_label='Account Value (No Trades)',
-                               mode="after")
+                        add_trace(self, p, time, no_trade_cycle_status['Account Value (No Trades)'], 'Account Value (No Trades)' )
+ 
+                        if benchmark_symbol is not None:
+                            add_trace(self, p, bm_time,  benchmark_value['close'], f'Benchmark ({benchmark_symbol})')
 
                     p.add_tools(hover)
 
