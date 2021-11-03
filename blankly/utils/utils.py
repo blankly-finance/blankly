@@ -32,68 +32,74 @@ import pandas_market_calendars as mcal
 from sklearn.linear_model import LinearRegression
 
 from blankly.utils.time_builder import time_interval_to_seconds
-from blankly.utils.import_checks import UserInputParser, in_range as _in_range, is_bool as _is_bool, is_in_list as _is_in_list, are_valid_elements as _are_valid_elements, \
-    is_string as _is_string, is_valid_email as _is_valid_email, is_timeframe as _is_timeframe, is_int as _is_int
+import blankly.utils.import_checks as import_checks
 
 
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
-        "account_update_time": UserInputParser(5000, in_range, {"allowable_range": (1000, 10000)}),
-        "use_sandbox": UserInputParser(False, is_bool),
-        "use_sandbox_websockets": UserInputParser(False, is_bool),
-        "websocket_buffer_size": UserInputParser(10000, in_range, {"allowable_range": (0, 10000)}),
-        "test_connectivity_on_auth": UserInputParser(True, is_bool),
+        "account_update_time": import_checks.UserInputParser(5000, import_checks.is_num),  # No need to restrict
+                                                                                           # these ints
+        "use_sandbox": import_checks.UserInputParser(False, import_checks.is_bool),
+        "use_sandbox_websockets": import_checks.UserInputParser(False, import_checks.is_bool),
+        "websocket_buffer_size": import_checks.UserInputParser(10000, import_checks.is_int),
+        "test_connectivity_on_auth": import_checks.UserInputParser(True, import_checks.is_bool),
 
         "coinbase_pro": {
-            "cash": UserInputParser("USD", is_in_list, {"allowable": "USD", "case_sensitive": True})
+            "cash": import_checks.UserInputParser("USD", import_checks.is_string),  # This is default USD but really
+                                                                                    # designed to be anything - imagine
+            #                                                                       trading ETH-BTC
         },
         "binance": {
-            "cash": UserInputParser("USDT", is_in_list, {"allowable": "USDT", "case_sensitive": True}),
-            "binance_tld": UserInputParser("us", is_in_list, {"allowable": "us"})
+            "cash": import_checks.UserInputParser("USDT", import_checks.is_string),
+            "binance_tld": import_checks.UserInputParser("us", import_checks.is_in_list, {"allowable": ["us", "com"]})
         },
         "alpaca": {
-            "websocket_stream": UserInputParser("iex", is_in_list, {"allowable": "iex"}),
-            "cash": UserInputParser("USD", is_in_list, {"allowable": "USD", "case_sensitive": True})
+            "websocket_stream": import_checks.UserInputParser("iex", import_checks.is_string),
+            "cash": import_checks.UserInputParser("USD", import_checks.is_string)
         }
     }
 }
 
 default_backtest_settings = {
     "price_data": {
-        "assets": UserInputParser([], are_valid_elements, {"element_constraint": is_string})
+        "assets": import_checks.UserInputParser([], import_checks.let_pass)
     },
     "settings": {
-        "use_price": UserInputParser("close", is_in_list, {"allowable": ["close", "open", "high", "low"]}),
-        "smooth_prices": UserInputParser(False, is_bool),
-        "GUI_output": UserInputParser(True, is_bool),
-        "show_tickers_with_zero_delta": UserInputParser(False, is_bool),
-        "save_initial_account_value": UserInputParser(True, is_bool),
-        "show_progress_during_backtest": UserInputParser(True, is_bool),
+        "use_price": import_checks.UserInputParser("close", import_checks.is_in_list,
+                                                   {"allowable": ["close", "open", "high", "low"]}),
+        "smooth_prices": import_checks.UserInputParser(False, import_checks.is_bool),
+        "GUI_output": import_checks.UserInputParser(True, import_checks.is_bool),
+        "show_tickers_with_zero_delta": import_checks.UserInputParser(False, import_checks.is_bool),
+        "save_initial_account_value": import_checks.UserInputParser(True, import_checks.is_bool),
+        "show_progress_during_backtest": import_checks.UserInputParser(True, import_checks.is_bool),
 
-        "cache_location": UserInputParser("./price_caches", is_string),
+        "cache_location": import_checks.UserInputParser("./price_caches", import_checks.is_string),
 
-        "continuous_caching": UserInputParser(True, is_bool),
-        "resample_account_value_for_metrics": UserInputParser("1d", is_timeframe, {
-            "allowable": ["s", "m", "h", "d", "w", "M", "y", "D", "c", "l"]}),
-        "quote_account_value_in": UserInputParser("USD", is_in_list, {"allowable": "USD", "case_sensitive": True}),
-        "ignore_user_exceptions": UserInputParser(False, is_bool),
-        "risk_free_return_rate": UserInputParser(0.0, in_range, {"allowable_range": (0, 0.1)})
+        "continuous_caching": import_checks.UserInputParser(True, import_checks.is_bool),
+        "resample_account_value_for_metrics": import_checks.UserInputParser("1d", import_checks.is_timeframe),
+        "quote_account_value_in": import_checks.UserInputParser("USD", import_checks.is_in_list,
+                                                                {"allowable": "USD", "case_sensitive": True}),
+        "ignore_user_exceptions": import_checks.UserInputParser(False, import_checks.is_bool),
+        "risk_free_return_rate": import_checks.UserInputParser(0.0, import_checks.in_range,
+                                                               {"allowable_range": (0, 0.1)})
     }
 }
 
 default_notify_settings = {
     "email": {
-        "port": UserInputParser(465, is_in_list, {"allowable": [25, 2525, 587, 465, 25, 2526]}),
-        "smtp_server": UserInputParser("smtp.website.com", is_string),
+        "port": import_checks.UserInputParser(465, import_checks.is_in_list,
+                                              {"allowable": [25, 2525, 587, 465, 25, 2526]}),
+        "smtp_server": import_checks.UserInputParser("smtp.website.com", import_checks.is_string),
         # Assuming any errors will get caught on connection
-        "sender_email": UserInputParser("email_attached_to_smtp_account@web.com", is_valid_email),
-        "receiver_email": UserInputParser("email_to_send_to@web.com", is_valid_email),
-        "password": UserInputParser("my_password", is_string)
+        "sender_email": import_checks.UserInputParser("email_attached_to_smtp_account@web.com",
+                                                      import_checks.is_valid_email),
+        "receiver_email": import_checks.UserInputParser("email_to_send_to@web.com", import_checks.is_valid_email),
+        "password": import_checks.UserInputParser("my_password", import_checks.is_string)
     },
     "text": {
-        "phone_number": UserInputParser("1234567683", is_int),
-        "provider": UserInputParser("verizon", is_in_list, {
+        "phone_number": import_checks.UserInputParser("1234567683", import_checks.is_int),
+        "provider": import_checks.UserInputParser("verizon", import_checks.is_in_list, {
             "allowable": ["verizon", "att", "boost", "cricket", "sprint", "t_mobile", "us_cellular", "virgin_mobile"]})
     }
 }
@@ -138,7 +144,7 @@ class __BlanklySettings:
             else:
 
                 # V is an instance of User_Input_Checker 
-                v: UserInputParser
+                v: import_checks.UserInputParser
 
                 if k in user_settings:
 

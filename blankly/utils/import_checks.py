@@ -15,7 +15,8 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from typing import Callable, List
+from typing import Callable
+from blankly.utils.utils import time_interval_to_seconds
 import numpy as np
 import re
 
@@ -74,20 +75,18 @@ def is_num(val) -> bool:
     return np.isreal(val) & isinstance(val, (int, float))
 
 
-def is_timeframe(val: str, allowable: List[str]) -> bool:
+def is_timeframe(val: str) -> bool:
     """
     Check if the provided val argument is in the list of allowable args
 
     Args:
         val : string to evaluate
-        allowable: list of timeframe suffixes ex: ["d", "m", "y"]
     """
-    if not is_string(val):
+    try:
+        time_interval_to_seconds(val)
+        return True
+    except ValueError:
         return False
-
-    magnitude = int(val[:-1])
-    base = val[-1]
-    return is_positive(magnitude) and is_in_list(base, allowable)
 
 
 def in_range(val, allowable_range: tuple, inclusive: bool = True) -> bool:
@@ -207,7 +206,7 @@ class UserInputParser:
         Take the provided user_arg and run it through the logic_check function
         """
 
-        # Save the provided user arg incase it is needed for error messages
+        # Save the provided user arg in case it is needed for error messages
         self.__user_arg = user_arg
 
         # Check if a dictionary of arguments was provided and add it to the call
