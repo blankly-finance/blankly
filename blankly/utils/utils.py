@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+from os import error
 import blankly
 
 import datetime
@@ -23,7 +24,7 @@ import json
 import sys
 from datetime import datetime as dt, timezone
 from math import ceil, trunc as math_trunc
-from typing import Union
+from typing import Type, Union
 
 import dateutil.parser as dp
 import numpy as np
@@ -38,68 +39,67 @@ import blankly.utils.import_checks as import_checks
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
-        "account_update_time": import_checks.UserInputParser(5000, import_checks.is_num),  # No need to restrict
-                                                                                           # these ints
-        "use_sandbox": import_checks.UserInputParser(False, import_checks.is_bool),
-        "use_sandbox_websockets": import_checks.UserInputParser(False, import_checks.is_bool),
-        "websocket_buffer_size": import_checks.UserInputParser(10000, import_checks.is_int),
-        "test_connectivity_on_auth": import_checks.UserInputParser(True, import_checks.is_bool),
+        "account_update_time": import_checks.UserInputParser(5000, (int, str)),  
+        "use_sandbox": import_checks.UserInputParser(False, bool),
+        "use_sandbox_websockets": import_checks.UserInputParser(False, bool),
+        "websocket_buffer_size": import_checks.UserInputParser(10000, int, import_checks.is_positive),
+        "test_connectivity_on_auth": import_checks.UserInputParser(True, bool),
 
         "coinbase_pro": {
-            "cash": import_checks.UserInputParser("USD", import_checks.is_string),  # This is default USD but really
-                                                                                    # designed to be anything - imagine
-            #                                                                       trading ETH-BTC
+            "cash": import_checks.UserInputParser("USD", str),  # This is default USD but really
+                                                               # designed to be anything - imagine
+                                                               # trading ETH-BTC
         },
         "binance": {
-            "cash": import_checks.UserInputParser("USDT", import_checks.is_string),
-            "binance_tld": import_checks.UserInputParser("us", import_checks.is_in_list, {"allowable": ["us", "com"]})
+            "cash": import_checks.UserInputParser("USDT", str),
+            "binance_tld": import_checks.UserInputParser("us", str, import_checks.is_in_list, {"allowable": ["us", "com"]})
         },
         "alpaca": {
-            "websocket_stream": import_checks.UserInputParser("iex", import_checks.is_string),
-            "cash": import_checks.UserInputParser("USD", import_checks.is_string)
+            "websocket_stream": import_checks.UserInputParser("iex", str),
+            "cash": import_checks.UserInputParser("USD", str)
         }
     }
 }
 
 default_backtest_settings = {
     "price_data": {
-        "assets": import_checks.UserInputParser([], import_checks.let_pass)
+        "assets": import_checks.UserInputParser([],str)
     },
     "settings": {
-        "use_price": import_checks.UserInputParser("close", import_checks.is_in_list,
+        "use_price": import_checks.UserInputParser("close", str, import_checks.is_in_list,
                                                    {"allowable": ["close", "open", "high", "low"]}),
-        "smooth_prices": import_checks.UserInputParser(False, import_checks.is_bool),
-        "GUI_output": import_checks.UserInputParser(True, import_checks.is_bool),
-        "show_tickers_with_zero_delta": import_checks.UserInputParser(False, import_checks.is_bool),
-        "save_initial_account_value": import_checks.UserInputParser(True, import_checks.is_bool),
-        "show_progress_during_backtest": import_checks.UserInputParser(True, import_checks.is_bool),
+        "smooth_prices": import_checks.UserInputParser(False, bool),
+        "GUI_output": import_checks.UserInputParser(True, bool),
+        "show_tickers_with_zero_delta": import_checks.UserInputParser(False, bool),
+        "save_initial_account_value": import_checks.UserInputParser(True, bool),
+        "show_progress_during_backtest": import_checks.UserInputParser(True, bool),
 
-        "cache_location": import_checks.UserInputParser("./price_caches", import_checks.is_string),
+        "cache_location": import_checks.UserInputParser("./price_caches", str),
 
-        "continuous_caching": import_checks.UserInputParser(True, import_checks.is_bool),
-        "resample_account_value_for_metrics": import_checks.UserInputParser("1d", import_checks.is_timeframe),
-        "quote_account_value_in": import_checks.UserInputParser("USD", import_checks.is_in_list,
+        "continuous_caching": import_checks.UserInputParser(True, bool),
+        "resample_account_value_for_metrics": import_checks.UserInputParser("1d", (int, str), import_checks.is_timeframe),
+        "quote_account_value_in": import_checks.UserInputParser("USD", str, import_checks.is_in_list,
                                                                 {"allowable": "USD", "case_sensitive": True}),
-        "ignore_user_exceptions": import_checks.UserInputParser(False, import_checks.is_bool),
-        "risk_free_return_rate": import_checks.UserInputParser(0.0, import_checks.in_range,
+        "ignore_user_exceptions": import_checks.UserInputParser(False, bool),
+        "risk_free_return_rate": import_checks.UserInputParser(0.0, float, import_checks.in_range,
                                                                {"allowable_range": (0, 0.1)})
     }
 }
 
 default_notify_settings = {
     "email": {
-        "port": import_checks.UserInputParser(465, import_checks.is_in_list,
+        "port": import_checks.UserInputParser(465, int, import_checks.is_in_list,
                                               {"allowable": [25, 2525, 587, 465, 25, 2526]}),
-        "smtp_server": import_checks.UserInputParser("smtp.website.com", import_checks.is_string),
+        "smtp_server": import_checks.UserInputParser("smtp.website.com", str),
         # Assuming any errors will get caught on connection
-        "sender_email": import_checks.UserInputParser("email_attached_to_smtp_account@web.com",
+        "sender_email": import_checks.UserInputParser("email_attached_to_smtp_account@web.com", str,
                                                       import_checks.is_valid_email),
-        "receiver_email": import_checks.UserInputParser("email_to_send_to@web.com", import_checks.is_valid_email),
-        "password": import_checks.UserInputParser("my_password", import_checks.is_string)
+        "receiver_email": import_checks.UserInputParser("email_to_send_to@web.com", str, import_checks.is_valid_email),
+        "password": import_checks.UserInputParser("my_password", str)
     },
     "text": {
-        "phone_number": import_checks.UserInputParser("1234567683", import_checks.is_int),
-        "provider": import_checks.UserInputParser("verizon", import_checks.is_in_list, {
+        "phone_number": import_checks.UserInputParser("1234567683", (str,int)),
+        "provider": import_checks.UserInputParser("verizon", str, import_checks.is_in_list, {
             "allowable": ["verizon", "att", "boost", "cricket", "sprint", "t_mobile", "us_cellular", "virgin_mobile"]})
     }
 }
@@ -149,19 +149,21 @@ class __BlanklySettings:
                 if k in user_settings:
 
                     # Check if the user's input is valid
-                    if v.is_valid(user_settings[k]):
-                        continue
-
-                    else:
+                    try:
+                        v.is_valid(user_settings[k])
+                    except Exception as err:
                         warning_string = [f"User-provided value for key \'{k}\' is invalid: "]
-                        warning_string += v.warning_str
+                        warning_string += [str(err)]
+                        warning_string += ["\t"*3 + f"Overwriting user-provided value with the default value: \'{v.default}\' \n"]
                         info_print("".join(warning_string))
                         user_settings[k] = v.default
+
                 else:
                     warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + \
                                      str(v.default) + "\""
                     info_print(warning_string)
                     user_settings[k] = v.default
+
         return user_settings
 
     def load(self, override_path=None) -> dict:
