@@ -70,7 +70,7 @@ def variance(returns, n=None):
 
 def beta(returns, market_base_returns):
     m = np.matrix([returns, market_base_returns])
-    return np.cov(m)[0][1] / np.std(market_base_returns)
+    return np.cov(m)[0][1] / (np.std(market_base_returns)**2)
 
 
 def var(initial_value, returns, alpha: float):

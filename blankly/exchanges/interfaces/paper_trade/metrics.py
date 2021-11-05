@@ -77,16 +77,12 @@ def variance(backtest_data):
     returns = backtest_data['returns']['value'] * 100
     return round(metrics.variance(returns), 2)
 
-
 def beta(backtest_data):
-    # TODO: Need to pass in the specific resolution
-    # Defaulting to 1d
-    # Need to get some sort of baseline for this one...
-    # Use SP500 as default for all of them (can we get this data?)
-    # Or pick one of the assets as a baseline
-    returns = backtest_data['returns']['value']
-    return round(metrics.beta(returns), 2)
-
+    # Drop the first index because it is NaN
+    # Note, beta is not affected by the resample time-scale
+    returns = backtest_data['returns']['value'][1:]
+    benchmark = backtest_data['benchmark_returns']['value'][1:]
+    return round(metrics.beta(returns, benchmark), 2)
 
 def var(backtest_data):
     returns = backtest_data['returns']['value']
