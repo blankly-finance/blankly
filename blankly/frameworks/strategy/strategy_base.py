@@ -30,7 +30,7 @@ from blankly.exchanges.interfaces.paper_trade.backtest_controller import BackTes
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
 from blankly.frameworks.strategy.strategy_state import StrategyState
 from blankly.utils.time_builder import time_interval_to_seconds
-from blankly.utils.utils import AttributeDict, info_print
+from blankly.utils.utils import AttributeDict, info_print, load_backtest_preferences
 from blankly.utils.utils import get_ohlcv_from_list
 from blankly.exchanges.strategy_logger import StrategyLogger
 
@@ -64,6 +64,8 @@ class Strategy:
         self.__orderbook_websockets = []
         self.__ticker_websockets = []
 
+        self.__states = {}
+
         # Initialize backtesting attributes. This only used for sending times to the Strategy/StrategyState
         # This is done because we switch the interface to a paper trade interface
         self.backtesting_controller = None
@@ -81,6 +83,10 @@ class Strategy:
         self.torndown = False
 
     @property
+    def states(self) -> dict[str,StrategyState]:
+        return self.__states
+
+    @property
     def variables(self):
         return self.__variables
 
@@ -89,7 +95,8 @@ class Strategy:
         self.__variables[hashed][key] = value
 
     def add_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
-                        init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False):
+                        init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False,
+                        variables : dict = {}):
         """
         Add Price Event
         Args:
@@ -102,7 +109,7 @@ class Strategy:
                 positions, writing or cleaning up data or anything else useful
             synced: Sync the function to
         """
-        self.__custom_price_event(callback, symbol, resolution, init, synced, teardown=teardown)
+        self.__custom_price_event(callback, symbol, resolution, init, synced, teardown=teardown, variables = variables)
 
     def add_bar_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
                       init: typing.Callable = None, teardown: typing.Callable = None):
@@ -121,7 +128,7 @@ class Strategy:
 
     def __custom_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
                              init: typing.Callable = None, synced: bool = False, bar: bool = False,
-                             teardown: typing.Callable = None):
+                             teardown: typing.Callable = None, variables : dict = {}):
         """
         Add Price Event
         Args:
@@ -147,8 +154,9 @@ class Strategy:
                              "the ticker: {}".format(symbol))
         else:
             self.__hashes.append(callback_hash)
-        self.__variables[callback_hash] = AttributeDict({})
+        self.__variables[callback_hash] = AttributeDict(variables)
         state = StrategyState(self, self.__variables[callback_hash], symbol, resolution=resolution)
+        self.__states[symbol] = state
 
         if resolution < 60:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
@@ -490,6 +498,7 @@ class Strategy:
                                                                     init=kwargs['init'],
                                                                     teardown=kwargs['teardown']
                                                                     )
+
 
         # Run the backtest & return results
         results = self.backtesting_controller.run()

@@ -82,7 +82,8 @@ default_backtest_settings = {
                                                                 {"allowable": "USD", "case_sensitive": True}),
         "ignore_user_exceptions": import_checks.UserInputParser(False, bool),
         "risk_free_return_rate": import_checks.UserInputParser(0.0, float, import_checks.in_range,
-                                                               {"allowable_range": (0, 0.1)})
+                                                               {"allowable_range": (0, 0.1)}),
+        "benchmark_symbol" : import_checks.UserInputParser(None, str)                                                     
     }
 }
 
