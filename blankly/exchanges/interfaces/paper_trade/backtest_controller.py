@@ -751,10 +751,8 @@ class BackTestController:
 
         no_trade_cycle_status = no_trade_cycle_status.append(no_trade, ignore_index=True).sort_values(by=['time'])
         
-
         # Get the symbol used for the bench mark
         benchmark_symbol = self.preferences["settings"]["benchmark_symbol"]
-
         if benchmark_symbol != None:
             # Get the smallest resolution from the user-added callbacks
             min_resolution = time_interval_to_seconds("1l")
@@ -763,13 +761,20 @@ class BackTestController:
                 if resolution < min_resolution and resolution is not None:
                     min_resolution = resolution 
 
+            # Check locally for the data and add to price_cache if we do not have it
             benchmark_price = self.sync_prices([[benchmark_symbol, i[1], i[2], min_resolution]])[benchmark_symbol] 
             benchmark_price = benchmark_price.sort_values(by=['time'])
 
+            # store the time separately since we do not want to multiply it by the nubmer os shares
+            benchmark_time = benchmark_price.pop('time')
+
             # Calculate the portfolio value if just totally invested in benchmark
-            shares = self.initial_account[self.quote_currency]['available']/benchmark_price.iloc[0,:-1].values
+            shares = self.initial_account[self.quote_currency]['available']/benchmark_price.iloc[0,:].values
             benchmark_value = benchmark_price
-            benchmark_value.iloc[:, :-1] *= shares
+            benchmark_value *= shares
+
+            # Add the time back to the DataFrame and create a list of datetimes
+            benchmark_value['time'] = benchmark_time
             bm_time = [dt.fromtimestamp(ts) for ts in benchmark_value['time']]
 
         figures = []
@@ -791,6 +796,7 @@ class BackTestController:
             mode='vline'
         )
         
+        # Define a helper function to avoid repeating code
         def add_trace(self, figure, time, data, label):
             source = ColumnDataSource(data=dict(
                         time=time,
@@ -817,10 +823,11 @@ class BackTestController:
                     p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
                     add_trace(self, p, time, cycle_status[column], column)
 
-                    # Replica of whats above to add the no-trade line to the backtest
+                    # Add the no-trade line to the backtest
                     if column == 'Account Value (' + self.quote_currency + ')':
                         add_trace(self, p, time, no_trade_cycle_status['Account Value (No Trades)'], 'Account Value (No Trades)' )
- 
+
+                        # Add the benchmark, if requested
                         if benchmark_symbol is not None:
                             add_trace(self, p, bm_time,  benchmark_value['close'], f'Benchmark ({benchmark_symbol})')
 
@@ -906,6 +913,7 @@ class BackTestController:
 
             self.pd_prices['Account Value (' + self.quote_currency + ')']['time'] = cycle_status['time']
 
+
             while epoch_start <= epoch_max:
                 # Append this dict to the array
                 resampled_backing_array.append({
@@ -918,6 +926,7 @@ class BackTestController:
 
             # Put this in the dataframe
             resampled_returns = resampled_returns.append(resampled_backing_array, ignore_index=True)
+        
 
             # This is the resampled version
             dataframes['resampled_account_value'] = resampled_returns
