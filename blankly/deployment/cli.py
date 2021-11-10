@@ -313,7 +313,7 @@ def main():
         else:
             current_directory = os.getcwd()
             blankly_folder = os.path.join(current_directory, args['path'])
-            deployment_location = os.path.join(blankly_folder, 'deploy.json')
+            deployment_location = os.path.join(blankly_folder, 'blankly.json')
             try:
                 # Find where the user specified their working directory and migrate to that
                 deployment_dict = load_json_file(deployment_location)
