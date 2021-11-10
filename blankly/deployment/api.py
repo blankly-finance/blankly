@@ -17,9 +17,8 @@
 """
 
 import requests
-from blankly.utils.utils import info_print
 
-blankly_frontend_api_url = "http://localhost:3000"
+blankly_frontend_api_url = "http://localhost:8081"
 
 
 class API:
