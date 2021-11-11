@@ -6,7 +6,7 @@
 from blankly import Strategy, StrategyState, Interface
 from blankly import Alpaca
 
-# Example import
+# Example import (these imports will fail they just show how you might call a module)
 from models import OrderPricingModel, OrderDecisionModel
 
 

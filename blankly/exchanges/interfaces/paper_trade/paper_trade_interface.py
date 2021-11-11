@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import decimal
 import threading
 import time
 import traceback
@@ -149,10 +148,12 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 break
             self.evaluate_limits()
 
-    def __get_decimals(self, number) -> int:
-        return abs(decimal.Decimal(str(number)).as_tuple().exponent)
+    @staticmethod
+    def __get_decimals(number) -> int:
+        return utils.count_decimals(number)
 
-    def override_local_account(self, value_dictionary: dict):
+    @staticmethod
+    def override_local_account(value_dictionary: dict):
         """
         Push a new set of initial account values to the algorithm. All values not given in in the
         value dictionary that currently exist will be set to zero.

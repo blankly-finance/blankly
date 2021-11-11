@@ -21,6 +21,7 @@ import blankly
 import datetime
 import json
 import sys
+import decimal
 from datetime import datetime as dt, timezone
 from math import ceil, trunc as math_trunc
 from typing import Union
@@ -719,3 +720,10 @@ class Email:
         """
         blankly.reporter.email(email_str=message, smtp_server=self.__server, sender_email=self.__sender_email,
                                receiver_email=receiver_email, password=self.__password, port=self.__port)
+
+
+def count_decimals(number) -> int:
+    """
+    Count the number of decimals in a given float: 1.4335 -> 4 or 3 -> 0
+    """
+    return abs(decimal.Decimal(str(number)).as_tuple().exponent)
