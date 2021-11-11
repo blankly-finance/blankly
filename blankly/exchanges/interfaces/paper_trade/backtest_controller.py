@@ -536,6 +536,12 @@ class BackTestController:
 
         self.pd_prices = {**prices}
 
+        try:
+            self.current_time = self.prices[0][0]
+        except IndexError:
+            raise IndexError('No cached or downloaded data available. Try adding arguments such as to="1y" '
+                             'in the backtest command.')
+
         for k, v in prices.items():
             frame = v  # type: pd.DataFrame
 
@@ -557,11 +563,6 @@ class BackTestController:
         # pushing these prices together makes the time go weird
         self.prices = sorted(self.prices)
 
-        try:
-            self.current_time = self.prices[0][0]
-        except IndexError:
-            raise IndexError('No cached or downloaded data available. Try adding arguments such as to="1y" '
-                             'in the backtest command.')
         self.initial_time = self.current_time
 
         # Add a section to the price events which controls the next time they run & change to array of dicts
