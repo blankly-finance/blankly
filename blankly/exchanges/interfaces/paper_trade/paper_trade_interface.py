@@ -344,7 +344,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         # Test if funds has more decimals than the increment. The increment is the maximum resolution of the quote.
         if self.__get_decimals(size) > base_decimals:
             raise InvalidOrder("Size resolution is too high, the highest resolution allowed for this symbol is: " +
-                               str(base_increment) + ". You specified " + str(size) + ".")
+                               str(base_increment) + ". You specified " + str(size) +
+                               ". Try using blankly.trunc(size, decimal_number) to match the exchange resolution.")
 
         if self.get_exchange_type() == 'alpaca':
             # This could break, but there appears that 10 decimals is about right for alpaca
@@ -474,13 +475,15 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         price_increment_decimals = self.__get_decimals(price_increment)
 
         if self.__get_decimals(price) > price_increment_decimals:
-            raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(price_increment))
+            raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(price_increment) +
+                               ". Try using blankly.trunc(size, decimal_number) to match the exchange resolution.")
 
         base_increment = order_filter['limit_order']['base_increment']
         base_decimals = self.__get_decimals(base_increment)
 
         if self.__get_decimals(size) > base_decimals:
-            raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(base_increment))
+            raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(base_increment) +
+                               '. Try using blankly.trunc(size, decimal_number) to match the exchange resolution.')
 
         # Test the trade
         trade_local.test_trade(symbol, side, size, price, quote_resolution=price_increment_decimals,
