@@ -26,6 +26,7 @@ from bokeh.layouts import column as bokeh_columns
 from bokeh.models import HoverTool
 from bokeh.palettes import Category10_10
 from bokeh.plotting import ColumnDataSource, figure, show
+from typing import List
 
 import blankly.exchanges.interfaces.paper_trade.metrics as metrics
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
@@ -184,8 +185,8 @@ class BackTestController:
         # Export a time for use in other classes
         self.time = None
 
-    def sync_prices(self, items : list[list[str, int, int, int]] = None) -> dict:
-        '''
+    def sync_prices(self, items: List[List[str, int, int, int]] = None) -> dict:
+        """
         Parse the local file cache for the requested data, if it doesn't exist, request it from the exchange
 
         args:
@@ -193,7 +194,7 @@ class BackTestController:
 
         returns:
             dictionary with keys for each 'symbol'
-        '''
+        """
         
         cache_folder = self.preferences['settings']["cache_location"]
         # Make sure the cache folder exists and read files
@@ -530,9 +531,10 @@ class BackTestController:
             self.__color_generator = Category10_10.__iter__()
             return next(self.__color_generator)
 
-    def __resample(self, symbol : str, start_time : typing.Union[int, float], stop_time : typing.Union[int, float], interval : typing.Union[int, float]) -> list:
-        '''
-        This function resamples the data for 'symbol' stored in pd_prices 
+    def __resample(self, symbol: str, start_time: typing.Union[int, float], stop_time: typing.Union[int, float],
+                   interval: typing.Union[int, float]) -> list:
+        """
+        This function resamples the data for 'symbol' stored in pd_prices
 
         Args:
             symbol: The key for the relevant data stored in pd_prices
@@ -541,7 +543,7 @@ class BackTestController:
             interval: the timeframe by which to resample
         Returns
             output_array: the resampled data as a dict with keys ['time','value']
-        '''
+        """
 
         self.__current_search_index = 0
         output_array = []

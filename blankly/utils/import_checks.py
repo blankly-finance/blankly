@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from typing import Any, Callable, Union
+from typing import Any, Callable, Union, Tuple
 from blankly.utils.utils import time_interval_to_seconds
 import numpy as np
 import re
@@ -41,6 +41,7 @@ def is_in_list(val, allowable, case_sensitive: bool = False) -> bool:
         val = val.lower()
 
     return val in allowable
+
 
 def is_positive(val) -> bool:
     """
@@ -88,7 +89,7 @@ def in_range(val, allowable_range: tuple, inclusive: bool = True) -> bool:
     return does_pass
 
 
-def are_valid_elements(vals: list, element_constraint: Callable, constraint_args : dict = {}) -> bool:
+def are_valid_elements(vals: list, element_constraint: Callable, constraint_args=None) -> bool:
     """
     Check if the elements of a list conform to the provided constraint
 
@@ -98,9 +99,11 @@ def are_valid_elements(vals: list, element_constraint: Callable, constraint_args
         constraint_args : dictionary of keyword arguments to pass to the element 
             constraint function. Default to empty dict.
     """
+    if constraint_args is None:
+        constraint_args = {}
     does_pass = isinstance(vals, list)
     for val in vals:
-        does_pass &= element_constraint(val, **constraint_args) 
+        does_pass &= element_constraint(val, **constraint_args)
 
     return does_pass
 
@@ -117,7 +120,8 @@ def is_valid_email(val):
 
 class UserInputParser:
 
-    def __init__(self, default_val, allowable_types : Union[type, tuple[type]], logic_check: Callable = None, logic_check_args: dict = {}):
+    def __init__(self, default_val, allowable_types: Union[type, Tuple[type]], logic_check: Callable = None,
+                 logic_check_args=None):
         """
         Create a new User Input Checker to ensure inputs from the user are valid.
 
@@ -128,6 +132,8 @@ class UserInputParser:
             logic_check_args : dictionary of arguments to be passed to the logic_check function. Dictionary
                 keys must match logic_check function keyword arguments.
         """
+        if logic_check_args is None:
+            logic_check_args = {}
         self.__default_arg = default_val
         self.__allowable_types = allowable_types
         self.__check_callback: Callable = logic_check
@@ -165,14 +171,14 @@ class UserInputParser:
         """
         return self.__warning_str
 
-    def validate_type(self, user_arg :  Union[Any, list]) -> bool:
-        '''
+    def validate_type(self, user_arg: Union[Any, list]) -> bool:
+        """
         Take the provided user_arg and compare it to the list of allowable types
-        '''
+        """
 
         # Check each element of a list
         if isinstance(user_arg, list):
-            does_pass = are_valid_elements(user_arg, isinstance, {"__class_or_tuple" : self.__allowable_types})
+            does_pass = are_valid_elements(user_arg, isinstance, {"__class_or_tuple": self.__allowable_types})
         else:
             does_pass = isinstance(user_arg, self.__allowable_types)
 
@@ -190,11 +196,11 @@ class UserInputParser:
         # If no check callback is provided, the type verification
         # is sufficient
         if self.validate_type(user_arg) is False:
-            warning_string =    [f"Provided value of \'{user_arg}\' is of type \'{type(user_arg)}\'. \n"]
-            warning_string +=   ["\t" * 3 + f"Value for this field must be one of the following types: \n"]    
-            warning_string +=   ["\t" * 5 + f"- {t} \n" for t in self.__allowable_types] if \
-                                isinstance(self.__allowable_types, list) else \
-                                ["\t" * 5 + f"- {self.__allowable_types} \n"]
+            warning_string = [f"Provided value of \'{user_arg}\' is of type \'{type(user_arg)}\'. \n"]
+            warning_string += ["\t" * 3 + f"Value for this field must be one of the following types: \n"]
+            warning_string += ["\t" * 5 + f"- {t} \n" for t in self.__allowable_types] if \
+                isinstance(self.__allowable_types, list) else \
+                ["\t" * 5 + f"- {self.__allowable_types} \n"]
 
             self.__warning_str = "".join(warning_string)
             self.__valid = False
@@ -212,7 +218,7 @@ class UserInputParser:
                 if self.__callback_args is not None:
                     warning_string += ["\t" * 3 + "Arguments passed to constraint function: \n"]
                     warning_string += ["\t" * 5 + f"- {k} : {v.__name__ if isinstance(v, Callable) else v} \n" for k, v
-                                    in self.__callback_args.items()]
+                                       in self.__callback_args.items()]
 
                 # Join the lists of messages together and assign
                 self.__warning_str = "".join(warning_string)
