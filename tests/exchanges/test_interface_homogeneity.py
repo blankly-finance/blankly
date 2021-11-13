@@ -79,6 +79,14 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.interfaces.append(cls.Alpaca_Interface)
         cls.data_interfaces.append(cls.Alpaca_Interface)
 
+        # Oanda definition and appending
+        cls.Oanda = blankly.Oanda(portfolio_name="oanda test portfolio",
+                                  keys_path='./tests/config/keys.json',
+                                  settings_path="./tests/config/settings.json")
+        cls.Oanda_Interface = cls.Oanda.get_interface()
+        cls.interfaces.append(cls.Oanda_Interface)
+        cls.data_interfaces.append(cls.Oanda_Interface)
+
         # Paper trade wraps binance
         cls.paper_trade_binance = blankly.PaperTrade(cls.Binance)
         cls.paper_trade_binance_interface = cls.paper_trade_binance.get_interface()
@@ -117,6 +125,11 @@ class InterfaceHomogeneity(unittest.TestCase):
                 # These are just testing for error
                 availability_results.append(self.interfaces[i].account.AAPL.available)
                 availability_results.append(self.interfaces[i].account.AAPL.hold)
+            elif self.interfaces[i].get_exchange_type() == "oanda":
+                responses.append(self.interfaces[i].get_account()['USD'])
+                responses.append(self.interfaces[i].get_account('USD'))
+                responses.append(self.interfaces[i].account.AAPL)
+                responses.append(self.interfaces[i].account['USD'])
             else:
                 responses.append(self.interfaces[i].get_account()['BTC'])
                 responses.append(self.interfaces[i].get_account('BTC'))
@@ -313,6 +326,8 @@ class InterfaceHomogeneity(unittest.TestCase):
                 responses.append(i.history('BTC-USDT', 1))
             elif i.get_exchange_type() == "alpaca":
                 responses.append(i.history('MSFT', 1))
+            elif i.get_exchange_type() == 'oanda':
+                responses.append(i.history('EUR-USD', 1))
             else:
                 responses.append(i.history('BTC-USD', 1))
 
@@ -331,6 +346,8 @@ class InterfaceHomogeneity(unittest.TestCase):
                 responses.append(i.history('BTC-USDT', 150, resolution='1h'))
             elif i.get_exchange_type() == "alpaca":
                 responses.append(i.history('MSFT', 150, resolution='1h'))
+            elif i.get_exchange_type() == "oanda":
+                responses.append(i.history('EUR-USD', 150, resolution='1h'))
             else:
                 # Test this one a 1 day resolution due to low volume
                 responses.append(i.history('BTC-USD', 150, resolution='1d'))
@@ -363,6 +380,9 @@ class InterfaceHomogeneity(unittest.TestCase):
                 elif i.get_exchange_type() == "alpaca":
                     responses.append((i.history('MSFT', to=expected_hours, resolution='1h', end_date=end_date_str),
                                       'alpaca'))
+                elif i.get_exchange_type() == "oanda":
+                    responses.append((i.history('EUR-USD', to=expected_hours, resolution='1h', end_date=end_date_str),
+                                      'oanda'))
                 else:
                     responses.append((i.history('BTC-USD', to=expected_hours, resolution='1h', end_date=end_date_str),
                                       'coinbase_pro'))
@@ -390,6 +410,8 @@ class InterfaceHomogeneity(unittest.TestCase):
                 responses.append(i.history('BTC-USDT', resolution='1h', start_date=start, end_date=stop))
             elif i.get_exchange_type() == "alpaca":
                 responses.append(i.history('MSFT', resolution='1h', start_date=start, end_date=stop))
+            elif i.get_exchange_type() == "oanda":
+                responses.append(i.history('EUR-USD', resolution='1h', start_date=start, end_date=stop))
             else:
                 responses.append(i.history('BTC-USD', resolution='1h', start_date=start, end_date=stop))
 
@@ -444,6 +466,8 @@ class InterfaceHomogeneity(unittest.TestCase):
                 responses.append(i.get_order_filter('BTC-USDT'))
             elif i.get_exchange_type() == "alpaca":
                 responses.append(i.get_order_filter('MSFT'))
+            elif i.get_exchange_type() == "oanda":
+                responses.append(i.get_order_filter('EUR-USD'))
             else:
                 responses.append(i.get_order_filter('BTC-USD'))
 
@@ -457,6 +481,8 @@ class InterfaceHomogeneity(unittest.TestCase):
                 responses.append(i.get_price('BTC-USDT'))
             elif i.get_exchange_type() == "alpaca":
                 responses.append(i.get_price('MSFT'))
+            elif i.get_exchange_type() == "oanda":
+                responses.append(i.get_price('EUR-USD'))
             else:
                 responses.append(i.get_price('BTC-USD'))
 

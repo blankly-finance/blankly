@@ -1,13 +1,26 @@
-import datetime
+"""
+    Oanda interface custom unit tests.
+    Copyright (C) 2021  Emerson Dove
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 import time
-from datetime import datetime as dt
 from pathlib import Path
 
-import dateparser
 import pytest
-import pytz
 
-from blankly.exchanges.interfaces.oanda.oanda_api import OandaAPI
 from blankly.exchanges.interfaces.oanda.oanda_auth import OandaAuth
 from blankly.exchanges.interfaces.oanda.oanda_interface import OandaInterface
 from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
@@ -148,6 +161,7 @@ def test_get_order(oanda_interface: OandaInterface) -> None:
     for order in orders:
         resp = oanda_interface.cancel_order("EUR_USD", order['id'])
         validate_response(oanda_interface.needed['cancel_order'], resp)
+
 
 def test_get_filters(oanda_interface: OandaInterface) -> None:
     products = oanda_interface.get_products()
