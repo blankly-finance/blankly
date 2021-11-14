@@ -20,8 +20,7 @@ from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.interfaces.oanda.oanda_api import OandaAPI
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
-from blankly.utils import time_interval_to_seconds, utils as utils
-import warnings
+from blankly.utils import utils as utils
 import pandas as pd
 from datetime import datetime as dt
 from typing import Union
@@ -46,16 +45,34 @@ class OandaInterface(ExchangeInterface):
 
         self.multiples_keys = self.supported_multiples.keys()
 
+        self.unique_assets = None
+
         assert isinstance(self.calls, OandaAPI)
 
     def init_exchange(self):
         assert isinstance(self.calls, OandaAPI)
         account_info = self.calls.get_account()
+        if 'errorMessage' in account_info:
+            raise LookupError(f"{account_info['errorMessage']}. \nTry toggling the \'use_sandbox\' setting "
+                              "in your settings.json or check if the keys were input correctly into your "
+                              "keys.json.")
         assert account_info['account']['id'] is not None, "Oanda exchange account does not exist"
 
         self.default_trunc = self._get_default_truncation()
 
-    def get_products(self) -> dict:
+        filtered_assets = []
+        products = self.get_products()
+        for i in products:
+            base = utils.get_base_asset(i['symbol'])
+            quote = utils.get_quote_asset(i['symbol'])
+            if base not in filtered_assets:
+                filtered_assets.append(base)
+            if quote not in filtered_assets:
+                filtered_assets.append(quote)
+
+        self.unique_assets = filtered_assets
+
+    def get_products(self) -> list:
         """
         Insturments response:
             {
@@ -108,13 +125,10 @@ class OandaInterface(ExchangeInterface):
         needed = self.needed['get_products']
         instruments = self.calls.get_account_instruments()['instruments']
 
-        print(instruments)
-
         for instrument in instruments:
-            currencies = instrument['symbol'].split('_')
             instrument['symbol'] = self.__convert_symbol_to_blankly(instrument.pop('name'))
-            instrument['base_asset'] = currencies[0]
-            instrument['quote_asset'] = currencies[1]
+            instrument['base_asset'] = utils.get_base_asset(instrument['symbol'])
+            instrument['quote_asset'] = utils.get_quote_asset(instrument['symbol'])
             instrument['base_min_size'] = float(instrument['minimumTradeSize'])
             instrument['base_max_size'] = float(instrument['maximumOrderUnits'])
             instrument['base_increment'] = 10 ** (-1 * int(instrument['tradeUnitsPrecision']))
@@ -125,18 +139,23 @@ class OandaInterface(ExchangeInterface):
         return instruments
 
     def get_account(self, symbol=None) -> utils.AttributeDict:
-        symbol = self.__convert_blankly_to_oanda(symbol)
+        if symbol is not None:
+            symbol = self.__convert_blankly_to_oanda(symbol)
         assert isinstance(self.calls, OandaAPI)
         positions_dict = utils.AttributeDict({})
         positions = self.calls.get_all_positions()['positions']
         for position in positions:
-            positions_dict[position['instrument']] = utils.AttributeDict({
+            positions_dict[position['instrument'].split('_')[0]] = utils.AttributeDict({
                 'available': float(position['long']['units']) - float(position['short']['units']),
                 'hold': 0.0
             })
 
+        def cash():
+            account_dict = self.calls.get_account()['account']
+            return float(account_dict['balance'])
+
         positions_dict['USD'] = utils.AttributeDict({
-            'available': self.cash,
+            'available': cash(),
             'hold': 0.0
         })
 
@@ -154,6 +173,17 @@ class OandaInterface(ExchangeInterface):
                     positions_dict[instrument]['available'] -= (-1 * float(position['units']))
                     positions_dict[instrument]['hold'] += (-1 * float(position['units']))
 
+        # Note that now __unique assets could be uninitialized:
+        if self.unique_assets is None:
+            self.init_exchange()
+
+        for i in self.unique_assets:
+            if i not in positions_dict:
+                positions_dict[i] = utils.AttributeDict({
+                    'available': 0.0,
+                    'hold': 0.0
+                })
+
         if symbol is not None:
             if symbol in positions_dict:
                 return utils.AttributeDict({
@@ -161,15 +191,7 @@ class OandaInterface(ExchangeInterface):
                     'hold': positions_dict[symbol]['hold']
                 })
             else:
-                return utils.AttributeDict({
-                    'available': 0.0,
-                    'hold': 0.0
-                })
-
-        # Convert the symbols back into the blankly symbol
-        keys = positions_dict.keys()
-        for i in keys:
-            i[self.__convert_symbol_to_blankly(i)] = positions_dict.pop(i)
+                raise KeyError('Symbol not found.')
 
         return positions_dict
 
@@ -259,6 +281,7 @@ class OandaInterface(ExchangeInterface):
         if symbol is None:
             resp = self.calls.get_all_open_orders()
         else:
+            symbol = self.__convert_blankly_to_oanda(symbol)
             resp = self.calls.get_orders(symbol)
 
         orders = resp['orders']
