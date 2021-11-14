@@ -167,11 +167,25 @@ class AlpacaInterface(ExchangeInterface):
                 positions_dict[curr_symbol]['available'] -= qty
                 positions_dict[curr_symbol]['hold'] += qty
 
-        if symbol is not None and symbol in positions_dict:
-            return utils.AttributeDict({
-                'available': float(positions_dict[symbol]['available']),
-                'hold': float(positions_dict[symbol]['hold'])
-            })
+        # Note that now __unique assets could be uninitialized:
+        if self.__unique_assets is None:
+            self.init_exchange()
+
+        for i in self.__unique_assets:
+            if i not in positions_dict:
+                positions_dict[i] = utils.AttributeDict({
+                    'available': 0.0,
+                    'hold': 0.0
+                })
+
+        if symbol is not None:
+            if symbol in positions_dict:
+                return utils.AttributeDict({
+                    'available': float(positions_dict[symbol]['available']),
+                    'hold': float(positions_dict[symbol]['hold'])
+                })
+            else:
+                raise KeyError('Symbol not found.')
 
         if symbol == 'USD':
             return utils.AttributeDict({
@@ -179,22 +193,7 @@ class AlpacaInterface(ExchangeInterface):
                 'hold': positions_dict['USD']['hold']
             })
 
-        # Note that now __unique assets could be uninitialized:
-        if self.__unique_assets is None:
-            self.init_exchange()
-
-        # This is a patch fix that should be fixed to be more optimized
-        if symbol is None:
-            for i in self.__unique_assets:
-                if i not in positions_dict:
-                    positions_dict[i] = utils.AttributeDict({
-                        'available': 0.0,
-                        'hold': 0.0
-                    })
-            return positions_dict
-        else:
-            # If it didn't get recognized above we end up here
-            raise KeyError("Symbol not found.")
+        return positions_dict
 
     def market_order(self, symbol, side, size) -> MarketOrder:
         assert isinstance(self.calls, alpaca_trade_api.REST)
