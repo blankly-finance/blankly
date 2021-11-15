@@ -447,7 +447,7 @@ def compare_dictionaries(dict1, dict2, force_exchange_specific=True) -> bool:
             if not isinstance(dict2[key], type(value)):
                 # Issue detected
                 print("Type of key " + str(dict1[key]) + " in dict1 is " + str(type(dict1[key])) +
-                      ", but is " + str(type(dict2[key])) + " in dict2.")
+                      ", but is " + str(type(dict2[key])) + f" in dict2. The name of the key is {key}.")
                 return False
             else:
                 # If it's a dictionary, go inside of it

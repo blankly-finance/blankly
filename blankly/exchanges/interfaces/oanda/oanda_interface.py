@@ -303,20 +303,34 @@ class OandaInterface(ExchangeInterface):
             'taker_fee_rate': 0.0
         }
 
+    def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
+        if kwargs['to'] is not None:
+            epoch_diff = epoch_stop-epoch_start
+            if epoch_diff < 172812:
+                epoch_start = epoch_stop-epoch_diff
+            else:
+                epoch_start = epoch_start-(epoch_diff*2)
+
+            return self.get_product_history(symbol, epoch_start, epoch_stop, resolution).iloc[-kwargs['to']:].\
+                reset_index()
+        else:
+            return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+
     def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution: int):
+        symbol = self.__convert_blankly_to_oanda(symbol)
         assert isinstance(self.calls, OandaAPI)
 
-        resolution = utils.time_interval_to_seconds(resolution)
+        resolution = int(utils.time_interval_to_seconds(resolution))
 
         if resolution not in self.multiples_keys:
             utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
             resolution = self.multiples_keys[min(range(len(self.multiples_keys)),
                                              key=lambda i: abs(self.multiples_keys[i] - resolution))]
 
-        found_multiple, row_divisor = self.__evaluate_multiples(self.multiples_keys, resolution)
+        # found_multiple, row_divisor = self.__evaluate_multiples(self.multiples_keys, resolution)
 
         candles = \
-            self.calls.get_candles_by_startend(symbol, self.supported_multiples[found_multiple], epoch_start, epoch_stop)[
+            self.calls.get_candles_by_startend(symbol, self.supported_multiples[resolution], epoch_start, epoch_stop)[
                 'candles']
 
         result = []
@@ -335,9 +349,10 @@ class OandaInterface(ExchangeInterface):
 
     def get_order_filter(self, symbol: str):
         assert isinstance(self.calls, OandaAPI)
+        symbol = self.__convert_blankly_to_oanda(symbol)
         resp = self.calls.get_account_instruments(symbol)['instruments'][0]
-        resp['symbol'] = resp.pop('name')
-        currencies = resp['symbol'].split('_')
+        currencies = resp['name'].split('_')
+        resp['symbol'] = self.__convert_symbol_to_blankly(resp.pop('name'))
         resp['base_asset'] = currencies[0]
         resp['quote_asset'] = currencies[1]
         resp['limit_order'] = {
