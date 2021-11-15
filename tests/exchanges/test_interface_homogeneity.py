@@ -128,7 +128,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             elif self.interfaces[i].get_exchange_type() == "oanda":
                 responses.append(self.interfaces[i].get_account()['USD'])
                 responses.append(self.interfaces[i].get_account('USD'))
-                responses.append(self.interfaces[i].account.AAPL)
+                responses.append(self.interfaces[i].account.USD)
                 responses.append(self.interfaces[i].account['USD'])
             else:
                 responses.append(self.interfaces[i].get_account()['BTC'])
@@ -341,7 +341,6 @@ class InterfaceHomogeneity(unittest.TestCase):
     def test_point_based_history(self):
         responses = []
         for i in self.data_interfaces:
-            print(i.get_exchange_type())
             if i.get_exchange_type() == "binance":
                 responses.append(i.history('BTC-USDT', 150, resolution='1h'))
             elif i.get_exchange_type() == "alpaca":
@@ -351,6 +350,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             else:
                 # Test this one a 1 day resolution due to low volume
                 responses.append(i.history('BTC-USD', 150, resolution='1d'))
+        print(responses)
         for i in responses:
             self.check_product_history_columns(i)
 
@@ -462,6 +462,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
 
         for i in self.interfaces:
+            print(i.get_exchange_type())
             if i.get_exchange_type() == "binance":
                 responses.append(i.get_order_filter('BTC-USDT'))
             elif i.get_exchange_type() == "alpaca":

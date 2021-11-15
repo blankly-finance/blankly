@@ -125,7 +125,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 ["symbol", str],
                 ["base_asset", str],
                 ["quote_asset", str],
-                ["max_orders", float],
+                ["max_orders", int],
                 ["limit_order", dict],
                 ["market_order", dict]
             ]
