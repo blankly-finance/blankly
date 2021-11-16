@@ -307,7 +307,7 @@ class OandaInterface(ExchangeInterface):
         if kwargs['to'] is not None:
             epoch_diff = epoch_stop-epoch_start
             if epoch_diff < 172812:
-                epoch_start = epoch_stop-epoch_diff
+                epoch_start = epoch_stop-(epoch_diff+resolution)
             else:
                 epoch_start = epoch_start-(epoch_diff*2)
 
@@ -340,8 +340,8 @@ class OandaInterface(ExchangeInterface):
 
         df = pd.DataFrame(result, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
 
-        dtypes = {"time": "int64", "open": "float32", "high": "float32", "low": "float32", "close": "float32",
-                  "volume": "float32"}
+        dtypes = {"time": int, "open": float, "high": float, "low": float, "close": float,
+                  "volume": float}
 
         df = df.astype(dtypes)
 
