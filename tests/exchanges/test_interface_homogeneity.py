@@ -350,7 +350,6 @@ class InterfaceHomogeneity(unittest.TestCase):
             else:
                 # Test this one a 1 day resolution due to low volume
                 responses.append(i.history('BTC-USD', 150, resolution='1d'))
-        print(responses)
         for i in responses:
             self.check_product_history_columns(i)
 
