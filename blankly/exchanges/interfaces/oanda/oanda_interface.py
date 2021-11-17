@@ -32,6 +32,8 @@ from blankly.utils.exceptions import APIException
 
 class OandaInterface(ExchangeInterface):
     def __init__(self, authenticated_API: OandaAPI, preferences_path: str):
+        self.calls: OandaAPI
+
         self.default_trunc = None
         super().__init__('oanda', authenticated_API, preferences_path, valid_resolutions=[5, 10, 15, 30, 60,
                                                                                           60 * 2, 60 * 4, 60 * 5,
@@ -43,11 +45,11 @@ class OandaInterface(ExchangeInterface):
                                     60 * 4: "M4", 60 * 5: "M5", 60 * 10: "M10", 60 * 15: "M15", 60 * 30: "M30",
                                     60 * 60: "H1", 60 * 60 * 24: "D", 60 * 60 * 24 * 7: "W", 60 * 60 * 24 * 30: "M"}
 
-        self.multiples_keys = self.supported_multiples.keys()
+        self.multiples_keys = list(self.supported_multiples.keys())
 
         self.unique_assets = None
 
-        assert isinstance(self.calls, OandaAPI)
+        self.max_candles = 500
 
     def init_exchange(self):
         assert isinstance(self.calls, OandaAPI)
@@ -304,15 +306,26 @@ class OandaInterface(ExchangeInterface):
         }
 
     def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
+        resolution = self.multiples_keys[min(range(len(self.multiples_keys)),
+                                             key=lambda i: abs(self.multiples_keys[i] - resolution))]
+        symbol = self.__convert_blankly_to_oanda(symbol)
         if kwargs['to'] is not None:
-            epoch_diff = epoch_stop-epoch_start
-            if epoch_diff < 172812:
-                epoch_start = epoch_stop-(epoch_diff+resolution)
-            else:
-                epoch_start = epoch_start-(epoch_diff*2)
+            to = kwargs['to']
 
-            return self.get_product_history(symbol, epoch_start, epoch_stop, resolution).iloc[-kwargs['to']:].\
-                reset_index()
+            frames = []
+
+            while to > 0:
+                # Grab candles 5k at a time
+                frames.append(self.calls.get_last_k_candles(symbol, granularity=self.supported_multiples[resolution],
+                                                            to_unix=epoch_stop, count=self.max_candles))
+
+                # Step back
+                epoch_stop = epoch_stop - (resolution * self.max_candles)
+                to = to - self.max_candles
+
+            # Then just trim to the number of points that are required
+            return self.format_oanda_df(frames, sort=True).iloc[-kwargs['to']:]
+
         else:
             return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
@@ -325,33 +338,25 @@ class OandaInterface(ExchangeInterface):
         if resolution not in self.multiples_keys:
             utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
             resolution = self.multiples_keys[min(range(len(self.multiples_keys)),
-                                             key=lambda i: abs(self.multiples_keys[i] - resolution))]
+                                                 key=lambda i: abs(self.multiples_keys[i] - resolution))]
 
-        # found_multiple, row_divisor = self.__evaluate_multiples(self.multiples_keys, resolution)
+        # Grab an entire window
+        candles = []
+        window_start = epoch_start - (resolution * self.max_candles)
+        window_end = epoch_stop
+        while window_end > epoch_start:
+            candles.append(self.calls.get_candles_by_startend(symbol,
+                                                              self.supported_multiples[resolution],
+                                                              window_start,
+                                                              window_end))
 
-        print(epoch_start)
-        print(epoch_stop)
-        candles = \
-            self.calls.get_candles_by_startend(symbol, self.supported_multiples[resolution], epoch_start, epoch_stop)
-
-        try:
-            candles = candles['candles']
-        except KeyError:
             print(candles)
 
-        result = []
-        for candle in candles:
-            ohlc = candle['mid']
-            result.append([int(float(candle['time'])), ohlc['o'], ohlc['h'], ohlc['l'], ohlc['c'], candle['volume']])
+            window_start = window_start - (resolution * self.max_candles)
+            window_end = window_end - (resolution * self.max_candles)
 
-        df = pd.DataFrame(result, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
-
-        dtypes = {"time": int, "open": float, "high": float, "low": float, "close": float,
-                  "volume": float}
-
-        df = df.astype(dtypes)
-
-        return df
+        df = self.format_oanda_df(candles, sort=False)
+        return df[df['time'] >= epoch_start]
 
     def get_order_filter(self, symbol: str):
         assert isinstance(self.calls, OandaAPI)
@@ -487,3 +492,49 @@ class OandaInterface(ExchangeInterface):
     @staticmethod
     def __convert_blankly_to_oanda(symbol: str) -> str:
         return symbol.replace('-', '_')
+
+    @staticmethod
+    def format_oanda_df(candles: list, sort: bool = False):
+        """
+        Given an OANDA history type response, format it into a readable dataframe:
+        Example index from a list response:
+
+        (this is a 1 element list with a single query)
+        [{'instrument': 'EUR_USD', 'granularity': 'H1', 'candles':
+            [{'complete': True, 'volume': 1202, 'time': '1637114400.000000000', 'mid': {'o': '1.13232', 'h': '1.13242',
+                'l': '1.13189', 'c': '1.13218'}},
+            {'complete': True, 'volume': 4907, 'time': '1637118000.000000000', 'mid': {'o': '1.13216', 'h': '1.13220',
+                'l': '1.12637', 'c': '1.12890'}},
+            {'complete': True, 'volume': 2478, 'time': '1637121600.000000000', 'mid': {'o': '1.12891', 'h': '1.13015',
+                'l': '1.12890', 'c': '1.12982'}}]
+        }]
+
+        This gets kind of weird because OANDA gives a list of responses:
+        [resp1, resp2] where each response *might* have a candles key and inside a candles key
+        is the actual data we need
+        """
+        result = []
+        for single_response in candles:
+            try:
+                internal_candles = single_response['candles']
+            except KeyError:
+                # There must not be a candles key to even get to the mid.
+                # This will generate an empty df
+                internal_candles = []
+
+            for single_candle in internal_candles:
+                ohlc = single_candle['mid']
+                result.append([int(float(single_candle['time'])),
+                               ohlc['o'],
+                               ohlc['h'],
+                               ohlc['l'],
+                               ohlc['c'],
+                               single_candle['volume']])
+
+        df = pd.DataFrame(result, columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+        dtypes = {"time": int, "open": float, "high": float, "low": float, "close": float,
+                  "volume": float}
+        if sort:
+            return df.sort_values(by=['time'])
+        else:
+            return df.astype(dtypes)
