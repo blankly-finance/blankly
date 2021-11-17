@@ -441,7 +441,7 @@ class AlpacaInterface(ExchangeInterface):
             to = None
         if to:
             resolution_seconds = self.valid_resolutions[min(range(len(self.valid_resolutions)),
-                                                            key=lambda i: abs(self.valid_resolutions[i] -
+                                                            key=lambda j: abs(self.valid_resolutions[j] -
                                                                               resolution_seconds))]
             resolution_lookup = {
                 60: '1Min',
