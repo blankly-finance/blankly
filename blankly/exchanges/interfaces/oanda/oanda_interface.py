@@ -329,9 +329,15 @@ class OandaInterface(ExchangeInterface):
 
         # found_multiple, row_divisor = self.__evaluate_multiples(self.multiples_keys, resolution)
 
+        print(epoch_start)
+        print(epoch_stop)
         candles = \
-            self.calls.get_candles_by_startend(symbol, self.supported_multiples[resolution], epoch_start, epoch_stop)[
-                'candles']
+            self.calls.get_candles_by_startend(symbol, self.supported_multiples[resolution], epoch_start, epoch_stop)
+
+        try:
+            candles = candles['candles']
+        except KeyError:
+            print(candles)
 
         result = []
         for candle in candles:
