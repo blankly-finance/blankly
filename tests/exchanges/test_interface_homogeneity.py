@@ -196,7 +196,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             exchange_responses.append(i['order'].get_response())
 
         self.assertTrue(compare_responses(exchange_responses))
-        self.assertTrue(compare_responses(order_responses))
+        self.assertTrue(compare_responses(status_responses))
 
         # Be sure to cancel the alpaca orders if not executed
         alpaca_orders = self.Alpaca_Interface.get_open_orders()
@@ -448,11 +448,12 @@ class InterfaceHomogeneity(unittest.TestCase):
             start_time = i['time'][0]
             end_time = i['time'].iloc[-1]
 
-            # Make sure that the final time we have is within the resolution window. Notice this is
+            # Make sure that the final time we have is within the resolution window. Notice this is shifted backwards
             self.assertTrue(current_time-(build_day()) < end_time < current_time)
 
             # Do the same, the start time has to be within a resolution interval of the actual time
-            self.assertTrue(intervals_ago-(build_day()/2) < start_time < intervals_ago+(build_day()/2))
+            # This is shifted forward
+            self.assertTrue(intervals_ago < start_time < intervals_ago+(build_day()))
 
             self.check_product_history_types(i)
 
