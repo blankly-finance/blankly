@@ -32,8 +32,6 @@ from blankly.utils.exceptions import APIException
 
 class OandaInterface(ExchangeInterface):
     def __init__(self, authenticated_API: OandaAPI, preferences_path: str):
-        self.calls: OandaAPI
-
         self.default_trunc = None
         super().__init__('oanda', authenticated_API, preferences_path, valid_resolutions=[5, 10, 15, 30, 60,
                                                                                           60 * 2, 60 * 4, 60 * 5,
@@ -49,10 +47,11 @@ class OandaInterface(ExchangeInterface):
 
         self.unique_assets = None
 
-        self.max_candles = 500
+        self.max_candles = 5000
+
+        self.calls: OandaAPI
 
     def init_exchange(self):
-        assert isinstance(self.calls, OandaAPI)
         account_info = self.calls.get_account()
         if 'errorMessage' in account_info:
             raise LookupError(f"{account_info['errorMessage']}. \nTry toggling the \'use_sandbox\' setting "
@@ -123,7 +122,6 @@ class OandaInterface(ExchangeInterface):
             }
         }
         """
-        assert isinstance(self.calls, OandaAPI)
         needed = self.needed['get_products']
         instruments = self.calls.get_account_instruments()['instruments']
 
@@ -143,11 +141,17 @@ class OandaInterface(ExchangeInterface):
     def get_account(self, symbol=None) -> utils.AttributeDict:
         if symbol is not None:
             symbol = self.__convert_blankly_to_oanda(symbol)
-        assert isinstance(self.calls, OandaAPI)
         positions_dict = utils.AttributeDict({})
         positions = self.calls.get_all_positions()['positions']
         for position in positions:
+            # Split both the base and the quote
+            # This the base split [0]
             positions_dict[position['instrument'].split('_')[0]] = utils.AttributeDict({
+                'available': float(position['long']['units']) - float(position['short']['units']),
+                'hold': 0.0
+            })
+            # This is the quote split [1]
+            positions_dict[position['instrument'].split('_')[1]] = utils.AttributeDict({
                 'available': float(position['long']['units']) - float(position['short']['units']),
                 'hold': 0.0
             })
@@ -166,14 +170,16 @@ class OandaInterface(ExchangeInterface):
         for position in open_orders:
             # todo: handle other types of orders
             if position['type'] == 'LIMIT':
+                instrument_sides = position['instrument'].split('_')
                 if float(position['units']) > 0:
-                    positions_dict['USD']['available'] -= float(position['units']) * float(position['price'])
-                    positions_dict['USD']['hold'] += float(position['units']) * float(position['price'])
+                    quote_currency = instrument_sides[1]
+                    positions_dict[quote_currency]['available'] -= float(position['units']) * float(position['price'])
+                    positions_dict[quote_currency]['hold'] += float(position['units']) * float(position['price'])
                 else:
-                    instrument = position['instrument']
+                    base_currency = instrument_sides[0]
                     # sell orders just have a negative 'units'
-                    positions_dict[instrument]['available'] -= (-1 * float(position['units']))
-                    positions_dict[instrument]['hold'] += (-1 * float(position['units']))
+                    positions_dict[base_currency]['available'] -= (-1 * float(position['units']))
+                    positions_dict[base_currency]['hold'] += (-1 * float(position['units']))
 
         # Note that now __unique assets could be uninitialized:
         if self.unique_assets is None:
@@ -200,7 +206,6 @@ class OandaInterface(ExchangeInterface):
     # funds is the base asset (EUR_CAD the base asset is CAD)
     def market_order(self, symbol: str, side: str, size: float) -> MarketOrder:
         symbol = self.__convert_blankly_to_oanda(symbol)
-        assert isinstance(self.calls, OandaAPI)
 
         # Make sure that default trunc has been established - init may have been skipped
         if self.default_trunc is None:
@@ -227,11 +232,12 @@ class OandaInterface(ExchangeInterface):
             'symbol': symbol,
             'type': 'market'
         }
-
+        if 'orderRejectTransaction' in resp:
+            raise APIException(resp['errorMessage'])
         resp['symbol'] = self.__convert_symbol_to_blankly(resp['orderCreateTransaction']['instrument'])
         resp['id'] = resp['orderCreateTransaction']['id']
         resp['created_at'] = resp['orderCreateTransaction']['time']
-        resp['size'] = qty_to_buy
+        resp['size'] = abs(qty_to_buy)
         resp['status'] = "active"
         resp['type'] = 'market'
         resp['side'] = side
@@ -241,7 +247,6 @@ class OandaInterface(ExchangeInterface):
 
     def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
         symbol = self.__convert_blankly_to_oanda(symbol)
-        assert isinstance(self.calls, OandaAPI)
         if side == "buy":
             pass
         elif side == "sell":
@@ -263,7 +268,7 @@ class OandaInterface(ExchangeInterface):
         resp['id'] = resp['orderCreateTransaction']['id']
         resp['created_at'] = resp['orderCreateTransaction']['time']
         resp['price'] = price
-        resp['size'] = size
+        resp['size'] = abs(size)
         resp['status'] = "active"
         resp['time_in_force'] = 'GTC'
         resp['type'] = 'limit'
@@ -274,12 +279,10 @@ class OandaInterface(ExchangeInterface):
 
     def cancel_order(self, symbol, order_id) -> dict:
         # Either the Order’s OANDA-assigned OrderID or the Order’s client-provided ClientID prefixed by the “@” symbol
-        assert isinstance(self.calls, OandaAPI)
         self.calls.cancel_order(order_id)
         return {'order_id': order_id}
 
     def get_open_orders(self, symbol=None):
-        assert isinstance(self.calls, OandaAPI)
         if symbol is None:
             resp = self.calls.get_all_open_orders()
         else:
@@ -294,12 +297,10 @@ class OandaInterface(ExchangeInterface):
 
     def get_order(self, symbol, order_id) -> dict:
         # Either the Order’s OANDA-assigned OrderID or the Order’s client-provided ClientID prefixed by the “@” symbol
-        assert isinstance(self.calls, OandaAPI)
         order = self.calls.get_order(order_id)
         return self.homogenize_order(order['order'])
 
     def get_fees(self):
-        assert isinstance(self.calls, OandaAPI)
         return {
             'maker_fee_rate': 0.0,
             'taker_fee_rate': 0.0
@@ -324,14 +325,13 @@ class OandaInterface(ExchangeInterface):
                 to = to - self.max_candles
 
             # Then just trim to the number of points that are required
-            return self.format_oanda_df(frames, sort=True).iloc[-kwargs['to']:]
+            return self.format_oanda_df(frames, sort=True).iloc[-kwargs['to']:].reset_index(drop=True)
 
         else:
             return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
     def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution: int):
         symbol = self.__convert_blankly_to_oanda(symbol)
-        assert isinstance(self.calls, OandaAPI)
 
         resolution = int(utils.time_interval_to_seconds(resolution))
 
@@ -342,24 +342,24 @@ class OandaInterface(ExchangeInterface):
 
         # Grab an entire window
         candles = []
-        window_start = epoch_start - (resolution * self.max_candles)
+        window_start = epoch_stop - (resolution * self.max_candles)
         window_end = epoch_stop
-        while window_end > epoch_start:
+        ran_once = False
+        while window_start > epoch_start or not ran_once:
             candles.append(self.calls.get_candles_by_startend(symbol,
                                                               self.supported_multiples[resolution],
                                                               window_start,
                                                               window_end))
 
-            print(candles)
-
             window_start = window_start - (resolution * self.max_candles)
             window_end = window_end - (resolution * self.max_candles)
 
-        df = self.format_oanda_df(candles, sort=False)
-        return df[df['time'] >= epoch_start]
+            ran_once = True
+
+        df = self.format_oanda_df(candles, sort=True)
+        return df[df['time'] >= epoch_start].reset_index(drop=True)
 
     def get_order_filter(self, symbol: str):
-        assert isinstance(self.calls, OandaAPI)
         symbol = self.__convert_blankly_to_oanda(symbol)
         resp = self.calls.get_account_instruments(symbol)['instruments'][0]
         currencies = resp['name'].split('_')
@@ -399,7 +399,6 @@ class OandaInterface(ExchangeInterface):
 
     def get_price(self, symbol: str) -> float:
         symbol = self.__convert_blankly_to_oanda(symbol)
-        assert isinstance(self.calls, OandaAPI)
         resp = self.calls.get_order_book(symbol)
         if 'errorMessage' in resp:
             # could be that this is instrument without order book so try using latest candle
@@ -412,31 +411,24 @@ class OandaInterface(ExchangeInterface):
         return float(resp['orderBook']['price'])
 
     def homogenize_order(self, order):
+        def add_details(order_: dict):
+            if float(order_['units']) < 0:
+                order_['side'] = 'sell'
+            else:
+                order_['side'] = 'buy'
+            order_['time_in_force'] = 'GTC'
+            renames_ = [['instrument', 'symbol'],
+                        ['createTime', 'created_at'],
+                        ['state', 'status'],  # TODO: handle status
+                        ['units', 'size']]
+            return utils.rename_to(renames_, order_)
         if order['type'] == "MARKET":
             order['type'] = 'market'
-            if float(order['units']) < 0:
-                order['side'] = 'sell'
-            else:
-                order['side'] = 'buy'
-            order['time_in_force'] = 'GTC'
-            renames = [['instrument', 'symbol'],
-                       ['createTime', 'created_at'],
-                       ['state', 'status'],  # TODO: handle status
-                       ['units', 'size']]
-            order = utils.rename_to(renames, order)
+            order = add_details(order)
 
         elif order['type'] == "LIMIT":
             order['type'] = 'limit'
-            if float(order['units']) < 0:
-                order['side'] = 'sell'
-            else:
-                order['side'] = 'buy'
-            order['time_in_force'] = 'GTC'
-            renames = [['instrument', 'symbol'],
-                       ['createTime', 'created_at'],
-                       ['state', 'status'],  # TODO: handle status
-                       ['units', 'size']]
-            order = utils.rename_to(renames, order)
+            order = add_details(order)
         else:
             # TODO: handle other order types
             pass
@@ -535,6 +527,6 @@ class OandaInterface(ExchangeInterface):
         dtypes = {"time": int, "open": float, "high": float, "low": float, "close": float,
                   "volume": float}
         if sort:
-            return df.sort_values(by=['time'])
+            return df.sort_values(by=['time'], ignore_index=True).astype(dtypes)
         else:
             return df.astype(dtypes)
