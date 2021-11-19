@@ -92,7 +92,7 @@ class Strategy:
                         init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False,
                         variables: dict = None):
         """
-        Add Price Event
+        Add Price Event. This will provide you with an updated price every time the callback is run
         Args:
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
             symbol: Currency pair to create the price event for
@@ -109,7 +109,7 @@ class Strategy:
     def add_bar_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
                       init: typing.Callable = None, teardown: typing.Callable = None, variables: dict = None):
         """
-        Add Price Event
+        The bar event sends a dictionary of {open, high, low, close, volume} which has occurred in the interval.
         Args:
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
             symbol: Currency pair to create the price event for

@@ -562,6 +562,8 @@ class BackTestController:
         # pushing these prices together makes the time go weird
         self.prices = sorted(self.prices)
 
+        self.current_time = self.prices[0][0]
+
         self.initial_time = self.current_time
 
         # Add a section to the price events which controls the next time they run & change to array of dicts
@@ -644,15 +646,25 @@ class BackTestController:
 
         print("\nBacktesting...")
         price_number = len(self.prices)
+
+        # This dictionary will hold price arrays below sorted by symbol which will allow us to grab most
+        #  recent ohlcv data when necessary
+        ohlcv_tracker = {}
+
         try:
             for i in range(price_number):
+                #                 row.time,      k,  use_price, 'open', 'high', 'low','close','volume'
+                # Formatted like [1609146000.0, 'AAPL', 132.99, 132.72, 133.0, 132.6, 132.99, 32603.0]
                 price_array = self.prices[i]
                 if show_progress:
                     if i % 100 == 0:
                         update_progress(i / price_number)
-                self.interface.receive_price(price_array[1], price_array[2])
+                self.interface.receive_price(asset_id=price_array[1], new_price=price_array[2])
                 self.current_time = price_array[0]
                 self.interface.evaluate_limits()
+
+                # This will keep the most recent price event data organized by symbol
+                ohlcv_tracker[price_array[1]] = price_array
 
                 while True:
                     # Need to go through and establish an order for each of the price events
@@ -673,11 +685,12 @@ class BackTestController:
                     try:
                         if self.price_events[0]['ohlc']:
                             # This pulls all the price data out of the price array defined on line 260
-                            self.price_events[0]['function']({'open': price_array[3],
-                                                              'high': price_array[4],
-                                                              'low': price_array[5],
-                                                              'close': price_array[6],
-                                                              'volume': price_array[7]},
+                            ohlcv_array = ohlcv_tracker[self.price_events[0]['asset_id']]
+                            self.price_events[0]['function']({'open': ohlcv_array[3],
+                                                              'high': ohlcv_array[4],
+                                                              'low': ohlcv_array[5],
+                                                              'close': ohlcv_array[6],
+                                                              'volume': ohlcv_array[7]},
 
                                                              self.price_events[0]['asset_id'],
                                                              self.price_events[0]['state_object'])
