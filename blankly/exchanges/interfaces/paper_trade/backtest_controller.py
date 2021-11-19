@@ -536,17 +536,16 @@ class BackTestController:
 
         self.pd_prices = {**prices}
 
-        try:
-            self.current_time = self.prices[0][0]
-        except IndexError:
-            raise IndexError('No cached or downloaded data available. Try adding arguments such as to="1y" '
-                             'in the backtest command.')
-
         for k, v in prices.items():
             frame = v  # type: pd.DataFrame
 
             # Be sure to push these initial prices to the strategy
-            self.interface.receive_price(k, v[use_price].iloc[0])
+            try:
+                self.interface.receive_price(k, v[use_price].iloc[0])
+            except IndexError:
+                raise IndexError('No cached or downloaded data available. Try adding arguments such as to="1y" '
+                                 'in the backtest command. If there should be data downloaded, try deleting your'
+                                 ' ./price_caches folder.')
 
             # Be sure to send in the initial time
             self.interface.receive_time(v['time'].iloc[0])
