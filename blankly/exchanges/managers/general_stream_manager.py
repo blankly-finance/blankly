@@ -82,7 +82,7 @@ class GeneralManager(WebsocketManager):
 
             return websocket
 
-        if exchange_cache == "alpaca":
+        elif exchange_cache == "alpaca":
             stream = self.preferences['settings']['alpaca']['websocket_stream']
 
             asset_id_cache = blankly.utils.to_exchange_symbol(asset_id_cache, "alpaca")

@@ -40,7 +40,6 @@ setup(
         'pytest-mock',
         'python-binance',
         'requests',
-        'scikit-learn',
         'websocket-client',
     ],
     classifiers=[
