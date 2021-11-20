@@ -165,7 +165,7 @@ class BackTestController:
 
         self.queue_backtest_write = False
 
-        self.quote_currency = self.preferences['settings']['quote_account_value_in']
+        self.quote_currency = None
 
         # Create a global generator because a second yield function gets really nasty
         self.__color_generator = Category10_10.__iter__()
@@ -527,6 +527,10 @@ class BackTestController:
         # Write our queued edits to the file
         if self.queue_backtest_write:
             write_backtest_preferences(self.preferences, self.backtest_settings_path)
+
+        # TODO the preferences should really be reloaded here so that micro changes such as the quote currency reset
+        #  don't need to happen for every single key type
+        self.quote_currency = self.preferences['settings']['quote_account_value_in']
 
         prices = self.sync_prices()
 
