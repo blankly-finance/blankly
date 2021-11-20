@@ -29,6 +29,7 @@ from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.utils.time_builder import build_day
 from blankly.utils.utils import compare_dictionaries
+from tests.testing_utils import get_valid_symbol
 
 
 def compare_responses(response_list, force_exchange_specific=True):
@@ -176,13 +177,13 @@ class InterfaceHomogeneity(unittest.TestCase):
                 size = 1
 
             order_responses.append({
-                'order': i.market_order(self.get_valid_symbol(type_), 'buy', size),
+                'order': i.market_order(get_valid_symbol(type_), 'buy', size),
                 'side': 'buy',
                 'size': size
             })
 
             order_responses.append({
-                'order': i.market_order(self.get_valid_symbol(type_), 'sell', size),
+                'order': i.market_order(get_valid_symbol(type_), 'sell', size),
                 'side': 'sell',
                 'size': size
             })
@@ -338,7 +339,7 @@ class InterfaceHomogeneity(unittest.TestCase):
     def test_single_point_history(self):
         responses = []
         for i in self.data_interfaces:
-            valid_symbol = self.get_valid_symbol(i.get_exchange_type())
+            valid_symbol = get_valid_symbol(i.get_exchange_type())
             responses.append(i.history(valid_symbol, 1))
 
         for i in responses:
@@ -351,7 +352,7 @@ class InterfaceHomogeneity(unittest.TestCase):
     def test_point_based_history(self):
         responses = []
         for i in self.data_interfaces:
-            valid_symbol = self.get_valid_symbol(i.get_exchange_type())
+            valid_symbol = get_valid_symbol(i.get_exchange_type())
             responses.append(i.history(valid_symbol, 150, resolution='1d'))
         for i in responses:
             self.check_product_history_columns(i)
@@ -376,7 +377,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         # This won't run until the fourth day of the month because of binance
         if arbitrary_date.month == end_date.month - 1:
             for i in self.data_interfaces:
-                valid_symbol = self.get_valid_symbol(i.get_exchange_type())
+                valid_symbol = get_valid_symbol(i.get_exchange_type())
                 responses.append((i.history(valid_symbol,
                                             to=expected_hours,
                                             resolution='1h',
@@ -402,7 +403,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         close_stop = str(stop_dt.replace(day=stop_dt.day-1).date())
 
         for i in self.data_interfaces:
-            valid_symbol = self.get_valid_symbol(i.get_exchange_type())
+            valid_symbol = get_valid_symbol(i.get_exchange_type())
             responses.append(i.history(valid_symbol, resolution='1h', start_date=start, end_date=stop))
 
         for idx, resp in enumerate(responses):
@@ -428,13 +429,13 @@ class InterfaceHomogeneity(unittest.TestCase):
             # Exclude alpaca currently because the trading hours make it unreliable
             # TODO add separate tests for trading hours exchanges (for now they're just run and types checked)
             if not (type_ == "alpaca" or type_ == 'oanda'):
-                responses.append(i.get_product_history(self.get_valid_symbol(type_),
+                responses.append(i.get_product_history(get_valid_symbol(type_),
                                                        intervals_ago,
                                                        current_time,
                                                        build_day()))
             else:
                 # These are the open/close market hours exchanges
-                response = (i.get_product_history(self.get_valid_symbol(type_),
+                response = (i.get_product_history(get_valid_symbol(type_),
                                                   intervals_ago,
                                                   current_time,
                                                   build_day()))
@@ -462,7 +463,7 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         for i in self.interfaces:
             type_ = i.get_exchange_type()
-            responses.append(i.get_order_filter(self.get_valid_symbol(type_)))
+            responses.append(i.get_order_filter(get_valid_symbol(type_)))
 
         self.assertTrue(compare_responses(responses))
 
@@ -471,20 +472,7 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         for i in self.interfaces:
             type_ = i.get_exchange_type()
-            responses.append(i.get_price(self.get_valid_symbol(type_)))
+            responses.append(i.get_price(get_valid_symbol(type_)))
 
         for i in responses:
             self.assertTrue(isinstance(i, float))
-
-    @staticmethod
-    def get_valid_symbol(exchange: str):
-        if exchange == 'binance':
-            return 'BTC-USDT'
-        elif exchange == 'coinbase_pro':
-            return 'BTC-USD'
-        elif exchange == 'alpaca':
-            return 'AAPL'
-        elif exchange == 'oanda':
-            return 'EUR-USD'
-        else:
-            raise LookupError("Specified exchange not found.")

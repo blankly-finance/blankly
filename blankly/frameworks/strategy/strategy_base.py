@@ -142,20 +142,16 @@ class Strategy:
         # Make sure variables is always an empty dictionary if None
         if variables is None:
             variables = {}
+
         resolution = time_interval_to_seconds(resolution)
 
         if bar:
             self.__scheduling_pair.append([symbol, resolution, 'bar'])
         else:
             self.__scheduling_pair.append([symbol, resolution, 'price_event'])
-        callback_hash = hash((callback, hash((symbol, resolution))))
-        if callback_hash in self.__hashes:
-            raise ValueError("A callback of the same type and resolution has already been made for "
-                             "the ticker: {}".format(symbol))
-        else:
-            self.__hashes.append(callback_hash)
-        self.__variables[callback_hash] = AttributeDict(variables)
-        state = StrategyState(self, self.__variables[callback_hash], symbol, resolution=resolution)
+
+        variables_ = AttributeDict(variables)
+        state = StrategyState(self, variables_, symbol, resolution=resolution)
 
         if resolution < 60:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
@@ -165,7 +161,7 @@ class Strategy:
                                   initially_stopped=True,
                                   callback=callback,
                                   resolution=resolution,
-                                  variables=self.__variables[callback_hash],
+                                  variables=variables_,
                                   state_object=state,
                                   synced=synced,
                                   init=init,
@@ -182,7 +178,7 @@ class Strategy:
                                   initially_stopped=True,
                                   callback=callback,
                                   resolution=resolution,
-                                  variables=self.__variables[callback_hash],
+                                  variables=variables_,
                                   state_object=state,
                                   synced=synced,
                                   ohlc=bar,

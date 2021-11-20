@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import time
-import warnings
 
 import binance.exceptions
 import numpy
@@ -31,10 +30,10 @@ from blankly.exchanges.orders.market_order import MarketOrder
 
 
 class BinanceInterface(ExchangeInterface):
-    def __init__(self, exchange_name, authenticated_API):
+    def __init__(self, exchange_name, authenticated_api):
         # Initialize this as None so that it can be filled & cached when needed
         self.__available_currencies = None
-        super().__init__(exchange_name, authenticated_API, valid_resolutions=[60, 180, 300, 900, 1800, 3600, 7200,
+        super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 180, 300, 900, 1800, 3600, 7200,
                                                                               14400, 21600, 28800, 43200, 86400, 259200,
                                                                               604800, 2592000])
 
