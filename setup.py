@@ -1,4 +1,4 @@
-from setuptools import find_packages, setup, Extension
+from setuptools import find_packages, setup
 from os import path
 this_directory = path.abspath(path.dirname(__file__))
 with open(path.join(this_directory, './README.md'), encoding='utf-8') as f:
@@ -14,7 +14,7 @@ setup(
     name='blankly',  # How you named your package folder (MyLib)
     packages=find_packages(),
     # packages=['blankly'],  # Potentially should be the same thing as name
-    version='v1.12.1-beta',
+    version='v1.13.0-beta',
     license='lgpl-3.0',  # Licenses: https://help.github.com/articles/licensing-a-repository
     description='Rapidly build & deploy cross-exchange trading bots',  # Give a short description about your library
     long_description=long_description,
@@ -40,7 +40,6 @@ setup(
         'pytest-mock',
         'python-binance',
         'requests',
-        'scikit-learn',
         'websocket-client',
     ],
     classifiers=[

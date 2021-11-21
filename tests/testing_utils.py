@@ -1,5 +1,5 @@
 """
-    Static local account definition for paper trading
+    Simple utility functions that enable more robust testing
     Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
@@ -15,6 +15,16 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from blankly.utils import utils
 
-account = utils.AttributeDict({})
+
+def get_valid_symbol(exchange: str):
+    if exchange == 'binance':
+        return 'BTC-USDT'
+    elif exchange == 'coinbase_pro':
+        return 'BTC-USD'
+    elif exchange == 'alpaca':
+        return 'AAPL'
+    elif exchange == 'oanda':
+        return 'EUR-USD'
+    else:
+        raise LookupError("Specified exchange not found.")

@@ -16,6 +16,9 @@
     "alpaca": {
       "websocket_stream": "iex",
       "cash": "USD"
+    },
+    "oanda": {
+      "cash": "USD"
     }
   }
 }

@@ -16,14 +16,13 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import decimal
 import threading
 import time
 import traceback
 
-import blankly.exchanges.interfaces.paper_trade.local_account.trade_local as trade_local
 import blankly.exchanges.interfaces.paper_trade.utils as paper_trade
 import blankly.utils.utils as utils
+from blankly.exchanges.interfaces.paper_trade.local_account.trade_local import LocalAccount
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.interfaces.paper_trade.backtesting_wrapper import BacktestingWrapper
@@ -69,7 +68,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                     })
 
         # Initialize the local account
-        trade_local.init_local_account(accounts)
+        self.local_account = LocalAccount(accounts)
 
         # Initialize our traded assets list
         self.traded_assets = []
@@ -149,8 +148,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 break
             self.evaluate_limits()
 
-    def __get_decimals(self, number) -> int:
-        return abs(decimal.Decimal(str(number)).as_tuple().exponent)
+    @staticmethod
+    def __get_decimals(number) -> int:
+        return utils.count_decimals(number)
 
     def override_local_account(self, value_dictionary: dict):
         """
@@ -160,7 +160,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         Args:
             value_dictionary (dict): Account dictionary of format {'BTC': 2.3, 'GRT': 1.1}
         """
-        current_account = trade_local.get_accounts()
+        current_account = self.local_account.get_accounts()
         for k, v in current_account.items():
             if k in value_dictionary.keys():
                 current_account[k] = utils.AttributeDict({
@@ -172,7 +172,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                     'available': 0,
                     'hold': 0
                 })
-        trade_local.init_local_account(current_account)
+        self.local_account.override_local_account(current_account)
 
     def evaluate_limits(self):
         """
@@ -228,22 +228,24 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                         asset_id = index['symbol']
                         quote = utils.get_quote_asset(asset_id)
 
-                        available = trade_local.get_account(quote)['available']
+                        available = self.local_account.get_account(quote)['available']
                         # Put it back into available
-                        trade_local.update_available(quote, available + (index['size'] * index['price']))
+                        self.local_account.update_available(quote, available + (index['size'] * index['price']))
 
                         # Take it out of hold
-                        hold = trade_local.get_account(quote)['hold']
-                        trade_local.update_hold(quote, hold - (index['size'] * index['price']))
+                        hold = self.local_account.get_account(quote)['hold']
+                        self.local_account.update_hold(quote, hold - (index['size'] * index['price']))
 
                         order, funds, executed_value, fill_fees, filled_size = self.evaluate_paper_trade(index,
                                                                                                          index['price'])
-                        trade_local.trade_local(symbol=index['symbol'],
-                                                side='buy',
-                                                base_delta=filled_size,  # Gain filled size after fees
-                                                quote_delta=funds * -1,  # Loose the original fund amount
-                                                base_resolution=decimals_dict[index['symbol']]['quantity_decimals'],
-                                                quote_resolution=decimals_dict[index['symbol']]['quote_decimals'])
+                        self.local_account.trade_local(symbol=index['symbol'],
+                                                       side='buy',
+                                                       base_delta=filled_size,  # Gain filled size after fees
+                                                       quote_delta=funds * -1,  # Loose the original fund amount
+                                                       base_resolution=decimals_dict[index['symbol']]
+                                                       ['quantity_decimals'],
+                                                       quote_resolution=decimals_dict[index['symbol']]
+                                                       ['quote_decimals'])
                         order['status'] = 'done'
                         order['settled'] = 'true'
 
@@ -255,23 +257,25 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                         asset_id = index['symbol']
                         base = utils.get_base_asset(asset_id)
 
-                        available = trade_local.get_account(base)['available']
+                        available = self.local_account.get_account(base)['available']
                         # Put it back into available
-                        trade_local.update_available(base, available + index['size'])
+                        self.local_account.update_available(base, available + index['size'])
 
                         # Remove it from hold
-                        hold = trade_local.get_account(base)['hold']
-                        trade_local.update_hold(base, hold - index['size'])
+                        hold = self.local_account.get_account(base)['hold']
+                        self.local_account.update_hold(base, hold - index['size'])
 
                         order, funds, executed_value, fill_fees, filled_size = self.evaluate_paper_trade(index,
                                                                                                          index['price'])
-                        trade_local.trade_local(symbol=index['symbol'],
-                                                side='sell',
-                                                base_delta=float(order['size'] * - 1),  # Loose size before any fees
-                                                quote_delta=executed_value,  # Executed value after fees
-                                                base_resolution=decimals_dict[index['symbol']]['quantity_decimals'],
-                                                quote_resolution=decimals_dict[index['symbol']]['quote_decimals']
-                                                )
+                        self.local_account.trade_local(symbol=index['symbol'],
+                                                       side='sell',
+                                                       base_delta=float(order['size'] * - 1),
+                                                       # Loose size before any fees
+                                                       quote_delta=executed_value,  # Executed value after fees
+                                                       base_resolution=decimals_dict[index['symbol']]
+                                                       ['quantity_decimals'],
+                                                       quote_resolution=decimals_dict[index['symbol']]['quote_decimals']
+                                                       )
                         order['status'] = 'done'
                         order['settled'] = 'true'
 
@@ -284,6 +288,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             order (dict): Order dictionary to derive the order attributes
             current_price (float): The current price of the currency pair the limit order was created on
         """
+        if self.__exchange_properties is None:
+            self.init_exchange()
+
         funds = order['size'] * current_price
         executed_value = funds - funds * float((self.__exchange_properties["maker_fee_rate"]))
         fill_fees = funds * float((self.__exchange_properties["maker_fee_rate"]))
@@ -297,13 +304,13 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
     def get_account(self, symbol=None) -> utils.AttributeDict:
         if symbol is None:
-            return trade_local.get_accounts()
+            return self.local_account.get_accounts()
         else:
             # This is a super call in all other interfaces. This apparently doesn't work here because of multiple
             # inheritance
             symbol = utils.get_base_asset(symbol)
             try:
-                return trade_local.get_account(symbol)
+                return self.local_account.get_account(symbol)
             except KeyError:
                 if self.backtesting:
                     raise KeyError("Symbol not found. This can be caused by an invalid quote currency "
@@ -343,7 +350,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         # Test if funds has more decimals than the increment. The increment is the maximum resolution of the quote.
         if self.__get_decimals(size) > base_decimals:
             raise InvalidOrder("Size resolution is too high, the highest resolution allowed for this symbol is: " +
-                               str(base_increment) + ". You specified " + str(size) + ".")
+                               str(base_increment) + ". You specified " + str(size) +
+                               ". Try using blankly.trunc(size, decimal_number) to match the exchange resolution.")
 
         if self.get_exchange_type() == 'alpaca':
             # This could break, but there appears that 10 decimals is about right for alpaca
@@ -354,8 +362,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         qty = size
 
         # Test the purchase
-        trade_local.test_trade(symbol, side, qty, price, market_limits['market_order']["quote_increment"],
-                               quantity_decimals)
+        self.local_account.test_trade(symbol, side, qty, price, market_limits['market_order']["quote_increment"],
+                                      quantity_decimals)
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
         # TODO the force typing here isn't strictly necessary because its run int the isolate_specific anyway
@@ -368,7 +376,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             'size': str(size),
             'status': 'done',
             'type': 'market',
-            'side': str(side)
+            'side': str(side),
             # 'specified_funds': str(funds),
             # 'post_only': 'false',
             # 'done_at': str(self.time()),
@@ -381,28 +389,35 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             # 'executed_value': str(utils.trunc(funds - funds * float((self.__exchange_properties["maker_fee_rate"])),
             #                                   quote_decimals)),
             # 'settled': 'true'
+            'exchange_specific': {}
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
+
+        if self.__exchange_properties is None:
+            self.init_exchange()
+
         if side == "buy":
-            trade_local.trade_local(symbol=symbol,
-                                    side=side,
-                                    base_delta=utils.trunc(qty -
-                                                           qty * float((self.__exchange_properties["taker_fee_rate"])),
-                                                           quantity_decimals),
-                                    # Gain filled size after fees
-                                    quote_delta=utils.trunc(funds * -1,
-                                                            base_decimals),  # Loose the original fund amount
-                                    quote_resolution=base_decimals, base_resolution=quantity_decimals)
+            self.local_account.trade_local(symbol=symbol,
+                                           side=side,
+                                           base_delta=utils.trunc(qty -
+                                                                  qty *
+                                                                  float((self.__exchange_properties["taker_fee_rate"])),
+                                                                  quantity_decimals),
+                                           # Gain filled size after fees
+                                           quote_delta=utils.trunc(funds * -1,
+                                                                   base_decimals),  # Loose the original fund amount
+                                           quote_resolution=base_decimals, base_resolution=quantity_decimals)
         elif side == "sell":
-            trade_local.trade_local(symbol=symbol,
-                                    side=side,
-                                    base_delta=utils.trunc(float(qty * -1), quantity_decimals),
-                                    # Loose size before any fees
-                                    quote_delta=utils.trunc(funds - funds *
-                                                            float((self.__exchange_properties["taker_fee_rate"])),
-                                                            base_decimals),  # Gain executed value after fees
-                                    quote_resolution=base_decimals, base_resolution=quantity_decimals)
+            self.local_account.trade_local(symbol=symbol,
+                                           side=side,
+                                           base_delta=utils.trunc(float(qty * -1), quantity_decimals),
+                                           # Loose size before any fees
+                                           quote_delta=utils.trunc(funds - funds *
+                                                                   float((self.__exchange_properties[
+                                                                       "taker_fee_rate"])),
+                                                                   base_decimals),  # Gain executed value after fees
+                                           quote_resolution=base_decimals, base_resolution=quantity_decimals)
         else:
             raise APIException("Invalid trade side: " + str(side))
 
@@ -473,17 +488,19 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         price_increment_decimals = self.__get_decimals(price_increment)
 
         if self.__get_decimals(price) > price_increment_decimals:
-            raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(price_increment))
+            raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(price_increment) +
+                               ". Try using blankly.trunc(size, decimal_number) to match the exchange resolution.")
 
         base_increment = order_filter['limit_order']['base_increment']
         base_decimals = self.__get_decimals(base_increment)
 
         if self.__get_decimals(size) > base_decimals:
-            raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(base_increment))
+            raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(base_increment) +
+                               '. Try using blankly.trunc(size, decimal_number) to match the exchange resolution.')
 
         # Test the trade
-        trade_local.test_trade(symbol, side, size, price, quote_resolution=price_increment_decimals,
-                               base_resolution=base_decimals)
+        self.local_account.test_trade(symbol, side, size, price, quote_resolution=price_increment_decimals,
+                                      base_resolution=base_decimals)
 
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
@@ -499,13 +516,14 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             'status': 'pending',
             "time_in_force": "GTC",
             'type': 'limit',
-            'side': str(side)
+            'side': str(side),
             # 'stp': 'dc',
             # 'post_only': 'false',
             # "fill_fees": "0.0000000000000000",
             # "filled_size": "0.00000000",
             # "executed_value": "0.0000000000000000",
             # 'settled': 'false'
+            'exchange_specific': {}
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
@@ -514,21 +532,21 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         quote = utils.get_quote_asset(symbol)
 
         if side == "buy":
-            available = trade_local.get_account(quote)['available']
+            available = self.local_account.get_account(quote)['available']
             # Loose the funds when buying
-            trade_local.update_available(quote, available - (size * price))
+            self.local_account.update_available(quote, available - (size * price))
 
             # Gain the funds on hold when buying
-            hold = trade_local.get_account(quote)['hold']
-            trade_local.update_hold(quote, hold + (size * price))
+            hold = self.local_account.get_account(quote)['hold']
+            self.local_account.update_hold(quote, hold + (size * price))
         elif side == "sell":
-            available = trade_local.get_account(base)['available']
+            available = self.local_account.get_account(base)['available']
             # Loose the size when selling
-            trade_local.update_available(base, available - size)
+            self.local_account.update_available(base, available - size)
 
             # Gain size on hold when buying
-            hold = trade_local.get_account(base)['hold']
-            trade_local.update_hold(base, hold + size)
+            hold = self.local_account.get_account(base)['hold']
+            self.local_account.update_hold(base, hold + size)
         return LimitOrder(order, response, self)
 
     def cancel_order(self, symbol, order_id) -> dict:

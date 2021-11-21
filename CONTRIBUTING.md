@@ -1,8 +1,11 @@
 # Contributions
 Firstly, thank you for taking the time and expressing interest in contributing to the Blankly project 🎉🎉!
 
+***Before you contribute* we need you to sign the CLA.**
+
 Contributions are welcome. To ensure a quick and easy merge, just make sure you look through the way the files are 
 organized, and you make the changes where they make sense and are easy to maintain!
+
 
 ### Easy Contributions Right Now
 - Testing out API endpoints

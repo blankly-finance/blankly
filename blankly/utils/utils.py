@@ -22,6 +22,7 @@ import blankly
 import datetime
 import json
 import sys
+import decimal
 from datetime import datetime as dt, timezone
 from math import ceil, trunc as math_trunc
 from typing import Type, Union
@@ -30,7 +31,6 @@ import dateutil.parser as dp
 import numpy as np
 import pandas as pd
 import pandas_market_calendars as mcal
-from sklearn.linear_model import LinearRegression
 
 from blankly.utils.time_builder import time_interval_to_seconds
 import blankly.utils.import_checks as import_checks
@@ -56,6 +56,9 @@ default_general_settings = {
         },
         "alpaca": {
             "websocket_stream": import_checks.UserInputParser("iex", str),
+            "cash": import_checks.UserInputParser("USD", str)
+        },
+        "oanda": {
             "cash": import_checks.UserInputParser("USD", str)
         }
     }
@@ -252,51 +255,51 @@ def convert_input_to_epoch(value: Union[str, dt]) -> float:
 def ISO8601_from_epoch(epoch) -> str:
     return dt.utcfromtimestamp(epoch).isoformat() + 'Z'
 
+# Removed due to sklearn dependency
+# def get_price_derivative(ticker, point_number):
+#     """
+#     Performs regression n points back
+#     """
+#     feed = np.array(ticker.get_ticker_feed()).reshape(-1, 1)
+#     times = np.array(ticker.get_time_feed()).reshape(-1, 1)
+#     if point_number > len(feed):
+#         point_number = len(feed)
+#
+#     feed = feed[-point_number:]
+#     times = times[-point_number:]
+#     prices = []
+#     for i in range(point_number):
+#         prices.append(feed[i][0]["price"])
+#     prices = np.array(prices).reshape(-1, 1)
+#
+#     regressor = LinearRegression()
+#     regressor.fit(times, prices)
+#     regressor.predict(times)
+#     return regressor.coef_[0][0]
 
-def get_price_derivative(ticker, point_number):
-    """
-    Performs regression n points back
-    """
-    feed = np.array(ticker.get_ticker_feed()).reshape(-1, 1)
-    times = np.array(ticker.get_time_feed()).reshape(-1, 1)
-    if point_number > len(feed):
-        point_number = len(feed)
 
-    feed = feed[-point_number:]
-    times = times[-point_number:]
-    prices = []
-    for i in range(point_number):
-        prices.append(feed[i][0]["price"])
-    prices = np.array(prices).reshape(-1, 1)
-
-    regressor = LinearRegression()
-    regressor.fit(times, prices)
-    regressor.predict(times)
-    return regressor.coef_[0][0]
-
-
-def fit_parabola(ticker, point_number):
-    """
-    Fit simple parabola
-    """
-    feed = ticker.get_ticker_feed()
-    times = ticker.get_time_feed()
-    if point_number > len(feed):
-        point_number = len(feed)
-
-    feed = feed[-point_number:]
-    times = times[-point_number:]
-    prices = []
-    for i in range(point_number):
-        prices.append(float(feed[i]["price"]))
-        times[i] = float(times[i])
-
-    # Pull the times back to x=0 so we can know what happens next
-    latest_time = times[-1]
-    for i in range(len(prices)):
-        times[i] = times[i] - latest_time
-
-    return np.polyfit(times, prices, 2, full=True)
+# def fit_parabola(ticker, point_number):
+#     """
+#     Fit simple parabola
+#     """
+#     feed = ticker.get_ticker_feed()
+#     times = ticker.get_time_feed()
+#     if point_number > len(feed):
+#         point_number = len(feed)
+#
+#     feed = feed[-point_number:]
+#     times = times[-point_number:]
+#     prices = []
+#     for i in range(point_number):
+#         prices.append(float(feed[i]["price"]))
+#         times[i] = float(times[i])
+#
+#     # Pull the times back to x=0 so we can know what happens next
+#     latest_time = times[-1]
+#     for i in range(len(prices)):
+#         times[i] = times[i] - latest_time
+#
+#     return np.polyfit(times, prices, 2, full=True)
 
 
 def to_blankly_symbol(symbol, exchange, quote_guess=None) -> str:
@@ -476,7 +479,7 @@ def compare_dictionaries(dict1, dict2, force_exchange_specific=True) -> bool:
             if not isinstance(dict2[key], type(value)):
                 # Issue detected
                 print("Type of key " + str(dict1[key]) + " in dict1 is " + str(type(dict1[key])) +
-                      ", but is " + str(type(dict2[key])) + " in dict2.")
+                      ", but is " + str(type(dict2[key])) + f" in dict2. The name of the key is {key}.")
                 return False
             else:
                 # If it's a dictionary, go inside of it
@@ -750,3 +753,10 @@ class Email:
         """
         blankly.reporter.email(email_str=message, smtp_server=self.__server, sender_email=self.__sender_email,
                                receiver_email=receiver_email, password=self.__password, port=self.__port)
+
+
+def count_decimals(number) -> int:
+    """
+    Count the number of decimals in a given float: 1.4335 -> 4 or 3 -> 0
+    """
+    return abs(decimal.Decimal(str(number)).as_tuple().exponent)

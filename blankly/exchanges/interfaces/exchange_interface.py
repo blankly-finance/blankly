@@ -45,9 +45,6 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         # Some exchanges like binance will not return a value of 0.00 if there is no balance
         self.available_currencies = {}
 
-        if self.user_preferences['settings']['test_connectivity_on_auth']:
-            self.init_exchange()
-
         self.needed = {
             '__init_exchange__': [
                 ['maker_fee_rate', float],
@@ -128,11 +125,14 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 ["symbol", str],
                 ["base_asset", str],
                 ["quote_asset", str],
-                ["max_orders", float],
+                ["max_orders", int],
                 ["limit_order", dict],
                 ["market_order", dict]
             ]
         }
+
+        if self.user_preferences['settings']['test_connectivity_on_auth']:
+            self.init_exchange()
 
     @abc.abstractmethod
     def init_exchange(self):

@@ -167,7 +167,7 @@ class BackTestController:
 
         self.queue_backtest_write = False
 
-        self.quote_currency = self.preferences['settings']['quote_account_value_in']
+        self.quote_currency = None
 
         # Create a global generator because a second yield function gets really nasty
         self.__color_generator = Category10_10.__iter__()
@@ -598,6 +598,10 @@ class BackTestController:
         if self.queue_backtest_write:
             write_backtest_preferences(self.preferences, self.backtest_settings_path)
 
+        # TODO the preferences should really be reloaded here so that micro changes such as the quote currency reset
+        #  don't need to happen for every single key type
+        self.quote_currency = self.preferences['settings']['quote_account_value_in']
+
         prices = self.sync_prices()
 
         # Organize each price into this structure: [epoch, "BTC-USD", price, open, high, low, close, volume]
@@ -610,7 +614,12 @@ class BackTestController:
             frame = v  # type: pd.DataFrame
 
             # Be sure to push these initial prices to the strategy
-            self.interface.receive_price(k, v[use_price].iloc[0])
+            try:
+                self.interface.receive_price(k, v[use_price].iloc[0])
+            except IndexError:
+                raise IndexError('No cached or downloaded data available. Try adding arguments such as to="1y" '
+                                 'in the backtest command. If there should be data downloaded, try deleting your'
+                                 ' ./price_caches folder.')
 
             # Be sure to send in the initial time
             self.interface.receive_time(v['time'].iloc[0])
@@ -627,11 +636,8 @@ class BackTestController:
         # pushing these prices together makes the time go weird
         self.prices = sorted(self.prices)
 
-        try:
-            self.current_time = self.prices[0][0]
-        except IndexError:
-            raise IndexError('No cached or downloaded data available. Try adding arguments such as to="1y" '
-                             'in the backtest command.')
+        self.current_time = self.prices[0][0]
+
         self.initial_time = self.current_time
 
         # Add a section to the price events which controls the next time they run & change to array of dicts
@@ -712,15 +718,25 @@ class BackTestController:
 
         print("\nBacktesting...")
         price_number = len(self.prices)
+
+        # This dictionary will hold price arrays below sorted by symbol which will allow us to grab most
+        #  recent ohlcv data when necessary
+        ohlcv_tracker = {}
+
         try:
             for i in range(price_number):
+                #                 row.time,      k,  use_price, 'open', 'high', 'low','close','volume'
+                # Formatted like [1609146000.0, 'AAPL', 132.99, 132.72, 133.0, 132.6, 132.99, 32603.0]
                 price_array = self.prices[i]
                 if show_progress:
                     if i % 100 == 0:
                         update_progress(i / price_number)
-                self.interface.receive_price(price_array[1], price_array[2])
+                self.interface.receive_price(asset_id=price_array[1], new_price=price_array[2])
                 self.current_time = price_array[0]
                 self.interface.evaluate_limits()
+
+                # This will keep the most recent price event data organized by symbol
+                ohlcv_tracker[price_array[1]] = price_array
 
                 while True:
                     # Need to go through and establish an order for each of the price events
@@ -741,11 +757,12 @@ class BackTestController:
                     try:
                         if self.price_events[0]['ohlc']:
                             # This pulls all the price data out of the price array defined on line 260
-                            self.price_events[0]['function']({'open': price_array[3],
-                                                              'high': price_array[4],
-                                                              'low': price_array[5],
-                                                              'close': price_array[6],
-                                                              'volume': price_array[7]},
+                            ohlcv_array = ohlcv_tracker[self.price_events[0]['asset_id']]
+                            self.price_events[0]['function']({'open': ohlcv_array[3],
+                                                              'high': ohlcv_array[4],
+                                                              'low': ohlcv_array[5],
+                                                              'close': ohlcv_array[6],
+                                                              'volume': ohlcv_array[7]},
 
                                                              self.price_events[0]['asset_id'],
                                                              self.price_events[0]['state_object'])

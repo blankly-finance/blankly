@@ -38,9 +38,9 @@ NY = 'America/New_York'
 
 
 class AlpacaInterface(ExchangeInterface):
-    def __init__(self, authenticated_API: API, preferences_path: str):
+    def __init__(self, authenticated_api: API, preferences_path: str):
         self.__unique_assets = None
-        super().__init__('alpaca', authenticated_API, preferences_path, valid_resolutions=[60, 60*5, 60*15, 60*60*24])
+        super().__init__('alpaca', authenticated_api, preferences_path, valid_resolutions=[60, 60*5, 60*15, 60*60*24])
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
     def init_exchange(self):
@@ -167,11 +167,25 @@ class AlpacaInterface(ExchangeInterface):
                 positions_dict[curr_symbol]['available'] -= qty
                 positions_dict[curr_symbol]['hold'] += qty
 
-        if symbol is not None and symbol in positions_dict:
-            return utils.AttributeDict({
-                'available': float(positions_dict[symbol]['available']),
-                'hold': float(positions_dict[symbol]['hold'])
-            })
+        # Note that now __unique assets could be uninitialized:
+        if self.__unique_assets is None:
+            self.init_exchange()
+
+        for i in self.__unique_assets:
+            if i not in positions_dict:
+                positions_dict[i] = utils.AttributeDict({
+                    'available': 0.0,
+                    'hold': 0.0
+                })
+
+        if symbol is not None:
+            if symbol in positions_dict:
+                return utils.AttributeDict({
+                    'available': float(positions_dict[symbol]['available']),
+                    'hold': float(positions_dict[symbol]['hold'])
+                })
+            else:
+                raise KeyError('Symbol not found.')
 
         if symbol == 'USD':
             return utils.AttributeDict({
@@ -179,22 +193,7 @@ class AlpacaInterface(ExchangeInterface):
                 'hold': positions_dict['USD']['hold']
             })
 
-        # Note that now __unique assets could be uninitialized:
-        if self.__unique_assets is None:
-            self.init_exchange()
-
-        # This is a patch fix that should be fixed to be more optimized
-        if symbol is None:
-            for i in self.__unique_assets:
-                if i not in positions_dict:
-                    positions_dict[i] = utils.AttributeDict({
-                        'available': 0.0,
-                        'hold': 0.0
-                    })
-            return positions_dict
-        else:
-            # If it didn't get recognized above we end up here
-            raise KeyError("Symbol not found.")
+        return positions_dict
 
     def market_order(self, symbol, side, size) -> MarketOrder:
         assert isinstance(self.calls, alpaca_trade_api.REST)
@@ -442,7 +441,7 @@ class AlpacaInterface(ExchangeInterface):
             to = None
         if to:
             resolution_seconds = self.valid_resolutions[min(range(len(self.valid_resolutions)),
-                                                            key=lambda i: abs(self.valid_resolutions[i] -
+                                                            key=lambda j: abs(self.valid_resolutions[j] -
                                                                               resolution_seconds))]
             resolution_lookup = {
                 60: '1Min',

@@ -151,18 +151,21 @@ def login(remove_cache=False):
             self.send_header('Content-type', 'text/html')
             self.end_headers()
 
-            # Perform a GET request to pull down a successful response
-            file = requests.get('https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/login_success.'
-                                'html?alt=media&token=41d734e2-0a88-44c4-b1dd-7e081fd019e7')
+            # Send this to the global static variable to use the info out of this
+            if 'token' in args and args['token'] is not None:
+                # Perform a GET request to pull down a successful response
+                file = requests.get('https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/'
+                                    'login_success.html?alt=media&token=41d734e2-0a88-44c4-b1dd-7e081fd019e7')
+                set_token(args['token'][0])
+
+                info_print("Login success - You can close your browser.")
+            else:
+                file = requests.get('https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/'
+                                    'login_failure.html?alt=media&token=b2d9f6dc-aa54-4da2-aa6f-1f75a4025634')
+                info_print("Failed to login - please try again.")
 
             # Write that back to the user
             self.wfile.write(bytes(file.text, "utf8"))
-
-            # Send this to the global static variable to use the info out of this
-            if 'token' in args and args['token'] is not None:
-                set_token(args['token'][0])
-            else:
-                print("Failed to get token.")
 
         def log_message(self, format_, *args):
             return
@@ -173,8 +176,8 @@ def login(remove_cache=False):
     url = 'https://app.blankly.finance/auth/signin?redirectUrl=/deploy'
     webbrowser.open_new(url)
 
-    print('Log in on on the pop-up window or navigate to: \nhttps://app.blankly.finance/auth/'
-          'signin?redirectUrl=/deploy')
+    info_print('Log in on the pop-up window or navigate to: \nhttps://app.blankly.finance/auth/'
+               'signin?redirectUrl=/deploy')
 
     # Continue waiting for GETs while the token is undefined
     while token is None:
@@ -203,6 +206,7 @@ def zipdir(path, ziph, ignore_files: list):
 
             if not os.path.abspath(filepath) in ignore_files:
                 # This takes of the first part of the relative path and replaces it with /model/
+                info_print(f'\tAdding: {file} in folder {root}.')
                 relpath = os.path.relpath(filepath,
                                           os.path.join(path, '..'))
                 relpath = os.path.normpath(relpath).split(os.sep)
@@ -211,7 +215,7 @@ def zipdir(path, ziph, ignore_files: list):
 
                 ziph.write(filepath, relpath)
             else:
-                print('Skipping:', file, 'in folder', root)
+                info_print(f'\tSkipping: {file} in folder {root}.')
 
 
 def main():
@@ -237,7 +241,7 @@ def main():
                 raise FileNotFoundError("A blankly.json file must be present at the top level of the directory "
                                         "specified.")
 
-            print("Zipping...")
+            info_print("Zipping...")
 
             with tempfile.TemporaryDirectory() as dist_directory:
                 source = os.path.abspath(args['path'])
@@ -248,8 +252,14 @@ def main():
 
                 zip_.close()
 
-                print("Uploading...")
-                api.upload(model_path, model_id='')
+                info_print("Uploading...")
+                response = api.upload(model_path, model_id='test2')
+                if 'error' in response:
+                    info_print('Error: ' + response['error'])
+                elif 'status' in response and response['status'] == 'success':
+                    info_print(f"Model upload completed at {response['timestamp']}:")
+                    info_print(f"\tModel ID:\t{response['modelId']}")
+                    info_print(f"\tView at:\t{response['url']}")
 
     elif which == 'init':
         print("Initializing...")
@@ -295,7 +305,7 @@ def main():
         print("Done!")
 
     elif which == 'login':
-        print(login(remove_cache=True))
+        login(remove_cache=True)
 
     elif which == 'run':
         if args['path'] is None:
@@ -303,7 +313,7 @@ def main():
         else:
             current_directory = os.getcwd()
             blankly_folder = os.path.join(current_directory, args['path'])
-            deployment_location = os.path.join(blankly_folder, 'deploy.json')
+            deployment_location = os.path.join(blankly_folder, 'blankly.json')
             try:
                 # Find where the user specified their working directory and migrate to that
                 deployment_dict = load_json_file(deployment_location)
