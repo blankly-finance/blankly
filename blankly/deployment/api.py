@@ -98,10 +98,13 @@ class API:
         return self.__request('get', 'model/status', data={'projectId': project_id, 'modelId': model_id})
 
     def list_projects(self):
-        return self.__request('get', 'project/list')
+        return self.__request('get', 'project/list', data={'userId': self.user_id})
+
+    def get_plans(self):
+        return self.__request('get', 'project/plans')
 
     def create_project(self, name: str, plan: str):
-        return self.__request('post', 'project/create')
+        return self.__request('post', 'project/create', data={'userId': self.user_id, 'name': name, 'plan': plan})
 
     def upload(self, file_path: str, model_id: str):
         file_path = r'{}'.format(file_path)
