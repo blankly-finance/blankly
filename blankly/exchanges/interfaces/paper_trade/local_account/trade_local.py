@@ -50,6 +50,8 @@ class LocalAccount:
              +1.2 BTC by buying
             quote_delta (float): Similar to the base_delta - a number specifying the change in quote currency, such as
              -20.12 USD for buying or +103.21 USD for selling
+            quote_resolution (int): The number of decimals that are supported for the quote
+            base_resolution (int): The number of decimals that are supported for the base
         """
 
         # Extract the base and quote pairs of the currency
@@ -69,7 +71,7 @@ class LocalAccount:
         except KeyError:
             raise KeyError("Quote currency specified not found in local account")
 
-    def test_trade(self, currency_pair, side, qty, quote_price, quote_resolution, base_resolution) -> bool:
+    def test_trade(self, currency_pair, side, qty, quote_price, quote_resolution, base_resolution, shortable) -> bool:
         """
         Test a paper trade to see if you have the funds
 
@@ -79,6 +81,10 @@ class LocalAccount:
             qty (float): Amount to buy of the base currency ex: (2.3 BTC of BTC-USD)
             quote_price (float): Price of the base currency in the currency pair - (1 BTC is valued at 40,245 in BTC-USD)
         """
+        # Nobody knows whats happening if its shorting
+        # TODO this should actually check to see if the negative account balance is within margin limits
+        if shortable:
+            return True
         if side == 'buy':
             quote = utils.get_quote_asset(currency_pair)
             account = self.local_account[quote]

@@ -356,14 +356,16 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         if self.get_exchange_type() == 'alpaca':
             # This could break, but there appears that 10 decimals is about right for alpaca
             quantity_decimals = 10
+            shortable = market_limits['exchange_specific']['shortable']
         else:
+            shortable = False
             quantity_decimals = self.__get_decimals(market_limits['limit_order']['base_increment'])
 
         qty = size
 
         # Test the purchase
         self.local_account.test_trade(symbol, side, qty, price, market_limits['market_order']["quote_increment"],
-                                      quantity_decimals)
+                                      quantity_decimals, shortable)
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
         # TODO the force typing here isn't strictly necessary because its run int the isolate_specific anyway
@@ -500,7 +502,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         # Test the trade
         self.local_account.test_trade(symbol, side, size, price, quote_resolution=price_increment_decimals,
-                                      base_resolution=base_decimals)
+                                      base_resolution=base_decimals, shortable=False)
 
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
