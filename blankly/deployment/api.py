@@ -33,7 +33,6 @@ class API:
 
         self.token = self.auth_data['idToken']
         self.user_id = self.auth_data['data']['user_id']
-        self.project_id = self.auth_data['data']['project_id']
 
     def __request(self, type_: str, route: str, json: dict = None, params: dict = None, file=None, data: dict = None):
         """
@@ -103,12 +102,15 @@ class API:
     def get_plans(self):
         return self.__request('get', 'project/plans')
 
-    def create_project(self, name: str, plan: str):
-        return self.__request('post', 'project/create', data={'userId': self.user_id, 'name': name, 'plan': plan})
+    def create_project(self, name: str, plan: str, description: str):
+        return self.__request('post', 'project/create', data={'userId': self.user_id,
+                                                              'name': name,
+                                                              'plan': plan,
+                                                              'description': description})
 
-    def upload(self, file_path: str, model_id: str):
+    def upload(self, file_path: str, project_id: str, description: str):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
-        return self.__request('post', 'model/upload', file=file, data={'projectId': self.project_id,
-                                                                       'modelId': model_id,
+        return self.__request('post', 'model/upload', file=file, data={'projectId': project_id,
+                                                                       'description': description,
                                                                        'userId': self.user_id})

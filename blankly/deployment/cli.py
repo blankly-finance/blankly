@@ -59,6 +59,96 @@ class TermColors:
     UNDERLINE = '\033[4m'
 
 
+def choose_option(choice: str, options: list, descriptions: list):
+    """
+    Generalized CLI tool to choose between given options
+
+    Args:
+        choice: String for "Choose a <choice>" shown to the user
+        options: List of string options allowed ex: ['micro', 'small', 'medium']
+        descriptions: Description to show for each option corresponding to the earlier options: ex: ['
+            miocro:
+                CPU: 5,
+                RAM: 10
+        '
+        ]
+    """
+    import fcntl
+    import termios
+    fd = sys.stdin.fileno()
+
+    largest_option_name = 0
+    for i in options:
+        if len(i) > largest_option_name:
+            largest_option_name = len(i)
+
+    def print_selection_index(index_):
+        # We pass none when they haven't selected yet
+        if index_ is None:
+            chosen_plan = "None"
+        # When its given a number it will index and find the lengths
+        else:
+            if index_ < 0:
+                index_ = len(options) - 1
+            elif index_ >= len(options):
+                index_ = 0
+            chosen_plan = options[index_]
+
+        # Carry it in this string
+        string_ = "\r" + TermColors.UNDERLINE + TermColors.OKCYAN + "You have chosen:" + \
+                  TermColors.ENDC + " " + TermColors.BOLD + TermColors.OKBLUE + chosen_plan
+
+        remaining_chars = largest_option_name - len(chosen_plan)
+        string_ += " " * remaining_chars
+
+        # Final print and flush the buffer
+        sys.stdout.write(string_)
+        sys.stdout.flush()
+
+        return index_
+
+    print(TermColors.BOLD + TermColors.WARNING + f"Choose a {choice}: " + TermColors.ENDC +
+          TermColors.UNDERLINE + "(Use your arrow keys ← →)" + TermColors.ENDC)
+    for i in descriptions:
+        print(i)
+
+    # TODO Add a very simple version that can take simple input() if this fails
+    oldterm = termios.tcgetattr(fd)
+    newattr = termios.tcgetattr(fd)
+    newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
+    termios.tcsetattr(fd, termios.TCSANOW, newattr)
+
+    oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
+    fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
+
+    index = 0
+    print_selection_index(None)
+    try:
+        while True:
+            try:
+                c = sys.stdin.read(1)
+                if c == '[':
+                    c = sys.stdin.read(1)
+                    if c == 'C':
+                        index += 1
+                        index = print_selection_index(index)
+                    elif c == 'D':
+                        index -= 1
+                        index = print_selection_index(index)
+                elif c == '\n':
+                    break
+            except IOError:
+                pass
+    finally:
+        termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
+        fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
+
+    print('\n' + TermColors.BOLD + TermColors.WARNING + f"Chose {choice}:" + TermColors.ENDC + " " +
+          TermColors.BOLD + TermColors.OKBLUE + options[index] + TermColors.ENDC)
+
+    return options[index]
+
+
 def add_path_arg(arg_parser):
     arg_parser.add_argument('path',
                             metavar='path',
@@ -255,6 +345,12 @@ def main():
 
             api = API(token_)
 
+            projects = api.list_projects()
+
+            if len(projects) == 0:
+                print(TermColors.FAIL + "Please create a project with 'blankly create' first." + TermColors.ENDC)
+                return
+
             try:
                 f = open(os.path.join(args['path'], deployment_script_name))
                 deployment_options = json.load(f)
@@ -273,14 +369,28 @@ def main():
 
                 zip_.close()
 
+                # This performs all the querying necessary to send the data up
+                ids = []
+                for i in projects:
+                    ids.append(i['projectId'])
+                descriptions = []
+                for i in projects:
+                    descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
+                                        TermColors.ENDC + TermColors.OKCYAN + i['name'])
+                project_id = choose_option('project', ids, descriptions)
+                user_description = input(TermColors.BOLD + TermColors.WARNING +
+                                         "Enter a description for your model: " + TermColors.ENDC)
+
                 info_print("Uploading...")
-                response = api.upload(model_path, model_id='test2')
+                response = api.upload(model_path, project_id=project_id, description=user_description)
                 if 'error' in response:
                     info_print('Error: ' + response['error'])
                 elif 'status' in response and response['status'] == 'success':
                     info_print(f"Model upload completed at {response['timestamp']}:")
                     info_print(f"\tModel ID:\t{response['modelId']}")
-                    info_print(f"\tView at:\t{response['url']}")
+                    info_print(f"\tVersion:\t{response['versionId']}")
+                    info_print(f"\tStatus:\t{response['status']}")
+                    info_print(f"\tProject:\t{response['projectId']}")
 
     elif which == 'init':
         print("Initializing...")
@@ -342,90 +452,31 @@ def main():
         api = API(login())
         plans = api.get_plans()
 
-        fd = sys.stdin.fileno()
-
-        import fcntl
-        import termios
-
         plan_names = list(plans.keys())
-        largest_plan_name = 0
-        for i in plan_names:
-            if len(i) > largest_plan_name:
-                largest_plan_name = len(i)
 
-        def print_selection_index(index_):
-            # We pass none when they haven't selected yet
-            if index_ is None:
-                chosen_plan = "None"
-            # When its given a number it will index and find the lengths
-            else:
-                if index_ < 0:
-                    index_ = len(plan_names) - 1
-                elif index_ >= len(plan_names):
-                    index_ = 0
-                chosen_plan = plan_names[index_]
+        descriptions = []
 
-            # Carry it in this string
-            string_ = "\r" + TermColors.UNDERLINE + TermColors.OKCYAN + "You have chosen:" + \
-                      TermColors.ENDC + " " + TermColors.BOLD + TermColors.OKBLUE + chosen_plan
+        for i in plans:
+            descriptions.append("\t" + TermColors.UNDERLINE + TermColors.OKBLUE + i + TermColors.ENDC +
+                                "\n\t\t" + TermColors.OKGREEN + 'CPU: ' + str(plans[i]['cpu']) +
+                                "\n\t\t" + TermColors.OKGREEN + 'RAM: ' + str(plans[i]['ram']) + TermColors.ENDC)
 
-            remaining_chars = largest_plan_name - len(chosen_plan)
-            string_ += " "*remaining_chars
-
-            # Final print and flush the buffer
-            sys.stdout.write(string_)
-            sys.stdout.flush()
-
-            return index_
-
-        print(TermColors.BOLD + TermColors.WARNING + "Choose a plan: " + TermColors.ENDC +
-              TermColors.UNDERLINE + "(Use your arrow keys ← →)" + TermColors.ENDC)
-        for i in plan_names:
-            print("\t" + TermColors.UNDERLINE + TermColors.OKBLUE + i + TermColors.ENDC)
-            print("\t\t" + TermColors.OKGREEN + 'CPU: ' + str(plans[i]['cpu']))
-            print("\t\t" + TermColors.OKGREEN + 'RAM: ' + str(plans[i]['ram']) + TermColors.ENDC)
-
-        # TODO Add a very simple version that can take simple input() if this fails
-        oldterm = termios.tcgetattr(fd)
-        newattr = termios.tcgetattr(fd)
-        newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
-        termios.tcsetattr(fd, termios.TCSANOW, newattr)
-
-        oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
-        fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
-
-        index = 0
-        print_selection_index(None)
-        try:
-            while True:
-                try:
-                    c = sys.stdin.read(1)
-                    if c == '[':
-                        c = sys.stdin.read(1)
-                        if c == 'C':
-                            index += 1
-                            index = print_selection_index(index)
-                        elif c == 'D':
-                            index -= 1
-                            index = print_selection_index(index)
-                    elif c == '\n':
-                        break
-                except IOError:
-                    pass
-        finally:
-            termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
-            fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
-
-        print('\n' + TermColors.BOLD + TermColors.WARNING + "Chose plan:" + TermColors.ENDC + " " +
-              TermColors.BOLD + TermColors.OKBLUE + plan_names[index] + TermColors.ENDC)
+        chosen_plan = choose_option('plan', plan_names, descriptions)
 
         project_name = input(TermColors.BOLD + "Input a name for your project: " + TermColors.ENDC)
 
-        # project_description = input(TermColors.BOLD + "Input a description for your project: " + TermColors.ENDC)
+        project_description = input(TermColors.BOLD + "Input a description for your project: " + TermColors.ENDC)
 
         input(TermColors.BOLD + TermColors.FAIL + "Press enter to confirm project creation." + TermColors.ENDC)
 
-        print(api.create_project(project_name, plan_names[index]))
+        response = api.create_project(project_name, chosen_plan, description=project_description)
+
+        if 'error' in response:
+            info_print('Error: ' + response['error'])
+        elif 'status' in response and response['status'] == 'success':
+            info_print(f"Created {response['name']} at {response['createdAt']}:")
+            info_print(f"\tProject Id:\t{response['projectId']}")
+            info_print(f"\tStatus:\t{response['status']}")
 
     elif which == 'run':
         if args['path'] is None:
