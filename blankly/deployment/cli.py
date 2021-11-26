@@ -389,7 +389,7 @@ def main():
                     info_print(f"Model upload completed at {response['timestamp']}:")
                     info_print(f"\tModel ID:\t{response['modelId']}")
                     info_print(f"\tVersion:\t{response['versionId']}")
-                    info_print(f"\tStatus:\t{response['status']}")
+                    info_print(f"\tStatus:  \t{response['status']}")
                     info_print(f"\tProject:\t{response['projectId']}")
 
     elif which == 'init':
