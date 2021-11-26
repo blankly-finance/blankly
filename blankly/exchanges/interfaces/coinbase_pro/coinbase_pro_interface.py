@@ -480,6 +480,7 @@ class CoinbaseProInterface(ExchangeInterface):
         df = pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
         # df[['time']] = df[['time']].astype(int)
         # Have to cast this for some reason
+        df[['time']] = df[['time']].astype(int)
         df[['low', 'high', 'open', 'close', 'volume']] = df[['low', 'high', 'open', 'close', 'volume']].astype(float)
 
         return df
