@@ -76,19 +76,20 @@ def test_get_price(coinbase_interface: CoinbaseProInterface) -> None:
         assert type(resp) is float
 
 
-def test_start_with_end_history(coinbase_interface: CoinbaseProInterface) -> None:
-    # This initial selection could fail because of the slightly random day that they delete their data
-    stop_dt = dateparser.parse("2021-08-04")
-    start = "2021-01-04"
-    stop = str(stop_dt.date())
-
-    # The dates are offset by one because the time is the open time
-    close_stop = str(stop_dt.replace(day=stop_dt.day - 1).date())
-
-    resp = coinbase_interface.history('BTC-USD', resolution='1h', start_date=start, end_date=stop)
-
-    start_date = dt.fromtimestamp(resp['time'][0]).strftime('%Y-%m-%d')
-    end_date = dt.fromtimestamp(resp['time'].iloc[-1]).strftime('%Y-%m-%d')
-
-    assert start_date == start
-    assert end_date == close_stop
+# TODO This test is removed because it overloads simultaneous history tests
+# def test_start_with_end_history(coinbase_interface: CoinbaseProInterface) -> None:
+#     # This initial selection could fail because of the slightly random day that they delete their data
+#     stop_dt = dateparser.parse("2021-08-04")
+#     start = "2021-01-04"
+#     stop = str(stop_dt.date())
+#
+#     # The dates are offset by one because the time is the open time
+#     close_stop = str(stop_dt.replace(day=stop_dt.day - 1).date())
+#
+#     resp = coinbase_interface.history('BTC-USD', resolution='1h', start_date=start, end_date=stop)
+#
+#     start_date = dt.fromtimestamp(resp['time'][0]).strftime('%Y-%m-%d')
+#     end_date = dt.fromtimestamp(resp['time'].iloc[-1]).strftime('%Y-%m-%d')
+#
+#     assert start_date == start
+#     assert end_date == close_stop
