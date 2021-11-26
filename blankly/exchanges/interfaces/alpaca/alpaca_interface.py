@@ -472,6 +472,7 @@ class AlpacaInterface(ExchangeInterface):
                             "volume"}, inplace=True)
 
             response = response.astype({
+                'time': int,
                 'open': float,
                 'high': float,
                 'low': float,

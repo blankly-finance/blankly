@@ -652,7 +652,7 @@ class BinanceInterface(ExchangeInterface):
         # Want them in this order: ['time (epoch)', 'low', 'high', 'open', 'close', 'volume']
 
         # Time is so big it has to be cast separately for windows
-        data_frame['time'] = data_frame['time'].div(1000).astype(numpy.int64)
+        data_frame['time'] = data_frame['time'].div(1000).astype(int)
 
         # Cast dataframe
         data_frame = data_frame.astype({

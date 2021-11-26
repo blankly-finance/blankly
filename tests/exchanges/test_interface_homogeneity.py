@@ -321,7 +321,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
     def check_product_history_types(self, df: pd.DataFrame):
-        self.assertTrue(isinstance(df['time'][0], numpy.int64))
+        self.assertTrue(isinstance(df['time'][0], int))
         self.assertTrue(isinstance(df['low'][0], float))
         self.assertTrue(isinstance(df['high'][0], float))
         self.assertTrue(isinstance(df['open'][0], float))
