@@ -149,11 +149,17 @@ def choose_option(choice: str, options: list, descriptions: list):
     return options[index]
 
 
-def add_path_arg(arg_parser):
-    arg_parser.add_argument('path',
-                            metavar='path',
-                            type=str,
-                            help='Path to the directory containing the blankly enabled folder.')
+def add_path_arg(arg_parser, required=True):
+    kwargs = {
+        'metavar': 'path',
+        'type': str,
+        'help': 'Path to the directory containing the blankly enabled folder.',
+        'nargs': '?'
+    }
+    # Pass this along if its not required
+    if not required:
+        kwargs['nargs'] = '?'
+    arg_parser.add_argument('path', **kwargs)
 
 
 def create_and_write_file(filename: str, default_contents: str = None):
@@ -178,7 +184,7 @@ login_parser.set_defaults(which='login')
 
 deploy_parser = subparsers.add_parser('deploy', help='Command to upload & start the model.')
 deploy_parser.set_defaults(which='deploy')
-add_path_arg(deploy_parser)
+add_path_arg(deploy_parser, required=False)
 
 project_create_parser = subparsers.add_parser('create', help='Create a new project.')
 project_create_parser.set_defaults(which='create')
@@ -338,59 +344,67 @@ def main():
         return
     if which == 'deploy':
         if args['path'] is None:
-            deploy_parser.print_help()
+            print(TermColors.WARNING + "Warning - No filepath specified. Assuming the current directory (./)\n" +
+                  TermColors.ENDC)
+
+            args['path'] = './'
+        token_ = login()
+
+        api = API(token_)
+
+        projects = api.list_projects()
+
+        if len(projects) == 0:
+            print(TermColors.FAIL + "Please create a project with 'blankly create' first." + TermColors.ENDC)
             return
-        else:
-            token_ = login()
 
-            api = API(token_)
+        try:
+            f = open(os.path.join(args['path'], deployment_script_name))
+            deployment_options = json.load(f)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"A {deployment_script_name} file must be present at the top level of the "
+                                    f"directory specified.")
 
-            projects = api.list_projects()
+        info_print("Zipping...")
 
-            if len(projects) == 0:
-                print(TermColors.FAIL + "Please create a project with 'blankly create' first." + TermColors.ENDC)
-                return
+        with tempfile.TemporaryDirectory() as dist_directory:
+            source = os.path.abspath(args['path'])
 
-            try:
-                f = open(os.path.join(args['path'], deployment_script_name))
-                deployment_options = json.load(f)
-            except FileNotFoundError:
-                raise FileNotFoundError(f"A {deployment_script_name} file must be present at the top level of the "
-                                        f"directory specified.")
+            model_path = os.path.join(dist_directory, 'model.zip')
+            zip_ = zipfile.ZipFile(model_path, 'w', zipfile.ZIP_DEFLATED)
+            zipdir(source, zip_, deployment_options['ignore_files'])
 
-            info_print("Zipping...")
+            zip_.close()
 
-            with tempfile.TemporaryDirectory() as dist_directory:
-                source = os.path.abspath(args['path'])
+            # This performs all the querying necessary to send the data up
+            ids = []
+            for i in projects:
+                ids.append(i['projectId'])
+            descriptions = []
+            for i in projects:
+                descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
+                                    TermColors.ENDC + TermColors.OKCYAN + i['name'])
+            project_id = choose_option('project', ids, descriptions)
 
-                model_path = os.path.join(dist_directory, 'model.zip')
-                zip_ = zipfile.ZipFile(model_path, 'w', zipfile.ZIP_DEFLATED)
-                zipdir(source, zip_, deployment_options['ignore_files'])
+            model_name = input(TermColors.BOLD + TermColors.WARNING +
+                               "Enter a name for your model: " + TermColors.ENDC)
 
-                zip_.close()
+            user_description = input(TermColors.BOLD + TermColors.WARNING +
+                                     "Enter a description for your model: " + TermColors.ENDC)
 
-                # This performs all the querying necessary to send the data up
-                ids = []
-                for i in projects:
-                    ids.append(i['projectId'])
-                descriptions = []
-                for i in projects:
-                    descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
-                                        TermColors.ENDC + TermColors.OKCYAN + i['name'])
-                project_id = choose_option('project', ids, descriptions)
-                user_description = input(TermColors.BOLD + TermColors.WARNING +
-                                         "Enter a description for your model: " + TermColors.ENDC)
-
-                info_print("Uploading...")
-                response = api.upload(model_path, project_id=project_id, description=user_description)
-                if 'error' in response:
-                    info_print('Error: ' + response['error'])
-                elif 'status' in response and response['status'] == 'success':
-                    info_print(f"Model upload completed at {response['timestamp']}:")
-                    info_print(f"\tModel ID:\t{response['modelId']}")
-                    info_print(f"\tVersion:\t{response['versionId']}")
-                    info_print(f"\tStatus:  \t{response['status']}")
-                    info_print(f"\tProject:\t{response['projectId']}")
+            info_print("Uploading...")
+            response = api.deploy(model_path,
+                                  project_id=project_id,
+                                  description=user_description,
+                                  name=model_name)
+            if 'error' in response:
+                info_print('Error: ' + response['error'])
+            elif 'status' in response and response['status'] == 'success':
+                info_print(f"Model upload completed at {response['timestamp']}:")
+                info_print(f"\tModel ID:\t{response['modelId']}")
+                info_print(f"\tVersion:\t{response['versionId']}")
+                info_print(f"\tStatus:  \t{response['status']}")
+                info_print(f"\tProject:\t{response['projectId']}")
 
     elif which == 'init':
         print("Initializing...")
@@ -442,9 +456,12 @@ def main():
         api = API(login())
         projects = api.list_projects()
         if len(projects) > 0:
-            info_print("Projects: ")
+            print(TermColors.BOLD + TermColors.WARNING + "Projects: " + TermColors.ENDC)
             for i in projects:
-                info_print(f'- \t{i}')
+                print("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
+                      TermColors.ENDC + TermColors.OKCYAN + i['name'])
+                print(f"\t\t Description: {i['description']}")
+                print(f"\t\t Plan: {i['plan']}")
         else:
             info_print("No projects found.")
 

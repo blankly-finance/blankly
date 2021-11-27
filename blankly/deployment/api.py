@@ -108,9 +108,9 @@ class API:
                                                               'plan': plan,
                                                               'description': description})
 
-    def upload(self, file_path: str, project_id: str, description: str):
+    def deploy(self, file_path: str, project_id: str, description: str, name: str):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
-        return self.__request('post', 'model/upload', file=file, data={'projectId': project_id,
-                                                                       'description': description,
-                                                                       'userId': self.user_id})
+        return self.__request('post', 'model/deploy', file=file, data={'projectId': project_id,
+                                                                       'name': name,
+                                                                       'description': description})
