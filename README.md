@@ -153,18 +153,26 @@ Project
 
 Make sure you're using a supported version of python. The module is currently tested on these versions:
 
-- Python 3.7+
+- Python 3.7
+- Python 3.8
+- Python 3.9
+- Python 3.10
 
 For more info, and ways to do more advanced things, check out our [getting started docs](https://docs.blankly.finance).
 
 ## Supported Exchanges
 
-| Exchange     | REST Support | Ticker Websocket | Order Book | Interface |
+| Exchange     | Integrate | Websockets  | Paper Trading | Backtesting |
 | ------------ | ------------ | ---------------- | ---------- | --------- |
 | Coinbase Pro | 🟢           | 🟢               | 🟢        | 🟢        |
 | Binance      | 🟢           | 🟢               | 🟢        | 🟢       |
 | Alpaca       | 🟢         | 🟢             | 🟢      | 🟢        |
-| OANDA | 🟡 | 🟡 | 🟡 | 🟡 |
+| OANDA | 🟢 | 🟡 | 🟢 | 🟢 |
+| FTX | 🔴 | 🔴 | 🔴 | 🔴 |
+| TD Ameritrade | 🔴 | 🔴 | 🔴 | 🔴 |
+| Webull | 🔴 | 🔴 | 🔴 | 🔴 |
+| Robinhood | 🔴 | 🔴 | 🔴 | 🔴 |
+
 
 🟢  = working
 

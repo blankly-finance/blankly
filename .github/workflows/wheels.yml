@@ -1,7 +1,7 @@
 name: Build
 
 # on: [push, pull_request]
-on: []
+on: [push]
 
 jobs:
   build_wheels:
