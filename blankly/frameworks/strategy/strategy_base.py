@@ -21,6 +21,7 @@ import threading
 import time
 import typing
 import warnings
+import os
 
 import pandas as pd
 
@@ -33,6 +34,14 @@ from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import AttributeDict, info_print
 from blankly.utils.utils import get_ohlcv_from_list
 from blankly.exchanges.strategy_logger import StrategyLogger
+
+
+def is_backtesting() -> bool:
+    __backtesting_env = os.getenv('BACKTESTING')
+    if __backtesting_env is not None:
+        return __backtesting_env == 'true'
+    else:
+        return False
 
 
 class Strategy:
@@ -48,6 +57,7 @@ class Strategy:
         bar_event(bar: dict, symbol: str, state: blankly.StrategyState)
         teardown(blankly.StrategyState)
         """
+        self.__remote_backtesting = is_backtesting()
         self.__exchange = exchange
         self.ticker_manager = blankly.TickerManager(self.__exchange.get_type(), currency_pair)
         self.orderbook_manager = blankly.OrderbookManager(self.__exchange.get_type(), currency_pair)
@@ -315,6 +325,14 @@ class Strategy:
         self.__using_orderbook = True
 
     def start(self):
+        """
+        Run your model live!
+
+        Simply call this function to take your strategy configuration live on your exchange
+        """
+        if self.__remote_backtesting:
+            warnings.warn("Aborted live trading attempt in a backtest configuration")
+            return
         for i in self.__schedulers:
             kwargs = i.get_kwargs()
             if kwargs['init'] is not None:
