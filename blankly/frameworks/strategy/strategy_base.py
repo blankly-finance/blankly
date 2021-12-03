@@ -451,7 +451,7 @@ class Strategy:
                         False means that the backtest will immediately stop & attempt to generate a report if something
                         in the user calls goes wrong. True will replicate strategy errors.
 
-                ignore_user_exceptions: float = 0.0
+                risk_free_return_rate: float = 0.0
                     Set this to be the theoretical rate of return with no risk
         """
 
@@ -518,6 +518,8 @@ class Strategy:
 
         # Run the backtest & return results
         results = self.backtesting_controller.run()
+
+        blankly.reporter.export_backtest_result(results)
 
         # Clean up
         self.interface = self.__interface_cache
