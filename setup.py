@@ -36,8 +36,6 @@ setup(
         'numpy',
         'pandas',
         'pandas_market_calendars',
-        'pytest',
-        'pytest-mock',
         'python-binance',
         'requests',
         'websocket-client',

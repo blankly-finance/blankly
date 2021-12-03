@@ -27,5 +27,5 @@ Give us some of your initial thoughts for implementing this.
 - [ ] Yes, I would love to contribute to this feature request 🎉
 - [ ] No, but please keep me posted 🎉
 
-**Additional Informatino**
+**Additional Information**
 Add any other context about the feature request here including what other packages have done, linked issues, and more. 

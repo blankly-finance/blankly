@@ -24,6 +24,7 @@ from typing import Any
 from blankly.utils.utils import load_notify_preferences
 from blankly.frameworks.strategy import Strategy
 from blankly.frameworks.signal.signal import Signal
+from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
 
 
 class Reporter:
@@ -81,7 +82,15 @@ class Reporter:
         Args:
             signal: A signal object to export
         """
+        pass
 
+    def export_backtest_result(self, backtest_result: BacktestResult):
+        """
+        Re-export for the finished signal result
+
+        Args:
+            backtest_result: A blankly backtest result object
+        """
         pass
 
     def log_strategy_event(self, strategy_object, event_name, response, **kwargs):
