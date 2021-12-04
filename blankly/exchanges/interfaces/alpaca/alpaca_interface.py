@@ -195,6 +195,7 @@ class AlpacaInterface(ExchangeInterface):
 
         return positions_dict
 
+    @utils.order_protection
     def market_order(self, symbol, side, size) -> MarketOrder:
         assert isinstance(self.calls, alpaca_trade_api.REST)
         needed = self.needed['market_order']
@@ -215,6 +216,7 @@ class AlpacaInterface(ExchangeInterface):
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
+    @utils.order_protection
     def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
         needed = self.needed['limit_order']
 
