@@ -15,13 +15,13 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
 import blankly
 
 import datetime
 import json
 import sys
 import decimal
+import os
 from datetime import datetime as dt, timezone
 from math import ceil, trunc as math_trunc
 from typing import Union
@@ -729,3 +729,26 @@ def count_decimals(number) -> int:
     Count the number of decimals in a given float: 1.4335 -> 4 or 3 -> 0
     """
     return abs(decimal.Decimal(str(number)).as_tuple().exponent)
+
+
+def check_backtesting() -> bool:
+    """
+    Tests if the environment is configured for backtesting. Primarily used for platform deployments but is
+    applicable elsewhere
+    """
+    backtesting_env = os.getenv('BACKTESTING')
+    if backtesting_env is not None:
+        return backtesting_env == 'true'
+    else:
+        return False
+
+
+def order_protection(func):
+    """
+    Decorator to provide protection against live orders inside backtest environment
+    """
+    def wrapper(*args, **kwargs):
+        if blankly._backtesting:
+            raise Exception("Blocked attempt at live order inside backtesting environment")
+        func(*args, **kwargs)
+    return wrapper

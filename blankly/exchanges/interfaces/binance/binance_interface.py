@@ -246,6 +246,7 @@ class BinanceInterface(ExchangeInterface):
                 })
         return utils.AttributeDict(parsed_dictionary)
 
+    @utils.order_protection
     def market_order(self, symbol, side, size) -> MarketOrder:
         """
         Used for buying or selling market orders
@@ -327,6 +328,7 @@ class BinanceInterface(ExchangeInterface):
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
+    @utils.order_protection
     def limit_order(self, symbol, side, price, size) -> LimitOrder:
         """
         Used for buying or selling limit orders
