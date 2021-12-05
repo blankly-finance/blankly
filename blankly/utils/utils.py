@@ -750,5 +750,5 @@ def order_protection(func):
     def wrapper(*args, **kwargs):
         if blankly._backtesting:
             raise Exception("Blocked attempt at live order inside backtesting environment")
-        func(*args, **kwargs)
+        return func(*args, **kwargs)
     return wrapper
