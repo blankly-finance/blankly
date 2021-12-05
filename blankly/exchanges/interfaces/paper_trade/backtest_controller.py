@@ -454,7 +454,7 @@ class BackTestController:
         # No trade account total
         no_trade_value = 0
 
-        # Save this up front so that it can be removed from the price calculation (its always a value of 1 anyway)
+        # Save this up front so that it can be removed from the price calculation (it's always a value of 1 anyway)
         quote_value = true_account[self.quote_currency]['available'] + true_account[self.quote_currency]['hold']
         try:
             del true_account[self.quote_currency]

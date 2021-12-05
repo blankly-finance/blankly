@@ -154,7 +154,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
     def override_local_account(self, value_dictionary: dict):
         """
-        Push a new set of initial account values to the algorithm. All values not given in in the
+        Push a new set of initial account values to the algorithm. All values not given in the
         value dictionary that currently exist will be set to zero.
 
         Args:
