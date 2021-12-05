@@ -220,7 +220,7 @@ class CoinbaseProInterface(ExchangeInterface):
     Stop limit isn't added to the abstract class because the binance version is barely supported.
     
     If you want to use this function you can, just do interface.stop_limit(args) if you're using a coinbase pro 
-    interface
+    interface. Keep in mind this only works live and is not integrated with paper trading or backtesting
     """
 
     def stop_limit(self, symbol, side, stop_price, limit_price, size, stop='loss') -> StopLimit:
