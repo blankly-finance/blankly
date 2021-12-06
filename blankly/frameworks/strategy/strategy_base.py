@@ -110,10 +110,6 @@ class Strategy:
             synced: Sync the function to
             variables: A dictionary to initialize the state's internal values
         """
-<<<<<<< HEAD
-
-=======
->>>>>>> d0c7c590d11a5b6dcc1bc5f345408944a72ee559
         self.__custom_price_event(callback, symbol, resolution, init, synced, teardown=teardown, variables=variables)
 
     def add_bar_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
@@ -152,31 +148,15 @@ class Strategy:
         # Make sure variables is always an empty dictionary if None
         if variables is None:
             variables = {}
-<<<<<<< HEAD
-=======
-
->>>>>>> d0c7c590d11a5b6dcc1bc5f345408944a72ee559
         resolution = time_interval_to_seconds(resolution)
 
         if bar:
             self.__scheduling_pair.append([symbol, resolution, 'bar'])
         else:
             self.__scheduling_pair.append([symbol, resolution, 'price_event'])
-<<<<<<< HEAD
-        callback_hash = hash((callback, hash((symbol, resolution))))
-        if callback_hash in self.__hashes:
-            raise ValueError("A callback of the same type and resolution has already been made for "
-                             "the ticker: {}".format(symbol))
-        else:
-            self.__hashes.append(callback_hash)
-        self.__variables[callback_hash] = AttributeDict(variables)
-        state = StrategyState(self, self.__variables[callback_hash], symbol, resolution=resolution)
-        self.__states[symbol] = state
-=======
 
         variables_ = AttributeDict(variables)
         state = StrategyState(self, variables_, symbol, resolution=resolution)
->>>>>>> d0c7c590d11a5b6dcc1bc5f345408944a72ee559
 
         if resolution < 60:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls

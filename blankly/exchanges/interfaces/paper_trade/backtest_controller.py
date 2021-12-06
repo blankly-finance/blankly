@@ -182,10 +182,10 @@ class BackTestController:
         # Because the times are run in order we can use this variable to optimize account value searching
         self.__current_search_index = 0
 
-        # Export a time for use in other classes
+        # Export a time for use in other classesv uss
         self.time = None
 
-    def sync_prices(self, items: List[List[str, int, int, int]] = None) -> dict:
+    def sync_prices(self, items: list[list[str, int, int, int]] = None) -> dict:
         """
         Parse the local file cache for the requested data, if it doesn't exist, request it from the exchange
 
