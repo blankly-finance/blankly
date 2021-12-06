@@ -118,8 +118,9 @@ def test_limitorder_comprehensive(oanda_interface: OandaInterface) -> None:
 
 
 def test_get_order(oanda_interface: OandaInterface) -> None:
+    locally_created_orders = []
     for i in range(5):
-        oanda_interface.limit_order("EUR-USD", 'buy', 1, 5)
+        locally_created_orders.append(oanda_interface.limit_order("EUR-USD", 'buy', 1, 5))
         time.sleep(0.1)
 
     orders = oanda_interface.get_open_orders()
@@ -132,8 +133,8 @@ def test_get_order(oanda_interface: OandaInterface) -> None:
         needed = oanda_interface.choose_order_specificity(order['type'])
         validate_response(needed, order)
 
-    for order in orders:
-        resp = oanda_interface.cancel_order("EUR-USD", order['id'])
+    for order in locally_created_orders:
+        resp = oanda_interface.cancel_order("EUR-USD", order.get_id())
         validate_response(oanda_interface.needed['cancel_order'], resp)
 
 
