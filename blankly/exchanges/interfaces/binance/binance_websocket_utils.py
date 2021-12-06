@@ -22,10 +22,10 @@ import blankly.utils.utils as utils
 
 
 def switch_type(stream):
-    if stream == "trade":
+    if stream == "aggTrade":
         return trade, \
                trade_interface, \
-               "event_time,system_time,event_type,symbol,trade_id,price,quantity,buyer_order_id,seller_order_id," \
+               "event_time,system_time,event_type,symbol,trade_id,price,quantity," \
                "trade_time,buyer_is_maker\n"
     elif stream == "depth":
         return depth, depth_interface, ""
@@ -47,8 +47,8 @@ def depth_interface(message):
 
 def trade(message):
     return str(message["E"]) + "," + str(time.time()) + "," + message["e"] + "," + message["s"] + "," + \
-           str(message["t"]) + "," + message["p"] + "," + message["q"] + "," + str(message["b"]) + "," + \
-           str(message["a"]) + "," + str(message["T"]) + "," + str(message["m"]) + "\n"
+           str(message["a"]) + "," + message["p"] + "," + message["q"] + "," + "," + "," + \
+           str(message["T"]) + "," + str(message["m"]) + "\n"
 
 
 def trade_interface(message):
@@ -61,17 +61,17 @@ def trade_interface(message):
 
     Response from trade streams
     {
-        'e': 'trade',  # Event Type
-        'E': 1619149864634,  # Event time
-        's': 'BTCUSDT', # Symbol
-        't': 787178035,  # Trade ID
-        'p': '50322.05000000',  # Price
-        'q': '0.00577200',  # Quantity
-        'b': 5644954701,  # Buyer order id
-        'a': 5644954632,  # Seller order id
-        'T': 1619149864634,  # Trade time
-        'm': False,  # Is the buyer the market maker?
-        'M': True  # Ignore
+      "e": "aggTrade",  // Event type
+      "E": 123456789,   // Event time
+      "s": "BNBBTC",    // Symbol
+      "a": 12345,       // Aggregate trade ID
+      "p": "0.001",     // Price
+      "q": "100",       // Quantity
+      "f": 100,         // First trade ID
+      "l": 105,         // Last trade ID
+      "T": 123456785,   // Trade time
+      "m": true,        // Is the buyer the market maker?
+      "M": true         // Ignore
     }
 
     Similar ticks with coinbase pro
@@ -87,10 +87,10 @@ def trade_interface(message):
     renames = [
         ["e", "type"],
         ["s", "symbol"],
+        ["a", "trade_id"],
         ["p", "price"],
+        ['q', "size"],
         ["T", "time"],
-        ["t", "symbol"],
-        ['q', "size"]
     ]
     message = utils.rename_to(renames, message)
     needed = [
