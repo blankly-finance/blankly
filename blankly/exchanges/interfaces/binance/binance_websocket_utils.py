@@ -101,4 +101,7 @@ def trade_interface(message):
         ["size", float]
     ]
     message["time"] = message["time"] / 1000
-    return utils.isolate_specific(needed, message)
+    isolated = utils.isolate_specific(needed, message)
+    isolated['symbol'] = utils.to_blankly_symbol(isolated['symbol'], 'binance')
+
+    return isolated

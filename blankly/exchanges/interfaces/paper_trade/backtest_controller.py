@@ -717,7 +717,7 @@ class BackTestController:
 
                     no_trade.append(no_trade_dict)
 
-            # Finally run the teardown functions
+            # Finally, run the teardown functions
             for i in self.price_events:
                 # Pull the teardown and pass the state object
                 if callable(i['teardown']):
@@ -857,7 +857,7 @@ class BackTestController:
             # Find the interval second value
             interval_value = time_interval_to_seconds(resample_setting)
 
-            # Add the internval value to dictionary
+            # Add the interval value to dictionary
             dataframes['trading_period'] = interval_value
 
             # Assign start and stop limits
@@ -901,7 +901,7 @@ class BackTestController:
             # Add risk-free-return rate to dictionary
             dataframes['risk_free_return_rate'] = self.preferences['settings'].get("risk_free_return_rate", 0.0)
 
-            # -----=====*****=====----- I thought I stopped doing these comments when I actually learned to code
+            # -----=====*****=====-----
             metrics_indicators['Compound Annual Growth Rate (%)'] = metrics.cagr(dataframes)
             try:
                 metrics_indicators['Cumulative Returns (%)'] = metrics.cum_returns(dataframes)
