@@ -48,23 +48,21 @@ def cum_returns(backtest_data):
     return round(metrics.cum_returns(account_values['value'][0], account_values['value'].iloc[-1]), 2) * 100
 
 
-def sortino(backtest_data):
+def sortino(backtest_data, trading_period=86400, risk_free_rate=0):
     returns = backtest_data['returns']['value']
-    risk_free_rate = backtest_data['risk_free_return_rate']
-    ppy = periods_per_year(backtest_data['trading_period'])
+    ppy = periods_per_year(trading_period)
     return round(metrics.sortino(returns, ppy, risk_free_rate), 2)
 
 
-def sharpe(backtest_data):
+def sharpe(backtest_data, trading_period=86400, risk_free_rate=0):
     returns = backtest_data['returns']['value']
-    risk_free_rate = backtest_data['risk_free_return_rate']
-    ppy = periods_per_year(backtest_data['trading_period'])
+    ppy = periods_per_year(trading_period)
     return round(metrics.sharpe(returns, ppy, risk_free_rate), 2)
 
 
-def calmar(backtest_data):
+def calmar(backtest_data, trading_period=86400):
     returns = backtest_data['returns']['value']
-    ppy = periods_per_year(backtest_data['trading_period'])
+    ppy = periods_per_year(trading_period)
     return round(metrics.calmar(returns, ppy), 2)
 
 
