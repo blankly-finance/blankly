@@ -75,7 +75,7 @@ default_backtest_settings = {
         "resample_account_value_for_metrics": "1d",
         "quote_account_value_in": "USD",
         "ignore_user_exceptions": False,
-        "risk_free_return_rate" : 0.0
+        "risk_free_return_rate": 0.0
     }
 }
 
@@ -738,7 +738,7 @@ def check_backtesting() -> bool:
     """
     backtesting_env = os.getenv('BACKTESTING')
     if backtesting_env is not None:
-        return backtesting_env == 'true'
+        return backtesting_env == '1'
     else:
         return False
 
