@@ -189,6 +189,9 @@ add_path_arg(deploy_parser, required=False)
 project_create_parser = subparsers.add_parser('create', help='Create a new project.')
 project_create_parser.set_defaults(which='create')
 
+project_create_parser = subparsers.add_parser('backtest', help='Start a backtest on an uploaded model.')
+project_create_parser.set_defaults(which='backtest')
+
 list_parser = subparsers.add_parser('list', help='Show available projects & exit.')
 list_parser.set_defaults(which='list')
 
@@ -464,6 +467,11 @@ def main():
                 print(f"\t\t Plan: {i['plan']}")
         else:
             info_print("No projects found.")
+
+    elif which == 'backtest':
+        api = API(login())
+
+        print(api.backtest('', '', {'to': '1y'}))
 
     elif which == 'create':
         api = API(login())
