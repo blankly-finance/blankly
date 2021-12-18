@@ -75,6 +75,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         self.evaluate_traded_account_assets()
 
+        self.__enable_shorting = self.user_preferences['settings']['alpaca']['enable_shorting']
+
     def evaluate_traded_account_assets(self):
         # Because alpaca has so many columns we need to optimize to perform an accurate backtest
         self.traded_assets = []
@@ -365,7 +367,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         # Test the purchase
         self.local_account.test_trade(symbol, side, qty, price, market_limits['market_order']["quote_increment"],
-                                      quantity_decimals, shortable)
+                                      quantity_decimals, (shortable and self.__enable_shorting))
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
         # TODO the force typing here isn't strictly necessary because its run int the isolate_specific anyway
