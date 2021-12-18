@@ -389,6 +389,19 @@ def main():
                                     TermColors.ENDC + TermColors.OKCYAN + i['name'])
             project_id = choose_option('project', ids, descriptions)
 
+            plans = api.get_plans('live')
+
+            plan_names = list(plans.keys())
+
+            descriptions = []
+
+            for i in plans:
+                descriptions.append("\t" + TermColors.UNDERLINE + TermColors.OKBLUE + i + TermColors.ENDC +
+                                    "\n\t\t" + TermColors.OKGREEN + 'CPU: ' + str(plans[i]['cpu']) +
+                                    "\n\t\t" + TermColors.OKGREEN + 'RAM: ' + str(plans[i]['ram']) + TermColors.ENDC)
+
+            chosen_plan = choose_option('plan', plan_names, descriptions)
+
             model_name = input(TermColors.BOLD + TermColors.WARNING +
                                "Enter a name for your model: " + TermColors.ENDC)
 
@@ -398,6 +411,7 @@ def main():
             info_print("Uploading...")
             response = api.deploy(model_path,
                                   project_id=project_id,
+                                  plan=chosen_plan,
                                   description=user_description,
                                   name=model_name)
             if 'error' in response:
@@ -464,29 +478,16 @@ def main():
                 print("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
                       TermColors.ENDC + TermColors.OKCYAN + i['name'])
                 print(f"\t\t Description: {i['description']}")
-                print(f"\t\t Plan: {i['plan']}")
         else:
             info_print("No projects found.")
 
     elif which == 'backtest':
         api = API(login())
 
-        print(api.backtest('', '', {'to': '1y'}))
+        print(api.backtest(project_id='jiCLm5a2EkgZBhHX1oUt', model_id='sCH0Ns9Pvow4p7T3D44v', args={'to': '1y'}))
 
     elif which == 'create':
         api = API(login())
-        plans = api.get_plans()
-
-        plan_names = list(plans.keys())
-
-        descriptions = []
-
-        for i in plans:
-            descriptions.append("\t" + TermColors.UNDERLINE + TermColors.OKBLUE + i + TermColors.ENDC +
-                                "\n\t\t" + TermColors.OKGREEN + 'CPU: ' + str(plans[i]['cpu']) +
-                                "\n\t\t" + TermColors.OKGREEN + 'RAM: ' + str(plans[i]['ram']) + TermColors.ENDC)
-
-        chosen_plan = choose_option('plan', plan_names, descriptions)
 
         project_name = input(TermColors.BOLD + "Input a name for your project: " + TermColors.ENDC)
 
@@ -494,7 +495,7 @@ def main():
 
         input(TermColors.BOLD + TermColors.FAIL + "Press enter to confirm project creation." + TermColors.ENDC)
 
-        response = api.create_project(project_name, chosen_plan, description=project_description)
+        response = api.create_project(project_name, description=project_description)
 
         if 'error' in response:
             info_print('Error: ' + response['error'])

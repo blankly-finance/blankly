@@ -464,7 +464,7 @@ class Strategy:
             epoch = datetime.datetime.utcfromtimestamp(0)
             end = (end_date - epoch).total_seconds()
 
-        # If start/ends are specify unevenly
+        # If start/ends are specified unevenly
         if (start_date is None and end_date is not None) or (start_date is not None and end_date is None):
             raise ValueError("Both start and end dates must be set or use the 'to' argument.")
 
