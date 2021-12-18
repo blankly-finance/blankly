@@ -51,7 +51,8 @@ default_general_settings = {
         },
         "alpaca": {
             "websocket_stream": "iex",
-            "cash": "USD"
+            "cash": "USD",
+            "enable_shorting": True,
         },
         "oanda": {
             "cash": "USD"
