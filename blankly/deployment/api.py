@@ -15,7 +15,6 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import json
 
 import requests
 
@@ -35,14 +34,14 @@ class API:
         self.token = self.auth_data['idToken']
         self.user_id = self.auth_data['data']['user_id']
 
-    def __request(self, type_: str, route: str, json: dict = None, params: dict = None, file=None, data: dict = None):
+    def __request(self, type_: str, route: str, json_: dict = None, params: dict = None, file=None, data: dict = None):
         """
         Create a general request to the blankly API services
 
         Args:
             type_: Request types such as 'post', 'get', and 'delete'
             route: The address where the request should be routed to './model/details'
-            json: Optional json to be attached to the request
+            json_: Optional json to be attached to the request
             params: Optional parameters for the address URL
             data: Optional JSON to be attached to the request body dictionary
             file: Optional file uploaded in bytes: file = {'file': open(file_path, 'rb')}
@@ -55,14 +54,14 @@ class API:
         kwargs = {
             'url': url,
             'params': params,
-            'json': json,
+            'json': json_,
             'files': file,
             'data': data,
         }
 
         # Add the token if we have it
         if self.token is not None:
-            kwargs['headers'] = {'token': self.token}
+            kwargs['headers'] = {'token': self.token, 'uid': self.user_id}
 
         try:
             if type_ == "get":
@@ -88,37 +87,38 @@ class API:
         """
         return self.__request('post', 'auth/token', data={'refreshToken': token})
 
-    def get_details(self, project_id: str, model_id: str):
+    def get_details(self, model_id: str):
         """
         Get the details route
         """
-        return self.__request('get', 'model/details', data={'projectId': project_id, 'modelId': model_id})
+        return self.__request('get', 'model/details', data={'modelId': model_id})
 
-    def get_status(self, project_id: str, model_id: str):
-        return self.__request('get', 'model/status', data={'projectId': project_id, 'modelId': model_id})
+    def get_status(self, model_id: str):
+        return self.__request('get', 'model/status', data={'modelId': model_id})
 
     def list_projects(self):
-        return self.__request('get', 'project/list', data={'userId': self.user_id})
+        return self.__request('get', 'project/list')
 
-    def get_plans(self):
-        return self.__request('get', 'project/plans')
+    def get_plans(self, type_: str):
+        """
+        Args:
+            type_: Can be 'backtesting' or 'live'
+        """
+        return self.__request('get', 'project/plans', data={'type': type_})
 
-    def create_project(self, name: str, plan: str, description: str):
-        return self.__request('post', 'project/create', data={'userId': self.user_id,
-                                                              'name': name,
-                                                              'plan': plan,
+    def create_project(self, name: str, description: str):
+        return self.__request('post', 'project/create', data={'name': name,
                                                               'description': description})
 
-    def deploy(self, file_path: str, project_id: str, description: str, name: str):
+    def deploy(self, file_path: str, plan: str, project_id, description: str, name: str):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
-        return self.__request('post', 'model/deploy', file=file, data={'projectId': project_id,
+        return self.__request('post', 'model/deploy', file=file, data={'plan': plan,
                                                                        'name': name,
+                                                                       'projectId': project_id,
                                                                        'description': description})
 
     def backtest(self, project_id: str, model_id: str, args: dict):
-        return self.__request('post', 'model/backtest', data={
-            'projectId': project_id,
-            'modelId': model_id,
-            'backtestArgs': json.dumps(args)
-        })
+        return self.__request('post', 'model/backtest', data={'project_id': project_id,
+                                                              'model_id': model_id,
+                                                              'args': args})

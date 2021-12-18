@@ -350,7 +350,7 @@ def isolate_specific(needed, compare_dictionary):
     """
     This is the parsing algorithm used to homogenize the dictionaries
     """
-    # Make a copy of the dictionary so we don't modify it if you loop over
+    # Make a copy of the dictionary, so we don't modify it if you loop over
     compare_dictionary = {**compare_dictionary}
     # Create a row vector for the keys
     column = [column[0] for column in needed]  # ex: ['currency', 'available', 'hold']
@@ -387,7 +387,7 @@ def isolate_specific(needed, compare_dictionary):
 
     # If there exists the exchange specific dict in the compare dictionary
     # This is done because after renaming, if there are naming conflicts they will already have been pushed here
-    # Because we pulled out the naming conflicts dictionary we just just write this directly
+    # Because we pulled out the naming conflicts dictionary we just write this directly
     compare_dictionary["exchange_specific"] = exchange_specific
 
     return compare_dictionary
