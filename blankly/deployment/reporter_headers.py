@@ -93,7 +93,7 @@ class Reporter:
         """
         pass
 
-    def log_strategy_event(self, strategy_object, event_name, response, **kwargs):
+    def log_strategy_event(self, strategy_object, event_name, response, args, **kwargs):
         """
         Export a strategy event that has occurred
         """
