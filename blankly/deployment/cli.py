@@ -222,7 +222,7 @@ def login(remove_cache: bool = False):
         if i[0:13] == 'blankly_auth_' and i != file_name:
             # If we're not removing cache this will use the old files to look for the token
             if not remove_cache:
-                # If its different than the one that was just created, remove the one just created
+                # If it's different from the one that was just created, remove the one just created
                 os.remove(os.path.join(temp_folder, file_name))
                 # Reassign file name just in case its needed below to write into the file
                 # Note that we protect against corrupted files below by overwriting any contents in case
@@ -242,6 +242,7 @@ def login(remove_cache: bool = False):
                     pass
             # If we are removing cache then these files should just be deleted
             else:
+                print(os.path.join(temp_folder, i))
                 os.remove(os.path.join(temp_folder, i))
             # Be sure to leave the loop
             break
@@ -255,7 +256,7 @@ def login(remove_cache: bool = False):
         token: str
 
         def do_OPTIONS(self):
-            # This options call is not used however these headers were hard to figure out so I'm leaving them
+            # This options call is not used however these headers were hard to figure out, so I'm leaving them
             self.send_response(200, "ok")
             self.send_header('Access-Control-Allow-Origin', 'https://app.blankly.finance')
             self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')

@@ -39,17 +39,27 @@ class StrategyLogger(ABCExchangeInterface):
         return self.interface.get_exchange_type()
     
     def get_account(self, symbol: str = None) -> AttributeDict:
+        args = locals()
         out = self.interface.get_account(symbol)
 
         # Log this with the account info as well as the account it was attached to
-        blankly.reporter.log_strategy_event(self.strategy, 'get_account', out, symbol=symbol)
+        blankly.reporter.log_strategy_event(self.strategy, 'get_account', out, args=symbol)
         return out
-    
+
+    """
+    These next three queries have large responses. It is unclear if this quantity of data is useful or necessary
+    """
     def get_products(self):
+        """
+        No logging implemented
+        """
         return self.interface.get_products()
 
     def get_product_history(self, symbol: str, epoch_start: float,
                             epoch_stop: float, resolution: Union[str, int]) -> pandas.DataFrame:
+        """
+        No logging implemented
+        """
         return self.interface.get_product_history(symbol, epoch_start, epoch_stop, resolution)
     
     def history(self,
@@ -59,53 +69,77 @@ class StrategyLogger(ABCExchangeInterface):
                 start_date: Union[str, dt, float] = None,
                 end_date: Union[str, dt, float] = None,
                 return_as: str = 'df') -> pandas.DataFrame:
-        if end_date is None:
-            end_date = self.strategy.time()
+        """
+        No logging implemented
+        """
         return self.interface.history(symbol, to=to,
                                       resolution=resolution, start_date=start_date,
                                       end_date=end_date, return_as=return_as)
     
     def market_order(self, symbol: str, side: str, size: float) -> MarketOrder:
+        args = locals()
         out = self.interface.market_order(symbol, side, size)
 
         # Record this market order along with the arguments
-        blankly.reporter.log_strategy_event(self.strategy, 'market_order', out,
-                                            symbol=symbol, side=side,
-                                            funds=size)
+        blankly.reporter.log_strategy_event(self.strategy, 'market_order', out, args=args)
         return out
     
     def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
+        args = locals()
         out = self.interface.limit_order(symbol, side, price, size)
 
         # Record limit order along with the arguments
-        blankly.reporter.log_strategy_event(self.strategy, 'limit_order', out,
-                                            symbol=symbol, side=side,
-                                            price=price, size=size)
+        blankly.reporter.log_strategy_event(self.strategy, 'limit_order', out, args=args)
         return out
     
     def cancel_order(self, symbol: str, order_id: str) -> dict:
+        args = locals()
         out = self.interface.cancel_order(symbol, order_id)
 
         # Record the cancellation along with the arguments
-        blankly.reporter.log_strategy_event(self.strategy, 'cancel_order', out,
-                                            symbol=symbol, order_id=order_id)
+        blankly.reporter.log_strategy_event(self.strategy, 'cancel_order', out, args=args)
         return out
 
     def get_open_orders(self, symbol: str = None) -> list:
-        return self.interface.get_open_orders(symbol=symbol)
+        args = locals()
+        out = self.interface.get_open_orders(symbol=symbol)
+
+        # Record the arguments
+        blankly.reporter.log_strategy_event(self.strategy, 'get_open_orders', out, args=args)
+        return out
 
     def get_order(self, symbol: str, order_id: str) -> dict:
-        return self.interface.get_order(symbol, order_id)
+        args = locals()
+        out = self.interface.get_order(symbol, order_id)
+
+        # Record the arguments
+        blankly.reporter.log_strategy_event(self.strategy, 'get_order', out, args=args)
+        return out
 
     def get_fees(self) -> dict:
-        return self.interface.get_fees()
+        args = locals()
+        out = self.interface.get_fees()
+
+        blankly.reporter.log_strategy_event(self.strategy, 'get_fees', out, args=args)
+        return out
 
     def get_order_filter(self, symbol: str):
-        return self.interface.get_order_filter(symbol)
+        args = locals()
+        out = self.interface.get_order_filter(symbol)
+
+        blankly.reporter.log_strategy_event(self.strategy, 'get_order_filter', out, args=args)
+        return out
     
     def get_price(self, symbol: str) -> float:
-        return self.interface.get_price(symbol)
+        args = locals()
+        out = self.interface.get_price(symbol)
 
+        blankly.reporter.log_strategy_event(self.strategy, 'get_price', out, args=args)
+        return out
+
+    """
+    No logging implemented for these properties
+    """
     @property
     def account(self) -> AttributeDict:
         return self.interface.account
