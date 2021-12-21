@@ -205,6 +205,7 @@ class OandaInterface(ExchangeInterface):
         return positions_dict
 
     # funds is the base asset (EUR_CAD the base asset is CAD)
+    @utils.order_protection
     def market_order(self, symbol: str, side: str, size: float) -> MarketOrder:
         symbol = self.__convert_blankly_to_oanda(symbol)
 
@@ -246,6 +247,7 @@ class OandaInterface(ExchangeInterface):
         resp = utils.isolate_specific(needed, resp)
         return MarketOrder(order, resp, self)
 
+    @utils.order_protection
     def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
         symbol = self.__convert_blankly_to_oanda(symbol)
         if side == "buy":

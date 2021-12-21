@@ -15,14 +15,13 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
-from os import error
 import blankly
 
 import datetime
 import json
 import sys
 import decimal
+import os
 from datetime import datetime as dt, timezone
 from math import ceil, trunc as math_trunc
 from typing import Type, Union
@@ -56,7 +55,8 @@ default_general_settings = {
         },
         "alpaca": {
             "websocket_stream": import_checks.UserInputParser("iex", str),
-            "cash": import_checks.UserInputParser("USD", str)
+            "cash": import_checks.UserInputParser("USD", str),
+            "enable_shorting" : import_checks.UserInputParser(True, bool)
         },
         "oanda": {
             "cash": import_checks.UserInputParser("USD", str)
@@ -69,6 +69,7 @@ default_backtest_settings = {
         "assets": import_checks.UserInputParser([],str)
     },
     "settings": {
+<<<<<<< HEAD
         "use_price": import_checks.UserInputParser("close", str, import_checks.is_in_list,
                                                    {"allowable": ["close", "open", "high", "low"]}),
         "smooth_prices": import_checks.UserInputParser(False, bool),
@@ -87,6 +88,20 @@ default_backtest_settings = {
         "risk_free_return_rate": import_checks.UserInputParser(0.0, float, import_checks.in_range,
                                                                {"allowable_range": (0, 0.1)}),
         "benchmark_symbol" : import_checks.UserInputParser(None, str)                                                     
+=======
+        "use_price": "close",
+        "smooth_prices": False,
+        "GUI_output": True,
+        "show_tickers_with_zero_delta": False,
+        "save_initial_account_value": True,
+        "show_progress_during_backtest": True,
+        "cache_location": "./price_caches",
+        "continuous_caching": True,
+        "resample_account_value_for_metrics": "1d",
+        "quote_account_value_in": "USD",
+        "ignore_user_exceptions": False,
+        "risk_free_return_rate": 0.0
+>>>>>>> 95a63f8234fa3d6f8870aeea330d0c1ab4fb1fd6
     }
 }
 
@@ -380,7 +395,7 @@ def isolate_specific(needed, compare_dictionary):
     """
     This is the parsing algorithm used to homogenize the dictionaries
     """
-    # Make a copy of the dictionary so we don't modify it if you loop over
+    # Make a copy of the dictionary, so we don't modify it if you loop over
     compare_dictionary = {**compare_dictionary}
     # Create a row vector for the keys
     column = [column[0] for column in needed]  # ex: ['currency', 'available', 'hold']
@@ -417,7 +432,7 @@ def isolate_specific(needed, compare_dictionary):
 
     # If there exists the exchange specific dict in the compare dictionary
     # This is done because after renaming, if there are naming conflicts they will already have been pushed here
-    # Because we pulled out the naming conflicts dictionary we just just write this directly
+    # Because we pulled out the naming conflicts dictionary we just write this directly
     compare_dictionary["exchange_specific"] = exchange_specific
 
     return compare_dictionary
@@ -760,3 +775,26 @@ def count_decimals(number) -> int:
     Count the number of decimals in a given float: 1.4335 -> 4 or 3 -> 0
     """
     return abs(decimal.Decimal(str(number)).as_tuple().exponent)
+
+
+def check_backtesting() -> bool:
+    """
+    Tests if the environment is configured for backtesting. Primarily used for platform deployments but is
+    applicable elsewhere
+    """
+    backtesting_env = os.getenv('BACKTESTING')
+    if backtesting_env is not None:
+        return backtesting_env == '1'
+    else:
+        return False
+
+
+def order_protection(func):
+    """
+    Decorator to provide protection against live orders inside backtest environment
+    """
+    def wrapper(*args, **kwargs):
+        if blankly._backtesting:
+            raise Exception("Blocked attempt at live order inside backtesting environment")
+        return func(*args, **kwargs)
+    return wrapper

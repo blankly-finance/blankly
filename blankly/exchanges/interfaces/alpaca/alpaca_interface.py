@@ -138,7 +138,7 @@ class AlpacaInterface(ExchangeInterface):
         # now grab the available cash in the account
         account = self.calls.get_account()
         positions_dict['USD'] = utils.AttributeDict({
-            'available': float(account['cash']),
+            'available': float(account['buying_power']),
             'hold': 0.0
         })
 
@@ -150,12 +150,16 @@ class AlpacaInterface(ExchangeInterface):
                         dollar_amt = float(order['qty']) * float(order['limit_price'])
                     elif order['type'] == 'market':
                         dollar_amt = float(order['qty']) * snapshot_price[curr_symbol]['latestTrade']['p']
-                    else:  # we dont have support for stop_order, stop_limit_order
+                    else:  # we don't have support for stop_order, stop_limit_order
                         dollar_amt = 0.0
                 else:  # this is the case for notional market buy
                     dollar_amt = float(order['notional'])
 
-                positions_dict['USD']['available'] -= dollar_amt
+                # In this case we don't have to subtract because the buying power is the available money already
+                # we just need to add to figure out how much is actually on limits
+                # positions_dict['USD']['available'] -= dollar_amt
+
+                # So just add to our hold
                 positions_dict['USD']['hold'] += dollar_amt
 
             else:
@@ -195,6 +199,7 @@ class AlpacaInterface(ExchangeInterface):
 
         return positions_dict
 
+    @utils.order_protection
     def market_order(self, symbol, side, size) -> MarketOrder:
         assert isinstance(self.calls, alpaca_trade_api.REST)
         needed = self.needed['market_order']
@@ -215,6 +220,7 @@ class AlpacaInterface(ExchangeInterface):
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
+    @utils.order_protection
     def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
         needed = self.needed['limit_order']
 
@@ -472,6 +478,7 @@ class AlpacaInterface(ExchangeInterface):
                             "volume"}, inplace=True)
 
             response = response.astype({
+                'time': int,
                 'open': float,
                 'high': float,
                 'low': float,

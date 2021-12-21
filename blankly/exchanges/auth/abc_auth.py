@@ -17,7 +17,6 @@
 """
 
 import abc
-import warnings
 
 from blankly.exchanges.auth.auth_constructor import load_auth
 from blankly.utils.exceptions import AuthError
@@ -27,7 +26,7 @@ from blankly.utils.utils import info_print
 class ABCAuth(abc.ABC):
     def __init__(self, keys_file: str, portfolio_name: str, exchange: str):
         """
-        Create a auth interface
+        Create an auth interface
         Args:
             keys_file (str): filepath to keys.json
             portfolio_name (str): name of portfolio

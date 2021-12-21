@@ -11,17 +11,17 @@ assignees: ''
 A clear and concise description of what the bug is.
 
 ## settings.json
-```python
+```json
 settings.json here
 ```
 
 ## backtest.json (if applicable)
-```python
+```json
 backtest.json here
 ```
 
 ## Error (if applicable)
-```python
+```text
 Error here
 ```
 

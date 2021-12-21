@@ -1,5 +1,5 @@
 """
-    Abstraction for creating event driven user strategies
+    Abstraction for creating interval driven user strategies
     Copyright (C) 2021  Emerson Dove, Brandon Fan
 
     This program is free software: you can redistribute it and/or modify
@@ -48,6 +48,7 @@ class Strategy:
         bar_event(bar: dict, symbol: str, state: blankly.StrategyState)
         teardown(blankly.StrategyState)
         """
+        self.__remote_backtesting = blankly._backtesting
         self.__exchange = exchange
         self.ticker_manager = blankly.TickerManager(self.__exchange.get_type(), currency_pair)
         self.orderbook_manager = blankly.OrderbookManager(self.__exchange.get_type(), currency_pair)
@@ -320,6 +321,14 @@ class Strategy:
         self.__using_orderbook = True
 
     def start(self):
+        """
+        Run your model live!
+
+        Simply call this function to take your strategy configuration live on your exchange
+        """
+        if self.__remote_backtesting:
+            warnings.warn("Aborted attempt to start a live strategy a backtest configuration")
+            return
         for i in self.__schedulers:
             kwargs = i.get_kwargs()
             if kwargs['init'] is not None:
@@ -368,8 +377,8 @@ class Strategy:
             return time.time()
 
     def backtest(self,
-                 initial_values: dict = None,
                  to: str = None,
+                 initial_values: dict = None,
                  start_date: str = None,
                  end_date: str = None,
                  save: bool = False,
@@ -384,9 +393,9 @@ class Strategy:
             ** We expect either an initial_value (in USD) or a dictionary of initial values, we also expect
             either `to` to be set or `start_date` and `end_date` **
 
+            to (str): Declare an amount of time before now to backtest from: ex: '5y' or '10h'
             initial_values (dict): Dictionary of initial value sizes (i.e { 'BTC': 3, 'USD': 5650}).
                 Using this will override the values that are currently on your exchange.
-            to (str): Declare an amount of time before now to backtest from: ex: '5y' or '10h'
             start_date (str): Override argument "to" by specifying a start date such as "03/06/2018"
             end_date (str): End the backtest at a date such as "03/06/2018"
             save (bool): Save the price data references to the data required for the backtest as well as
@@ -438,7 +447,7 @@ class Strategy:
                         False means that the backtest will immediately stop & attempt to generate a report if something
                         in the user calls goes wrong. True will replicate strategy errors.
 
-                ignore_user_exceptions: float = 0.0
+                risk_free_return_rate: float = 0.0
                     Set this to be the theoretical rate of return with no risk
         """
 
@@ -460,7 +469,7 @@ class Strategy:
             epoch = datetime.datetime.utcfromtimestamp(0)
             end = (end_date - epoch).total_seconds()
 
-        # If start/ends are specify unevenly
+        # If start/ends are specified unevenly
         if (start_date is None and end_date is not None) or (start_date is not None and end_date is None):
             raise ValueError("Both start and end dates must be set or use the 'to' argument.")
 
@@ -506,6 +515,8 @@ class Strategy:
 
         # Run the backtest & return results
         results = self.backtesting_controller.run()
+
+        blankly.reporter.export_backtest_result(results)
 
         # Clean up
         self.interface = self.__interface_cache

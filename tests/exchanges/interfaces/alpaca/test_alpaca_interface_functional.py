@@ -94,7 +94,7 @@ def test_get_buy_sell(alpaca_interface: AlpacaInterface) -> None:
 
     assert apple_id
 
-    market_order = alpaca_interface.market_order(apple_id, 'buy', 200)
+    market_order = alpaca_interface.market_order(apple_id, 'buy', 1)
 
     num_retries = 0
     # wait until order is filled

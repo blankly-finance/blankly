@@ -31,7 +31,7 @@ from blankly.utils.utils import info_print
 
 class Tickers(ABCExchangeWebsocket):
     def __init__(self, symbol, stream, log=None, initially_stopped=False,
-                 WEBSOCKET_URL="wss://stream.binance.com:9443/ws"):
+                 WEBSOCKET_URL="wss://stream.binance.{}:9443/ws"):
         """
         Create and initialize the ticker
         Args:
@@ -56,7 +56,11 @@ class Tickers(ABCExchangeWebsocket):
         else:
             self.__log = False
 
-        self.URL = WEBSOCKET_URL
+        # Reload preferences
+        self.__preferences = blankly.utils.load_user_preferences()
+
+        # Add the TLD into the URL if necessary
+        self.URL = WEBSOCKET_URL.format(self.__preferences['settings']['binance']['binance_tld'])
         self.ws = None
         self.__response = None
         self.__most_recent_tick = None
@@ -67,8 +71,6 @@ class Tickers(ABCExchangeWebsocket):
         # This is created so that we know when a message has come back that we're waiting for
         self.__message_count = 0
 
-        # Reload preferences
-        self.__preferences = blankly.utils.load_user_preferences()
         buffer_size = self.__preferences["settings"]["websocket_buffer_size"]
         self.__ticker_feed = collections.deque(maxlen=buffer_size)
         self.__time_feed = collections.deque(maxlen=buffer_size)
@@ -143,15 +145,10 @@ class Tickers(ABCExchangeWebsocket):
         pass
 
     def on_open(self, ws):
-        request = """
-        {
-            "method": "SUBSCRIBE",
-            "params": [
-                \"""" + self.__id + "@" + self.__stream + """\"
-            ],
-            "id": 1
-        }
-        """
+        request = '{"method": ' \
+                  '"SUBSCRIBE","params": ' \
+                  '["' + self.__id + '@' + self.__stream + \
+                  '"],"id": 1}'
         ws.send(request)
 
     """ Required in manager """
