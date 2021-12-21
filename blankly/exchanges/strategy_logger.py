@@ -81,7 +81,7 @@ class StrategyLogger(ABCExchangeInterface):
         out = self.interface.market_order(symbol, side, size)
 
         # Record this market order along with the arguments
-        blankly.reporter.log_strategy_event(self.strategy, 'market_order', out, args=args)
+        blankly.reporter.log_strategy_event(self.strategy, 'market_order', out.get_response(), args=args)
         return out
     
     def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
@@ -89,7 +89,7 @@ class StrategyLogger(ABCExchangeInterface):
         out = self.interface.limit_order(symbol, side, price, size)
 
         # Record limit order along with the arguments
-        blankly.reporter.log_strategy_event(self.strategy, 'limit_order', out, args=args)
+        blankly.reporter.log_strategy_event(self.strategy, 'limit_order', out.get_response(), args=args)
         return out
     
     def cancel_order(self, symbol: str, order_id: str) -> dict:
