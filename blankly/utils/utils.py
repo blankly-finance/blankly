@@ -69,7 +69,6 @@ default_backtest_settings = {
         "assets": import_checks.UserInputParser([],str)
     },
     "settings": {
-<<<<<<< HEAD
         "use_price": import_checks.UserInputParser("close", str, import_checks.is_in_list,
                                                    {"allowable": ["close", "open", "high", "low"]}),
         "smooth_prices": import_checks.UserInputParser(False, bool),
@@ -88,20 +87,6 @@ default_backtest_settings = {
         "risk_free_return_rate": import_checks.UserInputParser(0.0, float, import_checks.in_range,
                                                                {"allowable_range": (0, 0.1)}),
         "benchmark_symbol" : import_checks.UserInputParser(None, str)                                                     
-=======
-        "use_price": "close",
-        "smooth_prices": False,
-        "GUI_output": True,
-        "show_tickers_with_zero_delta": False,
-        "save_initial_account_value": True,
-        "show_progress_during_backtest": True,
-        "cache_location": "./price_caches",
-        "continuous_caching": True,
-        "resample_account_value_for_metrics": "1d",
-        "quote_account_value_in": "USD",
-        "ignore_user_exceptions": False,
-        "risk_free_return_rate": 0.0
->>>>>>> 95a63f8234fa3d6f8870aeea330d0c1ab4fb1fd6
     }
 }
 

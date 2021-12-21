@@ -994,7 +994,6 @@ class BackTestController:
             metrics_indicators['Volatility'] = attempt(metrics.volatility, dataframes)
             metrics_indicators['Value-at-Risk'] = attempt(metrics.var, dataframes)
             metrics_indicators['Conditional Value-at-Risk'] = attempt(metrics.cvar, dataframes)
-<<<<<<< HEAD
 
             # If a benchmark was requested, add it to the pd_prices frame
             if benchmark_symbol is not None:
@@ -1020,18 +1019,16 @@ class BackTestController:
                 # Calculate beta
                 metrics_indicators['Beta'] = attempt(metrics.beta, dataframes)
 
-=======
             # Add risk-free-return rate to dictionary
             metrics_indicators['Risk Free Return Rate'] = risk_free_return_rate
             # metrics_indicators['beta'] = attempt(metrics.beta, dataframes)
             # Add the interval value to dictionary
             metrics_indicators['Resampled Time'] = interval_value
->>>>>>> 95a63f8234fa3d6f8870aeea330d0c1ab4fb1fd6
             # -----=====*****=====-----
 
         # Run this last so that the user can override what they want
         for callback in self.callbacks:
-            user_callbacks[callback.__name__] = callback(dataframes)
+            user_callbacks[callback.__name__] = callback(dataframes, metrics_indicators)
 
         result_object = BacktestResult(dataframes, metrics_indicators, user_callbacks)
 
