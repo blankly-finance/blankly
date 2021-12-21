@@ -18,6 +18,7 @@
 
 import argparse
 import sys
+import uuid
 import warnings
 import os
 import platform
@@ -365,6 +366,17 @@ def main():
         try:
             f = open(os.path.join(args['path'], deployment_script_name))
             deployment_options = json.load(f)
+
+            f.close()
+            if 'model_id' not in deployment_options:
+                deployment_options['model_id'] = str(uuid.uuid4())
+
+                info_print(f"Generating new model id for this blankly.json: {deployment_options['model_id']}")
+                # Write the modified version with the ID back into the json file
+                f = open(os.path.join(args['path'], deployment_script_name), 'w+')
+                f.write(json.dumps(deployment_options, indent=2))
+                f.close()
+            model_id = deployment_options['model_id']
         except FileNotFoundError:
             raise FileNotFoundError(f"A {deployment_script_name} file must be present at the top level of the "
                                     f"directory specified.")
@@ -412,6 +424,7 @@ def main():
             info_print("Uploading...")
             response = api.deploy(model_path,
                                   project_id=project_id,
+                                  model_id=model_id,
                                   plan=chosen_plan,
                                   description=user_description,
                                   name=model_name)

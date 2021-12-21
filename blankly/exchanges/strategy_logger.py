@@ -43,7 +43,7 @@ class StrategyLogger(ABCExchangeInterface):
         out = self.interface.get_account(symbol)
 
         # Log this with the account info as well as the account it was attached to
-        blankly.reporter.log_strategy_event(self.strategy, 'get_account', out, args=symbol)
+        blankly.reporter.log_strategy_event(self.strategy, 'get_account', out, args=args)
         return out
 
     """

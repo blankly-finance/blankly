@@ -110,11 +110,12 @@ class API:
         return self.__request('post', 'project/create', data={'name': name,
                                                               'description': description})
 
-    def deploy(self, file_path: str, plan: str, project_id, description: str, name: str):
+    def deploy(self, file_path: str, plan: str, project_id, model_id: str, description: str, name: str):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
         return self.__request('post', 'model/deploy', file=file, data={'plan': plan,
                                                                        'name': name,
+                                                                       'modelId': model_id,
                                                                        'projectId': project_id,
                                                                        'description': description})
 
