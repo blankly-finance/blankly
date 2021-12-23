@@ -24,6 +24,7 @@ from typing import Any
 from blankly.utils.utils import load_notify_preferences
 from blankly.frameworks.strategy import Strategy
 from blankly.frameworks.signal.signal import Signal
+from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
 
 
 class Reporter:
@@ -81,21 +82,30 @@ class Reporter:
         Args:
             signal: A signal object to export
         """
-
         pass
 
-    def log_strategy_event(self, strategy_object, event_name, response, **kwargs):
+    def export_backtest_result(self, backtest_result: BacktestResult):
+        """
+        Re-export for the finished signal result
+
+        Args:
+            backtest_result: A blankly backtest result object
+        """
+        pass
+
+    def log_strategy_event(self, strategy_object, event_name, response, args, **kwargs):
         """
         Export a strategy event that has occurred
         """
         pass
 
-    def text(self, message_str: str):
+    def text(self, text: str):
         """
-        Send a text message to your number
+        Send a text message to the number if notify.json OR the phone number attached to your account if the model
+        is deployed live
 
         Args:
-            message_str: The message body to be sent to your phone number
+            text: The message body to be sent to your phone number
         """
         notify_preferences = load_notify_preferences()
         provider = notify_preferences['text']['provider']
@@ -116,18 +126,12 @@ class Reporter:
         except KeyError:
             raise KeyError("Provider not found. Check the notify.json documentation to see supported providers.")
 
-        self.email(message_str, override_receiver=phone_number + email)
+        self.__send_email(text, override_receiver=phone_number + email)
 
-    def email(self, email_str: str, override_receiver: str = None):
+    @staticmethod
+    def __send_email(email_str: str, override_receiver=None):
         """
-        Send an email to your user account email
-
-        This is only active during live deployment on blankly services because it relies on backend infrastructure
-
-        Args:
-            email_str: The body of the email to send
-            override_receiver: Change the address that the email is being sent to. This is used to rapidly switch to
-             text messages
+        Internal email send. This is separated because override_receiver shouldn't be exposed to the user
         """
         notify_preferences = load_notify_preferences()
         port = notify_preferences['email']['port']
@@ -145,3 +149,12 @@ class Reporter:
         with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
             server.login(sender_email, password)
             server.sendmail(sender_email, receiver_email, message)
+
+    def email(self, email: str):
+        """
+        Send an email to the email specified in the notify.json OR your user account email if run live
+
+        Args:
+            email: The body of the email to send
+        """
+        self.__send_email(email)

@@ -129,6 +129,7 @@ class CoinbaseProInterface(ExchangeInterface):
 
         return parsed_dictionary
 
+    @utils.order_protection
     def market_order(self, symbol, side, size) -> MarketOrder:
         """
         Used for buying or selling market orders
@@ -170,6 +171,7 @@ class CoinbaseProInterface(ExchangeInterface):
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
+    @utils.order_protection
     def limit_order(self, symbol, side, price, size) -> LimitOrder:
         """
         Used for buying or selling limit orders
@@ -218,7 +220,7 @@ class CoinbaseProInterface(ExchangeInterface):
     Stop limit isn't added to the abstract class because the binance version is barely supported.
     
     If you want to use this function you can, just do interface.stop_limit(args) if you're using a coinbase pro 
-    interface
+    interface. Keep in mind this only works live and is not integrated with paper trading or backtesting
     """
 
     def stop_limit(self, symbol, side, stop_price, limit_price, size, stop='loss') -> StopLimit:
@@ -480,6 +482,7 @@ class CoinbaseProInterface(ExchangeInterface):
         df = pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
         # df[['time']] = df[['time']].astype(int)
         # Have to cast this for some reason
+        df[['time']] = df[['time']].astype(int)
         df[['low', 'high', 'open', 'close', 'volume']] = df[['low', 'high', 'open', 'close', 'volume']].astype(float)
 
         return df

@@ -227,15 +227,14 @@ class InterfaceHomogeneity(unittest.TestCase):
         """
         binance_limits = self.Binance_Interface.get_order_filter('BTC-USDT')["limit_order"]
 
-        binance_buy = self.Binance_Interface.limit_order('BTC-USDT', 'buy', int(binance_limits['min_price']+30), .01)
-        time.sleep(3)
+        binance_buy = self.Binance_Interface.limit_order('BTC-USDT', 'buy', int(binance_limits['min_price']+100), .01)
+        binance_sell = self.Binance_Interface.limit_order('BTC-USDT', 'sell', int(binance_limits['max_price']-100), .01)
+        self.check_limit_order(binance_sell, 'sell', .01, 'BTC-USDT')
         self.check_limit_order(binance_buy, 'buy', .01, 'BTC-USDT')
+        time.sleep(3)
 
         coinbase_buy = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'buy', .01, 1)
         self.check_limit_order(coinbase_buy, 'buy', 1, 'BTC-USD')
-
-        binance_sell = self.Binance_Interface.limit_order('BTC-USDT', 'sell', int(binance_limits['max_price']-30), .01)
-        self.check_limit_order(binance_sell, 'sell', .01, 'BTC-USDT')
 
         coinbase_sell = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'sell', 100000, 1)
         self.check_limit_order(coinbase_sell, 'sell', 1, 'BTC-USD')
@@ -321,7 +320,10 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
     def check_product_history_types(self, df: pd.DataFrame):
-        self.assertTrue(isinstance(df['time'][0], numpy.int64))
+        # This is caused by casting on windows in pandas - I believe it is a bug
+        self.assertTrue(isinstance(df['time'][0], int) or
+                        isinstance(df['time'][0], numpy.int64) or
+                        isinstance(df['time'][0], numpy.int32))
         self.assertTrue(isinstance(df['low'][0], float))
         self.assertTrue(isinstance(df['high'][0], float))
         self.assertTrue(isinstance(df['open'][0], float))

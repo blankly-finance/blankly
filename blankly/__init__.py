@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import blankly.utils.utils
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro import CoinbasePro
 from blankly.exchanges.interfaces.binance.binance import Binance
 from blankly.exchanges.interfaces.alpaca.alpaca import Alpaca
@@ -42,6 +42,8 @@ from blankly.utils import time_builder
 from blankly.deployment.reporter_headers import Reporter as __Reporter_Headers
 is_deployed = False
 _signal_runner = None
+
+_backtesting = blankly.utils.check_backtesting()
 try:
     from blankly_external import Reporter as __Reporter
     reporter = __Reporter
