@@ -33,7 +33,11 @@ from blankly.utils.exceptions import APIException, InvalidOrder
 
 class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
     def __init__(self, derived_interface: ABCExchangeInterface, initial_account_values: dict = None):
+        # This paper trade orders keeps a live track of the orders
         self.paper_trade_orders = []
+        # These two keep track of which limit orders and when the order finishes
+        self.canceled_orders = []
+        self.executed_orders = []
 
         self.get_products_cache = None
         self.get_fees_cache = None
@@ -128,7 +132,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
     """ Needs to be overridden here """
 
     def start_paper_trade_watchdog(self):
-        # TODO, this process could use variable update time/websocket usage, poll time and a variety of settings
+        # TODO, this process could use variable update time/websocket usage, poll `time` and a variety of settings
         #  to create a robust trading system
         # Create the watchdog for watching limit orders
         self.__thread = threading.Thread(target=self.__paper_trade_watchdog(), daemon=True)
@@ -251,6 +255,12 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                         order['status'] = 'done'
                         order['settled'] = 'true'
 
+                        # Add this to the executed orders
+                        self.executed_orders.append({
+                            'order_id': index['id'],
+                            'executed_time': time.time(),
+                        })
+
                         self.paper_trade_orders[i] = order
                 elif index['side'] == 'sell':
                     if index['price'] < prices[index['symbol']]:
@@ -280,6 +290,12 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                                                        )
                         order['status'] = 'done'
                         order['settled'] = 'true'
+
+                        # Add this to the executed orders
+                        self.executed_orders.append({
+                            'order_id': index['id'],
+                            'executed_time': time.time(),
+                        })
 
                         self.paper_trade_orders[i] = order
 
@@ -562,9 +578,17 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             index = self.paper_trade_orders[i]
             if index['status'] == 'pending' and index['id'] == order_id:
                 order_index = i
+                break
 
         if order_index is not None:
             order_id = self.paper_trade_orders[order_index]['id']
+            # Make sure to save this as a canceled order just before closing it
+            # Make sure to write in the time also
+            self.canceled_orders.append({
+                'order_id': self.paper_trade_orders[order_index]['id'],
+                'cancel_time': self.time()
+            })
+
             del self.paper_trade_orders[order_index]
             return {"order_id": order_id}
 

@@ -21,6 +21,7 @@ import traceback
 import typing
 from datetime import datetime as dt
 
+import numpy as np
 import pandas as pd
 from bokeh.layouts import column as bokeh_columns
 from bokeh.models import HoverTool
@@ -174,7 +175,7 @@ class BackTestController:
 
         self.__exchange_type = self.interface.get_exchange_type()
 
-        # Create our own traded assets dictionary because we customize it a bit
+        # Create our own traded assets' dictionary because we customize it a bit
         self.__traded_assets = []
 
         # Because the times are run in order we can use this variable to optimize account value searching
@@ -509,7 +510,7 @@ class BackTestController:
         return output
 
     def __next_color(self):
-        # This should be a generator but it doesn't work without doing a foreach loop
+        # This should be a generator, but it doesn't work without doing a foreach loop
         try:
             return next(self.__color_generator)
         except StopIteration:
@@ -815,7 +816,7 @@ class BackTestController:
             except ValueError:
                 return False
 
-        dataframes = {
+        history_and_returns = {
             'history': cycle_status
         }
         metrics_indicators = {}
@@ -884,7 +885,7 @@ class BackTestController:
             resampled_returns = resampled_returns.append(resampled_backing_array, ignore_index=True)
 
             # This is the resampled version
-            dataframes['resampled_account_value'] = resampled_returns
+            history_and_returns['resampled_account_value'] = resampled_returns
 
             # Now we need to copy it and find the differences
             returns = resampled_returns.copy(deep=True)
@@ -893,38 +894,42 @@ class BackTestController:
             returns['value'] = returns['value'].pct_change()
 
             # Now write it to our dictionary
-            dataframes['returns'] = returns
+            history_and_returns['returns'] = returns
 
             # -----=====*****=====-----
-            metrics_indicators['Compound Annual Growth Rate (%)'] = metrics.cagr(dataframes)
+            metrics_indicators['Compound Annual Growth Rate (%)'] = metrics.cagr(history_and_returns)
             try:
-                metrics_indicators['Cumulative Returns (%)'] = metrics.cum_returns(dataframes)
+                metrics_indicators['Cumulative Returns (%)'] = metrics.cum_returns(history_and_returns)
             except ZeroDivisionError:
-                raise ZeroDivisionError("Division by zero when calculating cum returns. "
+                raise ZeroDivisionError("Division by zero when calculating cumulative returns. "
                                         "Are there valid account datapoints?")
 
             def attempt(math_callable: typing.Callable, dict_of_dataframes: dict, kwargs: dict = None):
                 try:
                     if kwargs is None:
                         kwargs = {}
-                    return math_callable(dict_of_dataframes, **kwargs)
+                    result = math_callable(dict_of_dataframes, **kwargs)
+                    if result == np.NAN:
+                        result = None
+                    return result
                 except ZeroDivisionError:
                     return 'failed'
 
             risk_free_return_rate = self.preferences['settings']["risk_free_return_rate"]
             trading_period = interval_value
-            metrics_indicators['Max Drawdown (%)'] = attempt(metrics.max_drawdown, dataframes)
-            metrics_indicators['Variance (%)'] = attempt(metrics.variance, dataframes)
-            metrics_indicators['Sortino Ratio'] = attempt(metrics.sortino, dataframes,
+            metrics_indicators['Max Drawdown (%)'] = attempt(metrics.max_drawdown, history_and_returns)
+            metrics_indicators['Variance (%)'] = attempt(metrics.variance, history_and_returns)
+            metrics_indicators['Sortino Ratio'] = attempt(metrics.sortino, history_and_returns,
                                                           {'risk_free_rate': risk_free_return_rate,
                                                            'trading_period': trading_period})
-            metrics_indicators['Sharpe Ratio'] = attempt(metrics.sharpe, dataframes,
+            metrics_indicators['Sharpe Ratio'] = attempt(metrics.sharpe, history_and_returns,
                                                          {'risk_free_rate': risk_free_return_rate,
                                                           'trading_period': trading_period})
-            metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, dataframes, {'trading_period': trading_period})
-            metrics_indicators['Volatility'] = attempt(metrics.volatility, dataframes)
-            metrics_indicators['Value-at-Risk'] = attempt(metrics.var, dataframes)
-            metrics_indicators['Conditional Value-at-Risk'] = attempt(metrics.cvar, dataframes)
+            metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, history_and_returns, {'trading_period':
+                                                                                               trading_period})
+            metrics_indicators['Volatility'] = attempt(metrics.volatility, history_and_returns)
+            metrics_indicators['Value-at-Risk'] = attempt(metrics.var, history_and_returns)
+            metrics_indicators['Conditional Value-at-Risk'] = attempt(metrics.cvar, history_and_returns)
             # Add risk-free-return rate to dictionary
             metrics_indicators['Risk Free Return Rate'] = risk_free_return_rate
             # metrics_indicators['beta'] = attempt(metrics.beta, dataframes)
@@ -934,9 +939,25 @@ class BackTestController:
 
         # Run this last so that the user can override what they want
         for callback in self.callbacks:
-            user_callbacks[callback.__name__] = callback(dataframes)
+            user_callbacks[callback.__name__] = callback(history_and_returns)
 
-        result_object = BacktestResult(dataframes, metrics_indicators, user_callbacks)
+        # Remove NaN values here
+        history_and_returns['resampled_account_value'] = history_and_returns['resampled_account_value'].\
+            where(history_and_returns['resampled_account_value'].notnull(), None)
+
+        # Remove NaN values on this one too
+        history_and_returns['returns'] = history_and_returns['returns'].where(history_and_returns['returns'].notnull(),
+                                                                              None)
+        # Lastly remove Nan values in the metrics
+        for i in metrics_indicators:
+            if np.isnan(metrics_indicators[i]):
+                metrics_indicators[i] = None
+
+        result_object = BacktestResult(history_and_returns, metrics_indicators, user_callbacks, {
+            'created': self.interface.paper_trade_orders,
+            'limits_executed': self.interface.executed_orders,
+            'limits_canceled': self.interface.canceled_orders
+        }, self.pd_prices)
 
         self.interface.set_backtesting(False)
         return result_object

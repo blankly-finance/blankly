@@ -20,19 +20,22 @@ from pandas import DataFrame
 
 
 class BacktestResult:
-    def __init__(self, dataframes: dict, metrics: dict, user_callbacks: dict):
-        self.dataframes = dataframes
+    def __init__(self, history_and_returns: dict, metrics: dict, user_callbacks: dict, trades: dict, history: dict):
+        # This can use a ton of memory if these attributes are not cleared
+        self.history_and_returns = history_and_returns
         self.metrics = metrics
         self.user_callbacks = user_callbacks
+        self.trades = trades
+        self.history = history
 
     def get_account_history(self) -> DataFrame:
-        return self.dataframes['history']
+        return self.history_and_returns['history']
 
     def get_returns(self) -> DataFrame:
-        return self.dataframes['returns']
+        return self.history_and_returns['returns']
 
     def get_resampled_account(self) -> DataFrame:
-        return self.dataframes['resampled_account_value']
+        return self.history_and_returns['resampled_account_value']
 
     def get_user_callback_results(self) -> dict:
         return self.user_callbacks
@@ -45,15 +48,15 @@ class BacktestResult:
         return_string += "Historical Dataframes: \n"
 
         return_string += "Account History: \n"
-        return_string += self.dataframes['history'].__str__()
+        return_string += self.history_and_returns['history'].__str__()
         return_string += "\n"
 
         return_string += "Account Returns: \n"
-        return_string += self.dataframes['returns'].__str__()
+        return_string += self.history_and_returns['returns'].__str__()
         return_string += "\n"
 
         return_string += "Resampled Account Value: \n"
-        return_string += self.dataframes['resampled_account_value'].__str__()
+        return_string += self.history_and_returns['resampled_account_value'].__str__()
         return_string += "\n"
 
         return_string += "Blankly Metrics: \n"
