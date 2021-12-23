@@ -20,13 +20,17 @@ from pandas import DataFrame
 
 
 class BacktestResult:
-    def __init__(self, history_and_returns: dict, metrics: dict, user_callbacks: dict, trades: dict, history: dict):
+    def __init__(self, history_and_returns: dict, metrics: dict, user_callbacks: dict, trades: dict, history: dict,
+                 start_time: float, stop_time: float):
         # This can use a ton of memory if these attributes are not cleared
         self.history_and_returns = history_and_returns
         self.metrics = metrics
         self.user_callbacks = user_callbacks
         self.trades = trades
         self.history = history
+
+        self.start_time = start_time
+        self.stop_time = stop_time
 
     def get_account_history(self) -> DataFrame:
         return self.history_and_returns['history']
