@@ -160,8 +160,7 @@ class FTXInterface(ExchangeInterface):
         pass
 
     
-    def get_price(self,
-                  symbol: str) -> float:
+    def get_price(self, symbol: str) -> float:
         """
         Returns just the price of a symbol.
         Args:
