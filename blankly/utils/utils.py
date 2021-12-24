@@ -70,7 +70,7 @@ default_backtest_settings = {
     },
     "settings": {
         "use_price": import_checks.UserInputParser("close", str, import_checks.is_in_list,
-                                                   {"allowable": ["close", "open", "high", "low"]}),
+                                                   {"allowable": ["close", "open", "high", "low", "adj_close"]}),
         "smooth_prices": import_checks.UserInputParser(False, bool),
         "GUI_output": import_checks.UserInputParser(True, bool),
         "show_tickers_with_zero_delta": import_checks.UserInputParser(False, bool),
