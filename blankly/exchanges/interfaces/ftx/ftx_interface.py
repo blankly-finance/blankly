@@ -2,13 +2,19 @@ import pandas
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.exchanges.orders.limit_order import LimitOrder
+from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
 import blankly.utils.utils as utils
 #
 class FTXInterface(ExchangeInterface):
-        
-    def __init__(self, exchange_name, authenticated_API):
-        super().__init__(exchange_name, authenticated_API, valid_resolutions=None)
+    
+    #preferences path currently unused (note, FTX has no sandbox mode)
+    def __init__(self, authenticated_API: FTXAPI, preferences_path: str):
+        super().__init__('ftx', authenticated_API, preferences_path, valid_resolutions=None)
 
+    def init_exchange(self):
+        print("delete this print statement")
+        pass
+        
     def get_calls(self):
         """
         Get the direct & authenticated exchange object

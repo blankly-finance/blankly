@@ -39,6 +39,11 @@ class Exchange(ABCExchange, abc.ABC):
 
         self.__auth = self.__factory.create_auth(keys_path, self.__type, self.__name)
         self.__direct_calls_factory = DirectCallsFactory()
+
+        print(f"{exchange_type} type: {self.__type}")
+        print(f"{exchange_type} auth: {self.__auth}")
+        print(f"{exchange_type} prefs: {preferences_path}")
+
         self.calls, self.interface = self.__direct_calls_factory.create(self.__type, self.__auth, preferences_path)
         write_auth_cache(exchange_type, portfolio_name, self.calls)
 

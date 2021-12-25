@@ -6,14 +6,15 @@ from blankly.exchanges.auth.abc_auth import ABCAuth
 import time
 import hmac
 
-class API:
+class FTXAPI:
     _API_URL = "https://ftx.com/api/"
 
+    #no option to instantiate with sandbox mode, unlike every other exchange
     def __init__(self, auth: ABCAuth, _subaccount_name = None):
 
         self.__api_key = auth.keys['API_KEY']
         self.__api_secret = auth.keys['API_SECRET']
-        self._subaccount_name = subaccount_name
+        self._subaccount_name = _subaccount_name
 
         self.ftx_session = requests.Session()
 
@@ -157,7 +158,7 @@ class API:
             'price': price,
             'size': size,
             'type': type_,
-            'reduceOnly': reduce_only
+            'reduceOnly': reduce_only,
             'ioc': ioc,
             'postOnly': post_only,
             'clientId': client_id
@@ -240,7 +241,7 @@ class API:
             {
                 'market': market,
                 'side': side,
-                'triggerPrice': trigger_price
+                'triggerPrice': trigger_price,
                 'size': size,
                 'reduceOnly': reduce_only,
                 'type': type_,
@@ -254,7 +255,7 @@ class API:
         to_return = []
         set_of_ids = set()
 
-        while:
+        while True:
             resp = self._signed_get(f'markets/{market}/trades', {
                 'end_time': interval_end,
                 'start_time': interval_start
@@ -267,17 +268,17 @@ class API:
                     dd_trades.append(elem)
             
 
-        to_return.extend(dd_trades)
+            to_return.extend(dd_trades)
 
-        set_of_ids |= {elem['id'] for elem in dd_trades}
+            set_of_ids |= {elem['id'] for elem in dd_trades}
 
-        if len(resp) == 0:
-            break
-        interval_end = min(parse_datetime(time_['time']) for time_ in resp).timestamp()
-        if limit > len(resp):
-            break
+            if len(resp) == 0:
+                break
+            interval_end = min(parse_datetime(time_['time']) for time_ in resp).timestamp()
+            if limit > len(resp):
+                break
         
-    return to_return
+        return to_return
 
 
 

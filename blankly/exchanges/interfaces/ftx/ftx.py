@@ -1,5 +1,5 @@
 from blankly.exchanges.exchange import Exchange
-from blankly.exchanges.interfaces.ftx.ftx_api import API as FTXAPI
+from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
 
 class FTX(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
