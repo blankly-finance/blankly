@@ -119,7 +119,8 @@ class API:
                                                                        'projectId': project_id,
                                                                        'description': description})
 
-    def backtest(self, project_id: str, model_id: str, args: dict):
-        return self.__request('post', 'model/backtest', data={'project_id': project_id,
-                                                              'model_id': model_id,
-                                                              'args': args})
+    def backtest(self, project_id: str, model_id: str, args: dict, version_id: str):
+        return self.__request('post', 'model/backtest', json_={'projectId': project_id,
+                                                               'modelId': model_id,
+                                                               'versionId': version_id,
+                                                               'args': args})

@@ -257,7 +257,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
                         # Add this to the executed orders
                         self.executed_orders.append({
-                            'order_id': index['id'],
+                            'id': index['id'],
                             'executed_time': time.time(),
                         })
 
@@ -293,7 +293,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
                         # Add this to the executed orders
                         self.executed_orders.append({
-                            'order_id': index['id'],
+                            'id': index['id'],
                             'executed_time': time.time(),
                         })
 
@@ -585,8 +585,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             # Make sure to save this as a canceled order just before closing it
             # Make sure to write in the time also
             self.canceled_orders.append({
-                'order_id': self.paper_trade_orders[order_index]['id'],
-                'cancel_time': self.time()
+                'id': self.paper_trade_orders[order_index]['id'],
+                'canceled_time': self.time()
             })
 
             del self.paper_trade_orders[order_index]

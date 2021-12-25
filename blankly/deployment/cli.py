@@ -498,7 +498,10 @@ def main():
     elif which == 'backtest':
         api = API(login())
 
-        print(api.backtest(project_id='jiCLm5a2EkgZBhHX1oUt', model_id='sCH0Ns9Pvow4p7T3D44v', args={'to': '1y'}))
+        print(api.backtest(project_id='eXZ0WXDHcgY9Hif31FH4',
+                           model_id='baa133f1-88f6-45f6-b7a3-f97890cc8146',
+                           version_id='6Q52beIpScIqDn5OqL4d',
+                           args={'to': '1y'}))
 
     elif which == 'create':
         api = API(login())
