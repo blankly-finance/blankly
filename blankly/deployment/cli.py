@@ -498,6 +498,8 @@ def main():
     elif which == 'backtest':
         api = API(login())
 
+        input(TermColors.BOLD + "Input a description for this backtest: " + TermColors.ENDC)
+
         print(api.backtest(project_id='eXZ0WXDHcgY9Hif31FH4',
                            model_id='baa133f1-88f6-45f6-b7a3-f97890cc8146',
                            version_id='6Q52beIpScIqDn5OqL4d',

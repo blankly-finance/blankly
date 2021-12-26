@@ -956,8 +956,9 @@ class BackTestController:
         result_object = BacktestResult(history_and_returns, metrics_indicators, user_callbacks, {
             'created': self.interface.paper_trade_orders,
             'limits_executed': self.interface.executed_orders,
-            'limits_canceled': self.interface.canceled_orders
-        }, self.pd_prices, self.initial_time, self.interface.time())
+            'limits_canceled': self.interface.canceled_orders,
+            'executed_market_orders': self.interface.market_order_execution_details
+        }, self.pd_prices, self.initial_time, self.interface.time(), self.quote_currency)
 
         self.interface.set_backtesting(False)
         return result_object

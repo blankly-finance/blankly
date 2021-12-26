@@ -39,6 +39,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         self.canceled_orders = []
         self.executed_orders = []
 
+        # Save the market order execution details for later
+        self.market_order_execution_details = []
+
         self.get_products_cache = None
         self.get_fees_cache = None
         self.get_order_filter_cache = {}
@@ -258,7 +261,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                         # Add this to the executed orders
                         self.executed_orders.append({
                             'id': index['id'],
-                            'executed_time': time.time(),
+                            'executed_time': self.time(),
                         })
 
                         self.paper_trade_orders[i] = order
@@ -294,7 +297,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                         # Add this to the executed orders
                         self.executed_orders.append({
                             'id': index['id'],
-                            'executed_time': time.time(),
+                            'executed_time': self.time(),
                         })
 
                         self.paper_trade_orders[i] = order
@@ -442,6 +445,11 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             raise APIException("Invalid trade side: " + str(side))
 
         self.__check_trading_assets(symbol)
+
+        self.market_order_execution_details.append({
+            'id': response['id'],
+            'executed_price': price
+        })
         return MarketOrder(order, response, self)
 
     def limit_order(self, symbol, side, price, size) -> LimitOrder:
@@ -564,7 +572,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             # Loose the size when selling
             self.local_account.update_available(base, available - size)
 
-            # Gain size on hold when buying
+            # Gain size on hold when selling
             hold = self.local_account.get_account(base)['hold']
             self.local_account.update_hold(base, hold + size)
         return LimitOrder(order, response, self)
