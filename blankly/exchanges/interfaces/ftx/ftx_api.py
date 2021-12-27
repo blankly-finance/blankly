@@ -18,7 +18,7 @@ class FTXAPI:
 
         self.ftx_session = requests.Session()
 
-    def _signed_request(self, method: str, path: str):
+    def _signed_request(self, method: str, path: str, **kwargs):
         request = requests.Request(method, self._API_URL + path, **kwargs)
         self._get_signature(request)
         result = self.ftx_session.send(request.prepare())
@@ -63,10 +63,10 @@ class FTXAPI:
             raise
 
         else:
-            if not data['success']:
+            if not result['success']:
                 raise Exception(data['error'])
             else:
-                return data['success']
+                return result['success']
             
 
     def list_markets(self) -> List[dict]:

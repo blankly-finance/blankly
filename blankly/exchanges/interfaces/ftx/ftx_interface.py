@@ -23,7 +23,7 @@ class FTXInterface(ExchangeInterface):
              The exchange's direct calls object. A blankly Bot class should have immediate access to this by
              default
         """
-        pass
+        return self.calls
 
     
     def get_exchange_type(self):
@@ -44,6 +44,9 @@ class FTXInterface(ExchangeInterface):
 
         TODO add return example
         """
+
+        needed = self.needed['get_products']
+
         pass
 
     
