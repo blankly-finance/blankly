@@ -64,9 +64,9 @@ class FTXAPI:
 
         else:
             if not result['success']:
-                raise Exception(data['error'])
+                raise Exception(result['error'])
             else:
-                return result['success']
+                return result['result']
             
 
     def list_markets(self) -> List[dict]:

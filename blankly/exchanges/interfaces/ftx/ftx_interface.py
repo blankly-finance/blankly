@@ -4,6 +4,7 @@ from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
 import blankly.utils.utils as utils
+import json
 #
 class FTXInterface(ExchangeInterface):
     
@@ -37,17 +38,75 @@ class FTXInterface(ExchangeInterface):
         """
         pass
 
-    
-    def get_products(self) -> list:
-        """
-        Get all trading pairs on the exchange & some information about the exchange limits.
+    """
+    needed:
+    ---
+    'get_products': [
+                ["symbol", str],
+                ["base_asset", str],
+                ["quote_asset", str],
+                ["base_min_size", float],
+                ["base_max_size", float],
+                ["base_increment", float]
+            ],
 
-        TODO add return example
-        """
+    provided:
+    ---
+    {
+            "name": "ABNB/USD",
+            "enabled": true,
+            "postOnly": false,
+            "priceIncrement": 0.005, //NOTE: api call returns both price and size increment. base_increment is currently set to size, however this may not be the expected result
+            "sizeIncrement": 0.025,
+            "minProvideSize": 0.025,
+            "last": 169.09,
+            "bid": 170.68,
+            "ask": 171.205,
+            "price": 170.68,
+            "type": "spot",
+            "baseCurrency": "ABNB",
+            "quoteCurrency": "USD",
+            "underlying": null,
+            "restricted": true,
+            "tokenizedEquity": true,
+            "highLeverageFeeExempt": true,
+            "change1h": -0.003590297440088736,
+            "change24h": 0.00014649438926489115,
+            "changeBod": -0.00367754363434709,
+            "quoteVolume24h": 12.76575,
+            "volumeUsd24h": 12.76575
+        },
+    """
+    #only includes markets of type "spot" (i.e. excludes futures) 
+    def get_products(self) -> list:
 
         needed = self.needed['get_products']
 
-        pass
+        
+        products : List[dict] = self.get_calls().list_markets()
+
+        end_products = []
+
+        for index, product in enumerate(products):
+            if product['type'] == "spot":
+                product['symbol'] = product.pop('name')
+                product['base_asset'] = product.pop('baseCurrency')
+                product['quote_asset'] = product.pop('quoteCurrency')
+                product['base_min_size'] = product.pop('minProvideSize')
+                product['base_max_size'] = None
+                product['base_increment'] = product.pop('sizeIncrement')
+
+                product = utils.isolate_specific(needed, product)
+
+                end_products.append(product)
+
+            else:
+                #note: we are not including futures in the result
+                pass
+                
+
+
+        return end_products
 
     
     def get_account(self,
