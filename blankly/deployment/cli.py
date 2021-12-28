@@ -33,7 +33,6 @@ import webbrowser
 from blankly.deployment.api import API
 from blankly.utils.utils import load_json_file, info_print
 
-
 very_important_string = """
 ██████╗ ██╗      █████╗ ███╗   ██╗██╗  ██╗██╗  ██╗   ██╗    ███████╗██╗███╗   ██╗ █████╗ ███╗   ██╗ ██████╗███████╗
 ██╔══██╗██║     ██╔══██╗████╗  ██║██║ ██╔╝██║  ╚██╗ ██╔╝    ██╔════╝██║████╗  ██║██╔══██╗████╗  ██║██╔════╝██╔════╝
@@ -174,7 +173,6 @@ def create_and_write_file(filename: str, default_contents: str = None):
 
 parser = argparse.ArgumentParser(description='Blankly CLI & deployment tool.')
 
-
 subparsers = parser.add_subparsers(help='Different blankly commands.')
 
 init_parser = subparsers.add_parser('init', help='Sub command to create a blankly-enabled development environment.')
@@ -203,7 +201,6 @@ run_parser.add_argument('--monitor',
                              'The module psutil must be installed.')
 run_parser.set_defaults(which='run')
 add_path_arg(run_parser)
-
 
 # Create a global token value for use in the double nested function below
 token = None
@@ -326,9 +323,9 @@ def zipdir(path, ziph, ignore_files: list):
             # (Modification) Skip everything that is in the blankly_dist folder
             filepath = os.path.join(root, file)
 
-            if not os.path.abspath(filepath) in ignore_files:
+            if not (os.path.abspath(filepath) in ignore_files) and not (root in ignore_files):
                 # This takes of the first part of the relative path and replaces it with /model/
-                info_print(f'\tAdding: {file} in folder {root}.')
+                print(f'\tAdding: {file} in folder {root}.')
                 relpath = os.path.relpath(filepath,
                                           os.path.join(path, '..'))
                 relpath = os.path.normpath(relpath).split(os.sep)
@@ -368,14 +365,33 @@ def main():
             deployment_options = json.load(f)
 
             f.close()
-            if 'model_id' not in deployment_options:
+            if 'model_id' not in deployment_options or \
+                    'project_id' not in deployment_options or \
+                    'model_name' not in deployment_options:
+                # This performs all the querying necessary to send the data up
+                ids = []
+                for i in projects:
+                    ids.append(i['projectId'])
+                descriptions = []
+                for i in projects:
+                    descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
+                                        TermColors.ENDC + TermColors.OKCYAN + i['name'])
+                project_id = choose_option('project', ids, descriptions)
+
+                model_name = input(TermColors.BOLD + TermColors.WARNING +
+                                   "Enter a name for your model: " + TermColors.ENDC)
+
+                deployment_options['project_id'] = project_id
                 deployment_options['model_id'] = str(uuid.uuid4())
+                deployment_options['model_name'] = model_name
 
                 info_print(f"Generating new model id for this blankly.json: {deployment_options['model_id']}")
                 # Write the modified version with the ID back into the json file
                 f = open(os.path.join(args['path'], deployment_script_name), 'w+')
                 f.write(json.dumps(deployment_options, indent=2))
                 f.close()
+            model_name = deployment_options['model_name']
+            project_id = deployment_options['project_id']
             model_id = deployment_options['model_id']
         except FileNotFoundError:
             raise FileNotFoundError(f"A {deployment_script_name} file must be present at the top level of the "
@@ -392,16 +408,6 @@ def main():
 
             zip_.close()
 
-            # This performs all the querying necessary to send the data up
-            ids = []
-            for i in projects:
-                ids.append(i['projectId'])
-            descriptions = []
-            for i in projects:
-                descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
-                                    TermColors.ENDC + TermColors.OKCYAN + i['name'])
-            project_id = choose_option('project', ids, descriptions)
-
             plans = api.get_plans('live')
 
             plan_names = list(plans.keys())
@@ -415,11 +421,8 @@ def main():
 
             chosen_plan = choose_option('plan', plan_names, descriptions)
 
-            model_name = input(TermColors.BOLD + TermColors.WARNING +
-                               "Enter a name for your model: " + TermColors.ENDC)
-
             user_description = input(TermColors.BOLD + TermColors.WARNING +
-                                     "Enter a description for your model: " + TermColors.ENDC)
+                                     "Enter a version description for your model: " + TermColors.ENDC)
 
             info_print("Uploading...")
             response = api.deploy(model_path,
@@ -500,9 +503,9 @@ def main():
 
         input(TermColors.BOLD + "Input a description for this backtest: " + TermColors.ENDC)
 
-        print(api.backtest(project_id='eXZ0WXDHcgY9Hif31FH4',
-                           model_id='baa133f1-88f6-45f6-b7a3-f97890cc8146',
-                           version_id='6Q52beIpScIqDn5OqL4d',
+        print(api.backtest(project_id='jFuIUngYZ9B6r2sYym6S',
+                           model_id='93c3b6c5-661d-4e09-b551-c500e75eda63',
+                           version_id='bN00JZzYcsX2N7pzIcPt',
                            args={'to': '1y'}))
 
     elif which == 'create':

@@ -51,7 +51,7 @@ class BacktestResult:
     def get_metrics(self) -> dict:
         return self.metrics
 
-    def resample_account(self, symbol, interval: [str, float]) -> list:
+    def resample_account(self, symbol, interval: [str, float]) -> DataFrame:
         """
         Resample the raw account value metrics to any resolution
 
@@ -81,7 +81,6 @@ class BacktestResult:
             try:
                 # Iterate and find the correct quote price
                 index_ = search(times, len(times), epoch)
-                # print('Found price for', asset_id, prices[index])
                 return values[index_]
             except KeyError:
                 # Not a currency that we have data for at all
@@ -108,7 +107,9 @@ class BacktestResult:
             # Increase the epoch value
             epoch_start += interval
 
-        return resampled_array
+        # Turn that resample into a dataframe
+        df_conversion = DataFrame(columns=['time', 'value'])
+        return df_conversion.append(resampled_array, ignore_index=True)
 
     def __str__(self):
         return_string = "\n"

@@ -837,13 +837,8 @@ class BackTestController:
         interval_value = time_interval_to_seconds(resample_to)
 
         # This is where we run the actual resample
-        resampled_account = result_object.resample_account('Account Value (' + self.quote_currency + ')',
-                                                           interval_value)
-
-        # Turn that resample into a dataframe
-        resampled_account_data_frame = pd.DataFrame(columns=['time', 'value'])
-        resampled_account_data_frame = resampled_account_data_frame.append(resampled_account,
-                                                                           ignore_index=True)
+        resampled_account_data_frame = result_object.resample_account('Account Value (' + self.quote_currency + ')',
+                                                                      interval_value)
 
         history_and_returns['resampled_account_value'] = resampled_account_data_frame
 
