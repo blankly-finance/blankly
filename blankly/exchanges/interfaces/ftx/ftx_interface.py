@@ -13,9 +13,21 @@ class FTXInterface(ExchangeInterface):
         super().__init__('ftx', authenticated_API, preferences_path, valid_resolutions=None)
 
     def init_exchange(self):
-        print("delete this print statement")
+
+        """
+            Attempts an API call. If API key is invalid, this 
+            method will throw another error specifying that it 
+            was due to invalid FTX API keys 
+        """
         pass
-        
+        #try:
+        #    self.get_calls().get_account_info()
+        #except Exception as e:
+        #    if str(e) == "Not logged in: Invalid API key":
+        #        raise LookupError("Unable to connect to FTX: Invalid API Key")
+        #    else:
+        #        raise e
+
     def get_calls(self):
         """
         Get the direct & authenticated exchange object
@@ -26,17 +38,6 @@ class FTXInterface(ExchangeInterface):
         """
         return self.calls
 
-    
-    def get_exchange_type(self):
-        """
-        Get the type of exchange ex: "coinbase_pro" or "binance"
-
-        Returns:
-             A string that corresponds to the type of exchange
-
-        TODO add return example
-        """
-        pass
 
     """
     needed:
@@ -109,8 +110,7 @@ class FTXInterface(ExchangeInterface):
         return end_products
 
     
-    def get_account(self,
-                    symbol: str = None) -> utils.AttributeDict:
+    def get_account(self, symbol: str = None) -> utils.AttributeDict:
         """
         Get all assets in an account, or sort by symbol/account_id
         Args:
@@ -120,7 +120,12 @@ class FTXInterface(ExchangeInterface):
 
         TODO add return example
         """
-        pass
+
+        symbol = super().get_account(symbol = symbol)
+
+        needed = self.needed['get_account']
+
+        
 
     
     def market_order(self,

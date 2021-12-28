@@ -7,21 +7,22 @@ import time
 import hmac
 
 class FTXAPI:
-    _API_URL = "https://ftx.com/api/"
+    _API_URL = "https://ftx.us/api/"
 
     #no option to instantiate with sandbox mode, unlike every other exchange
     def __init__(self, auth: ABCAuth, _subaccount_name = None):
 
-        self.__api_key = auth.keys['API_KEY']
-        self.__api_secret = auth.keys['API_SECRET']
+        self._ftx_session = requests.Session()
+        self._api_key = auth.keys['API_KEY']
+        self._api_secret = auth.keys['API_SECRET']
         self._subaccount_name = _subaccount_name
 
-        self.ftx_session = requests.Session()
+        
 
     def _signed_request(self, method: str, path: str, **kwargs):
         request = requests.Request(method, self._API_URL + path, **kwargs)
         self._get_signature(request)
-        result = self.ftx_session.send(request.prepare())
+        result = self._ftx_session.send(request.prepare())
         return self._handle_response(result)
 
     def _get_signature(self, request: requests.Request):
@@ -32,18 +33,17 @@ class FTXAPI:
         if prepared_request.body:
             signed_data += prepared_request.body
         
-        signature = hmac.new(self.__api_secret.encode(), signed_data, 'sha256').hexdigest()
+        signature = hmac.new(self._api_secret.encode(), signed_data, 'sha256').hexdigest()
         
-        request.headers.update({
-            'FTX-KEY': self.__api_key,
-            'FTX-SIGN': signature,
-            'FTX-TS': str(ts)
-        })
+        request.headers['FTXUS-KEY'] = self._api_key
+        request.headers['FTXUS-SIGN'] = signature
+        request.headers['FTXUS-TS'] = str(ts)
 
         if self._subaccount_name:
-            request.headers.update({
-                'FTX-SUBACCOUNT': urllib.parse.quote(self._subaccount_name)
-            })
+            request.headers['FTXUS-SUBACCOUNT'] = urllib.parse.quote(self._subaccount_name)
+
+        
+            
 
     def _signed_delete(self, path: str, params: Optional[Dict[str, Any]] = None):
         return self._signed_request('DELETE', path, json = params)
