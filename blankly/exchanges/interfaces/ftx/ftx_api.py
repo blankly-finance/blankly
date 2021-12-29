@@ -69,8 +69,17 @@ class FTXAPI:
                 return result['result']
             
 
-    def list_markets(self) -> List[dict]:
+    def list_markets(self) -> List[dict]:        
+
         return self._signed_get('markets')
+
+    def get_market(self, symbol: str) -> dict:
+
+        #symbol format must be BTC/USD instead of BTC-USD
+        if '-' in symbol:
+            symbol = symbol.replace("-", "/")
+
+        return self._signed_get(f'markets/{symbol}')
 
     def list_futures(self) -> List[dict]:
         return self._signed_get('futures')
@@ -86,6 +95,9 @@ class FTXAPI:
 
     def get_open_orders(self, market: str = None) -> List[dict]:
         return self._signed_get('orders', {'market': market})
+
+    def get_order_by_id(self, client_id: str) -> dict:
+        return self._signed_get(f'orders/by_client_id/{client_id}')
 
     def get_fills(self) -> List[dict]:
         return self._signed_get('fills')

@@ -286,43 +286,120 @@ class FTXInterface(ExchangeInterface):
         self.get_calls().cancel_order(order_id)
         return order_id
 
-    
-    def get_open_orders(self,
-                        symbol: str = None) -> list:
+    """
+    [
+        {
+        "createdAt": "2019-03-05T09:56:55.728933+00:00",
+        "filledSize": 10,
+        "future": "XRP-PERP",
+        "id": 9596912,
+        "market": "XRP-PERP",
+        "price": 0.306525,
+        "avgFillPrice": 0.306526,
+        "remainingSize": 31421,
+        "side": "sell",
+        "size": 31431,
+        "status": "open",
+        "type": "limit",
+        "reduceOnly": false,
+        "ioc": false,
+        "postOnly": false,
+        "clientId": null
+        },
+        {
+            ...
+        },
+        ...
+        {
+            ...
+        }
+
+    ]
+    """
+    def get_open_orders(self, symbol: str = None) -> list:
         """
         List open orders.
         Args:
             symbol (optional) (str): Asset such as BTC-USD
         """
+        response = self.get_calls().get_open_orders(symbol)
+        if(len(response) == 0):
+            return []
         
+        needed = self.choose_order_specificity(response['type'])
 
-    
-    def get_order(self,
-                  symbol: str,
-                  order_id: str) -> dict:
+        for open_order in response:
+            open_order['symbol'] = open_order.pop('market')
+            if open_order["type"] == "limit":
+                open_order['time_in_force'] = "GTC"
+            open_order['created_at'] = open_order.epoch_from_ISO8601(response.pop('createdAt'))
+            open_order = utils.isolate_specific(needed, open_order)
+        
+        return response
+
+    """
+    {
+        "createdAt": "2019-03-05T09:56:55.728933+00:00",
+        "filledSize": 10,
+        "future": "XRP-PERP",
+        "id": 9596912,
+        "market": "XRP-PERP",
+        "price": 0.306525,
+        "avgFillPrice": 0.306526,
+        "remainingSize": 31421,
+        "side": "sell",
+        "size": 31431,
+        "status": "open",
+        "type": "limit",
+        "reduceOnly": false,
+        "ioc": false,
+        "postOnly": false,
+        "clientId": "your_client_order_id"
+    }
+    """
+
+    def get_order(self, symbol: str, order_id: str) -> dict:
         """
         Get a certain order
         Args:
             symbol: Asset that the order is under
             order_id: The unique ID of the order.
-        TODO add return example
         """
-        pass
+        response = self.get_calls().get_order_by_id(order_id)
+
+        needed = self.choose_order_specificity(response["type"])
+
+        
+        response['symbol'] = response.pop('market')
+        response['created_at'] = utils.epoch_from_ISO8601(response.pop('createdAt'))
+
+        if response["type"] == "limit":
+            response['time_in_force'] = "GTC"
+
+        response = utils.isolate_specific(needed, response)
+        return response
 
     
     def get_fees(self) -> dict:
         """
         Get market fees
-        TODO add return example
+
+        lot of unnecessary info in exchange-specific section
+
+        TODO: remove everything truly irrelevant to fees
         """
-        pass
+
+        needed = self.needed['get_fees']
+        account_info = self.get_calls().get_account_info()
+        account_info['maker_fee_rate'] = account_info.pop('makerFee')
+        account_info['taker_fee_rate'] = account_info.pop('takerFee')
+        account_info = utils.isolate_specific(needed, account_info)
+        
+
+        return account_info
 
     
-    def get_product_history(self,
-                            symbol: str,
-                            epoch_start: float,
-                            epoch_stop: float,
-                            resolution) -> pandas.DataFrame:
+    def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution) -> pandas.DataFrame:
         """
         Returns the product history from an exchange
         Args:
@@ -334,16 +411,17 @@ class FTXInterface(ExchangeInterface):
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
             TODO add return example
         """
+        
 
     
-    def get_order_filter(self,
-                         symbol: str):
+    def get_order_filter(self, symbol: str):
         """
         Find order limits for the exchange
         Args:
             symbol: The asset such as (BTC-USD, or MSFT)
-            TODO add return example
         """
+
+
         pass
 
     
@@ -352,7 +430,6 @@ class FTXInterface(ExchangeInterface):
         Returns just the price of a symbol.
         Args:
             symbol: The asset such as (BTC-USD, or MSFT)
-            TODO add return example
         """
-        pass
+        return float(self.get_calls().get_market(symbol)['price'])
 
