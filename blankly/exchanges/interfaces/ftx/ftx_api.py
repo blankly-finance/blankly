@@ -146,8 +146,8 @@ class FTXAPI:
         side: str,
         price: float,
         size: float,
-        type_: str = 'limit',
-        reduce_only: bool = True,
+        order_type: str = 'limit',
+        reduce_only: bool = False,
         ioc: bool = False,
         post_only: bool = False,
         client_id: str = None
@@ -157,7 +157,7 @@ class FTXAPI:
             'side': side,
             'price': price,
             'size': size,
-            'type': type_,
+            'type': order_type,
             'reduceOnly': reduce_only,
             'ioc': ioc,
             'postOnly': post_only,
@@ -218,7 +218,6 @@ class FTXAPI:
     stop market order: set type = "stop" and specify a trigger price
     stop limit order: also supply a limit price
     take profit market order: set type = "trailing_stop" and specify a trigger price
-    trailin
     """
 
     def place_conditional_order(
@@ -226,7 +225,7 @@ class FTXAPI:
         market: str,
         side: str,
         size: float,
-        type_: str = "stop",
+        order_type: str = "stop",
         limit_price: float = "None",
         reduce_only: bool = False,
         cancel_limit_on_trigger: bool = True,
@@ -244,7 +243,7 @@ class FTXAPI:
                 'triggerPrice': trigger_price,
                 'size': size,
                 'reduceOnly': reduce_only,
-                'type': type_,
+                'type': order_type,
                 'cancelLimitOnTrigger': cancel_limit_on_trigger,
                 'orderPrice': limit_price
             }

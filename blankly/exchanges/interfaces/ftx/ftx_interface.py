@@ -19,25 +19,13 @@ class FTXInterface(ExchangeInterface):
             method will throw another error specifying that it 
             was due to invalid FTX API keys 
         """
-        pass
-        #try:
-        #    self.get_calls().get_account_info()
-        #except Exception as e:
-        #    if str(e) == "Not logged in: Invalid API key":
-        #        raise LookupError("Unable to connect to FTX: Invalid API Key")
-        #    else:
-        #        raise e
-
-    def get_calls(self):
-        """
-        Get the direct & authenticated exchange object
-
-        Returns:
-             The exchange's direct calls object. A blankly Bot class should have immediate access to this by
-             default
-        """
-        return self.calls
-
+        try:
+            self.get_calls().get_account_info()
+        except Exception as e:
+            if str(e) == "Not logged in: Invalid API key":
+                raise LookupError("Unable to connect to FTX US: Invalid API Key")
+            else:
+                raise e
 
     """
     needed:
@@ -124,14 +112,69 @@ class FTXInterface(ExchangeInterface):
         symbol = super().get_account(symbol = symbol)
 
         needed = self.needed['get_account']
+        parsed_dictionary = utils.AttributeDict({})
+        balances: List[dict] = self.get_calls().get_balances()
 
+        if symbol is not None:
+            for account in balances:
+                if account["coin"] == symbol:
+                    account['hold'] = account['total'] - account['free']
+                    account['currency'] = account.pop('coin')
+                    account['available'] = account.pop('free')
+                    parsed_value = utils.isolate_specific(needed, account)
+                    requested_account = utils.AttributeDict({
+                        'available': parsed_value['available'],
+                        'hold': parsed_value['hold']
+                    })
+                    return requested_account
+            raise ValueError("Symbol not found")
         
+        else:
+            for account in balances:
+                account['hold'] = account['total'] - account['free']
+                account['currency'] = account.pop('coin')
+                account['available'] = account.pop('free')
+                parsed_dictionary[account['currency']] = utils.AttributeDict({
+                    'available': float(account['available']),
+                    'hold': float(account['hold'])
+                })
+            return parsed_dictionary
 
-    
-    def market_order(self,
-                     symbol: str,
-                     side: str,
-                     size: float) -> MarketOrder:
+    """
+    needed:
+
+    'market_order': [
+                ["symbol", str],
+                ["id", str],
+                ["created_at", float],
+                ["size", float],
+                ["status", str],
+                ["type", str],
+                ["side", str]
+            ],
+
+    response: 
+
+    {
+    "createdAt": "2019-03-05T09:56:55.728933+00:00",
+    "filledSize": 0,
+    "future": "XRP-PERP",
+    "id": 9596912,
+    "market": "XRP-PERP",
+    "price": 0.306525,
+    "remainingSize": 31431,
+    "side": "sell",
+    "size": 31431,
+    "status": "open",
+    "type": "limit",
+    "reduceOnly": false,
+    "ioc": false,
+    "postOnly": false,
+    "clientId": null,
+    }
+    """
+
+    def market_order(self, symbol: str, side: str, size: float) -> MarketOrder:
         """
         Used for buying or selling market orders
         Args:
@@ -139,9 +182,63 @@ class FTXInterface(ExchangeInterface):
             side: buy/sell
             size: desired amount of base asset to use
         """
-        pass
+        needed = self.needed['market_order']
 
+        response = self.get_calls().place_order(symbol, side, None, size, order_type = "market")
+
+        response["symbol"] = response.pop("market")
+        response["created_at"] = utils.epoch_from_ISO8601(response.pop("createdAt"))
+
+        response = utils.isolate_specific(needed, response)
+
+        order = {
+            'size': size,
+            'side': side,
+            'symbol': symbol,
+            'type': 'market'
+        }
+
+        return MarketOrder(order, response, self)
     
+    """
+    needed
+
+    'limit_order': [
+                ["symbol", str],
+                ["id", str],
+                ["created_at", float],
+                ["price", float],
+                ["size", float],
+                ["status", str],
+                ["time_in_force", str],
+                ["type", str],
+                ["side", str]
+                ],
+
+    response
+
+    {
+    "success": true,
+    "result": {
+        "createdAt": "2019-03-05T09:56:55.728933+00:00",
+        "filledSize": 0,
+        "future": "XRP-PERP",
+        "id": 9596912,
+        "market": "XRP-PERP",
+        "price": 0.306525,
+        "remainingSize": 31431,
+        "side": "sell",
+        "size": 31431,
+        "status": "open",
+        "type": "limit",
+        "reduceOnly": false,
+        "ioc": false,
+        "postOnly": false,
+        "clientId": null,
+        }
+    }
+    """
+
     def limit_order(self,
                     symbol: str,
                     side: str,
@@ -155,12 +252,29 @@ class FTXInterface(ExchangeInterface):
             price: price to set limit order
             size: amount of asset (like BTC) for the limit to be valued
         """
-        pass
+        needed = self.needed['limit_order']
+        response = self.get_calls().place_order(symbol, side, price, size, order_type = "limit")
 
+        order = {
+            'size': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': 'limit'
+        }
+
+        response["symbol"] = response.pop("market")
+        response["created_at"] = utils.epoch_from_ISO8601(response.pop("createdAt"))
+        response["time_in_force"] = "GTC"
+        response = utils.isolate_specific(needed, response)
+
+        return LimitOrder(order, response, self)
     
-    def cancel_order(self,
-                     symbol: str,
-                     order_id: str) -> dict:
+
+#    def stop_limit(self, symbol, side, stop_price, limit_price, size, stop = 'loss'):
+
+
+    def cancel_order(self, symbol: str, order_id: str) -> dict:
         """
         Cancel an order on a particular symbol & order id
 
@@ -168,8 +282,9 @@ class FTXInterface(ExchangeInterface):
             symbol: This is the asset id that the order is under
             order_id: The unique ID of the order.
 
-        TODO add return example
         """
+        self.get_calls().cancel_order(order_id)
+        return order_id
 
     
     def get_open_orders(self,
@@ -178,9 +293,8 @@ class FTXInterface(ExchangeInterface):
         List open orders.
         Args:
             symbol (optional) (str): Asset such as BTC-USD
-        TODO add return example
         """
-        pass
+        
 
     
     def get_order(self,
