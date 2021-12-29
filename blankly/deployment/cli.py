@@ -360,6 +360,9 @@ def main():
             print(TermColors.FAIL + "Please create a project with 'blankly create' first." + TermColors.ENDC)
             return
 
+        create_new = False
+        general_description = None
+
         try:
             f = open(os.path.join(args['path'], deployment_script_name))
             deployment_options = json.load(f)
@@ -384,6 +387,11 @@ def main():
                 deployment_options['project_id'] = project_id
                 deployment_options['model_id'] = str(uuid.uuid4())
                 deployment_options['model_name'] = model_name
+
+                create_new = True
+
+                general_description = input(TermColors.BOLD + TermColors.WARNING +
+                                            "Enter a general description for this model model: " + TermColors.ENDC)
 
                 info_print(f"Generating new model id for this blankly.json: {deployment_options['model_id']}")
                 # Write the modified version with the ID back into the json file
@@ -421,16 +429,18 @@ def main():
 
             chosen_plan = choose_option('plan', plan_names, descriptions)
 
-            user_description = input(TermColors.BOLD + TermColors.WARNING +
-                                     "Enter a version description for your model: " + TermColors.ENDC)
+            version_description = input(TermColors.BOLD + TermColors.WARNING +
+                                        "Enter a description for this version of the model: " + TermColors.ENDC)
 
             info_print("Uploading...")
             response = api.deploy(model_path,
                                   project_id=project_id,
                                   model_id=model_id,
                                   plan=chosen_plan,
-                                  description=user_description,
-                                  name=model_name)
+                                  version_description=version_description,
+                                  general_description=general_description,
+                                  name=model_name,
+                                  create_new=create_new)
             if 'error' in response:
                 info_print('Error: ' + response['error'])
             elif 'status' in response and response['status'] == 'success':
@@ -500,8 +510,6 @@ def main():
 
     elif which == 'backtest':
         api = API(login())
-
-        input(TermColors.BOLD + "Input a description for this backtest: " + TermColors.ENDC)
 
         print(api.backtest(project_id='jFuIUngYZ9B6r2sYym6S',
                            model_id='93c3b6c5-661d-4e09-b551-c500e75eda63',
