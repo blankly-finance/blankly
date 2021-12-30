@@ -409,9 +409,46 @@ class FTXInterface(ExchangeInterface):
             resolution: Resolution in seconds between tick (ex: 60 = 1 per minute)
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
-            TODO add return example
         """
+
+        #change something like BTC-USD to BTC/USD
+        if "-" in symbol:
+            symbol = symbol.replace("-", "/")
+
+        accepted_grans = [15, 60, 300, 900, 3600, 14400, 86400]
+
+        #ftx accepts the above resolutions plus any multiple of 86400 up to 30 * 86400
+        for i in range(2, 31):
+            accepted_grans.append(i * 86400)
+
+        if resolution not in accepted_grans:
+            utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
+            resolution = accepted_grans[min(range(len(accepted_grans)),
+                                            key=lambda i: abs(accepted_grans[i] - resolution))]
         
+        history = self.get_calls().get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        
+        total_num_intervals = len(history)
+
+        total_data = []
+
+        for interval_num, interval in enumerate(history):
+            epoch_start = utils.epoch_from_ISO8601(interval["startTime"])
+            interval_low = interval["low"]
+            interval_high = interval["high"]
+            interval_open = interval["open"]
+            interval_close = interval["close"]
+            interval_volume = interval["volume"]
+
+            interval_data = [epoch_start, interval_low, interval_high, interval_open, interval_close, interval_volume]
+            total_data.append(interval_data)
+            
+            utils.update_progress(interval_num / total_num_intervals)
+        
+        df = pandas.DataFrame(data = total_data, columns = ['time (epoch)', 'low', 'high', 'open', 'close', 'volume'])
+
+        print("\n")
+        return df
 
     
     def get_order_filter(self, symbol: str):

@@ -84,6 +84,9 @@ class FTXAPI:
     def list_futures(self) -> List[dict]:
         return self._signed_get('futures')
 
+    def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution) -> List[dict]:
+        return self._signed_get(f"/markets/{symbol}/candles?resolution={resolution}&start_time={epoch_start}&end_time={epoch_stop}")
+
     def get_orderbook(self, market: str, depth: int = None) -> dict:
         return self._signed_get(f'markets/{market}/orderbook', {'depth': depth})
 
