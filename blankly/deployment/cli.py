@@ -511,10 +511,11 @@ def main():
     elif which == 'backtest':
         api = API(login())
 
-        print(api.backtest(project_id='jFuIUngYZ9B6r2sYym6S',
-                           model_id='93c3b6c5-661d-4e09-b551-c500e75eda63',
-                           version_id='bN00JZzYcsX2N7pzIcPt',
-                           args={'to': '1y'}))
+        print(api.backtest(project_id='IKMrcZUtXlKlszvSVBEJ',
+                           model_id='eb21253b-cf76-4567-85fb-5928243340e4',
+                           version_id='D13v5AaD0vIadwXx8FNv',
+                           args={'to': '1y'},
+                           backtest_description='Backtest Description'))
 
     elif which == 'create':
         api = API(login())

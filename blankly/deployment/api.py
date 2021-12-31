@@ -122,8 +122,10 @@ class API:
                                                                        'versionDescription': version_description,
                                                                        'createNew': create_new})
 
-    def backtest(self, project_id: str, model_id: str, args: dict, version_id: str):
-        return self.__request('post', 'model/backtest', json_={'projectId': project_id,
-                                                               'modelId': model_id,
-                                                               'versionId': version_id,
-                                                               'args': args})
+    def backtest(self, project_id: str, model_id: str, args: dict, version_id: str, backtest_description: str):
+        return self.__request('post', 'model/backtestDeployedModel',
+                              json_={'projectId': project_id,
+                                     'modelId': model_id,
+                                     'versionId': version_id,
+                                     'args': args,
+                                     'backtestDescription': backtest_description})

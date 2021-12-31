@@ -53,6 +53,7 @@ default_general_settings = {
             "websocket_stream": "iex",
             "cash": "USD",
             "enable_shorting": True,
+            "use_yfinance": False,
         },
         "oanda": {
             "cash": "USD"
