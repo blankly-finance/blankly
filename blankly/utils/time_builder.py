@@ -100,3 +100,33 @@ def time_interval_to_seconds(interval: Union[str, float]) -> float:
 
     # Scale by the magnitude
     return float(base_unit * magnitude)
+
+
+def number_interval_to_string(interval: int) -> str:
+    """
+    This function converts integer intervals into string intervals
+
+    Example: 3600 -> 1h
+
+    Args:
+        interval: An integer representing the conversion time
+    """
+    times = {
+        'mo': build_month(),
+        'wk': build_week(),
+        'd': build_day(),
+        'h': build_hour(),
+        'm': build_minute(),
+        's': build_second()
+    }
+
+    unit = None
+
+    for i in times:
+        if interval % times[i] == 0:
+            unit = i
+            break
+
+    magnitude = int(interval/times[unit])
+
+    return f'{magnitude}{unit}'

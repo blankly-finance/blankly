@@ -32,7 +32,7 @@ from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.utils import utils as utils
 from blankly.utils.exceptions import APIException
-from blankly.utils.time_builder import build_minute, time_interval_to_seconds
+from blankly.utils.time_builder import build_minute, time_interval_to_seconds, number_interval_to_string
 
 NY = 'America/New_York'
 
@@ -323,60 +323,66 @@ class AlpacaInterface(ExchangeInterface):
         }
 
     def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution: int):
-        assert isinstance(self.calls, alpaca_trade_api.REST)
+        if not self.user_preferences['settings']['alpaca']['use_yfinance']:
+            assert isinstance(self.calls, alpaca_trade_api.REST)
 
-        resolution = time_interval_to_seconds(resolution)
+            resolution = time_interval_to_seconds(resolution)
 
-        supported_multiples = [60, 3600, 86400]
-        if resolution not in supported_multiples:
-            utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
-            resolution = supported_multiples[min(range(len(supported_multiples)),
-                                             key=lambda i: abs(supported_multiples[i] - resolution))]
+            supported_multiples = [60, 3600, 86400]
+            if resolution not in supported_multiples:
+                utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
+                resolution = supported_multiples[min(range(len(supported_multiples)),
+                                                 key=lambda i: abs(supported_multiples[i] - resolution))]
 
-        found_multiple, row_divisor = super().evaluate_multiples(supported_multiples, resolution)
+            found_multiple, row_divisor = super().evaluate_multiples(supported_multiples, resolution)
 
-        if found_multiple == 60:
-            time_interval = TimeFrame.Minute
-        elif found_multiple == 3600:
-            time_interval = TimeFrame.Hour
-        else:
-            time_interval = TimeFrame.Day
+            if found_multiple == 60:
+                time_interval = TimeFrame.Minute
+            elif found_multiple == 3600:
+                time_interval = TimeFrame.Hour
+            else:
+                time_interval = TimeFrame.Day
 
-        epoch_start_str = dt.fromtimestamp(epoch_start, tz=timezone.utc).isoformat()
-        epoch_stop_str = dt.fromtimestamp(epoch_stop, tz=timezone.utc).isoformat()
+            epoch_start_str = dt.fromtimestamp(epoch_start, tz=timezone.utc).isoformat()
+            epoch_stop_str = dt.fromtimestamp(epoch_stop, tz=timezone.utc).isoformat()
 
-        try:
             try:
-                bars = self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str, adjustment='raw').df
-            except TypeError:
-                # If you query a timeframe with no data the API throws a Nonetype issue so just return something
-                #  empty if that happens
-                return pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
-        except AlpacaAPIError as e:
-            if e.code == 42210000:
-                warning_string = "Your alpaca subscription does not permit querying data from the last 15 minutes. " \
-                                 "Blankly is adjusting your query."
-                utils.info_print(warning_string)
-                epoch_stop = time.time() - (build_minute() * 15)
-                if epoch_stop >= epoch_start:
-                    try:
-                        return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
-                    except TypeError:
-                        # If you query a timeframe with no data the API throws a Nonetype issue so just return something
-                        #  empty if that happens
+                try:
+                    bars = self.calls.get_bars(symbol, time_interval, epoch_start_str, epoch_stop_str,
+                                               adjustment='raw').df
+                except TypeError:
+                    # If you query a timeframe with no data the API throws a Nonetype issue so just return something
+                    #  empty if that happens
+                    return pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+            except AlpacaAPIError as e:
+                if e.code == 42210000:
+                    warning_string = "Your alpaca subscription does not permit querying data from the last 15 minutes. " \
+                                     "Blankly is adjusting your query."
+                    utils.info_print(warning_string)
+                    epoch_stop = time.time() - (build_minute() * 15)
+                    if epoch_stop >= epoch_start:
+                        try:
+                            return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+                        except TypeError:
+                            # If you query a timeframe with no data the API throws a Nonetype issue so just
+                            #  return something
+                            #  empty if that happens
+                            return pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+                    else:
+                        warning_string = "No data range queried after time adjustment."
+                        utils.info_print(warning_string)
                         return pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
                 else:
-                    warning_string = "No data range queried after time adjustment."
-                    utils.info_print(warning_string)
-                    return pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
-            else:
-                raise e
-        bars.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
-                    inplace=True)
+                    raise e
+            bars.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
+                        inplace=True)
 
-        if bars.empty:
-            return pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
-        return utils.get_ohlcv(bars, row_divisor, from_zero=False)
+            if bars.empty:
+                return pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+            return utils.get_ohlcv(bars, row_divisor, from_zero=False)
+        else:
+            # This runs yfinance on the symbol
+            return self.parse_yfinance(symbol, epoch_start, epoch_stop, resolution)
 
     # def history(self,
     #             symbol: str,
@@ -446,45 +452,53 @@ class AlpacaInterface(ExchangeInterface):
         if to is not None and isinstance(to, str):
             to = None
         if to:
-            resolution_seconds = self.valid_resolutions[min(range(len(self.valid_resolutions)),
-                                                            key=lambda j: abs(self.valid_resolutions[j] -
-                                                                              resolution_seconds))]
-            resolution_lookup = {
-                60: '1Min',
-                300: '5Min',
-                900: '15Min',
-                86400: '1D'
-            }
-            time_interval = resolution_lookup[resolution_seconds]
+            if not self.user_preferences['settings']['alpaca']['use_yfinance']:
+                resolution_seconds = self.valid_resolutions[min(range(len(self.valid_resolutions)),
+                                                                key=lambda j: abs(self.valid_resolutions[j] -
+                                                                                  resolution_seconds))]
+                resolution_lookup = {
+                    60: '1Min',
+                    300: '5Min',
+                    900: '15Min',
+                    86400: '1D'
+                }
+                time_interval = resolution_lookup[resolution_seconds]
 
-            frames = []
+                frames = []
 
-            while to > 1000:
-                # Create an end time by moving after the start time by 1000 datapoints
-                epoch_start += resolution_seconds * 1000
+                while to > 1000:
+                    # Create an end time by moving after the start time by 1000 datapoints
+                    epoch_stop -= resolution_seconds * 1000
 
-                frames.append(self.calls.get_barset(symbol, time_interval, limit=1000,
-                                                    end=utils.ISO8601_from_epoch(epoch_start))[symbol])
-                to -= 1000
+                    frames.append(self.calls.get_barset(symbol, time_interval, limit=1000,
+                                                        end=utils.ISO8601_from_epoch(epoch_stop))[symbol])
+                    to -= 1000
 
-            frames.append(self.calls.get_barset(symbol, time_interval, limit=to,
-                                                end=utils.ISO8601_from_epoch(epoch_stop))[symbol])
+                frames.append(self.calls.get_barset(symbol, time_interval, limit=to,
+                                                    end=utils.ISO8601_from_epoch(epoch_stop))[symbol])
 
-            for i in range(len(frames)):
-                frames[i] = pd.DataFrame(frames[i])
+                for i in range(len(frames)):
+                    frames[i] = pd.DataFrame(frames[i])
 
-            response = pd.concat(frames, ignore_index=True)
-            response.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v":
-                            "volume"}, inplace=True)
+                response = pd.concat(frames, ignore_index=True)
+                response.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v":
+                                "volume"}, inplace=True)
 
-            response = response.astype({
-                'time': int,
-                'open': float,
-                'high': float,
-                'low': float,
-                'close': float,
-                'volume': float,
-            })
+                response = response.sort_values(by=['time'], ignore_index=True)
+
+                response = response.astype({
+                    'time': int,
+                    'open': float,
+                    'high': float,
+                    'low': float,
+                    'close': float,
+                    'volume': float,
+                })
+            else:
+                # Overestimate the difference for yfinance
+                epoch_start = epoch_stop - (epoch_stop - epoch_start) * 1.5
+
+                return self.parse_yfinance(symbol, epoch_start, epoch_stop, resolution_seconds).tail(to).reset_index()
         else:
             response = self.get_product_history(symbol,
                                                 epoch_start,
@@ -599,3 +613,31 @@ class AlpacaInterface(ExchangeInterface):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         response = self.calls.get_last_trade(symbol=symbol)
         return float(response['price'])
+
+    @staticmethod
+    def parse_yfinance(symbol: str, epoch_start: [int, float], epoch_stop: [int, float], resolution: int):
+        try:
+            import yfinance
+
+            start_date = dt.fromtimestamp(epoch_start, tz=timezone.utc)
+            stop_date = dt.fromtimestamp(epoch_stop, tz=timezone.utc)
+            ticker = yfinance.Ticker(symbol)
+            result = ticker.history(start=start_date, end=stop_date, interval=number_interval_to_string(resolution))
+
+            result['time'] = result.index.astype(int) // 10 ** 9
+            result = result[['Open', 'High', 'Low', 'Close', 'Volume', 'time']].reset_index()
+
+            result = result.rename(columns={
+                'time': 'time',
+                'Open': 'open',
+                'High': 'high',
+                'Low': 'low',
+                'Close': 'close',
+                'Volume': 'volume'
+            })
+
+            result.drop(columns=['Date'], inplace=True)
+
+            return result
+        except ImportError:
+            raise ImportError("To use yfinance to download data please pip install yfinance")

@@ -18,6 +18,7 @@
 
 import argparse
 import sys
+import uuid
 import warnings
 import os
 import platform
@@ -31,7 +32,6 @@ import webbrowser
 
 from blankly.deployment.api import API
 from blankly.utils.utils import load_json_file, info_print
-
 
 very_important_string = """
 ██████╗ ██╗      █████╗ ███╗   ██╗██╗  ██╗██╗  ██╗   ██╗    ███████╗██╗███╗   ██╗ █████╗ ███╗   ██╗ ██████╗███████╗
@@ -173,7 +173,6 @@ def create_and_write_file(filename: str, default_contents: str = None):
 
 parser = argparse.ArgumentParser(description='Blankly CLI & deployment tool.')
 
-
 subparsers = parser.add_subparsers(help='Different blankly commands.')
 
 init_parser = subparsers.add_parser('init', help='Sub command to create a blankly-enabled development environment.')
@@ -202,7 +201,6 @@ run_parser.add_argument('--monitor',
                              'The module psutil must be installed.')
 run_parser.set_defaults(which='run')
 add_path_arg(run_parser)
-
 
 # Create a global token value for use in the double nested function below
 token = None
@@ -325,9 +323,9 @@ def zipdir(path, ziph, ignore_files: list):
             # (Modification) Skip everything that is in the blankly_dist folder
             filepath = os.path.join(root, file)
 
-            if not os.path.abspath(filepath) in ignore_files:
+            if not (os.path.abspath(filepath) in ignore_files) and not (root in ignore_files):
                 # This takes of the first part of the relative path and replaces it with /model/
-                info_print(f'\tAdding: {file} in folder {root}.')
+                print(f'\tAdding: {file} in folder {root}.')
                 relpath = os.path.relpath(filepath,
                                           os.path.join(path, '..'))
                 relpath = os.path.normpath(relpath).split(os.sep)
@@ -362,9 +360,47 @@ def main():
             print(TermColors.FAIL + "Please create a project with 'blankly create' first." + TermColors.ENDC)
             return
 
+        create_new = False
+        general_description = None
+
         try:
             f = open(os.path.join(args['path'], deployment_script_name))
             deployment_options = json.load(f)
+
+            f.close()
+            if 'model_id' not in deployment_options or \
+                    'project_id' not in deployment_options or \
+                    'model_name' not in deployment_options:
+                # This performs all the querying necessary to send the data up
+                ids = []
+                for i in projects:
+                    ids.append(i['projectId'])
+                descriptions = []
+                for i in projects:
+                    descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
+                                        TermColors.ENDC + TermColors.OKCYAN + i['name'])
+                project_id = choose_option('project', ids, descriptions)
+
+                model_name = input(TermColors.BOLD + TermColors.WARNING +
+                                   "Enter a name for your model: " + TermColors.ENDC)
+
+                deployment_options['project_id'] = project_id
+                deployment_options['model_id'] = str(uuid.uuid4())
+                deployment_options['model_name'] = model_name
+
+                create_new = True
+
+                general_description = input(TermColors.BOLD + TermColors.WARNING +
+                                            "Enter a general description for this model model: " + TermColors.ENDC)
+
+                info_print(f"Generating new model id for this blankly.json: {deployment_options['model_id']}")
+                # Write the modified version with the ID back into the json file
+                f = open(os.path.join(args['path'], deployment_script_name), 'w+')
+                f.write(json.dumps(deployment_options, indent=2))
+                f.close()
+            model_name = deployment_options['model_name']
+            project_id = deployment_options['project_id']
+            model_id = deployment_options['model_id']
         except FileNotFoundError:
             raise FileNotFoundError(f"A {deployment_script_name} file must be present at the top level of the "
                                     f"directory specified.")
@@ -380,16 +416,6 @@ def main():
 
             zip_.close()
 
-            # This performs all the querying necessary to send the data up
-            ids = []
-            for i in projects:
-                ids.append(i['projectId'])
-            descriptions = []
-            for i in projects:
-                descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
-                                    TermColors.ENDC + TermColors.OKCYAN + i['name'])
-            project_id = choose_option('project', ids, descriptions)
-
             plans = api.get_plans('live')
 
             plan_names = list(plans.keys())
@@ -403,18 +429,18 @@ def main():
 
             chosen_plan = choose_option('plan', plan_names, descriptions)
 
-            model_name = input(TermColors.BOLD + TermColors.WARNING +
-                               "Enter a name for your model: " + TermColors.ENDC)
-
-            user_description = input(TermColors.BOLD + TermColors.WARNING +
-                                     "Enter a description for your model: " + TermColors.ENDC)
+            version_description = input(TermColors.BOLD + TermColors.WARNING +
+                                        "Enter a description for this version of the model: " + TermColors.ENDC)
 
             info_print("Uploading...")
             response = api.deploy(model_path,
                                   project_id=project_id,
+                                  model_id=model_id,
                                   plan=chosen_plan,
-                                  description=user_description,
-                                  name=model_name)
+                                  version_description=version_description,
+                                  general_description=general_description,
+                                  name=model_name,
+                                  create_new=create_new)
             if 'error' in response:
                 info_print('Error: ' + response['error'])
             elif 'status' in response and response['status'] == 'success':
@@ -485,7 +511,11 @@ def main():
     elif which == 'backtest':
         api = API(login())
 
-        print(api.backtest(project_id='jiCLm5a2EkgZBhHX1oUt', model_id='sCH0Ns9Pvow4p7T3D44v', args={'to': '1y'}))
+        print(api.backtest(project_id='IKMrcZUtXlKlszvSVBEJ',
+                           model_id='eb21253b-cf76-4567-85fb-5928243340e4',
+                           version_id='D13v5AaD0vIadwXx8FNv',
+                           args={'to': '1y'},
+                           backtest_description='Backtest Description'))
 
     elif which == 'create':
         api = API(login())

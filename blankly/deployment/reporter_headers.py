@@ -99,6 +99,18 @@ class Reporter:
         """
         pass
 
+    def export_used_exchange(self, exchange_name):
+        """
+        Export the string identifier for a used exchange
+        """
+        pass
+
+    def export_used_symbol(self, symbol):
+        """
+        Export the currency name for a used currency
+        """
+        pass
+
     def text(self, text: str):
         """
         Send a text message to the number if notify.json OR the phone number attached to your account if the model

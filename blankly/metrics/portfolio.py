@@ -65,12 +65,12 @@ def volatility(returns, n=None):
 
 
 def variance(returns, n=None):
-    return np.nanvar(returns) * np.sqrt(n) if n else np.nanvar(returns)
+    return np.nanvar(returns) * n if n else np.nanvar(returns)
 
 
-def beta(returns, market_base_returns):
+def beta(returns, market_base_returns, n=None ):
     m = np.matrix([returns, market_base_returns])
-    return np.cov(m)[0][1] / (np.std(market_base_returns)**2)
+    return np.cov(m)[0][1] / variance(market_base_returns, n)
 
 
 def var(initial_value, returns, alpha: float):

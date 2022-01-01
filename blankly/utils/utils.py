@@ -56,7 +56,8 @@ default_general_settings = {
         "alpaca": {
             "websocket_stream": import_checks.UserInputParser("iex", str),
             "cash": import_checks.UserInputParser("USD", str),
-            "enable_shorting" : import_checks.UserInputParser(True, bool)
+            "enable_shorting" : import_checks.UserInputParser(True, bool),
+            "use_yfinance": import_checks.UserInputParser(False, bool)
         },
         "oanda": {
             "cash": import_checks.UserInputParser("USD", str)
@@ -70,7 +71,7 @@ default_backtest_settings = {
     },
     "settings": {
         "use_price": import_checks.UserInputParser("close", str, import_checks.is_in_list,
-                                                   {"allowable": ["close", "open", "high", "low", "adj_close"]}),
+                                                   {"allowable": ["close", "open", "high", "low"]}),
         "smooth_prices": import_checks.UserInputParser(False, bool),
         "GUI_output": import_checks.UserInputParser(True, bool),
         "show_tickers_with_zero_delta": import_checks.UserInputParser(False, bool),

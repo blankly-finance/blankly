@@ -66,21 +66,23 @@ def calmar(backtest_data, trading_period=86400):
     return round(metrics.calmar(returns, ppy), 2)
 
 
-def volatility(backtest_data):
+def volatility(backtest_data, trading_period=86400):
     returns = backtest_data['returns']['value']
-    return round(metrics.volatility(returns), 2)
+    ppy = periods_per_year(trading_period)
+    return round(metrics.volatility(returns, ppy), 2)
 
 
-def variance(backtest_data):
-    returns = backtest_data['returns']['value'] * 100
-    return round(metrics.variance(returns), 2)
+def variance(backtest_data, trading_period=86400):
+    returns = backtest_data['returns']['value']
+    ppy = periods_per_year(trading_period)
+    return round(100.0 * metrics.variance(returns, ppy), 2)
 
-def beta(backtest_data):
+def beta(backtest_data, trading_period=86400):
     # Drop the first index because it is NaN
-    # Note, beta is not affected by the resample time-scale
     returns = backtest_data['returns']['value'][1:]
     benchmark = backtest_data['benchmark_returns']['value'][1:]
-    return round(metrics.beta(returns, benchmark), 2)
+    ppy = periods_per_year(trading_period)
+    return round(metrics.beta(returns, benchmark, ppy), 2)
 
 def var(backtest_data):
     returns = backtest_data['returns']['value']
@@ -88,10 +90,11 @@ def var(backtest_data):
     return round(metrics.var(account_values['value'][0], returns, 0.95), 2)
 
 
-def cvar(backtest_data):
+def cvar(backtest_data, trading_period=86400):
     returns = backtest_data['returns']['value']
     account_values = backtest_data['resampled_account_value']
-    return round(metrics.cvar(account_values['value'][0], returns, 0.95), 2)
+    ppy = periods_per_year(trading_period)
+    return round(metrics.cvar(account_values['value'][0], returns, 0.95, ppy), 2)
 
 
 def max_drawdown(backtest_data):
