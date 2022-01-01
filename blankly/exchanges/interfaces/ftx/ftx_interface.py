@@ -5,6 +5,8 @@ from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
 import blankly.utils.utils as utils
 import json
+import copy
+from typing import List
 #
 class FTXInterface(ExchangeInterface):
     
@@ -82,7 +84,7 @@ class FTXInterface(ExchangeInterface):
                 product['base_asset'] = product.pop('baseCurrency')
                 product['quote_asset'] = product.pop('quoteCurrency')
                 product['base_min_size'] = product.pop('minProvideSize')
-                product['base_max_size'] = None
+                product['base_max_size'] = 99999999
                 product['base_increment'] = product.pop('sizeIncrement')
 
                 product = utils.isolate_specific(needed, product)
@@ -433,19 +435,19 @@ class FTXInterface(ExchangeInterface):
         total_data = []
 
         for interval_num, interval in enumerate(history):
-            epoch_start = utils.epoch_from_ISO8601(interval["startTime"])
-            interval_low = interval["low"]
-            interval_high = interval["high"]
-            interval_open = interval["open"]
-            interval_close = interval["close"]
-            interval_volume = interval["volume"]
+            epoch_start = int(utils.epoch_from_ISO8601(interval["startTime"]))
+            interval_low = float(interval["low"])
+            interval_high = float(interval["high"])
+            interval_open = float(interval["open"])
+            interval_close = float(interval["close"])
+            interval_volume = float(interval["volume"])
 
             interval_data = [epoch_start, interval_low, interval_high, interval_open, interval_close, interval_volume]
             total_data.append(interval_data)
             
             utils.update_progress(interval_num / total_num_intervals)
         
-        df = pandas.DataFrame(data = total_data, columns = ['time (epoch)', 'low', 'high', 'open', 'close', 'volume'])
+        df = pandas.DataFrame(data = total_data, columns = ['time', 'low', 'high', 'open', 'close', 'volume'])
 
         print("\n")
         return df
@@ -456,10 +458,75 @@ class FTXInterface(ExchangeInterface):
         Find order limits for the exchange
         Args:
             symbol: The asset such as (BTC-USD, or MSFT)
+
+            {
+                "name": "BTC/USD", <---needed
+                "enabled": true,
+                "postOnly": false,
+                "priceIncrement": 1.0, <------ needed
+                "sizeIncrement": 0.0001, <------ needed
+                "minProvideSize": 0.0001, <------ needed
+                "last": 47534.0,
+                "bid": 47536.0,
+                "ask": 47540.0,
+                "price": 47536.0,
+                "type": "spot",
+                "baseCurrency": "BTC", <------ needed
+                "quoteCurrency": "USD", <------ needed
+                "underlying": null,
+                "restricted": false,
+                "highLeverageFeeExempt": true,
+                "change1h": -0.007184628237259816,
+                "change24h": -0.003438155136268344,
+                "changeBod": 0.02373260972563208,
+                "quoteVolume24h": 57477234.2424,
+                "volumeUsd24h": 57477234.2424
+            }
+
         """
+        if "-" in symbol:
+            symbol = symbol.replace("-", "/")
+        
 
+        market_info = self.get_calls().get_market(symbol)
 
-        pass
+        exchange_specific_keys = copy.deepcopy(market_info)
+
+        keys_to_remove = ["name", "baseCurrency", "quoteCurrency", "minProvideSize", "sizeIncrement", "priceIncrement", "price"]
+
+        for key in keys_to_remove:
+            exchange_specific_keys.pop(key)
+
+        return {
+            "symbol": market_info["name"],
+            "base_asset": market_info["baseCurrency"],
+            "quote_asset": market_info["quoteCurrency"],
+            "max_orders": 99999999,
+            "limit_order": {
+                "base_min_size": market_info["minProvideSize"],
+                "base_max_size": 99999999,
+                "base_increment": market_info["sizeIncrement"],
+                "price_increment": market_info["priceIncrement"],
+                "min_price": market_info["minProvideSize"] * market_info["price"],
+                "max_price": 99999999 * market_info["price"]
+            },
+            "market_order": {
+                "base_min_size": market_info["minProvideSize"],
+                "base_max_size": 99999999,
+                "base_increment": market_info["sizeIncrement"],
+                "quote_increment": market_info["priceIncrement"],
+                "buy": {
+                    "min_funds": None,
+                    "max_funds": None
+                },
+                "sell": {
+                    "min_funds": None,
+                    "max_funds": None
+                },
+                "exchange_specific": exchange_specific_keys
+            }
+            
+        }
 
     
     def get_price(self, symbol: str) -> float:

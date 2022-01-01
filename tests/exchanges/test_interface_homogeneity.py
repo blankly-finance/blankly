@@ -19,6 +19,7 @@
 import time
 import unittest
 from datetime import datetime as dt
+import pdb
 
 import dateparser
 import numpy
@@ -87,6 +88,13 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.Oanda_Interface = cls.Oanda.get_interface()
         cls.interfaces.append(cls.Oanda_Interface)
         cls.data_interfaces.append(cls.Oanda_Interface)
+        
+        cls.FTX = blankly.FTX(portfolio_name="Main Account",
+                              keys_path='./tests/config/keys.json',
+                              settings_path="./tests/config/settings.json")
+        cls.FTX_Interface = cls.FTX.get_interface()
+        cls.interfaces.append(cls.FTX_Interface)
+        cls.data_interfaces.append(cls.FTX_Interface)
 
         # Paper trade wraps binance
         cls.paper_trade_binance = blankly.PaperTrade(cls.Binance)
@@ -108,6 +116,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
         for i in range(len(self.interfaces)):
             responses.append(self.interfaces[i].get_products()[0])
+
+        #pdb.set_trace()
 
         self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
@@ -168,8 +178,10 @@ class InterfaceHomogeneity(unittest.TestCase):
         # These are the immediate exchange responses that we aggregate & check
         exchange_responses = []
         for i in self.interfaces:
-            type_ = i.get_exchange_type()
 
+            type_ = i.get_exchange_type()
+            if type_ == "ftx":
+                continue
             if not (type_ == 'alpaca' or type_ == 'oanda'):
                 size = .01
             else:
@@ -462,10 +474,13 @@ class InterfaceHomogeneity(unittest.TestCase):
 
     def test_get_order_filter(self):
         responses = []
-
+        types = []
         for i in self.interfaces:
             type_ = i.get_exchange_type()
+            types.append(type_)
             responses.append(i.get_order_filter(get_valid_symbol(type_)))
+
+        #pdb.set_trace()
 
         self.assertTrue(compare_responses(responses))
 
