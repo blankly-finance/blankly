@@ -4,7 +4,6 @@
 
 from blankly import Strategy, StrategyState, Interface
 from blankly import Alpaca
-from blankly.utils import trunc
 from blankly.indicators import sma
 
 

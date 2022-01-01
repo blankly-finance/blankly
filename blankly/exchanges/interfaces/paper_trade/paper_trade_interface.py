@@ -75,6 +75,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         self.evaluate_traded_account_assets()
 
+        self.__enable_shorting = self.user_preferences['settings']['alpaca']['enable_shorting']
+
     def evaluate_traded_account_assets(self):
         # Because alpaca has so many columns we need to optimize to perform an accurate backtest
         self.traded_assets = []
@@ -154,7 +156,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
     def override_local_account(self, value_dictionary: dict):
         """
-        Push a new set of initial account values to the algorithm. All values not given in in the
+        Push a new set of initial account values to the algorithm. All values not given in the
         value dictionary that currently exist will be set to zero.
 
         Args:
@@ -356,14 +358,16 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         if self.get_exchange_type() == 'alpaca':
             # This could break, but there appears that 10 decimals is about right for alpaca
             quantity_decimals = 10
+            shortable = market_limits['exchange_specific']['shortable']
         else:
+            shortable = False
             quantity_decimals = self.__get_decimals(market_limits['limit_order']['base_increment'])
 
         qty = size
 
         # Test the purchase
         self.local_account.test_trade(symbol, side, qty, price, market_limits['market_order']["quote_increment"],
-                                      quantity_decimals)
+                                      quantity_decimals, (shortable and self.__enable_shorting))
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
         # TODO the force typing here isn't strictly necessary because its run int the isolate_specific anyway
@@ -500,7 +504,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         # Test the trade
         self.local_account.test_trade(symbol, side, size, price, quote_resolution=price_increment_decimals,
-                                      base_resolution=base_decimals)
+                                      base_resolution=base_decimals, shortable=False)
 
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()

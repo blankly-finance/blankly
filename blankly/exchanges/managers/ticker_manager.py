@@ -91,12 +91,12 @@ class TickerManager(WebsocketManager):
             override_symbol = blankly.utils.to_exchange_symbol(override_symbol, "binance").lower()
             if sandbox_mode:
                 ticker = Binance_Ticker(override_symbol,
-                                        "trades",
+                                        "aggTrade",
                                         log=log,
                                         WEBSOCKET_URL="wss://testnet.binance.vision/ws")
             else:
                 ticker = Binance_Ticker(override_symbol,
-                                        "trades",
+                                        "aggTrade",
                                         log=log)
             ticker.append_callback(callback)
             self.__tickers['binance'][override_symbol] = ticker

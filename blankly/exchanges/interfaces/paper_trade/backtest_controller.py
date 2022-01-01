@@ -454,7 +454,7 @@ class BackTestController:
         # No trade account total
         no_trade_value = 0
 
-        # Save this up front so that it can be removed from the price calculation (its always a value of 1 anyway)
+        # Save this up front so that it can be removed from the price calculation (it's always a value of 1 anyway)
         quote_value = true_account[self.quote_currency]['available'] + true_account[self.quote_currency]['hold']
         try:
             del true_account[self.quote_currency]
@@ -717,7 +717,7 @@ class BackTestController:
 
                     no_trade.append(no_trade_dict)
 
-            # Finally run the teardown functions
+            # Finally, run the teardown functions
             for i in self.price_events:
                 # Pull the teardown and pass the state object
                 if callable(i['teardown']):
@@ -857,9 +857,6 @@ class BackTestController:
             # Find the interval second value
             interval_value = time_interval_to_seconds(resample_setting)
 
-            # Add the internval value to dictionary
-            dataframes['trading_period'] = interval_value
-
             # Assign start and stop limits
             epoch_start = epoch_backup[0]
             epoch_max = epoch_backup[len(epoch_backup) - 1]
@@ -898,10 +895,7 @@ class BackTestController:
             # Now write it to our dictionary
             dataframes['returns'] = returns
 
-            # Add risk-free-return rate to dictionary
-            dataframes['risk_free_return_rate'] = self.preferences['settings'].get("risk_free_return_rate", 0.0)
-
-            # -----=====*****=====----- I thought I stopped doing these comments when I actually learned to code
+            # -----=====*****=====-----
             metrics_indicators['Compound Annual Growth Rate (%)'] = metrics.cagr(dataframes)
             try:
                 metrics_indicators['Cumulative Returns (%)'] = metrics.cum_returns(dataframes)
@@ -909,20 +903,33 @@ class BackTestController:
                 raise ZeroDivisionError("Division by zero when calculating cum returns. "
                                         "Are there valid account datapoints?")
 
-            def attempt(math_callable: typing.Callable, dict_of_dataframes: dict):
+            def attempt(math_callable: typing.Callable, dict_of_dataframes: dict, kwargs: dict = None):
                 try:
-                    return math_callable(dict_of_dataframes)
+                    if kwargs is None:
+                        kwargs = {}
+                    return math_callable(dict_of_dataframes, **kwargs)
                 except ZeroDivisionError:
                     return 'failed'
+
+            risk_free_return_rate = self.preferences['settings']["risk_free_return_rate"]
+            trading_period = interval_value
             metrics_indicators['Max Drawdown (%)'] = attempt(metrics.max_drawdown, dataframes)
             metrics_indicators['Variance (%)'] = attempt(metrics.variance, dataframes)
-            metrics_indicators['Sortino Ratio'] = attempt(metrics.sortino, dataframes)
-            metrics_indicators['Sharpe Ratio'] = attempt(metrics.sharpe, dataframes)
-            metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, dataframes)
+            metrics_indicators['Sortino Ratio'] = attempt(metrics.sortino, dataframes,
+                                                          {'risk_free_rate': risk_free_return_rate,
+                                                           'trading_period': trading_period})
+            metrics_indicators['Sharpe Ratio'] = attempt(metrics.sharpe, dataframes,
+                                                         {'risk_free_rate': risk_free_return_rate,
+                                                          'trading_period': trading_period})
+            metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, dataframes, {'trading_period': trading_period})
             metrics_indicators['Volatility'] = attempt(metrics.volatility, dataframes)
             metrics_indicators['Value-at-Risk'] = attempt(metrics.var, dataframes)
             metrics_indicators['Conditional Value-at-Risk'] = attempt(metrics.cvar, dataframes)
+            # Add risk-free-return rate to dictionary
+            metrics_indicators['Risk Free Return Rate'] = risk_free_return_rate
             # metrics_indicators['beta'] = attempt(metrics.beta, dataframes)
+            # Add the interval value to dictionary
+            metrics_indicators['Resampled Time'] = interval_value
             # -----=====*****=====-----
 
         # Run this last so that the user can override what they want

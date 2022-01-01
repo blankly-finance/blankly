@@ -39,13 +39,14 @@ class BinanceInterface(ExchangeInterface):
 
     def init_exchange(self):
         try:
-            symbols = self.calls.get_exchange_info()["symbols"]
+            self.calls.get_account()
         except binance.exceptions.BinanceAPIException:
             raise exceptions.APIException("Invalid API Key, IP, or permissions for action - are you trying "
                                           "to use your normal exchange keys while in sandbox mode? "
                                           "\nTry toggling the \'use_sandbox\' setting in your settings.json or check "
                                           "if the keys were input correctly into your keys.json.")
 
+        symbols = self.calls.get_exchange_info()["symbols"]
         assets = []
         for i in symbols:
             assets.append(i["baseAsset"])
@@ -246,6 +247,7 @@ class BinanceInterface(ExchangeInterface):
                 })
         return utils.AttributeDict(parsed_dictionary)
 
+    @utils.order_protection
     def market_order(self, symbol, side, size) -> MarketOrder:
         """
         Used for buying or selling market orders
@@ -327,6 +329,7 @@ class BinanceInterface(ExchangeInterface):
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
+    @utils.order_protection
     def limit_order(self, symbol, side, price, size) -> LimitOrder:
         """
         Used for buying or selling limit orders
@@ -652,7 +655,7 @@ class BinanceInterface(ExchangeInterface):
         # Want them in this order: ['time (epoch)', 'low', 'high', 'open', 'close', 'volume']
 
         # Time is so big it has to be cast separately for windows
-        data_frame['time'] = data_frame['time'].div(1000).astype(numpy.int64)
+        data_frame['time'] = data_frame['time'].div(1000).astype(int)
 
         # Cast dataframe
         data_frame = data_frame.astype({

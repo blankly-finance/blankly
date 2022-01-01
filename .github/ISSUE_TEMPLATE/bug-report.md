@@ -21,7 +21,7 @@ backtest.json here
 ```
 
 ## Error (if applicable)
-```plaintext
+```text
 Error here
 ```
 

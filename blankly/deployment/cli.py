@@ -42,12 +42,124 @@ very_important_string = """
 ╚═════╝ ╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝╚═╝       ╚═╝     ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝╚══════╝
 """
 
+deployment_script_name = 'blankly.json'
 
-def add_path_arg(arg_parser):
-    arg_parser.add_argument('path',
-                            metavar='path',
-                            type=str,
-                            help='Path to the directory containing the blankly enabled folder.')
+
+# From blender build scripts found at
+# https://stackoverflow.com/a/287944/8087739
+class TermColors:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+
+
+def choose_option(choice: str, options: list, descriptions: list):
+    """
+    Generalized CLI tool to choose between given options
+
+    Args:
+        choice: String for "Choose a <choice>" shown to the user
+        options: List of string options allowed ex: ['micro', 'small', 'medium']
+        descriptions: Description to show for each option corresponding to the earlier options: ex: ['
+            miocro:
+                CPU: 5,
+                RAM: 10
+        '
+        ]
+    """
+    import fcntl
+    import termios
+    fd = sys.stdin.fileno()
+
+    largest_option_name = 0
+    for i in options:
+        if len(i) > largest_option_name:
+            largest_option_name = len(i)
+
+    def print_selection_index(index_):
+        # We pass none when they haven't selected yet
+        if index_ is None:
+            chosen_plan = "None"
+        # When its given a number it will index and find the lengths
+        else:
+            if index_ < 0:
+                index_ = len(options) - 1
+            elif index_ >= len(options):
+                index_ = 0
+            chosen_plan = options[index_]
+
+        # Carry it in this string
+        string_ = "\r" + TermColors.UNDERLINE + TermColors.OKCYAN + "You have chosen:" + \
+                  TermColors.ENDC + " " + TermColors.BOLD + TermColors.OKBLUE + chosen_plan
+
+        remaining_chars = largest_option_name - len(chosen_plan)
+        string_ += " " * remaining_chars
+
+        # Final print and flush the buffer
+        sys.stdout.write(string_)
+        sys.stdout.flush()
+
+        return index_
+
+    print(TermColors.BOLD + TermColors.WARNING + f"Choose a {choice}: " + TermColors.ENDC +
+          TermColors.UNDERLINE + "(Use your arrow keys ← →)" + TermColors.ENDC)
+    for i in descriptions:
+        print(i)
+
+    # TODO Add a very simple version that can take simple input() if this fails
+    oldterm = termios.tcgetattr(fd)
+    newattr = termios.tcgetattr(fd)
+    newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
+    termios.tcsetattr(fd, termios.TCSANOW, newattr)
+
+    oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
+    fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
+
+    index = 0
+    print_selection_index(None)
+    try:
+        while True:
+            try:
+                c = sys.stdin.read(1)
+                if c == '[':
+                    c = sys.stdin.read(1)
+                    if c == 'C':
+                        index += 1
+                        index = print_selection_index(index)
+                    elif c == 'D':
+                        index -= 1
+                        index = print_selection_index(index)
+                elif c == '\n':
+                    break
+            except IOError:
+                pass
+    finally:
+        termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
+        fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
+
+    print('\n' + TermColors.BOLD + TermColors.WARNING + f"Chose {choice}:" + TermColors.ENDC + " " +
+          TermColors.BOLD + TermColors.OKBLUE + options[index] + TermColors.ENDC)
+
+    return options[index]
+
+
+def add_path_arg(arg_parser, required=True):
+    kwargs = {
+        'metavar': 'path',
+        'type': str,
+        'help': 'Path to the directory containing the blankly enabled folder.',
+        'nargs': '?'
+    }
+    # Pass this along if its not required
+    if not required:
+        kwargs['nargs'] = '?'
+    arg_parser.add_argument('path', **kwargs)
 
 
 def create_and_write_file(filename: str, default_contents: str = None):
@@ -70,10 +182,18 @@ init_parser.set_defaults(which='init')
 login_parser = subparsers.add_parser('login', help='Log in to your blankly account.')
 login_parser.set_defaults(which='login')
 
-deploy_parser = subparsers.add_parser('deploy', help='Sub command to deploy the model.')
+deploy_parser = subparsers.add_parser('deploy', help='Command to upload & start the model.')
 deploy_parser.set_defaults(which='deploy')
+add_path_arg(deploy_parser, required=False)
 
-add_path_arg(deploy_parser)
+project_create_parser = subparsers.add_parser('create', help='Create a new project.')
+project_create_parser.set_defaults(which='create')
+
+project_create_parser = subparsers.add_parser('backtest', help='Start a backtest on an uploaded model.')
+project_create_parser.set_defaults(which='backtest')
+
+list_parser = subparsers.add_parser('list', help='Show available projects & exit.')
+list_parser.set_defaults(which='list')
 
 run_parser = subparsers.add_parser('run', help='Mimic the run mechanism used in blankly deployment.')
 run_parser.add_argument('--monitor',
@@ -81,14 +201,14 @@ run_parser.add_argument('--monitor',
                         help='Add this flag to monitor the blankly process to understand CPU & memory usage. '
                              'The module psutil must be installed.')
 run_parser.set_defaults(which='run')
-
 add_path_arg(run_parser)
+
 
 # Create a global token value for use in the double nested function below
 token = None
 
 
-def login(remove_cache=False):
+def login(remove_cache: bool = False):
     # Set the token as global here
     global token
     from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -102,7 +222,7 @@ def login(remove_cache=False):
         if i[0:13] == 'blankly_auth_' and i != file_name:
             # If we're not removing cache this will use the old files to look for the token
             if not remove_cache:
-                # If its different than the one that was just created, remove the one just created
+                # If it's different from the one that was just created, remove the one just created
                 os.remove(os.path.join(temp_folder, file_name))
                 # Reassign file name just in case its needed below to write into the file
                 # Note that we protect against corrupted files below by overwriting any contents in case
@@ -122,6 +242,7 @@ def login(remove_cache=False):
                     pass
             # If we are removing cache then these files should just be deleted
             else:
+                print(os.path.join(temp_folder, i))
                 os.remove(os.path.join(temp_folder, i))
             # Be sure to leave the loop
             break
@@ -135,7 +256,7 @@ def login(remove_cache=False):
         token: str
 
         def do_OPTIONS(self):
-            # This options call is not used however these headers were hard to figure out so I'm leaving them
+            # This options call is not used however these headers were hard to figure out, so I'm leaving them
             self.send_response(200, "ok")
             self.send_header('Access-Control-Allow-Origin', 'https://app.blankly.finance')
             self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
@@ -227,39 +348,81 @@ def main():
         return
     if which == 'deploy':
         if args['path'] is None:
-            deploy_parser.print_help()
+            print(TermColors.WARNING + "Warning - No filepath specified. Assuming the current directory (./)\n" +
+                  TermColors.ENDC)
+
+            args['path'] = './'
+        token_ = login()
+
+        api = API(token_)
+
+        projects = api.list_projects()
+
+        if len(projects) == 0:
+            print(TermColors.FAIL + "Please create a project with 'blankly create' first." + TermColors.ENDC)
             return
-        else:
-            token_ = login()
 
-            api = API(token_)
+        try:
+            f = open(os.path.join(args['path'], deployment_script_name))
+            deployment_options = json.load(f)
+        except FileNotFoundError:
+            raise FileNotFoundError(f"A {deployment_script_name} file must be present at the top level of the "
+                                    f"directory specified.")
 
-            try:
-                f = open(os.path.join(args['path'], 'blankly.json'))
-                deployment_options = json.load(f)
-            except FileNotFoundError:
-                raise FileNotFoundError("A blankly.json file must be present at the top level of the directory "
-                                        "specified.")
+        info_print("Zipping...")
 
-            info_print("Zipping...")
+        with tempfile.TemporaryDirectory() as dist_directory:
+            source = os.path.abspath(args['path'])
 
-            with tempfile.TemporaryDirectory() as dist_directory:
-                source = os.path.abspath(args['path'])
+            model_path = os.path.join(dist_directory, 'model.zip')
+            zip_ = zipfile.ZipFile(model_path, 'w', zipfile.ZIP_DEFLATED)
+            zipdir(source, zip_, deployment_options['ignore_files'])
 
-                model_path = os.path.join(dist_directory, 'model.zip')
-                zip_ = zipfile.ZipFile(model_path, 'w', zipfile.ZIP_DEFLATED)
-                zipdir(source, zip_, deployment_options['ignore_files'])
+            zip_.close()
 
-                zip_.close()
+            # This performs all the querying necessary to send the data up
+            ids = []
+            for i in projects:
+                ids.append(i['projectId'])
+            descriptions = []
+            for i in projects:
+                descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
+                                    TermColors.ENDC + TermColors.OKCYAN + i['name'])
+            project_id = choose_option('project', ids, descriptions)
 
-                info_print("Uploading...")
-                response = api.upload(model_path, model_id='test2')
-                if 'error' in response:
-                    info_print('Error: ' + response['error'])
-                elif 'status' in response and response['status'] == 'success':
-                    info_print(f"Model upload completed at {response['timestamp']}:")
-                    info_print(f"\tModel ID:\t{response['modelId']}")
-                    info_print(f"\tView at:\t{response['url']}")
+            plans = api.get_plans('live')
+
+            plan_names = list(plans.keys())
+
+            descriptions = []
+
+            for i in plans:
+                descriptions.append("\t" + TermColors.UNDERLINE + TermColors.OKBLUE + i + TermColors.ENDC +
+                                    "\n\t\t" + TermColors.OKGREEN + 'CPU: ' + str(plans[i]['cpu']) +
+                                    "\n\t\t" + TermColors.OKGREEN + 'RAM: ' + str(plans[i]['ram']) + TermColors.ENDC)
+
+            chosen_plan = choose_option('plan', plan_names, descriptions)
+
+            model_name = input(TermColors.BOLD + TermColors.WARNING +
+                               "Enter a name for your model: " + TermColors.ENDC)
+
+            user_description = input(TermColors.BOLD + TermColors.WARNING +
+                                     "Enter a description for your model: " + TermColors.ENDC)
+
+            info_print("Uploading...")
+            response = api.deploy(model_path,
+                                  project_id=project_id,
+                                  plan=chosen_plan,
+                                  description=user_description,
+                                  name=model_name)
+            if 'error' in response:
+                info_print('Error: ' + response['error'])
+            elif 'status' in response and response['status'] == 'success':
+                info_print(f"Model upload completed at {response['timestamp']}:")
+                info_print(f"\tModel ID:\t{response['modelId']}")
+                info_print(f"\tVersion:\t{response['versionId']}")
+                info_print(f"\tStatus:  \t{response['status']}")
+                info_print(f"\tProject:\t{response['projectId']}")
 
     elif which == 'init':
         print("Initializing...")
@@ -296,7 +459,7 @@ def main():
             "working_directory": ".",
             "ignore_files": ['']
         }
-        create_and_write_file('blankly.json', json.dumps(deploy, indent=2))
+        create_and_write_file(deployment_script_name, json.dumps(deploy, indent=2))
 
         # Write in a blank requirements file
         print("Writing requirements.txt defaults...")
@@ -307,13 +470,48 @@ def main():
     elif which == 'login':
         login(remove_cache=True)
 
+    elif which == 'list':
+        api = API(login())
+        projects = api.list_projects()
+        if len(projects) > 0:
+            print(TermColors.BOLD + TermColors.WARNING + "Projects: " + TermColors.ENDC)
+            for i in projects:
+                print("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
+                      TermColors.ENDC + TermColors.OKCYAN + i['name'])
+                print(f"\t\t Description: {i['description']}")
+        else:
+            info_print("No projects found.")
+
+    elif which == 'backtest':
+        api = API(login())
+
+        print(api.backtest(project_id='jiCLm5a2EkgZBhHX1oUt', model_id='sCH0Ns9Pvow4p7T3D44v', args={'to': '1y'}))
+
+    elif which == 'create':
+        api = API(login())
+
+        project_name = input(TermColors.BOLD + "Input a name for your project: " + TermColors.ENDC)
+
+        project_description = input(TermColors.BOLD + "Input a description for your project: " + TermColors.ENDC)
+
+        input(TermColors.BOLD + TermColors.FAIL + "Press enter to confirm project creation." + TermColors.ENDC)
+
+        response = api.create_project(project_name, description=project_description)
+
+        if 'error' in response:
+            info_print('Error: ' + response['error'])
+        elif 'status' in response and response['status'] == 'success':
+            info_print(f"Created {response['name']} at {response['createdAt']}:")
+            info_print(f"\tProject Id:\t{response['projectId']}")
+            info_print(f"\tStatus:\t{response['status']}")
+
     elif which == 'run':
         if args['path'] is None:
             run_parser.print_help()
         else:
             current_directory = os.getcwd()
             blankly_folder = os.path.join(current_directory, args['path'])
-            deployment_location = os.path.join(blankly_folder, 'blankly.json')
+            deployment_location = os.path.join(blankly_folder, deployment_script_name)
             try:
                 # Find where the user specified their working directory and migrate to that
                 deployment_dict = load_json_file(deployment_location)
