@@ -498,7 +498,7 @@ class FTXInterface(ExchangeInterface):
             exchange_specific_keys.pop(key)
 
         return {
-            "symbol": market_info["name"],
+            "symbol": market_info["name"], #make function in utils (or static) to switch slash to dash
             "base_asset": market_info["baseCurrency"],
             "quote_asset": market_info["quoteCurrency"],
             "max_orders": 99999999,
@@ -523,8 +523,9 @@ class FTXInterface(ExchangeInterface):
                     "min_funds": None,
                     "max_funds": None
                 },
-                "exchange_specific": exchange_specific_keys
-            }
+                
+            },
+            "exchange_specific": exchange_specific_keys
             
         }
 
