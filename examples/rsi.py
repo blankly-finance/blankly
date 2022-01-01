@@ -1,5 +1,6 @@
 import blankly
 
+# testing cla
 
 def price_event(price, symbol, state: blankly.StrategyState):
     """ This function will give an updated price every 15 seconds from our definition below """
