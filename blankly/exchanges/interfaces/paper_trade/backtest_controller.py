@@ -971,19 +971,19 @@ class BackTestController:
 
         risk_free_return_rate = self.preferences['settings']["risk_free_return_rate"]
         metrics_indicators['Max Drawdown (%)']  = attempt(metrics.max_drawdown, history_and_returns)
-        metrics_indicators['Variance (%)']      = attempt(metrics.variance, history_and_returns,
+        metrics_indicators['Variance (%)'] = attempt(metrics.variance, history_and_returns,
                                                     {'trading_period' : interval_value})
-        metrics_indicators['Sortino Ratio']     = attempt(metrics.sortino, history_and_returns,
+        metrics_indicators['Sortino Ratio'] = attempt(metrics.sortino, history_and_returns,
                                                     {'risk_free_rate': risk_free_return_rate,
                                                     'trading_period': interval_value})
-        metrics_indicators['Sharpe Ratio']      = attempt(metrics.sharpe, history_and_returns,
+        metrics_indicators['Sharpe Ratio'] = attempt(metrics.sharpe, history_and_returns,
                                                     {'risk_free_rate': risk_free_return_rate,
                                                     'trading_period': interval_value})
-        metrics_indicators['Calmar Ratio']      = attempt(metrics.calmar, history_and_returns, 
+        metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, history_and_returns, 
                                                     {'trading_period':    interval_value})
-        metrics_indicators['Volatility']        = attempt(metrics.volatility, history_and_returns,
+        metrics_indicators['Volatility'] = attempt(metrics.volatility, history_and_returns,
                                                     {'trading_period' : interval_value})
-        metrics_indicators['Value-at-Risk']     = attempt(metrics.var, history_and_returns)
+        metrics_indicators['Value-at-Risk'] = attempt(metrics.var, history_and_returns)
         metrics_indicators['Conditional Value-at-Risk'] = attempt(metrics.cvar, history_and_returns)
         
         # Add risk-free-return rate to dictionary
