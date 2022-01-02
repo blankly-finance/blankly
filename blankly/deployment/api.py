@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import json
 
 import requests
 
@@ -122,10 +123,24 @@ class API:
                                                                        'versionDescription': version_description,
                                                                        'createNew': create_new})
 
-    def backtest(self, project_id: str, model_id: str, args: dict, version_id: str, backtest_description: str):
+    def backtest_deployed(self, project_id: str, model_id: str, args: dict, version_id: str, backtest_description: str):
         return self.__request('post', 'model/backtestDeployedModel',
                               json_={'projectId': project_id,
                                      'modelId': model_id,
                                      'versionId': version_id,
-                                     'args': args,
+                                     'backtestArgs': args,
                                      'backtestDescription': backtest_description})
+
+    def backtest(self, file_path: str, project_id: str, model_id: str, args: dict, plan: str,
+                 backtest_description: str = ""):
+        file_path = r'{}'.format(file_path)
+        file = {'model': open(file_path, 'rb')}
+        return self.__request('post', 'model/backtest', file=file,
+                              data={'projectId': project_id,
+                                    'modelId': model_id,
+                                    'plan': plan,
+                                    'backtestDescription': backtest_description,
+                                    'backtestArgs': json.dumps(args)})
+
+    def signal(self):
+        return self.__request('get', 'model/signalTest')

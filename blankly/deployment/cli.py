@@ -149,6 +149,98 @@ def choose_option(choice: str, options: list, descriptions: list):
     return options[index]
 
 
+def get_project_model_and_name(args, projects):
+    if args['path'] is None:
+        print(TermColors.WARNING + "Warning - No filepath specified. Assuming the current directory (./)\n" +
+              TermColors.ENDC)
+
+        args['path'] = './'
+
+    create_new = False
+    general_description = None
+
+    try:
+        f = open(os.path.join(args['path'], deployment_script_name))
+        deployment_options = json.load(f)
+
+        f.close()
+        if 'model_id' not in deployment_options or \
+                'project_id' not in deployment_options or \
+                'model_name' not in deployment_options:
+            # This performs all the querying necessary to send the data up
+            ids = []
+            for i in projects:
+                ids.append(i['projectId'])
+            descriptions = []
+            for i in projects:
+                descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
+                                    TermColors.ENDC + TermColors.OKCYAN + i['name'])
+            project_id = choose_option('project', ids, descriptions)
+
+            model_name = input(TermColors.BOLD + TermColors.WARNING +
+                               "Enter a name for your model: " + TermColors.ENDC)
+
+            deployment_options['project_id'] = project_id
+            deployment_options['model_id'] = str(uuid.uuid4())
+            deployment_options['model_name'] = model_name
+
+            create_new = True
+
+            general_description = input(TermColors.BOLD + TermColors.WARNING +
+                                        "Enter a general description for this model model: " + TermColors.ENDC)
+
+            info_print(f"Generating new model id for this blankly.json: {deployment_options['model_id']}")
+            # Write the modified version with the ID back into the json file
+            f = open(os.path.join(args['path'], deployment_script_name), 'w+')
+            f.write(json.dumps(deployment_options, indent=2))
+            f.close()
+        model_name = deployment_options['model_name']
+        project_id = deployment_options['project_id']
+        model_id = deployment_options['model_id']
+    except FileNotFoundError:
+        raise FileNotFoundError(f"A {deployment_script_name} file must be present at the top level of the "
+                                f"directory specified.")
+
+    return model_name, project_id, model_id, create_new, general_description, deployment_options
+
+
+temporary_zip_file = None
+
+
+def zip_dir(args: dict, deployment_options: dict):
+    global temporary_zip_file
+    temporary_zip_file = tempfile.TemporaryDirectory()
+    dist_directory = temporary_zip_file.__enter__()
+
+    # dist_directory = tempfile.TemporaryDirectory().__enter__()
+    # with tempfile.TemporaryDirectory() as dist_directory:
+    source = os.path.abspath(args['path'])
+
+    model_path = os.path.join(dist_directory, 'model.zip')
+    zip_ = zipfile.ZipFile(model_path, 'w', zipfile.ZIP_DEFLATED)
+    zipdir(source, zip_, deployment_options['ignore_files'])
+    zip_.close()
+
+    return model_path
+
+
+def select_plan(api: API, plan_type: str):
+    plans = api.get_plans(plan_type)
+
+    plan_names = list(plans.keys())
+
+    descriptions = []
+
+    for i in plans:
+        descriptions.append("\t" + TermColors.UNDERLINE + TermColors.OKBLUE + i + TermColors.ENDC +
+                            "\n\t\t" + TermColors.OKGREEN + 'CPU: ' + str(plans[i]['cpu']) +
+                            "\n\t\t" + TermColors.OKGREEN + 'RAM: ' + str(plans[i]['ram']) + TermColors.ENDC)
+
+    chosen_plan = choose_option('plan', plan_names, descriptions)
+
+    return chosen_plan
+
+
 def add_path_arg(arg_parser, required=True):
     kwargs = {
         'metavar': 'path',
@@ -188,8 +280,9 @@ add_path_arg(deploy_parser, required=False)
 project_create_parser = subparsers.add_parser('create', help='Create a new project.')
 project_create_parser.set_defaults(which='create')
 
-project_create_parser = subparsers.add_parser('backtest', help='Start a backtest on an uploaded model.')
-project_create_parser.set_defaults(which='backtest')
+backtest_parser = subparsers.add_parser('backtest', help='Start a backtest on an uploaded model.')
+backtest_parser.set_defaults(which='backtest')
+add_path_arg(backtest_parser, required=False)
 
 list_parser = subparsers.add_parser('list', help='Show available projects & exit.')
 list_parser.set_defaults(which='list')
@@ -345,11 +438,6 @@ def main():
         parser.print_help()
         return
     if which == 'deploy':
-        if args['path'] is None:
-            print(TermColors.WARNING + "Warning - No filepath specified. Assuming the current directory (./)\n" +
-                  TermColors.ENDC)
-
-            args['path'] = './'
         token_ = login()
 
         api = API(token_)
@@ -360,95 +448,36 @@ def main():
             print(TermColors.FAIL + "Please create a project with 'blankly create' first." + TermColors.ENDC)
             return
 
-        create_new = False
-        general_description = None
-
-        try:
-            f = open(os.path.join(args['path'], deployment_script_name))
-            deployment_options = json.load(f)
-
-            f.close()
-            if 'model_id' not in deployment_options or \
-                    'project_id' not in deployment_options or \
-                    'model_name' not in deployment_options:
-                # This performs all the querying necessary to send the data up
-                ids = []
-                for i in projects:
-                    ids.append(i['projectId'])
-                descriptions = []
-                for i in projects:
-                    descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
-                                        TermColors.ENDC + TermColors.OKCYAN + i['name'])
-                project_id = choose_option('project', ids, descriptions)
-
-                model_name = input(TermColors.BOLD + TermColors.WARNING +
-                                   "Enter a name for your model: " + TermColors.ENDC)
-
-                deployment_options['project_id'] = project_id
-                deployment_options['model_id'] = str(uuid.uuid4())
-                deployment_options['model_name'] = model_name
-
-                create_new = True
-
-                general_description = input(TermColors.BOLD + TermColors.WARNING +
-                                            "Enter a general description for this model model: " + TermColors.ENDC)
-
-                info_print(f"Generating new model id for this blankly.json: {deployment_options['model_id']}")
-                # Write the modified version with the ID back into the json file
-                f = open(os.path.join(args['path'], deployment_script_name), 'w+')
-                f.write(json.dumps(deployment_options, indent=2))
-                f.close()
-            model_name = deployment_options['model_name']
-            project_id = deployment_options['project_id']
-            model_id = deployment_options['model_id']
-        except FileNotFoundError:
-            raise FileNotFoundError(f"A {deployment_script_name} file must be present at the top level of the "
-                                    f"directory specified.")
+        # Read and write to the deployment options if necessary
+        model_name, project_id, model_id, create_new, general_description, deployment_options = \
+            get_project_model_and_name(args, projects)
 
         info_print("Zipping...")
 
-        with tempfile.TemporaryDirectory() as dist_directory:
-            source = os.path.abspath(args['path'])
+        model_path = zip_dir(args, deployment_options)
 
-            model_path = os.path.join(dist_directory, 'model.zip')
-            zip_ = zipfile.ZipFile(model_path, 'w', zipfile.ZIP_DEFLATED)
-            zipdir(source, zip_, deployment_options['ignore_files'])
+        chosen_plan = select_plan(api, 'live')
 
-            zip_.close()
+        version_description = input(TermColors.BOLD + TermColors.WARNING +
+                                    "Enter a description for this version of the model: " + TermColors.ENDC)
 
-            plans = api.get_plans('live')
-
-            plan_names = list(plans.keys())
-
-            descriptions = []
-
-            for i in plans:
-                descriptions.append("\t" + TermColors.UNDERLINE + TermColors.OKBLUE + i + TermColors.ENDC +
-                                    "\n\t\t" + TermColors.OKGREEN + 'CPU: ' + str(plans[i]['cpu']) +
-                                    "\n\t\t" + TermColors.OKGREEN + 'RAM: ' + str(plans[i]['ram']) + TermColors.ENDC)
-
-            chosen_plan = choose_option('plan', plan_names, descriptions)
-
-            version_description = input(TermColors.BOLD + TermColors.WARNING +
-                                        "Enter a description for this version of the model: " + TermColors.ENDC)
-
-            info_print("Uploading...")
-            response = api.deploy(model_path,
-                                  project_id=project_id,
-                                  model_id=model_id,
-                                  plan=chosen_plan,
-                                  version_description=version_description,
-                                  general_description=general_description,
-                                  name=model_name,
-                                  create_new=create_new)
-            if 'error' in response:
-                info_print('Error: ' + response['error'])
-            elif 'status' in response and response['status'] == 'success':
-                info_print(f"Model upload completed at {response['timestamp']}:")
-                info_print(f"\tModel ID:\t{response['modelId']}")
-                info_print(f"\tVersion:\t{response['versionId']}")
-                info_print(f"\tStatus:  \t{response['status']}")
-                info_print(f"\tProject:\t{response['projectId']}")
+        info_print("Uploading...")
+        response = api.deploy(model_path,
+                              project_id=project_id,
+                              model_id=model_id,
+                              plan=chosen_plan,
+                              version_description=version_description,
+                              general_description=general_description,
+                              name=model_name,
+                              create_new=create_new)
+        if 'error' in response:
+            info_print('Error: ' + response['error'])
+        elif 'status' in response and response['status'] == 'success':
+            info_print(f"Model upload completed at {response['timestamp']}:")
+            info_print(f"\tModel ID:\t{response['modelId']}")
+            info_print(f"\tVersion:\t{response['versionId']}")
+            info_print(f"\tStatus:  \t{response['status']}")
+            info_print(f"\tProject:\t{response['projectId']}")
 
     elif which == 'init':
         print("Initializing...")
@@ -470,7 +499,7 @@ def main():
         backtest = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/backtest.json')
         create_and_write_file('backtest.json', backtest.text)
 
-        # Directly download an rsi bot
+        # Directly download a rsi bot
         print("Downloading RSI bot example...")
         bot = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/rsi.py')
         create_and_write_file('bot.py', bot.text)
@@ -483,7 +512,8 @@ def main():
             "python_version": py_version[0] + "." + py_version[1],
             "requirements": "./requirements.txt",
             "working_directory": ".",
-            "ignore_files": ['']
+            "ignore_files": [''],
+            "backtest_args": {}
         }
         create_and_write_file(deployment_script_name, json.dumps(deploy, indent=2))
 
@@ -511,11 +541,35 @@ def main():
     elif which == 'backtest':
         api = API(login())
 
-        print(api.backtest(project_id='IKMrcZUtXlKlszvSVBEJ',
-                           model_id='eb21253b-cf76-4567-85fb-5928243340e4',
-                           version_id='D13v5AaD0vIadwXx8FNv',
-                           args={'to': '1y'},
-                           backtest_description='Backtest Description'))
+        projects = api.list_projects()
+
+        # Read and write to the deployment options if necessary
+        model_name, project_id, model_id, create_new, general_description, deployment_options = \
+            get_project_model_and_name(args, projects)
+
+        info_print("Zipping...")
+
+        model_path = zip_dir(args, deployment_options)
+
+        print(model_path)
+        chosen_plan = select_plan(api, 'backtesting')
+
+        backtest_description = input(TermColors.BOLD + TermColors.WARNING +
+                                     "Enter a backtest description for this version of the model: " + TermColors.ENDC)
+
+        response = api.backtest(project_id=project_id,
+                                model_id=model_id,
+                                args=deployment_options['backtest_args'],
+                                backtest_description=backtest_description,
+                                plan=chosen_plan,
+                                file_path=model_path)
+
+        info_print("Uploading...")
+        info_print(f"Backtest upload completed at {response['timestamp']}:")
+        info_print(f"\tModel ID:\t{response['modelId']}")
+        info_print(f"\tVersion:\t{response['versionId']}")
+        info_print(f"\tStatus:  \t{response['status']}")
+        info_print(f"\tProject:\t{response['projectId']}")
 
     elif which == 'create':
         api = API(login())
