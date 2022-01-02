@@ -68,8 +68,6 @@ class Strategy:
         self.__orderbook_websockets = []
         self.__ticker_websockets = []
 
-        self.__states = {}
-
         # Initialize backtesting attributes. This only used for sending times to the Strategy/StrategyState
         # This is done because we switch the interface to a paper trade interface
         self.backtesting_controller = None
@@ -85,10 +83,6 @@ class Strategy:
 
         # This will be updated when the teardown() function completes
         self.torndown = False
-
-    @property
-    def states(self) -> dict[str,StrategyState]:
-        return self.__states
 
     @property
     def variables(self):
@@ -517,7 +511,6 @@ class Strategy:
                                                                     init=kwargs['init'],
                                                                     teardown=kwargs['teardown']
                                                                     )
-
 
         # Run the backtest & return results
         results = self.backtesting_controller.run()

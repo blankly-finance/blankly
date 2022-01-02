@@ -27,7 +27,6 @@ from bokeh.layouts import column as bokeh_columns
 from bokeh.models import HoverTool
 from bokeh.palettes import Category10_10
 from bokeh.plotting import ColumnDataSource, figure, show
-from typing import List
 
 import blankly.exchanges.interfaces.paper_trade.metrics as metrics
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
@@ -182,7 +181,7 @@ class BackTestController:
         # Because the times are run in order we can use this variable to optimize account value searching
         self.__current_search_index = 0
 
-        # Export a time for use in other classesv uss
+        # Export a time for use in other classe
         self.time = None
 
     def sync_prices(self, items: list[list[str, int, int, int]] = None) -> dict:
@@ -531,7 +530,6 @@ class BackTestController:
             self.__color_generator = Category10_10.__iter__()
             return next(self.__color_generator)
 
-
     def run(self) -> BacktestResult:
         """
         Setup
@@ -645,7 +643,9 @@ class BackTestController:
         #     column_keys.append(i['currency'])
 
         cycle_status = pd.DataFrame(columns=column_keys)
+
         no_trade_cycle_status = pd.DataFrame(columns=column_keys)
+
         # Append dictionaries to this to make the pandas dataframe
         price_data = []
 
@@ -739,7 +739,7 @@ class BackTestController:
         except Exception:
             traceback.print_exc()
 
-        # Reset time to be None to indicate we're no longer in a backtest'
+        # Reset time to be None to indicate we're no longer in a backtest
         self.time = None
 
         # Push the accounts to the dataframe
@@ -923,7 +923,7 @@ class BackTestController:
                                                     {'risk_free_rate': risk_free_return_rate,
                                                     'trading_period': interval_value})
         metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, history_and_returns, 
-                                                    {'trading_period':    interval_value})
+                                                    {'trading_period': interval_value})
         metrics_indicators['Volatility'] = attempt(metrics.volatility, history_and_returns,
                                                     {'trading_period' : interval_value})
         metrics_indicators['Value-at-Risk'] = attempt(metrics.var, history_and_returns)
