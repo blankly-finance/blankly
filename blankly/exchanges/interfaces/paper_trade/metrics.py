@@ -90,11 +90,10 @@ def var(backtest_data):
     return round(metrics.var(account_values['value'][0], returns, 0.95), 2)
 
 
-def cvar(backtest_data, trading_period=86400):
+def cvar(backtest_data):
     returns = backtest_data['returns']['value']
     account_values = backtest_data['resampled_account_value']
-    ppy = periods_per_year(trading_period)
-    return round(metrics.cvar(account_values['value'][0], returns, 0.95, ppy), 2)
+    return round(metrics.cvar(account_values['value'][0], returns, 0.95), 2)
 
 
 def max_drawdown(backtest_data):

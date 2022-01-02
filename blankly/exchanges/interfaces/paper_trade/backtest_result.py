@@ -21,8 +21,8 @@ from blankly.utils.utils import time_interval_to_seconds as _time_interval_to_se
 
 
 class BacktestResult:
-    def __init__(self, history_and_returns: dict, trades: dict, history: dict,
-                 start_time: float, stop_time: float, quote_currency: str, price_events: list):
+    def __init__(self, history_and_returns: dict, trades: dict = {}, history: dict = {},
+                 start_time: float = None, stop_time: float = None, quote_currency: str = None, price_events: list = []):
         # This can use a ton of memory if these attributes are not cleared
         self.history_and_returns = history_and_returns
         self.metrics = None  # Assigned after construction

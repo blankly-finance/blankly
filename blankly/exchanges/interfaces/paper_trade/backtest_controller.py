@@ -531,60 +531,6 @@ class BackTestController:
             self.__color_generator = Category10_10.__iter__()
             return next(self.__color_generator)
 
-    def __resample(self, symbol: str, start_time: typing.Union[int, float], stop_time: typing.Union[int, float],
-                   interval: typing.Union[int, float]) -> list:
-        """
-        This function resamples the data for 'symbol' stored in pd_prices
-
-        Args:
-            symbol: The key for the relevant data stored in pd_prices
-            start_time: the point in time to start searching
-            stop_time: the point in time to stop searching
-            interval: the timeframe by which to resample
-        Returns
-            output_array: the resampled data as a dict with keys ['time','value']
-        """
-
-        self.__current_search_index = 0
-        output_array = []
-
-        def search_price(asset_id, epoch):
-            # In this case because each asset is called individually
-            def search(arr, size, x):
-                while True:
-                    if self.__current_search_index == size:
-                        # Must be the last one in the list
-                        return self.__current_search_index - 1
-
-                    if arr[self.__current_search_index] <= x <= arr[self.__current_search_index + 1]:
-                        # Found it in this range
-                        return self.__current_search_index
-                    else:
-                        self.__current_search_index += 1
-            try:
-                prices_ = self.pd_prices[asset_id][self.use_price]  # type: pd.Series
-                times = self.pd_prices[asset_id]['time']  # type: pd.Series
-
-                # Iterate and find the correct quote price
-                index_ = search(times, times.size, epoch)
-                # print('Found price for', asset_id, prices[index])
-                return prices_[index_]
-            except KeyError:
-                # Not a currency that we have data for at all
-                return 0
-                    
-        while start_time <= stop_time:
-            # Append this dict to the array   
-            if symbol is not None:
-                output_array.append({
-                    'time': start_time,
-                    'value': search_price(symbol, start_time)
-                })
-
-            # Increase the epoch value
-            start_time += interval
-        
-        return output_array
 
     def run(self) -> BacktestResult:
         """
@@ -794,7 +740,6 @@ class BackTestController:
             traceback.print_exc()
 
         # Reset time to be None to indicate we're no longer in a backtest'
-        epoch_start, epoch_max = self.initial_time, self.time
         self.time = None
 
         # Push the accounts to the dataframe
@@ -809,15 +754,12 @@ class BackTestController:
         benchmark_symbol = self.preferences["settings"]["benchmark_symbol"]
 
         if benchmark_symbol is not None:
-            # Get the smallest resolution from the user-added callbacks
-            min_resolution = time_interval_to_seconds("1l")
-            for i in self.__user_added_times:
-                resolution = i[3]
-                if resolution < min_resolution and resolution is not None:
-                    min_resolution = resolution 
+            # Get the smallest resolution from the user-added callbacks 
+            min_resolution = min([time[3] for time in self.__user_added_times])
 
             # Check locally for the data and add to price_cache if we do not have it
-            benchmark_price = self.sync_prices([[benchmark_symbol, i[1], i[2], min_resolution]])[benchmark_symbol] 
+            start_time, end_time = int(cycle_status['time'].iloc[0]), int(cycle_status['time'].iloc[-1])
+            benchmark_price = self.sync_prices([[benchmark_symbol, start_time, end_time + min_resolution, min_resolution]])[benchmark_symbol] 
             
             # Sometimes sync_prices returns with no 0 index.
             benchmark_price = benchmark_price.reset_index(drop=True)
@@ -835,8 +777,9 @@ class BackTestController:
             benchmark_value *= shares
 
             # Add the time back to the DataFrame and create a list of datetimes
-            benchmark_value['time'] = benchmark_time
-            bm_time = [dt.fromtimestamp(ts) for ts in benchmark_value['time']]
+            benchmark_results = {"history" : {"time" :  benchmark_time, benchmark_symbol : benchmark_value[use_price]}}
+            benchmark_results_object = BacktestResult(benchmark_results)
+            bm_time = [dt.fromtimestamp(ts) for ts in benchmark_time]
 
         figures = []
         # for i in self.prices:
@@ -887,8 +830,8 @@ class BackTestController:
 
                         # Add the benchmark, if requested
                         if benchmark_symbol is not None:
-                            add_trace(self, p, bm_time,  benchmark_value['close'], f'Benchmark ({benchmark_symbol})')
-
+                            add_trace(self, p, bm_time,  benchmark_value[use_price], f'Benchmark ({benchmark_symbol})')
+                            
                     p.add_tools(hover)
 
                     # Format graph
@@ -995,20 +938,10 @@ class BackTestController:
 
         # If a benchmark was requested, add it to the pd_prices frame
         if benchmark_symbol is not None:
-
-            # Initialize the data structures we will need
-            resampled_benchmark_value = pd.DataFrame(columns=['time', 'value'])
-            resampled_benchmark_array = []
-
-            # Push the values into the pd_prices dict for use by __resample
-            self.pd_prices[benchmark_symbol] = pd.DataFrame()
-            self.pd_prices[benchmark_symbol][use_price] = benchmark_value[use_price]
-            self.pd_prices[benchmark_symbol]['time'] = benchmark_value['time']
-
-            # Resample the benchmark value
-            resampled_benchmark_array = self.__resample(benchmark_symbol, epoch_start, epoch_max, interval_value)
-            resampled_benchmark_value = resampled_benchmark_value.append(resampled_benchmark_array, ignore_index=True)
-
+            
+            # Resample the benchmark results
+            resampled_benchmark_value = benchmark_results_object.resample_account(benchmark_symbol, interval_value)
+            
             # Push data into the dictionary for use by the metrics
             history_and_returns['benchmark_value'] = resampled_benchmark_value
             history_and_returns['benchmark_returns'] = resampled_benchmark_value.copy(deep=True)
