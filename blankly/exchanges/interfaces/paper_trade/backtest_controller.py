@@ -27,6 +27,7 @@ from bokeh.layouts import column as bokeh_columns
 from bokeh.models import HoverTool
 from bokeh.palettes import Category10_10
 from bokeh.plotting import ColumnDataSource, figure, show
+from typing import List
 
 import blankly.exchanges.interfaces.paper_trade.metrics as metrics
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
@@ -181,15 +182,15 @@ class BackTestController:
         # Because the times are run in order we can use this variable to optimize account value searching
         self.__current_search_index = 0
 
-        # Export a time for use in other classe
+        # Export a time for use in other classes
         self.time = None
 
-    def sync_prices(self, items: list[list[str, int, int, int]] = None) -> dict:
+    def sync_prices(self, items: List[list] = None) -> dict:
         """
         Parse the local file cache for the requested data, if it doesn't exist, request it from the exchange
 
         args:
-            items: list of lists organized as ['symbol','start_time','end_time', 'resolution']
+            items: list of lists organized as ['symbol', 'start_time', 'end_time', 'resolution']
 
         returns:
             dictionary with keys for each 'symbol'
@@ -261,7 +262,7 @@ class BackTestController:
             end_time = items[i][2] - resolution
 
             if end_time < start_time:
-                raise RuntimeError("Must specify  a longer timeframe to run the backtest.")
+                raise RuntimeError("Must specify a longer timeframe to run the backtest.")
 
             download_ranges = []
 
@@ -759,25 +760,28 @@ class BackTestController:
 
             # Check locally for the data and add to price_cache if we do not have it
             start_time, end_time = int(cycle_status['time'].iloc[0]), int(cycle_status['time'].iloc[-1])
-            benchmark_price = self.sync_prices([[benchmark_symbol, start_time, end_time + min_resolution, min_resolution]])[benchmark_symbol] 
+            benchmark_price = self.sync_prices([[benchmark_symbol,
+                                                 start_time,
+                                                 end_time + min_resolution,
+                                                 min_resolution]])[benchmark_symbol]
             
             # Sometimes sync_prices returns with no 0 index.
             benchmark_price = benchmark_price.reset_index(drop=True)
 
             benchmark_price = benchmark_price.sort_values(by=['time'])
             
-            # Make a copy of the dataframe so we don't inadvertently change benchmark_price
+            # Make a copy of the dataframe, so we don't inadvertently change benchmark_price
             benchmark_value = benchmark_price.copy(deep=True)
 
-            # store the time separately since we do not want to multiply it by the nubmer of shares
+            # store the time separately since we do not want to multiply it by the number of shares
             benchmark_time = benchmark_value.pop('time')
 
             # Calculate the portfolio value if just totally invested in benchmark
-            shares = self.initial_account[self.quote_currency]['available']/benchmark_value.iloc[0,:].values
+            shares = self.initial_account[self.quote_currency]['available']/benchmark_value.iloc[0, :].values
             benchmark_value *= shares
 
             # Add the time back to the DataFrame and create a list of datetimes
-            benchmark_results = {"history" : {"time" :  benchmark_time, benchmark_symbol : benchmark_value[use_price]}}
+            benchmark_results = {"history": {"time":  benchmark_time, benchmark_symbol: benchmark_value[use_price]}}
             benchmark_results_object = BacktestResult(benchmark_results)
             bm_time = [dt.fromtimestamp(ts) for ts in benchmark_time]
 
@@ -801,18 +805,17 @@ class BackTestController:
         )
         
         # Define a helper function to avoid repeating code
-        def add_trace(self, figure, time, data, label):
+        def add_trace(self_, figure_, time, data, label):
             source = ColumnDataSource(data=dict(
                         time=time,
                         value=data.tolist()
                     ))
-            figure.step('time', 'value',
-                    source=source,
-                    line_width=2,
-                    color=self.__next_color(),
-                    legend_label=label,
-                    mode="after",
-                    )    
+            figure_.step('time', 'value',
+                         source=source,
+                         line_width=2,
+                         color=self_.__next_color(),
+                         legend_label=label,
+                         mode="after")
 
         if self.preferences['settings']['GUI_output']:
             global_x_range = None
@@ -826,7 +829,8 @@ class BackTestController:
 
                     # Add the no-trade line to the backtest
                     if column == 'Account Value (' + self.quote_currency + ')':
-                        add_trace(self, p, time, no_trade_cycle_status['Account Value (No Trades)'], 'Account Value (No Trades)' )
+                        add_trace(self, p, time, no_trade_cycle_status['Account Value (No Trades)'],
+                                  'Account Value (No Trades)')
 
                         # Add the benchmark, if requested
                         if benchmark_symbol is not None:
@@ -913,19 +917,19 @@ class BackTestController:
                 return 'failed'
 
         risk_free_return_rate = self.preferences['settings']["risk_free_return_rate"]
-        metrics_indicators['Max Drawdown (%)']  = attempt(metrics.max_drawdown, history_and_returns)
+        metrics_indicators['Max Drawdown (%)'] = attempt(metrics.max_drawdown, history_and_returns)
         metrics_indicators['Variance (%)'] = attempt(metrics.variance, history_and_returns,
-                                                    {'trading_period' : interval_value})
+                                                     {'trading_period': interval_value})
         metrics_indicators['Sortino Ratio'] = attempt(metrics.sortino, history_and_returns,
-                                                    {'risk_free_rate': risk_free_return_rate,
-                                                    'trading_period': interval_value})
+                                                      {'risk_free_rate': risk_free_return_rate,
+                                                       'trading_period': interval_value})
         metrics_indicators['Sharpe Ratio'] = attempt(metrics.sharpe, history_and_returns,
-                                                    {'risk_free_rate': risk_free_return_rate,
-                                                    'trading_period': interval_value})
+                                                     {'risk_free_rate': risk_free_return_rate,
+                                                      'trading_period': interval_value})
         metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, history_and_returns, 
-                                                    {'trading_period': interval_value})
+                                                     {'trading_period': interval_value})
         metrics_indicators['Volatility'] = attempt(metrics.volatility, history_and_returns,
-                                                    {'trading_period' : interval_value})
+                                                   {'trading_period': interval_value})
         metrics_indicators['Value-at-Risk'] = attempt(metrics.var, history_and_returns)
         metrics_indicators['Conditional Value-at-Risk'] = attempt(metrics.cvar, history_and_returns)
         
@@ -938,18 +942,18 @@ class BackTestController:
 
         # If a benchmark was requested, add it to the pd_prices frame
         if benchmark_symbol is not None:
-            
             # Resample the benchmark results
             resampled_benchmark_value = benchmark_results_object.resample_account(benchmark_symbol, interval_value)
             
             # Push data into the dictionary for use by the metrics
             history_and_returns['benchmark_value'] = resampled_benchmark_value
             history_and_returns['benchmark_returns'] = resampled_benchmark_value.copy(deep=True)
-            history_and_returns['benchmark_returns']['value'] = history_and_returns['benchmark_returns']['value'].pct_change()
+            history_and_returns['benchmark_returns']['value'] = \
+                history_and_returns['benchmark_returns']['value'].pct_change()
             
             # Calculate beta
             metrics_indicators['Beta'] = attempt(metrics.beta, history_and_returns, 
-                                                {"trading_period" : interval_value})
+                                                 {"trading_period": interval_value})
 
         # This trys to reference vars created in the resample portion, so it has to also be in the specified
         #  resample if

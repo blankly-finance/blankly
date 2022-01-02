@@ -15,6 +15,6 @@
     "quote_account_value_in": "USD",
     "ignore_user_exceptions": true,
     "risk_free_return_rate": 0.0,
-    "benchmark_symbol" : null
+    "benchmark_symbol" : "AAPL"
   }
 }
