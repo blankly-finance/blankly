@@ -124,7 +124,7 @@ class API:
                                                                        'createNew': create_new})
 
     def backtest_deployed(self, project_id: str, model_id: str, args: dict, version_id: str, backtest_description: str):
-        return self.__request('post', 'model/backtestDeployedModel',
+        return self.__request('post', 'model/backtestUploadedModel',
                               json_={'projectId': project_id,
                                      'modelId': model_id,
                                      'versionId': version_id,
@@ -132,7 +132,7 @@ class API:
                                      'backtestDescription': backtest_description})
 
     def backtest(self, file_path: str, project_id: str, model_id: str, args: dict, plan: str,
-                 backtest_description: str = ""):
+                 create_new: bool, name: str, backtest_description: str = ""):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
         return self.__request('post', 'model/backtest', file=file,
@@ -140,7 +140,9 @@ class API:
                                     'modelId': model_id,
                                     'plan': plan,
                                     'backtestDescription': backtest_description,
-                                    'backtestArgs': json.dumps(args)})
+                                    'backtestArgs': json.dumps(args),
+                                    'createNew': create_new,
+                                    'name': name})
 
     def signal(self):
         return self.__request('get', 'model/signalTest')

@@ -562,7 +562,9 @@ def main():
                                 args=deployment_options['backtest_args'],
                                 backtest_description=backtest_description,
                                 plan=chosen_plan,
-                                file_path=model_path)
+                                file_path=model_path,
+                                create_new=create_new,
+                                name=model_name)
 
         info_print("Uploading...")
         info_print(f"Backtest upload completed at {response['timestamp']}:")
