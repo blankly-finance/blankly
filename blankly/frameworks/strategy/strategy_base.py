@@ -50,9 +50,6 @@ class Strategy:
         """
         self.__remote_backtesting = blankly._backtesting
         self.__exchange = exchange
-
-        blankly.reporter.export_used_exchange(self.__exchange.get_type())
-
         self.ticker_manager = blankly.TickerManager(self.__exchange.get_type(), currency_pair)
         self.orderbook_manager = blankly.OrderbookManager(self.__exchange.get_type(), currency_pair)
 
@@ -190,9 +187,6 @@ class Strategy:
                                   teardown=teardown,
                                   symbol=symbol)
             )
-
-        # Export a new symbol to the backend
-        blankly.reporter.export_used_symbol(symbol)
 
     def __idle_event(self, *args, **kwargs):
         """

@@ -20,6 +20,7 @@ from blankly.exchanges.interfaces.alpaca.alpaca_auth import AlpacaAuth
 from blankly.exchanges.interfaces.binance.binance_auth import BinanceAuth
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_auth import CoinbaseProAuth
 from blankly.exchanges.interfaces.oanda.oanda_auth import OandaAuth
+from blankly.exchanges.interfaces.kucoin.kucoin_auth import KucoinAuth
 
 
 class AuthFactory:
@@ -33,6 +34,8 @@ class AuthFactory:
             return CoinbaseProAuth(keys_file, portfolio_name)
         elif exchange_name == 'oanda':
             return OandaAuth(keys_file, portfolio_name)
+        elif exchange_name == 'kucoin':
+            return KucoinAuth(keys_file, portfolio_name)
         elif exchange_name == 'paper_trade':
             return None
         else:

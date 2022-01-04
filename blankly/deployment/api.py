@@ -110,17 +110,15 @@ class API:
         return self.__request('post', 'project/create', data={'name': name,
                                                               'description': description})
 
-    def deploy(self, file_path: str, plan: str, project_id, model_id: str, description: str, name: str):
+    def deploy(self, file_path: str, plan: str, project_id, description: str, name: str):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
         return self.__request('post', 'model/deploy', file=file, data={'plan': plan,
                                                                        'name': name,
-                                                                       'modelId': model_id,
                                                                        'projectId': project_id,
                                                                        'description': description})
 
-    def backtest(self, project_id: str, model_id: str, args: dict, version_id: str):
-        return self.__request('post', 'model/backtest', json_={'projectId': project_id,
-                                                               'modelId': model_id,
-                                                               'versionId': version_id,
-                                                               'args': args})
+    def backtest(self, project_id: str, model_id: str, args: dict):
+        return self.__request('post', 'model/backtest', data={'project_id': project_id,
+                                                              'model_id': model_id,
+                                                              'args': args})
