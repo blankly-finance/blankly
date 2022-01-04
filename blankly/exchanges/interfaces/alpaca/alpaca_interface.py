@@ -25,6 +25,7 @@ import dateparser
 import pandas as pd
 from alpaca_trade_api.rest import APIError as AlpacaAPIError, TimeFrame
 from dateutil import parser
+import pdb
 
 from blankly.exchanges.interfaces.alpaca.alpaca_api import API
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
@@ -215,7 +216,20 @@ class AlpacaInterface(ExchangeInterface):
             'type': 'market'
         }
         response = self.calls.submit_order(symbol, side=side, type='market', time_in_force='day', qty=size)
-        response['created_at'] = parser.isoparse(response['created_at']).timestamp()
+        #response['created_at'] = parser.isoparse(response['created_at']).timestamp()
+        #response['created_at'] = parser.parse(response['created_at']).timestamp()
+
+        #TODO: remove this
+        #pdb.set_trace()
+        try: 
+            response['created_at'] = parser.isoparse(response['created_at']).timestamp()
+        except ValueError as e:
+            print("error parsing ISO string with parser.isoparse, switching to parser.parse...")
+            if str(e) == 'Unused components in ISO string':
+                response['created_at'] = parser.parse(response['created_at']).timestamp()
+            else:
+                raise e
+
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
@@ -243,7 +257,18 @@ class AlpacaInterface(ExchangeInterface):
                                            qty=size,
                                            limit_price=price)
 
-        response['created_at'] = parser.isoparse(response['created_at']).timestamp()
+        #response['created_at'] = parser.isoparse(response['created_at']).timestamp()
+        #response['created_at'] = parser.parse(response['created_at']).timestamp()
+        
+        try: 
+
+            response['created_at'] = parser.isoparse(response['created_at']).timestamp()
+        except ValueError as e:
+            print("error parsing ISO string with parser.isoparse, switching to parser.parse...")
+            if str(e) == 'Unused components in ISO string':
+                response['created_at'] = parser.parse(response['created_at']).timestamp()
+            else:
+                raise e
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
         response['time_in_force'] = response['time_in_force'].upper()
@@ -308,8 +333,15 @@ class AlpacaInterface(ExchangeInterface):
                 ["qty", "size"],
             ]
             order = utils.rename_to(renames, order)
+        try: 
+            order['created_at'] = parser.isoparse(order['created_at']).timestamp()
+        except ValueError as e:
+            print("error parsing ISO string with parser.isoparse, switching to parser.parse...")
+            if str(e) == 'Unused components in ISO string':
+                order['created_at'] = parser.parse(order['created_at']).timestamp()
+            else:
+                raise e
 
-        order['created_at'] = parser.isoparse(order['created_at']).timestamp()
         needed = self.choose_order_specificity(order['type'])
 
         order = utils.isolate_specific(needed, order)

@@ -1,7 +1,7 @@
 import requests
 from typing import Optional, Dict, Any, List
 import urllib.parse
-import json
+from ciso8601 import parse_datetime
 from blankly.exchanges.auth.abc_auth import ABCAuth
 import time
 import hmac
@@ -112,7 +112,7 @@ class FTXAPI:
         return self._signed_get(f'wallet/deposit_addresses/{ticker}')
     
     def get_positions(self, display_price_avg: bool = False) -> List[dict]:
-        return self._signed_get('positions', {'showAvgPrice': show_avg_price})
+        return self._signed_get('positions', {'showAvgPrice': display_price_avg})
 
     def get_specific_position(self, pos_name: str, display_price_avg: bool = False) -> dict:
         filtered = filter(lambda pos: pos['future'] == pos_name, self.get_positions(display_price_avg))
@@ -222,7 +222,7 @@ class FTXAPI:
         else:
             client_order_id_json = {'clientId': client_order_id}
 
-        return self._post(path, {
+        return self._signed_post(endpoint_path, {
                 **(size_json),
                 **(price_json),
                 **(client_order_id_json)
@@ -289,7 +289,7 @@ class FTXAPI:
             if len(resp) == 0:
                 break
             interval_end = min(parse_datetime(time_['time']) for time_ in resp).timestamp()
-            if limit > len(resp):
+            if lim > len(resp):
                 break
         
         return to_return

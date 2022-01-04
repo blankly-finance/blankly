@@ -436,6 +436,7 @@ class FTXInterface(ExchangeInterface):
 
         for interval_num, interval in enumerate(history):
             epoch_start = int(utils.epoch_from_ISO8601(interval["startTime"]))
+            #epoch_start = interval["startTime"]
             interval_low = float(interval["low"])
             interval_high = float(interval["high"])
             interval_open = float(interval["open"])
