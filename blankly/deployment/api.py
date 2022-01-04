@@ -62,7 +62,7 @@ class API:
 
         # Add the token if we have it
         if self.token is not None:
-            kwargs['headers'] = {'token': self.token, 'uid': self.user_id}
+            kwargs['headers'] = {'token': self.token}
 
         try:
             if type_ == "get":
