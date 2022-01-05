@@ -15,11 +15,13 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import json
 
 import requests
+from blankly.utils.utils import info_print
 
-blankly_frontend_api_url = "http://localhost:8081"
+blankly_deployment_url = "http://localhost"
 
 
 class API:
@@ -27,7 +29,7 @@ class API:
         if override_url:
             self.url = override_url
         else:
-            self.url = blankly_frontend_api_url
+            self.url = blankly_deployment_url
 
         self.token = None
         self.auth_data = self.exchange_token(token)
@@ -75,6 +77,11 @@ class API:
                 raise LookupError("Request type is not implemented or does not exist.")
         except requests.exceptions.ConnectionError:
             raise requests.exceptions.ConnectionError("Failed to connect to deployment service.")
+
+        # Show info that the request was not authorized but still
+        #  allow the process to continue
+        if out.status_code == 401:
+            info_print("Unauthorized request.")
 
         try:
             return out.json()
