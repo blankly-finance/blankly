@@ -185,7 +185,13 @@ class BackTestController:
         # Export a time for use in other classes
         self.time = None
 
-    def sync_prices(self, items: List[list] = None) -> dict:
+        # Set these when prices are added to find the first price and the last price
+        self.user_start = None
+        self.user_stop = None
+
+        self.min_resolution = None
+
+    def sync_prices(self) -> dict:
         """
         Parse the local file cache for the requested data, if it doesn't exist, request it from the exchange
 
@@ -249,8 +255,7 @@ class BackTestController:
         #     return ranges
 
         # This is the data the user has requested: [asset_id, start_time, end_time, resolution]
-        if items is None:
-            items = self.__user_added_times
+        items = self.__user_added_times
 
         final_prices = {}
         for i in range(len(items)):
@@ -421,6 +426,24 @@ class BackTestController:
             self.__user_added_times.append(identifier)
             if save:
                 self.queue_backtest_write = True
+
+            # This makes sure that we keep track of our bounds which is just generally kind of useful
+            # Any time a new price event is added we check this
+            if self.user_start is None:
+                self.user_start = start_time
+            else:
+                if start_time < self.user_start:
+                    self.user_start = start_time
+
+            if self.user_stop is None:
+                self.user_stop = end_time
+            else:
+                if end_time > self.user_stop:
+                    self.user_stop = end_time
+
+            # Now keep track of the smallest price event added
+            if resolution < self.min_resolution:
+                self.min_resolution = resolution
         else:
             print("already identified")
 
@@ -546,6 +569,13 @@ class BackTestController:
         # TODO the preferences should really be reloaded here so that micro changes such as the quote currency reset
         #  don't need to happen for every single key type
         self.quote_currency = self.preferences['settings']['quote_account_value_in']
+
+        # Get the symbol used for the benchmark
+        benchmark_symbol = self.preferences["settings"]["benchmark_symbol"]
+
+        if benchmark_symbol is not None:
+            # Check locally for the data and add to price_cache if we do not have it
+            self.add_prices(benchmark_symbol, self.user_start, self.user_stop, self.min_resolution)
 
         prices = self.sync_prices()
 
@@ -750,40 +780,6 @@ class BackTestController:
             raise RuntimeError("Empty result - no valid backtesting events occurred. Was there an error?.")
 
         no_trade_cycle_status = no_trade_cycle_status.append(no_trade, ignore_index=True).sort_values(by=['time'])
-        
-        # Get the symbol used for the bench mark
-        benchmark_symbol = self.preferences["settings"]["benchmark_symbol"]
-
-        if benchmark_symbol is not None:
-            # Get the smallest resolution from the user-added callbacks 
-            min_resolution = min([time[3] for time in self.__user_added_times])
-
-            # Check locally for the data and add to price_cache if we do not have it
-            start_time, end_time = int(cycle_status['time'].iloc[0]), int(cycle_status['time'].iloc[-1])
-            benchmark_price = self.sync_prices([[benchmark_symbol,
-                                                 start_time,
-                                                 end_time + min_resolution,
-                                                 min_resolution]])[benchmark_symbol]
-            
-            # Sometimes sync_prices returns with no 0 index.
-            benchmark_price = benchmark_price.reset_index(drop=True)
-
-            benchmark_price = benchmark_price.sort_values(by=['time'])
-            
-            # Make a copy of the dataframe, so we don't inadvertently change benchmark_price
-            benchmark_value = benchmark_price.copy(deep=True)
-
-            # store the time separately since we do not want to multiply it by the number of shares
-            benchmark_time = benchmark_value.pop('time')
-
-            # Calculate the portfolio value if just totally invested in benchmark
-            shares = self.initial_account[self.quote_currency]['available']/benchmark_value.iloc[0, :].values
-            benchmark_value *= shares
-
-            # Add the time back to the DataFrame and create a list of datetimes
-            benchmark_results = {"history": {"time":  benchmark_time, benchmark_symbol: benchmark_value[use_price]}}
-            benchmark_results_object = BacktestResult(benchmark_results)
-            bm_time = [dt.fromtimestamp(ts) for ts in benchmark_time]
 
         figures = []
         # for i in self.prices:
@@ -805,9 +801,9 @@ class BackTestController:
         )
         
         # Define a helper function to avoid repeating code
-        def add_trace(self_, figure_, time, data, label):
+        def add_trace(self_, figure_, time_, data, label):
             source = ColumnDataSource(data=dict(
-                        time=time,
+                        time=time_,
                         value=data.tolist()
                     ))
             figure_.step('time', 'value',
@@ -834,7 +830,7 @@ class BackTestController:
 
                         # Add the benchmark, if requested
                         if benchmark_symbol is not None:
-                            add_trace(self, p, bm_time,  benchmark_value[use_price], f'Benchmark ({benchmark_symbol})')
+                            add_trace(self, p, bm_time,  prices[use_price], f'Benchmark ({benchmark_symbol})')
                             
                     p.add_tools(hover)
 
