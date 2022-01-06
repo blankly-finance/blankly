@@ -442,8 +442,11 @@ class BackTestController:
                     self.user_stop = end_time
 
             # Now keep track of the smallest price event added
-            if resolution < self.min_resolution:
+            if self.min_resolution is None:
                 self.min_resolution = resolution
+            else:
+                if resolution < self.min_resolution:
+                    self.min_resolution = resolution
         else:
             print("already identified")
 
@@ -830,7 +833,7 @@ class BackTestController:
 
                         # Add the benchmark, if requested
                         if benchmark_symbol is not None:
-                            add_trace(self, p, bm_time,  prices[use_price], f'Benchmark ({benchmark_symbol})')
+                            add_trace(self, p, time,  prices[benchmark_symbol], f'Benchmark ({benchmark_symbol})')
                             
                     p.add_tools(hover)
 
@@ -939,7 +942,7 @@ class BackTestController:
         # If a benchmark was requested, add it to the pd_prices frame
         if benchmark_symbol is not None:
             # Resample the benchmark results
-            resampled_benchmark_value = benchmark_results_object.resample_account(benchmark_symbol, interval_value)
+            resampled_benchmark_value = result_object.resample_account(benchmark_symbol, interval_value)
             
             # Push data into the dictionary for use by the metrics
             history_and_returns['benchmark_value'] = resampled_benchmark_value
