@@ -551,7 +551,6 @@ def main():
 
         model_path = zip_dir(args, deployment_options)
 
-        print(model_path)
         chosen_plan = select_plan(api, 'backtesting')
 
         backtest_description = input(TermColors.BOLD + TermColors.WARNING +
