@@ -624,7 +624,7 @@ class AlpacaInterface(ExchangeInterface):
             ticker = yfinance.Ticker(symbol)
             result = ticker.history(start=start_date, end=stop_date, interval=number_interval_to_string(resolution))
 
-            result['time'] = result.index.view(int) // 10 ** 9
+            result['time'] = result.index.astype(int) // 10 ** 9
             result = result[['Open', 'High', 'Low', 'Close', 'Volume', 'time']].reset_index()
 
             result = result.rename(columns={
