@@ -27,6 +27,7 @@ from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as Co
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
 from blankly.exchanges.interfaces.oanda.oanda_api import OandaAPI
 from blankly.exchanges.interfaces.oanda.oanda_interface import OandaInterface
+from blankly.exchanges.interfaces.kucoin.kucoin_interface import KucoinInterface
 from kucoin import client as KucoinAPI
 
 class DirectCallsFactory:
@@ -61,8 +62,11 @@ class DirectCallsFactory:
             return calls, OandaInterface(calls, preferences_path)
 
         elif exchange_name == 'kucoin':
-            KucoinAPI.Market(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], is_sandbox=True)
-            KucoinAPI.User(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], is_sandbox=True)
-            KucoinAPI.Trade(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], is_sandbox=True)
+            sandbox = preferences["settings"]["use_sandbox"]
+            KucoinAPI.Market(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], sandbox)
+            KucoinAPI.User(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], sandbox)
+            KucoinAPI.Trade(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], sandbox)
+            return KucoinAPI, KucoinInterface("kucoin", preferences_path)
+
         elif exchange_name == 'paper_trade':
             return None, None
