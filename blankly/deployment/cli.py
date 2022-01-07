@@ -73,80 +73,105 @@ def choose_option(choice: str, options: list, descriptions: list):
         '
         ]
     """
-    import fcntl
-    import termios
-    fd = sys.stdin.fileno()
 
-    largest_option_name = 0
-    for i in options:
-        if len(i) > largest_option_name:
-            largest_option_name = len(i)
+    def print_descriptions(descriptions_: list, show_index: bool):
+        index_ = 0
+        for j in descriptions_:
+            if show_index:
+                j = TermColors.ENDC + str(index_) + ": " + j
+            print(j)
+            index_ += 1
 
-    def print_selection_index(index_):
-        # We pass none when they haven't selected yet
-        if index_ is None:
-            chosen_plan = "None"
-        # When its given a number it will index and find the lengths
-        else:
-            if index_ < 0:
-                index_ = len(options) - 1
-            elif index_ >= len(options):
-                index_ = 0
-            chosen_plan = options[index_]
-
-        # Carry it in this string
-        string_ = "\r" + TermColors.UNDERLINE + TermColors.OKCYAN + "You have chosen:" + \
-                  TermColors.ENDC + " " + TermColors.BOLD + TermColors.OKBLUE + chosen_plan
-
-        remaining_chars = largest_option_name - len(chosen_plan)
-        string_ += " " * remaining_chars
-
-        # Final print and flush the buffer
-        sys.stdout.write(string_)
-        sys.stdout.flush()
-
-        return index_
-
-    print(TermColors.BOLD + TermColors.WARNING + f"Choose a {choice}: " + TermColors.ENDC +
-          TermColors.UNDERLINE + "(Use your arrow keys ← →)" + TermColors.ENDC)
-    for i in descriptions:
-        print(i)
-
-    # TODO Add a very simple version that can take simple input() if this fails
-    oldterm = termios.tcgetattr(fd)
-    newattr = termios.tcgetattr(fd)
-    newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
-    termios.tcsetattr(fd, termios.TCSANOW, newattr)
-
-    oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
-    fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
-
-    index = 0
-    print_selection_index(None)
     try:
-        while True:
-            try:
-                c = sys.stdin.read(1)
-                if c == '[':
+        import fcntl
+        import termios
+        fd = sys.stdin.fileno()
+
+        largest_option_name = 0
+        for i in options:
+            if len(i) > largest_option_name:
+                largest_option_name = len(i)
+
+        def print_selection_index(index_):
+            # We pass none when they haven't selected yet
+            if index_ is None:
+                chosen_plan = "None"
+            # When its given a number it will index and find the lengths
+            else:
+                if index_ < 0:
+                    index_ = len(options) - 1
+                elif index_ >= len(options):
+                    index_ = 0
+                chosen_plan = options[index_]
+
+            # Carry it in this string
+            string_ = "\r" + TermColors.UNDERLINE + TermColors.OKCYAN + "You have chosen: " + \
+                      TermColors.ENDC + " " + TermColors.BOLD + TermColors.OKBLUE + chosen_plan
+
+            remaining_chars = largest_option_name - len(chosen_plan)
+            string_ += " " * remaining_chars
+
+            # Final print and flush the buffer
+            sys.stdout.write(string_)
+            sys.stdout.flush()
+
+            return index_
+
+        print(TermColors.BOLD + TermColors.WARNING + f"Choose a {choice}: " + TermColors.ENDC +
+              TermColors.UNDERLINE + "(Use your arrow keys ← →)" + TermColors.ENDC)
+
+        # Print everything out with no index
+        print_descriptions(descriptions, False)
+
+        # TODO Add a very simple version that can take simple input() if this fails
+        oldterm = termios.tcgetattr(fd)
+        newattr = termios.tcgetattr(fd)
+        newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
+        termios.tcsetattr(fd, termios.TCSANOW, newattr)
+
+        oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
+
+        index = 0
+        print_selection_index(None)
+        try:
+            while True:
+                try:
                     c = sys.stdin.read(1)
-                    if c == 'C':
-                        index += 1
-                        index = print_selection_index(index)
-                    elif c == 'D':
-                        index -= 1
-                        index = print_selection_index(index)
-                elif c == '\n':
-                    break
-            except IOError:
-                pass
-    finally:
-        termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
-        fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
+                    if c == '[':
+                        c = sys.stdin.read(1)
+                        if c == 'C':
+                            index += 1
+                            index = print_selection_index(index)
+                        elif c == 'D':
+                            index -= 1
+                            index = print_selection_index(index)
+                    elif c == '\n':
+                        break
+                except IOError:
+                    pass
+        finally:
+            termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
+            fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
 
-    print('\n' + TermColors.BOLD + TermColors.WARNING + f"Chose {choice}:" + TermColors.ENDC + " " +
-          TermColors.BOLD + TermColors.OKBLUE + options[index] + TermColors.ENDC)
+        print('\n' + TermColors.BOLD + TermColors.WARNING + f"Chose {choice}:" + TermColors.ENDC + " " +
+              TermColors.BOLD + TermColors.OKBLUE + options[index] + TermColors.ENDC)
 
-    return options[index]
+        return options[index]
+    except Exception:
+        # info_print("Using non-interactive selection on this device.")
+
+        print_descriptions(descriptions, True)
+
+        print(TermColors.BOLD + TermColors.WARNING + f"Choose a {choice}: " + TermColors.ENDC +
+              TermColors.UNDERLINE + "(Input the index of your selection)" + TermColors.ENDC)
+
+        index = int(input(TermColors.UNDERLINE + TermColors.OKCYAN + "You have chosen:" + TermColors.ENDC + " "))
+
+        print('\n' + TermColors.BOLD + TermColors.WARNING + f"Chose {choice}:" + TermColors.ENDC + " " +
+              TermColors.BOLD + TermColors.OKBLUE + options[index] + TermColors.ENDC)
+
+        return options[index]
 
 
 def get_project_model_and_name(args, projects):
@@ -314,6 +339,7 @@ def login(remove_cache: bool = False):
             # If we're not removing cache this will use the old files to look for the token
             if not remove_cache:
                 # If it's different from the one that was just created, remove the one just created
+                os.close(fd)
                 os.remove(os.path.join(temp_folder, file_name))
                 # Reassign file name just in case its needed below to write into the file
                 # Note that we protect against corrupted files below by overwriting any contents in case
