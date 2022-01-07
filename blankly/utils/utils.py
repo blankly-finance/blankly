@@ -308,7 +308,7 @@ def to_exchange_symbol(blankly_symbol, exchange):
     if exchange == "coinbase_pro":
         return blankly_symbol
     if exchange == 'ftx':
-        blankly_symbol.replace("-", "/")
+        return blankly_symbol.replace("-", "/")
 
 
 def get_base_asset(symbol):

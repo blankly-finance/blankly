@@ -99,8 +99,8 @@ class FTXAPI:
     def get_open_orders(self, market: str = None) -> List[dict]:
         return self._signed_get('orders', {'market': market})
 
-    def get_order_by_id(self, client_id: str) -> dict:
-        return self._signed_get(f'orders/by_client_id/{client_id}')
+    def get_order_by_id(self, order_id: str) -> dict:
+        return self._signed_get(f'orders/{order_id}')
 
     def get_fills(self) -> List[dict]:
         return self._signed_get('fills')

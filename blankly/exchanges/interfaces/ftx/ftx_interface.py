@@ -1,4 +1,6 @@
-import pandas
+import math
+import pandas as pd
+import time
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.exchanges.orders.limit_order import LimitOrder
@@ -10,9 +12,11 @@ from typing import List
 #
 class FTXInterface(ExchangeInterface):
     
-    #preferences path currently unused (note, FTX has no sandbox mode)
+    #note, FTX has no sandbox mode
     def __init__(self, authenticated_API: FTXAPI, preferences_path: str):
         super().__init__('ftx', authenticated_API, preferences_path, valid_resolutions=None)
+
+  
 
     def init_exchange(self):
 
@@ -325,17 +329,21 @@ class FTXInterface(ExchangeInterface):
             symbol (optional) (str): Asset such as BTC-USD
         """
         response = self.get_calls().get_open_orders(symbol)
+        response_needed_fulfilled = []
         if(len(response) == 0):
             return []
-        
-        needed = self.choose_order_specificity(response['type'])
 
         for open_order in response:
             open_order['symbol'] = open_order.pop('market')
             if open_order["type"] == "limit":
+                needed = self.choose_order_specificity("limit")
                 open_order['time_in_force'] = "GTC"
-            open_order['created_at'] = open_order.epoch_from_ISO8601(response.pop('createdAt'))
+            elif open_order["type"] == "market":
+                needed = self.choose_order_specificity("market")
+
+            open_order['created_at'] = utils.epoch_from_ISO8601(open_order.pop('createdAt'))
             open_order = utils.isolate_specific(needed, open_order)
+            response_needed_fulfilled.append(open_order)
         
         return response
 
@@ -400,12 +408,11 @@ class FTXInterface(ExchangeInterface):
 
         return account_info
 
-    
-    def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution) -> pandas.DataFrame:
+    def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
         """
         Returns the product history from an exchange
         Args:
-            symbol: The asset such as (BTC-USD, or MSFT)
+            symbol: blankly product ID format (BTC-USD)
             epoch_start: Time to begin download
             epoch_stop: Time to stop download
             resolution: Resolution in seconds between tick (ex: 60 = 1 per minute)
@@ -413,9 +420,12 @@ class FTXInterface(ExchangeInterface):
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
         """
 
-        #change something like BTC-USD to BTC/USD
         if "-" in symbol:
             symbol = symbol.replace("-", "/")
+
+        # epoch_start, epoch_stop = super().get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        epoch_start = utils.convert_epochs(epoch_start)
+        epoch_stop = utils.convert_epochs(epoch_stop)
 
         accepted_grans = [15, 60, 300, 900, 3600, 14400, 86400]
 
@@ -427,32 +437,43 @@ class FTXInterface(ExchangeInterface):
             utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
             resolution = accepted_grans[min(range(len(accepted_grans)),
                                             key=lambda i: abs(accepted_grans[i] - resolution))]
-        
-        history = self.get_calls().get_product_history(symbol, epoch_start, epoch_stop, resolution)
-        
-        total_num_intervals = len(history)
 
-        total_data = []
-
-        for interval_num, interval in enumerate(history):
-            epoch_start = int(utils.epoch_from_ISO8601(interval["startTime"]))
-            #epoch_start = interval["startTime"]
-            interval_low = float(interval["low"])
-            interval_high = float(interval["high"])
-            interval_open = float(interval["open"])
-            interval_close = float(interval["close"])
-            interval_volume = float(interval["volume"])
-
-            interval_data = [epoch_start, interval_low, interval_high, interval_open, interval_close, interval_volume]
-            total_data.append(interval_data)
+        # Figure out how many points are needed
+        need = int((epoch_stop - epoch_start) / resolution)
+        initial_need = need
+        window_open = epoch_start
+        history = []
+        # Iterate while its more than max
+        while need > 1501:
+            # Close is always 1501 points ahead
+            window_close = window_open + 1501 * resolution
             
-            utils.update_progress(interval_num / total_num_intervals)
+            response = self.get_calls().get_product_history(symbol, window_open, window_close, resolution)
+            
+            history = history + response
+
+            window_open = window_close
+            need -= 1501
+            time.sleep(.2)
+            utils.update_progress((initial_need - need) / initial_need)
+
+        # Fill the remainder
+        window_close = epoch_stop
+        response = self.get_calls().get_product_history(symbol, window_open, window_close, resolution)
+        history_block = history + response
+        #print(history_block)
+        history_block.sort(key=lambda x: x["time"])
+
+        df = pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
+        # df[['time']] = df[['time']].astype(int)
         
-        df = pandas.DataFrame(data = total_data, columns = ['time', 'low', 'high', 'open', 'close', 'volume'])
+        
+        df["time"] = df["time"].apply(lambda x: x / 1000)
+        df[['time']] = df[['time']].astype(int)
 
-        print("\n")
+        df[['low', 'high', 'open', 'close', 'volume']] = df[['low', 'high', 'open', 'close', 'volume']].astype(float)
+
         return df
-
     
     def get_order_filter(self, symbol: str):
         """

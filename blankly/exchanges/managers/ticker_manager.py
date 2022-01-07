@@ -19,8 +19,9 @@ import blankly.utils.utils
 from blankly.exchanges.interfaces.alpaca.alpaca_websocket import Tickers as Alpaca_Ticker
 from blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Binance_Ticker
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tickers as Coinbase_Pro_Ticker
-from blankly.exchanges.managers.websocket_manager import WebsocketManager
+from blankly.exchanges.interfaces.ftx.ftx_websocket import Tickers as FTX_Ticker
 
+from blankly.exchanges.managers.websocket_manager import WebsocketManager
 
 class TickerManager(WebsocketManager):
     def __init__(self, default_exchange: str, default_symbol: str):
@@ -35,7 +36,8 @@ class TickerManager(WebsocketManager):
             default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "binance").lower()
         elif default_exchange == "alpaca":
             default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "alpaca")
-
+        elif default_exchange == "ftx":
+            default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "ftx")
         self.__default_symbol = default_symbol
 
         self.__tickers = {}
@@ -119,6 +121,20 @@ class TickerManager(WebsocketManager):
                                        WEBSOCKET_URL="wss://stream.data.alpaca.markets/v2/{}/".format(stream))
             ticker.append_callback(callback)
             self.__tickers['alpaca'][override_symbol] = ticker
+            return ticker
+
+        elif exchange_name == "ftx":
+            if override_symbol is None:
+                override_symbol = self.__default_symbol
+
+            if sandbox_mode:
+                raise ValueError("Error: FTX does not have a sandbox mode")
+            else:
+                ticker = FTX_Ticker(override_symbol, "trades", log=log)
+
+            ticker.append_callback(callback)
+            # Store this object
+            self.__tickers['ftx'][override_symbol] = ticker
             return ticker
 
         else:

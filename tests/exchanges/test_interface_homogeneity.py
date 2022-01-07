@@ -464,7 +464,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             end_time = i['time'].iloc[-1]
 
             # Make sure that the final time we have is within the resolution window. Notice this is shifted backwards
-            self.assertTrue(current_time-(build_day()) < end_time < current_time)
+            self.assertTrue(current_time-(build_day()) < end_time < current_time, f"\ncurrent_time-(build_day()): {current_time-(build_day())}\nend_time: {end_time}\ncurrent_time: {current_time}\n")
 
             # Do the same, the start time has to be within a resolution interval of the actual time
             # This is shifted forward
