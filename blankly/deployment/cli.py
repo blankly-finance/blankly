@@ -285,7 +285,7 @@ def create_and_write_file(filename: str, default_contents: str = None):
         if default_contents is not None:
             file.write(default_contents)
     except FileExistsError:
-        print("Already exists - skipping...")
+        print(f"{TermColors.WARNING}Already exists - skipping...{TermColors.ENDC}")
 
 
 parser = argparse.ArgumentParser(description='Blankly CLI & deployment tool.')
@@ -433,16 +433,20 @@ def zipdir(path, ziph, ignore_files: list):
     # directories
     # ziph is zipfile handle
 
+    filtered_ignore_files = []
     # Set all the ignored files to be absolute
     for i in range(len(ignore_files)):
-        ignore_files[i] = os.path.abspath(ignore_files[i])
+        # Reject this case
+        if ignore_files[i] == "":
+            continue
+        filtered_ignore_files.append(os.path.abspath(ignore_files[i]))
 
     for root, dirs, files in os.walk(path, topdown=True):
         for file in files:
             # (Modification) Skip everything that is in the blankly_dist folder
             filepath = os.path.join(root, file)
 
-            if not (os.path.abspath(filepath) in ignore_files) and not (root in ignore_files):
+            if not (os.path.abspath(filepath) in filtered_ignore_files) and not (root in filtered_ignore_files):
                 # This takes of the first part of the relative path and replaces it with /model/
                 print(f'\tAdding: {file} in folder {root}.')
                 relpath = os.path.relpath(filepath,
@@ -532,14 +536,19 @@ def main():
 
         print("Writing deployment defaults...")
         # Interpret defaults and write to this folder
+        print("Detecting python version...")
         py_version = platform.python_version_tuple()
+        print(f"{TermColors.OKCYAN}{TermColors.BOLD}Found python version: "
+              f"{py_version[0]}.{py_version[1]}{TermColors.ENDC}")
         deploy = {
             "main_script": "./bot.py",
             "python_version": py_version[0] + "." + py_version[1],
             "requirements": "./requirements.txt",
             "working_directory": ".",
-            "ignore_files": [''],
-            "backtest_args": {}
+            "ignore_files": ['price_caches'],
+            "backtest_args": {
+                'to': '1y'
+            }
         }
         create_and_write_file(deployment_script_name, json.dumps(deploy, indent=2))
 
@@ -547,7 +556,7 @@ def main():
         print("Writing requirements.txt defaults...")
         create_and_write_file('requirements.txt', 'blankly')
 
-        print("Done!")
+        print(f"{TermColors.OKGREEN}{TermColors.UNDERLINE}Success!{TermColors.ENDC}")
 
     elif which == 'login':
         login(remove_cache=True)
