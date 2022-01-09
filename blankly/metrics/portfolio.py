@@ -68,7 +68,7 @@ def variance(returns, n=None):
     return np.nanvar(returns) * n if n else np.nanvar(returns)
 
 
-def beta(returns, market_base_returns, n=None ):
+def beta(returns, market_base_returns, n=None):
     m = np.matrix([returns, market_base_returns])
     return n * np.cov(m)[0][1] / variance(market_base_returns, n)
 

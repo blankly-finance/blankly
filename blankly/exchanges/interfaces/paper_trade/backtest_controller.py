@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import copy
 import os
 import traceback
 import typing
@@ -273,7 +273,9 @@ class BackTestController:
 
             # Attempt to find the same symbol/asset possibilities in the backtest blocks
             try:
-                download_ranges = local_history_blocks[asset][resolution]
+                # Make sure to copy it because if you don't you delete this for any similar resolution
+                # If you don't copy it fails if you use two price events at the same resolution
+                download_ranges = copy.deepcopy(local_history_blocks[asset][resolution])
             except KeyError:
                 pass
 
@@ -804,10 +806,10 @@ class BackTestController:
         )
         
         # Define a helper function to avoid repeating code
-        def add_trace(self_, figure_, time_, data, label):
+        def add_trace(self_, figure_, time_, data_, label):
             source = ColumnDataSource(data=dict(
                         time=time_,
-                        value=data.tolist()
+                        value=data_.values.tolist()
                     ))
             figure_.step('time', 'value',
                          source=source,
@@ -833,7 +835,24 @@ class BackTestController:
 
                         # Add the benchmark, if requested
                         if benchmark_symbol is not None:
-                            add_trace(self, p, time,  prices[benchmark_symbol], f'Benchmark ({benchmark_symbol})')
+                            # This normalizes the benchmark value
+                            initial_account_value = cycle_status['Account Value (' + self.quote_currency + ')'].iloc[0]
+                            initial_benchmark_value = prices[benchmark_symbol][use_price].iloc[0]
+
+                            # This multiplier brings the initial asset price to the initial account value
+                            # initial_account_value = initial_benchmark_value * x
+                            multiplier = initial_account_value / initial_benchmark_value
+
+                            normalized_compare_series = prices[benchmark_symbol][use_price].multiply(multiplier)
+                            normalized_compare_time_series = prices[benchmark_symbol]['time']
+
+                            # We need to also cast the time series that is needed to compare
+                            # because it's only been done for the cycle status time
+                            normalized_compare_time_series = [dt.fromtimestamp(ts) for ts in
+                                                              normalized_compare_time_series]
+                            add_trace(self, p, normalized_compare_time_series,
+                                      normalized_compare_series,
+                                      f'Normalized Benchmark ({benchmark_symbol})')
                             
                     p.add_tools(hover)
 
@@ -942,7 +961,10 @@ class BackTestController:
         # If a benchmark was requested, add it to the pd_prices frame
         if benchmark_symbol is not None:
             # Resample the benchmark results
-            resampled_benchmark_value = result_object.resample_account(benchmark_symbol, interval_value)
+            resampled_benchmark_value = result_object.resample_account(benchmark_symbol,
+                                                                       interval_value,
+                                                                       use_asset_history=True,
+                                                                       use_price=use_price)
             
             # Push data into the dictionary for use by the metrics
             history_and_returns['benchmark_value'] = resampled_benchmark_value
