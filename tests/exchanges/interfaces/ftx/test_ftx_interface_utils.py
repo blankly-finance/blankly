@@ -1,10 +1,10 @@
 from typing import List
 
-def get_open_order_ids(open_orders: List[dict]) -> List[int]:
+def get_open_order_ids(open_orders: List[dict]) -> List[str]:
 
-    ids: List[int] = []
+    ids: List[str] = []
 
     for order in open_orders:
-        ids.append(int(order["id"]))
+        ids.append(str(order["id"]))
     
     return ids

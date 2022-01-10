@@ -38,8 +38,8 @@ import test_ftx_interface_utils as test_utils
 
 
 def ftx_interface() -> FTXInterface:
-    keys_file_path = Path("tests/config/keys.json").resolve()
-    settings_file_path = Path("tests/config/settings.json").resolve()
+    keys_file_path = Path("../../../config/keys.json").resolve()
+    settings_file_path = Path("../../../config/settings.json").resolve()
 
     auth_obj = FTXAuth(str(keys_file_path), "Main Account")
     _, ftx_interface = DirectCallsFactory.create("ftx", auth_obj, str(settings_file_path))
@@ -88,11 +88,20 @@ def main():
     assert limit_order.get_status()['status'] == "new" or limit_order.get_status()['status'] == "open", f"expected open but got {limit_order.get_status()['status']} of type {type(limit_order.get_status()['status'])}"
 
     open_order_ids: List[int] = test_utils.get_open_order_ids(interface.get_open_orders())
-    limit_order_id = int(limit_order.get_id())
+    limit_order_id = limit_order.get_id()
     assert limit_order_id in open_order_ids, f"id {limit_order_id} (type: {type(limit_order_id)}) not in list {open_order_ids} (type: {type(open_order_ids)})"
     
     #cancels the open limit order
     order_id = int(interface.cancel_order("BTC/USD", limit_order.get_id()))
+
+    #wait for order cancellation to go through
+    print("waiting for order cancellation to be accepted")
+    while interface.get_order("BTC/USD", order_id)["status"] != "closed":
+        print(f"waiting for order to be cancelled. Current status: " + interface.get_order("BTC/USD", order_id)["status"], end = '\r')
+        time.sleep(1)
+    time.sleep(5)
+    assert(interface.get_order("BTC/USD", order_id)["status"] == "closed")
+    print("order successfully cancelled")
 
     curr_num_open_orders = len(interface.get_open_orders())
     assert curr_num_open_orders == initial_num_open_orders, f"expected {initial_num_open_orders} open orders, but got {curr_num_open_orders}\nopen order list:\n{interface.get_open_orders()}"
@@ -101,26 +110,53 @@ def main():
     #creates a buy market order for $5 worth of bitcoin
     market_order = interface.market_order("BTC/USD", "buy", 5 / interface.get_price("BTC/USD"))
     
-    while market_order.get_status() == "open":
-        print("Waiting for test market order to get accepted...", end = '\r')
-        time.sleep(1)
+  
 
-    print("Test market order accepted... continuing test")
+    curr_order_status = ""
+    #waits for status of market order to update
+    while curr_order_status != "closed":
+        curr_order_status = interface.get_order("BTC/USD", market_order.get_id())["status"]
+        print("waiting for test market order to get accepted. Current status: " + curr_order_status, end = '\r')
+        time.sleep(1)
+    
+    time.sleep(5)
+    
+    print("Test market order accepted... waiting for status to update")
+
+
     
     market_order_info = interface.get_order("BTC/USD", market_order.get_id())
 
+    
     assert market_order.get_id() not in test_utils.get_open_order_ids(interface.get_open_orders())
     assert market_order_info["id"] == market_order.get_id()
     market_order_status = market_order_info["status"]
     assert market_order_status == "closed", f"expected closed, but got {market_order_status} (type: {type(market_order_status)}) \nopen orders: {interface.get_open_orders()}"
 
-    #creates a sell limit order unlikely to get fulfilled (selling $5 worth of bitcoin for $5000)
-    limit_order = interface.limit_order("BTC/USD", "sell", 5000 * (interface.get_price("BTC/USD") / 5), interface.get_price("BTC/USD") / 5)
-
-    assert limit_order.get_id() in test_utils.get_open_order_ids(interface.get_open_orders())
+    #creates a sell limit order unlikely to get fulfilled (selling ~$5 worth of bitcoin for $50,000)
+    price = 50000
+    size = 5 / interface.get_price("BTC/USD")
+    print(f"Attempting to create a limit order of {size} BTC for {price} USD") 
+    limit_order = interface.limit_order("BTC/USD", "sell", price, size)
+    
+    curr_open_orders = test_utils.get_open_order_ids(interface.get_open_orders())
+    assert limit_order.get_id() in curr_open_orders, \
+        f"expected order id {limit_order.get_id()} to be in list of open orders: \n{curr_open_orders}"
     limit_order_info = interface.get_order("BTC/USD", limit_order.get_id())
     assert limit_order_info["id"] == limit_order.get_id()
-    assert limit_order_info["status"] == "open"
+    
+    print("Waiting for limit order status to update. Please sit tight...")
+    
+    curr_order_status = limit_order_info["status"]
+        
+    while curr_order_status == "new":
+        curr_order_status = interface.get_order("BTC/USD", limit_order.get_id())["status"]
+        print(f"Waiting on order status to get updated. Current order status: {curr_order_status}", end="\r")
+        time.sleep(1)
+    time.sleep(5)
+    print("Limit order successfully closed")
+    
+    assert curr_order_status == "open", f"expected open but got {curr_order_status} (type: {type(curr_order_status)})"
     assert len(interface.get_open_orders()) == initial_num_open_orders + 1
 
     #cancels sell limit order
@@ -135,15 +171,28 @@ def main():
         print("Waiting for test market order to get accepted...", end = '\r')
         time.sleep(1)
 
+    time.sleep(5)
+
     print("Test market order accepted... continuing test")
     
     market_order_info = interface.get_order("BTC/USD", market_order.get_id())
 
     assert market_order.get_id() not in test_utils.get_open_order_ids(interface.get_open_orders())
-    assert market_order_info["id"] == market_order.get_id()
-    assert market_order_info["status"] == "closed"
+    assert market_order_info["id"] == market_order.get_id()    
+    assert market_order_info["status"] == "closed", f"expected closed but got" +  market_order_info["status"]
 
     ### end testing ###
+    
+    print("\n --- All tests passed --- \n")
 
 if __name__ == "__main__":
-    main()
+    
+    """    
+    Feel free to run the test as many times in a row as you would like for redundancy purposes
+    
+    net change in distribution of funds as a result of testing, between before and after the test,
+    is appoximately zero
+    """
+    
+    for i in range(1): 
+        main()
