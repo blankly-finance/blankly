@@ -70,8 +70,7 @@ def choose_option(choice: str, options: list, descriptions: list):
             miocro:
                 CPU: 5,
                 RAM: 10
-        '
-        ]
+        ']
     """
 
     def print_descriptions(descriptions_: list, show_index: bool):
@@ -226,7 +225,8 @@ def get_project_model_and_name(args, projects):
         raise FileNotFoundError(f"A {deployment_script_name} file must be present at the top level of the "
                                 f"directory specified.")
 
-    return model_name, project_id, model_id, create_new, general_description, deployment_options
+    python_version = deployment_options['python_version']
+    return model_name, project_id, model_id, create_new, general_description, deployment_options, python_version
 
 
 temporary_zip_file = None
@@ -479,7 +479,7 @@ def main():
             return
 
         # Read and write to the deployment options if necessary
-        model_name, project_id, model_id, create_new, general_description, deployment_options = \
+        model_name, project_id, model_id, create_new, general_description, deployment_options, python_version = \
             get_project_model_and_name(args, projects)
 
         info_print("Zipping...")
@@ -499,7 +499,8 @@ def main():
                               version_description=version_description,
                               general_description=general_description,
                               name=model_name,
-                              create_new=create_new)
+                              create_new=create_new,
+                              python_version=python_version)
         if 'error' in response:
             info_print('Error: ' + response['error'])
         elif 'status' in response and response['status'] == 'success':
@@ -579,7 +580,7 @@ def main():
         projects = api.list_projects()
 
         # Read and write to the deployment options if necessary
-        model_name, project_id, model_id, create_new, general_description, deployment_options = \
+        model_name, project_id, model_id, create_new, general_description, deployment_options, python_version = \
             get_project_model_and_name(args, projects)
 
         info_print("Zipping...")
@@ -598,6 +599,7 @@ def main():
                                 plan=chosen_plan,
                                 file_path=model_path,
                                 create_new=create_new,
+                                python_version=python_version,
                                 name=model_name)
 
         info_print("Uploading...")

@@ -17,7 +17,7 @@
       "websocket_stream": "iex",
       "cash": "USD",
       "enable_shorting": true,
-      "use_yfinance": true
+      "use_yfinance": false
     },
     "oanda": {
       "cash": "USD"

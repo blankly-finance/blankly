@@ -636,7 +636,7 @@ class AlpacaInterface(ExchangeInterface):
                 'Volume': 'volume'
             })
 
-            result.drop(columns=['Date'], inplace=True)
+            result = result[['time', 'open', 'high', 'low', 'close', 'volume']]
 
             return result
         except ImportError:

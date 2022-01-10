@@ -119,7 +119,8 @@ class API:
                                                               'description': description})
 
     def deploy(self, file_path: str, plan: str, project_id, model_id: str,
-               general_description: str, version_description: str, name: str, create_new: bool):
+               general_description: str, version_description: str, name: str, create_new: bool,
+               python_version: float):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
         return self.__request('post', 'model/deploy', file=file, data={'plan': plan,
@@ -128,7 +129,8 @@ class API:
                                                                        'projectId': project_id,
                                                                        'generalDescription': general_description,
                                                                        'versionDescription': version_description,
-                                                                       'createNew': create_new})
+                                                                       'createNew': create_new,
+                                                                       'pythonVersion': python_version})
 
     def backtest_deployed(self, project_id: str, model_id: str, args: dict, version_id: str, backtest_description: str):
         return self.__request('post', 'model/backtestUploadedModel',
@@ -139,7 +141,7 @@ class API:
                                      'backtestDescription': backtest_description})
 
     def backtest(self, file_path: str, project_id: str, model_id: str, args: dict, plan: str,
-                 create_new: bool, name: str, backtest_description: str = ""):
+                 create_new: bool, name: str, python_version: float, backtest_description: str = ""):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
         return self.__request('post', 'model/backtest', file=file,
@@ -149,7 +151,8 @@ class API:
                                     'backtestDescription': backtest_description,
                                     'backtestArgs': json.dumps(args),
                                     'createNew': create_new,
-                                    'name': name})
+                                    'name': name,
+                                    'pythonVersion': str(python_version)})
 
     def signal(self):
         return self.__request('get', 'model/signalTest')

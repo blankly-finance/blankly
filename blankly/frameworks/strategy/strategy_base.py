@@ -92,6 +92,15 @@ class Strategy:
         hashed = hash(callable_)
         self.__variables[hashed][key] = value
 
+    # # TODO these could have some parameters assigned by a super class
+    # def add_arbitrage_event(self, callback: typing.Callable, symbols: list, resolution: typing.Union[str, float],
+    #                         init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False,
+    #                         variables: dict = None):
+    #     """
+    #     Add Arbitrage Event - This allows periodic events where prices are gathered asynchronously. When run live at a
+    #      small interval, this allows minimal latency when gathering the price of the requested symbols.
+    #     """
+
     def add_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
                         init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False,
                         variables: dict = None):
@@ -108,7 +117,8 @@ class Strategy:
             synced: Sync the function to
             variables: A dictionary to initialize the state's internal values
         """
-        self.__custom_price_event(callback, symbol, resolution, init, synced, teardown=teardown, variables=variables)
+        self.__custom_price_event(callback=callback, symbol=symbol, resolution=resolution, init=init, synced=synced,
+                                  teardown=teardown, variables=variables, type_='price_event')
 
     def add_bar_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
                       init: typing.Callable = None, teardown: typing.Callable = None, variables: dict = None):
@@ -124,15 +134,22 @@ class Strategy:
                 positions, writing or cleaning up data or anything else useful
             variables: A dictionary to initialize the state's internal values
         """
-        self.__custom_price_event(callback, symbol, resolution, init, synced=True, bar=True, teardown=teardown,
-                                  variables=variables)
+        self.__custom_price_event(type_='bar', synced=True, bar=True, callback=callback, symbol=symbol,
+                                  resolution=resolution, init=init, teardown=teardown, variables=variables)
 
-    def __custom_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
-                             init: typing.Callable = None, synced: bool = False, bar: bool = False,
+    def __custom_price_event(self,
+                             type_: str,
+                             callback: typing.Callable = None,
+                             symbol: str = None,
+                             resolution: typing.Union[str, float] = None,
+                             init: typing.Callable = None,
+                             synced: bool = False,
+                             bar: bool = False,
                              teardown: typing.Callable = None, variables: dict = None):
         """
         Add Price Event
         Args:
+            type_: The type of event that the price event refers to
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
             symbol: Currency pair to create the price event for
             resolution: The resolution that the callback will be run - in seconds
@@ -149,10 +166,7 @@ class Strategy:
 
         resolution = time_interval_to_seconds(resolution)
 
-        if bar:
-            self.__scheduling_pair.append([symbol, resolution, 'bar'])
-        else:
-            self.__scheduling_pair.append([symbol, resolution, 'price_event'])
+        self.__scheduling_pair.append([symbol, resolution, type_])
 
         variables_ = AttributeDict(variables)
         state = StrategyState(self, variables_, symbol, resolution=resolution)
