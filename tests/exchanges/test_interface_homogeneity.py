@@ -58,14 +58,13 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.interfaces.append(cls.Coinbase_Pro_Interface)
         cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
 
-        #Kucoin definition and appending
+        # Kucoin definition and appending
         cls.Kucoin = blankly.Kucoin(portfolio_name="Sandbox Portfolio",
                                     keys_path='./tests/config/keys.json',
                                     settings_path="./tests/config/settings.json")
         cls.Kucoin_Interface = cls.Kucoin.get_interface()
         cls.interfaces.append(cls.Kucoin_Interface)
         cls.data_interfaces.append(cls.Kucoin_Interface)
-
 
         # Binance definition and appending
         cls.Binance = blankly.Binance(portfolio_name="Spot Test Key",

@@ -106,7 +106,7 @@ class KucoinInterface(ExchangeInterface):
         for i in range(len(accounts)):
             parsed_dictionary[accounts[i]['currency']] = utils.AttributeDict({
                 'available': float(accounts[i]['available']),
-                'holds': float(accounts[i]['holds'])
+                'hold': float(accounts[i]['holds'])
             })
 
         return parsed_dictionary
@@ -414,7 +414,7 @@ class KucoinInterface(ExchangeInterface):
             window_close = window_open + 300 * resolution
             # open_iso = utils.ISO8601_from_epoch(window_open)
             # close_iso = utils.ISO8601_from_epoch(window_close)
-            response = self._market.get_kline(symbol, resolution, startAt=epoch_start, endAt=epoch_stop)
+            response = self._market.get_kline(symbol, '1hour', startAt=int(epoch_start), endAt=int(epoch_stop))
             if isinstance(response, dict):
                 raise APIException(response['msg'])
             history = history + response
@@ -427,7 +427,7 @@ class KucoinInterface(ExchangeInterface):
         # Fill the remainder
         # open_iso = utils.ISO8601_from_epoch(window_open)
         # close_iso = utils.ISO8601_from_epoch(epoch_stop)
-        response = self._market.get_kline(symbol, resolution, startAt=epoch_start, endAt=epoch_stop)
+        response = self._market.get_kline(symbol, '1hour', startAt=int(epoch_start), endAt=int(epoch_stop))
         if isinstance(response, dict):
             raise APIException(response['msg'])
         history_block = history + response
