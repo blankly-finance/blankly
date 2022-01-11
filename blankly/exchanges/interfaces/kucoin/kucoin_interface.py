@@ -13,8 +13,12 @@ from blankly.utils.exceptions import APIException, InvalidOrder
 
 class KucoinInterface(ExchangeInterface):
     def __init__(self, exchange_name, authenticated_api):
-        super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 300, 900, 3600, 21600, 86400])
-        self.calls: KucoinAPI = self.calls
+        super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 180, 300, 900, 3600, 21600, 86400])
+        self.calls = self.calls
+
+        self._market: KucoinAPI.Market = self.calls['market']
+        self._trade: KucoinAPI.Trade = self.calls['trade']
+        self._user: KucoinAPI.User = self.calls['user']
 
     def init_exchange(self):
         fees = self._user.get_base_fee()
