@@ -77,10 +77,13 @@ class DirectCallsFactory:
 
         elif exchange_name == 'kucoin':
             sandbox = preferences["settings"]["use_sandbox"]
-            KucoinAPI.Market(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], sandbox)
-            KucoinAPI.User(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], sandbox)
-            KucoinAPI.Trade(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], sandbox)
-            return KucoinAPI, KucoinInterface("kucoin", preferences_path)
+            # Kucoin has a bunch of calls types, so we will index them in a single calls dictionary
+            calls = {
+                'market': KucoinAPI.Market(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], sandbox),
+                'user': KucoinAPI.User(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], sandbox),
+                'trade': KucoinAPI.Trade(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], sandbox)
+            }
+            return calls, KucoinInterface("kucoin", calls)
 
         elif exchange_name == 'paper_trade':
             return None, None
