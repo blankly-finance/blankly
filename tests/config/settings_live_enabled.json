@@ -9,6 +9,9 @@
     "coinbase_pro": {
       "cash": "USD"
     },
+    "kucoin": {
+      "cash": "USDT"
+    },
     "binance": {
       "cash": "USDT",
       "binance_tld": "us"
