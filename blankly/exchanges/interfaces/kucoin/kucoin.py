@@ -2,7 +2,7 @@ from blankly.exchanges.exchange import Exchange
 
 class Kucoin(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
-        Exchange.__init__(self, "coinbase_pro", portfolio_name, keys_path, settings_path)
+        Exchange.__init__(self, "kucoin", portfolio_name, keys_path, settings_path)
 
     """
     Builds information about the asset on this exchange by making particular API calls
