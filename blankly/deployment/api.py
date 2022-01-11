@@ -130,7 +130,7 @@ class API:
                                                                        'generalDescription': general_description,
                                                                        'versionDescription': version_description,
                                                                        'createNew': create_new,
-                                                                       'pythonVersion': python_version})
+                                                                       'pythonVersion': str(python_version)})
 
     def backtest_deployed(self, project_id: str, model_id: str, args: dict, version_id: str, backtest_description: str):
         return self.__request('post', 'model/backtestUploadedModel',
