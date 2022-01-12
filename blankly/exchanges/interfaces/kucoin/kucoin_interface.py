@@ -71,7 +71,6 @@ class KucoinInterface(ExchangeInterface):
             Get all currencies in an account, or sort by symbol
             Args:
                 symbol (Optional): Filter by particular symbol
-
                 These arguments are mutually exclusive
         """
         symbol = super().get_account(symbol=symbol)
