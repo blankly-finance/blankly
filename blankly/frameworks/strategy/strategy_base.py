@@ -394,8 +394,8 @@ class Strategy:
     def backtest(self,
                  to: str = None,
                  initial_values: dict = None,
-                 start_date: str = None,
-                 end_date: str = None,
+                 start_date: typing.Union[str, float, int] = None,
+                 end_date: typing.Union[str, float, int] = None,
                  save: bool = False,
                  settings_path: str = None,
                  callbacks: list = None,
@@ -411,8 +411,10 @@ class Strategy:
             to (str): Declare an amount of time before now to backtest from: ex: '5y' or '10h'
             initial_values (dict): Dictionary of initial value sizes (i.e { 'BTC': 3, 'USD': 5650}).
                 Using this will override the values that are currently on your exchange.
-            start_date (str): Override argument "to" by specifying a start date such as "03/06/2018"
-            end_date (str): End the backtest at a date such as "03/06/2018"
+            start_date (str): Override argument "to" by specifying a start date such as "03/06/2018". This can also
+                be an epoch time as a float or int.
+            end_date (str): End the backtest at a date such as "03/06/2018". This can also be an epoch type as a float
+                or int
             save (bool): Save the price data references to the data required for the backtest as well as
                 overriden settings.
             settings_path (str): Path to the backtest.json file.
@@ -475,14 +477,20 @@ class Strategy:
             end = time.time()
 
         if start_date is not None:
-            start_date = pd.to_datetime(start_date)
-            epoch = datetime.datetime.utcfromtimestamp(0)
-            start = (start_date - epoch).total_seconds()
+            if isinstance(end_date, (int, float)):
+                start = start_date
+            else:
+                start_date = pd.to_datetime(start_date)
+                epoch = datetime.datetime.utcfromtimestamp(0)
+                start = (start_date - epoch).total_seconds()
 
         if end_date is not None:
-            end_date = pd.to_datetime(end_date)
-            epoch = datetime.datetime.utcfromtimestamp(0)
-            end = (end_date - epoch).total_seconds()
+            if isinstance(end_date, (int, float)):
+                end = end_date
+            else:
+                end_date = pd.to_datetime(end_date)
+                epoch = datetime.datetime.utcfromtimestamp(0)
+                end = (end_date - epoch).total_seconds()
 
         # If start/ends are specified unevenly
         if (start_date is None and end_date is not None) or (start_date is not None and end_date is None):

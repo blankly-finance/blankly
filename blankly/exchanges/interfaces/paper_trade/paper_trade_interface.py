@@ -363,7 +363,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             raise InvalidOrder(f"Size is too small. Minimum is: {min_size}. You requested {size}.")
 
         if size > max_size:
-            raise InvalidOrder(f"Size is too large. Maximum is: {min_size}. You requested {size}.")
+            raise InvalidOrder(f"Size is too large. Maximum is: {max_size}. You requested {size}.")
 
         base_increment = market_limits['market_order']['base_increment']
         base_decimals = self.__get_decimals(base_increment)
