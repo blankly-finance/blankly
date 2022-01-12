@@ -36,10 +36,12 @@ from blankly.exchanges.strategy_logger import StrategyLogger
 
 
 class Strategy:
-    def __init__(self, exchange: Exchange, currency_pair='BTC-USD'):
+    def __init__(self, exchange: Exchange):
         """
         Create a new strategy object. A strategy can be used to run your code live while be backtestable and modular
          across exchanges.
+         Args:
+             exchange: An exchange object. This can be created by doing something similar to exchange = blankly.Alpaca()
 
         Function Signatures:
         init(symbol: str, state: blankly.StrategyState)
@@ -53,10 +55,10 @@ class Strategy:
 
         blankly.reporter.export_used_exchange(self.__exchange.get_type())
 
-        self.ticker_manager = blankly.TickerManager(self.__exchange.get_type(), currency_pair)
-        self.orderbook_manager = blankly.OrderbookManager(self.__exchange.get_type(), currency_pair)
+        self.ticker_manager = blankly.TickerManager(self.__exchange.get_type(), '')
+        self.orderbook_manager = blankly.OrderbookManager(self.__exchange.get_type(), '')
 
-        self.__scheduling_pair = []  # Object to hold a currency and the resolution its pulled at: ["BTC-USD", 60]
+        self.__scheduling_pair = []  # Object to hold a currency and the resolution it's pulled at: ["BTC-USD", 60]
         self.interface = StrategyLogger(interface=exchange.get_interface(), strategy=self)
 
         # Create a cache for the current interface, and a wrapped paper trade object for user backtesting
@@ -159,6 +161,7 @@ class Strategy:
                 positions, writing or cleaning up data or anything else useful
             synced: Sync the function to
             bar: Get the OHLCV data for a valid exchange interval
+            variables: Initial dictionary to write into the state variable
         """
         # Make sure variables is always an empty dictionary if None
         if variables is None:

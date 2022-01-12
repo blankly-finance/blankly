@@ -38,10 +38,9 @@ class TickerManager(WebsocketManager):
 
         self.__default_symbol = default_symbol
 
-        self.__tickers = {}
-        self.__tickers[default_exchange] = {}
+        self.__tickers = {default_exchange: {}}
 
-        # Create abstraction for writing many different managers
+        # Create abstraction for writing many managers
         super().__init__(self.__tickers, default_symbol, default_exchange)
 
     """ 
