@@ -23,6 +23,7 @@ from blankly.exchanges.interfaces.ftx.ftx_websocket import Tickers as FTX_Ticker
 
 from blankly.exchanges.managers.websocket_manager import WebsocketManager
 
+
 class TickerManager(WebsocketManager):
     def __init__(self, default_exchange: str, default_symbol: str):
         """

@@ -1,23 +1,22 @@
 import requests
 from typing import Optional, Dict, Any, List
 import urllib.parse
-from ciso8601 import parse_datetime
 from blankly.exchanges.auth.abc_auth import ABCAuth
+from blankly.utils.utils import epoch_from_ISO8601
 import time
 import hmac
+
 
 class FTXAPI:
     _API_URL = "https://ftx.us/api/"
 
-    #no option to instantiate with sandbox mode, unlike every other exchange
-    def __init__(self, auth: ABCAuth, _subaccount_name = None):
+    # no option to instantiate with sandbox mode, unlike every other exchange
+    def __init__(self, auth: ABCAuth, _subaccount_name=None):
 
         self._ftx_session = requests.Session()
         self._api_key = auth.keys['API_KEY']
         self._api_secret = auth.keys['API_SECRET']
         self._subaccount_name = _subaccount_name
-
-        
 
     def _signed_request(self, method: str, path: str, **kwargs):
         request = requests.Request(method, self._API_URL + path, **kwargs)
@@ -32,9 +31,9 @@ class FTXAPI:
 
         if prepared_request.body:
             signed_data += prepared_request.body
-        
+
         signature = hmac.new(self._api_secret.encode(), signed_data, 'sha256').hexdigest()
-        
+
         request.headers['FTXUS-KEY'] = self._api_key
         request.headers['FTXUS-SIGN'] = signature
         request.headers['FTXUS-TS'] = str(ts)
@@ -42,19 +41,17 @@ class FTXAPI:
         if self._subaccount_name:
             request.headers['FTXUS-SUBACCOUNT'] = urllib.parse.quote(self._subaccount_name)
 
-        
-            
-
     def _signed_delete(self, path: str, params: Optional[Dict[str, Any]] = None):
-        return self._signed_request('DELETE', path, json = params)
+        return self._signed_request('DELETE', path, json=params)
 
     def _signed_get(self, path: str, params: Optional[Dict[str, Any]] = None):
-        return self._signed_request('GET', path, params = params)
+        return self._signed_request('GET', path, params=params)
 
     def _signed_post(self, path: str, params: Optional[Dict[str, Any]] = None):
-        return self._signed_request('POST', path, json = params) 
+        return self._signed_request('POST', path, json=params)
 
-    def _handle_response(self, response: requests.Response):
+    @staticmethod
+    def _handle_response(response: requests.Response):
         try:
             result = response.json()
 
@@ -67,15 +64,14 @@ class FTXAPI:
                 raise Exception(result['error'])
             else:
                 return result['result']
-            
 
-    def list_markets(self) -> List[dict]:        
+    def list_markets(self) -> List[dict]:
 
         return self._signed_get('markets')
 
     def get_market(self, symbol: str) -> dict:
 
-        #symbol format must be BTC/USD instead of BTC-USD
+        # symbol format must be BTC/USD instead of BTC-USD
         if '-' in symbol:
             symbol = symbol.replace("-", "/")
 
@@ -85,7 +81,8 @@ class FTXAPI:
         return self._signed_get('futures')
 
     def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution) -> List[dict]:
-        return self._signed_get(f"/markets/{symbol}/candles?resolution={resolution}&start_time={epoch_start}&end_time={epoch_stop}")
+        return self._signed_get(
+            f"/markets/{symbol}/candles?resolution={resolution}&start_time={epoch_start}&end_time={epoch_stop}")
 
     def get_orderbook(self, market: str, depth: int = None) -> dict:
         return self._signed_get(f'markets/{market}/orderbook', {'depth': depth})
@@ -110,7 +107,7 @@ class FTXAPI:
 
     def get_deposit_addresses(self, ticker: str) -> dict:
         return self._signed_get(f'wallet/deposit_addresses/{ticker}')
-    
+
     def get_positions(self, display_price_avg: bool = False) -> List[dict]:
         return self._signed_get('positions', {'showAvgPrice': display_price_avg})
 
@@ -119,55 +116,54 @@ class FTXAPI:
         return next(filtered, None)
 
     def get_order_history(
-        self, 
-        market:str = None, 
-        side: str = None, 
-        order_type: str = None, 
-        interval_start: float = None, 
-        interval_end: float = None
-        ) -> List[dict]:
-        return self._get(f'orders/history', {
-            'market': market, 
-            'side': side, 
-            'orderType': order_type, 
-            'start_time': interval_start, 
+            self,
+            market: str = None,
+            side: str = None,
+            order_type: str = None,
+            interval_start: float = None,
+            interval_end: float = None
+    ) -> List[dict]:
+        return self._signed_get('orders/history', {
+            'market': market,
+            'side': side,
+            'orderType': order_type,
+            'start_time': interval_start,
             'end_time': interval_end})
 
     def get_conditional_order_history(
-        self, 
-        market: str = None, 
-        side: str = None, 
-        type: str = None, 
-        order_type: str = None, 
-        interval_start: float = None, 
-        interval_end: float = None
-        ) -> List[dict]:
-        return self._get(f'conditional_orders/history', {
-            'market': market, 
-            'side': side, 
-            'type': type, 
-            'orderType': order_type, 
-            'start_time': interval_start, 
+            self,
+            market: str = None,
+            side: str = None,
+            type_: str = None,
+            order_type: str = None,
+            interval_start: float = None,
+            interval_end: float = None
+    ) -> List[dict]:
+        return self._signed_get(f'conditional_orders/history', {
+            'market': market,
+            'side': side,
+            'type': type_,
+            'orderType': order_type,
+            'start_time': interval_start,
             'end_time': interval_end
-            })
-
+        })
 
     def get_conditional_orders(self, market: str = None) -> List[dict]:
         return self._signed_get(f'conditional_orders', {'market': market})
 
     def place_order(
-        self,
-        market: str,
-        side: str,
-        price: float,
-        size: float,
-        order_type: str = 'limit',
-        reduce_only: bool = False,
-        ioc: bool = False,
-        post_only: bool = False,
-        client_id: str = None
-        ) -> dict:
-        return self._signed_post('orders',{
+            self,
+            market: str,
+            side: str,
+            price: float,
+            size: float,
+            order_type: str = 'limit',
+            reduce_only: bool = False,
+            ioc: bool = False,
+            post_only: bool = False,
+            client_id: str = None
+    ) -> dict:
+        return self._signed_post('orders', {
             'market': market,
             'side': side,
             'price': price,
@@ -178,7 +174,7 @@ class FTXAPI:
             'postOnly': post_only,
             'clientId': client_id
         })
-        
+
     def cancel_order(self, order_id: str) -> dict:
         return self._signed_delete(f'orders/{order_id}')
 
@@ -188,13 +184,13 @@ class FTXAPI:
     """
 
     def modify_order(
-        self,
-        order_id: Optional[str] = None,
-        existing_client_order_id: Optional[str] = None,
-        client_order_id: Optional[float] = None,
-        price: Optional[float] = None,
-        size: Optional[float] = None,
-        ) -> dict:
+            self,
+            order_id: Optional[str] = None,
+            existing_client_order_id: Optional[str] = None,
+            client_order_id: Optional[float] = None,
+            price: Optional[float] = None,
+            size: Optional[float] = None,
+    ) -> dict:
 
         assert (price is None) or (size is None), \
             'You must modify the price or the size'
@@ -206,6 +202,8 @@ class FTXAPI:
             endpoint_path = f"orders/{order_id}/modify"
         elif existing_client_order_id:
             endpoint_path = f"orders/by_client_id/{existing_client_order_id}/modify"
+        else:
+            raise AttributeError('Either client_order_id or existing_client_order_id is required')
 
         if size is None:
             size_json = {}
@@ -223,11 +221,11 @@ class FTXAPI:
             client_order_id_json = {'clientId': client_order_id}
 
         return self._signed_post(endpoint_path, {
-                **(size_json),
-                **(price_json),
-                **(client_order_id_json)
-            })
-    
+            **size_json,
+            **price_json,
+            **client_order_id_json
+        })
+
     """
     to send...
     stop market order: set type = "stop" and specify a trigger price
@@ -236,20 +234,24 @@ class FTXAPI:
     """
 
     def place_conditional_order(
-        self,
-        market: str,
-        side: str,
-        size: float,
-        order_type: str = "stop",
-        limit_price: float = "None",
-        reduce_only: bool = False,
-        cancel_limit_on_trigger: bool = True,
-        trigger_price: float = None,
-        trail_value: float = None
-        ) -> dict:
+            self,
+            market: str,
+            side: str,
+            size: float,
+            order_type: str = "stop",
+            limit_price: float = "None",
+            reduce_only: bool = False,
+            cancel_limit_on_trigger: bool = True,
+            trigger_price: float = None,
+            trail_value: float = None
+    ) -> dict:
         assert type in ['stop', 'take_profit', 'trailing_stop']
-        assert type not in ['stop', 'take_profit'] or trigger_price is not None, "stop losses and take profits requires a trigger price"
-        assert type not in ['trailing stop'] or (trail_value is not None and trigger_price is not None), "must specify trail value for trailing stop, cannot use trigger price"
+        assert type not in ['stop',
+                            'take_profit'] or trigger_price is not None, "stop losses and take profits requires a " \
+                                                                         "trigger price"
+        assert type not in ['trailing stop'] or (
+                    trail_value is not None and trigger_price is not None), "must specify trail value for trailing " \
+                                                                            "stop, cannot use trigger price"
         return self._signed_post(
             'conditional_orders',
             {
@@ -264,8 +266,8 @@ class FTXAPI:
             }
         )
 
-    def get_all_trades(self, market: str, interval_start: float = None, interval_end: float = None, lim = 100) -> List:
-        
+    def get_all_trades(self, market: str, interval_start: float = None, interval_end: float = None, lim=100) -> List:
+
         to_return = []
         set_of_ids = set()
 
@@ -274,13 +276,12 @@ class FTXAPI:
                 'end_time': interval_end,
                 'start_time': interval_start
             })
-        
+
             dd_trades = []
-            
+
             for elem in resp:
                 if elem['id'] not in set_of_ids:
                     dd_trades.append(elem)
-            
 
             to_return.extend(dd_trades)
 
@@ -288,12 +289,8 @@ class FTXAPI:
 
             if len(resp) == 0:
                 break
-            interval_end = min(parse_datetime(time_['time']) for time_ in resp).timestamp()
+            interval_end = min(epoch_from_ISO8601(time_['time']) for time_ in resp)
             if lim > len(resp):
                 break
-        
+
         return to_return
-
-
-
-

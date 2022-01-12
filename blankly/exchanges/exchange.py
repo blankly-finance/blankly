@@ -23,7 +23,6 @@ from blankly.exchanges.abc_exchange import ABCExchange
 from blankly.exchanges.auth.auth_constructor import write_auth_cache
 from blankly.exchanges.auth.auth_factory import AuthFactory
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
-from blankly.exchanges.interfaces.ftx.ftx_interface import FTXInterface
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
 from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
@@ -39,10 +38,6 @@ class Exchange(ABCExchange, abc.ABC):
 
         self.__auth = self.__factory.create_auth(keys_path, self.__type, self.__name)
         self.__direct_calls_factory = DirectCallsFactory()
-
-        print(f"{exchange_type} type: {self.__type}")
-        print(f"{exchange_type} auth: {self.__auth}")
-        print(f"{exchange_type} prefs: {preferences_path}")
 
         self.calls, self.interface = self.__direct_calls_factory.create(self.__type, self.__auth, preferences_path)
         write_auth_cache(exchange_type, portfolio_name, self.calls)
