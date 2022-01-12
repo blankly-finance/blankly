@@ -442,8 +442,8 @@ class KucoinInterface(ExchangeInterface):
             # Close is always 300 points ahead
             window_close = int(window_open + 1500 * resolution)
             response = self._market.get_kline(symbol, gran_string,
-                                                  startAt=epoch_start, endAt=epoch_stop)
-            history = history.append(response)
+                                              startAt=window_open, endAt=window_close)
+            history = history + response
 
             window_open = window_close
             need -= 1500
@@ -452,14 +452,19 @@ class KucoinInterface(ExchangeInterface):
 
         # Fill the remainder
         response = self._market.get_kline(symbol, gran_string,
-                                          startAt=epoch_start, endAt=epoch_stop)
+                                          startAt=window_open, endAt=epoch_stop)
 
-        history_block = history.append(response)
+        history = history + response
+        history_block = history
         history_block.sort(key=lambda x: x[0])
 
-        df = pd.DataFrame(history_block, columns=['time', 'open', 'close', 'high', 'low', 'volume', 'amount'])
+        df = pd.DataFrame(history_block, columns=['time', 'open', 'close', 'high', 'low', 'volume', 'turnover'])
+
+        del df['turnover']
+
         # Have to cast this for some reason
-        df['time'] = df['time'].div(1500).astype(int)
+        df[['time']] = df[['time']].astype(float)
+        df[['time']] = df[['time']].astype(int)
 
         df = df.astype({
             'open': float,
@@ -467,7 +472,6 @@ class KucoinInterface(ExchangeInterface):
             'high': float,
             'low': float,
             'volume': float,
-            'amount': int
         })
 
         return df.reindex(columns=['time', 'low', 'high', 'open', 'close', 'volume'])
