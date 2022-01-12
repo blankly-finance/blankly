@@ -15,7 +15,6 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
 import time
 import unittest
 from datetime import datetime as dt
@@ -59,7 +58,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
 
         # Kucoin definition and appending
-        cls.Kucoin = blankly.Kucoin(portfolio_name="Sandbox Portfolio",
+        cls.Kucoin = blankly.Kucoin(portfolio_name="KC Sandbox Portfolio",
                                     keys_path='./tests/config/keys.json',
                                     settings_path="./tests/config/settings.json")
         cls.Kucoin_Interface = cls.Kucoin.get_interface()
@@ -124,7 +123,6 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         availability_results = []
         for i in range(len(self.interfaces)):
-            print(self.interfaces[i].get_exchange_type())
             if self.interfaces[i].get_exchange_type() == "alpaca":
                 responses.append(self.interfaces[i].get_account()['AAPL'])
                 responses.append(self.interfaces[i].get_account('AAPL'))

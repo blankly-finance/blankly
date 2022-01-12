@@ -13,7 +13,9 @@ from blankly.utils.exceptions import APIException, InvalidOrder
 
 class KucoinInterface(ExchangeInterface):
     def __init__(self, exchange_name, authenticated_api):
-        super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 180, 300, 900, 3600, 21600, 86400])
+        super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 180, 300, 900, 1800,
+                                                                              3600, 7200, 14400, 21600,
+                                                                              28800, 43200, 86400, 604800])
         self.calls = self.calls
 
         self._market: KucoinAPI.Market = self.calls['market']
@@ -66,7 +68,7 @@ class KucoinInterface(ExchangeInterface):
 
     def get_account(self, symbol=None) -> utils.AttributeDict:
         """
-            Get all currencies in an account, or sort by symbol/account_id
+            Get all currencies in an account, or sort by symbol
             Args:
                 symbol (Optional): Filter by particular symbol
 
@@ -74,7 +76,6 @@ class KucoinInterface(ExchangeInterface):
         """
         symbol = super().get_account(symbol=symbol)
 
-        needed = self.needed['get_account']
         """
         [
               {
@@ -97,11 +98,10 @@ class KucoinInterface(ExchangeInterface):
         if symbol is not None:
             for i in accounts:
                 if i["currency"] == symbol:
-                    dictionary = utils.AttributeDict({
-                        'available': i['available'],
-                        'hold': i['holds']
+                    return utils.AttributeDict({
+                        'available': float(i['available']),
+                        'hold': float(i['holds'])
                     })
-                    return dictionary
             raise ValueError("Symbol not found")
         for i in range(len(accounts)):
             parsed_dictionary[accounts[i]['currency']] = utils.AttributeDict({
@@ -390,55 +390,87 @@ class KucoinInterface(ExchangeInterface):
         return utils.isolate_specific(needed, fees)
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
+        """
+        Returns the product history from an exchange
+        Args:
+            symbol: blankly product ID format (BTC-USD)
+            epoch_start: Time to begin download
+            epoch_stop: Time to stop download
+            resolution: Resolution in seconds between tick (ex: 60 = 1 per minute)
+        Returns:
+            Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
+        """
         resolution = blankly.time_builder.time_interval_to_seconds(resolution)
 
         epoch_start = utils.convert_epochs(epoch_start)
         epoch_stop = utils.convert_epochs(epoch_stop)
+        epoch_start = int(epoch_start)
+        epoch_stop = int(epoch_stop)
 
-        accepted_grans = [60, 180, 300, 900, 3600, 21600, 86400]
+        accepted_grans = [60, 180, 300, 900, 1800, 3600, 7200, 14400, 21600, 28800, 43200, 86400, 604800]
+
         if resolution not in accepted_grans:
             utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
             resolution = accepted_grans[min(range(len(accepted_grans)),
                                             key=lambda i: abs(accepted_grans[i] - resolution))]
 
-        resolution = int(resolution)
+        lookup_dict = {
+            60: "1min",
+            180: "3min",
+            300: "5min",
+            900: "15min",
+            1800: "30min",
+            3600: "1hour",
+            7200: "2hour",
+            14400: "4hour",
+            21600: "6hour",
+            28800: "8hour",
+            43200: "12hour",
+            86400: "1day",
+            604800: "1week"
+        }
+        gran_string = lookup_dict[resolution]
 
         # Figure out how many points are needed
         need = int((epoch_stop - epoch_start) / resolution)
         initial_need = need
         window_open = epoch_start
         history = []
-        # Iterate while it is more than max
-        while need > 300:
+
+        symbol = utils.to_exchange_symbol(symbol, 'kucoin')
+        while need > 1500:
             # Close is always 300 points ahead
-            window_close = window_open + 300 * resolution
-            # open_iso = utils.ISO8601_from_epoch(window_open)
-            # close_iso = utils.ISO8601_from_epoch(window_close)
-            response = self._market.get_kline(symbol, '1hour', startAt=int(epoch_start), endAt=int(epoch_stop))
-            if isinstance(response, dict):
-                raise APIException(response['msg'])
-            history = history + response
+            window_close = int(window_open + 1500 * resolution)
+            response = self._market.get_kline(symbol, gran_string,
+                                                  startAt=epoch_start, endAt=epoch_stop)
+            history = history.append(response)
 
             window_open = window_close
-            need -= 300
+            need -= 1500
             time.sleep(.2)
             utils.update_progress((initial_need - need) / initial_need)
 
         # Fill the remainder
-        # open_iso = utils.ISO8601_from_epoch(window_open)
-        # close_iso = utils.ISO8601_from_epoch(epoch_stop)
-        response = self._market.get_kline(symbol, '1hour', startAt=int(epoch_start), endAt=int(epoch_stop))
-        if isinstance(response, dict):
-            raise APIException(response['msg'])
-        history_block = history + response
+        response = self._market.get_kline(symbol, gran_string,
+                                          startAt=epoch_start, endAt=epoch_stop)
+
+        history_block = history.append(response)
         history_block.sort(key=lambda x: x[0])
 
-        df = pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
+        df = pd.DataFrame(history_block, columns=['time', 'open', 'close', 'high', 'low', 'volume', 'amount'])
         # Have to cast this for some reason
-        df[['time']] = df[['time']].astype(int)
-        df[['low', 'high', 'open', 'close', 'volume']] = df[['low', 'high', 'open', 'close', 'volume']].astype(float)
+        df['time'] = df['time'].div(1500).astype(int)
 
-        return df
+        df = df.astype({
+            'open': float,
+            'close': float,
+            'high': float,
+            'low': float,
+            'volume': float,
+            'amount': int
+        })
+
+        return df.reindex(columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 
     def get_order_filter(self, symbol: str):
         """
@@ -515,6 +547,23 @@ class KucoinInterface(ExchangeInterface):
         }
 
     def get_price(self, symbol) -> float:
+        """
+        Returns the best bid price and size,
+        the best ask price and size as well
+        as the last traded price and the last traded size
+        """
+        """
+         {
+            "sequence": "1550467636704",
+            "bestAsk": "0.03715004",
+            "size": "0.17",
+            "price": "0.03715005",
+            "bestBidSize": "3.803",
+            "bestBid": "0.03710768",
+            "bestAskSize": "1.788",
+            "time": 1550653727731
+        }       
+        """
         response = self._market.get_ticker(symbol)
         if 'msg' in response:
             raise APIException("Error: " + response['msg'])
