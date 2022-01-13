@@ -26,7 +26,7 @@ class StrategyState:
     resolution: int
 
     """Strategy State"""
-    def __init__(self, strategy, variables: AttributeDict, symbol, resolution: int = None):
+    def __init__(self, strategy, variables: AttributeDict, symbol, resolution: [int, float] = None):
         self.strategy = strategy
         self.variables = variables
         self.resolution = resolution

@@ -1,6 +1,6 @@
 """
-    Simple utility functions that enable more robust testing
-    Copyright (C) 2021  Emerson Dove
+    Authentication constructor for FTX
+    Copyright (C) 2021 Blankly Finance
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -17,16 +17,11 @@
 """
 
 
-def get_valid_symbol(exchange: str):
-    if exchange == 'binance':
-        return 'BTC-USDT'
-    elif exchange == 'coinbase_pro':
-        return 'BTC-USD'
-    elif exchange == 'alpaca':
-        return 'AAPL'
-    elif exchange == 'oanda':
-        return 'EUR-USD'
-    elif exchange == 'ftx':
-        return 'BTC-USD'
-    else:
-        raise LookupError("Specified exchange not found.")
+from blankly.exchanges.auth.abc_auth import ABCAuth
+
+
+class FTXAuth(ABCAuth):
+    def __init__(self, keys_file, portfolio_name):
+        super().__init__(keys_file, portfolio_name, 'ftx')
+        needed_keys = ['API_KEY', 'API_SECRET']
+        self.validate_credentials(needed_keys)

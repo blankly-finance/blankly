@@ -199,6 +199,18 @@ class AlpacaInterface(ExchangeInterface):
 
         return positions_dict
 
+    @staticmethod
+    def __parse_iso(response):
+        try:
+            response['created_at'] = parser.isoparse(response['created_at']).timestamp()
+        except ValueError as e:
+            if str(e) == 'Unused components in ISO string':
+                response['created_at'] = parser.parse(response['created_at']).timestamp()
+            else:
+                raise e
+
+        return response
+
     @utils.order_protection
     def market_order(self, symbol, side, size) -> MarketOrder:
         assert isinstance(self.calls, alpaca_trade_api.REST)
@@ -215,7 +227,9 @@ class AlpacaInterface(ExchangeInterface):
             'type': 'market'
         }
         response = self.calls.submit_order(symbol, side=side, type='market', time_in_force='day', qty=size)
-        response['created_at'] = parser.isoparse(response['created_at']).timestamp()
+
+        response = self.__parse_iso(response)
+
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
@@ -243,7 +257,8 @@ class AlpacaInterface(ExchangeInterface):
                                            qty=size,
                                            limit_price=price)
 
-        response['created_at'] = parser.isoparse(response['created_at']).timestamp()
+        response = self.__parse_iso(response)
+
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
         response['time_in_force'] = response['time_in_force'].upper()
@@ -309,7 +324,8 @@ class AlpacaInterface(ExchangeInterface):
             ]
             order = utils.rename_to(renames, order)
 
-        order['created_at'] = parser.isoparse(order['created_at']).timestamp()
+        order = self.__parse_iso(order)
+
         needed = self.choose_order_specificity(order['type'])
 
         order = utils.isolate_specific(needed, order)
@@ -636,7 +652,7 @@ class AlpacaInterface(ExchangeInterface):
                 'Volume': 'volume'
             })
 
-            result.drop(columns=['Date'], inplace=True)
+            result = result[['time', 'open', 'high', 'low', 'close', 'volume']]
 
             return result
         except ImportError:

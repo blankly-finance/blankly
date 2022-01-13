@@ -20,6 +20,7 @@ import os
 import traceback
 import typing
 from datetime import datetime as dt
+import copy
 
 import numpy as np
 import pandas as pd
@@ -616,6 +617,11 @@ class BackTestController:
         # pushing these prices together makes the time go weird
         self.prices = sorted(self.prices)
 
+        if prices == {} or self.price_events == []:
+            raise ValueError("Either no price data or backtest events given. "
+                             "Try setting an argument such as to='1y' in the .backtest() command.\n"
+                             "Example: strategy.backtest(to='1y')")
+
         self.current_time = self.prices[0][0]
 
         self.initial_time = self.current_time
@@ -632,11 +638,6 @@ class BackTestController:
                 'init': self.price_events[i][5],
                 'teardown': self.price_events[i][6]
             }
-
-        if prices == {} or self.price_events == []:
-            raise ValueError("Either no price data or backtest events given. "
-                             "Use .append_backtest_price_data or "
-                             "append_backtest_price_event to create the backtest model.")
 
         # Initialize this before the callbacks so it works in the initialization functions
         self.time = self.initial_time

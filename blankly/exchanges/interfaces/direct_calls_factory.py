@@ -25,6 +25,9 @@ from blankly.exchanges.interfaces.alpaca.alpaca_interface import AlpacaInterface
 from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as CoinbaseProAPI
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
+from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
+from blankly.exchanges.interfaces.ftx.ftx_interface import FTXInterface
+
 from blankly.exchanges.interfaces.oanda.oanda_api import OandaAPI
 from blankly.exchanges.interfaces.oanda.oanda_interface import OandaInterface
 
@@ -55,6 +58,10 @@ class DirectCallsFactory:
         elif exchange_name == 'alpaca':
             calls = create_alpaca_client(auth, preferences["settings"]["use_sandbox"])
             return calls, AlpacaInterface(calls, preferences_path)
+
+        elif exchange_name == 'ftx':
+            calls = FTXAPI(auth)
+            return calls, FTXInterface(calls, preferences_path)
 
         elif exchange_name == 'oanda':
             calls = OandaAPI(auth, preferences["settings"]["use_sandbox"])
