@@ -143,3 +143,7 @@ notify.json
 
 # Cython debug symbols
 cython_debug/
+
+# User-Specific Files
+*.code-workspace
+

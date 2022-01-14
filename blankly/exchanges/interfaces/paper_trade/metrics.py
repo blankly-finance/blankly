@@ -66,25 +66,23 @@ def calmar(backtest_data, trading_period=86400):
     return round(metrics.calmar(returns, ppy), 2)
 
 
-def volatility(backtest_data):
+def volatility(backtest_data, trading_period=86400):
     returns = backtest_data['returns']['value']
-    return round(metrics.volatility(returns), 2)
+    ppy = periods_per_year(trading_period)
+    return round(metrics.volatility(returns, ppy), 2)
 
 
-def variance(backtest_data):
-    returns = backtest_data['returns']['value'] * 100
-    return round(metrics.variance(returns), 2)
-
-
-def beta(backtest_data):
-    # TODO: Need to pass in the specific resolution
-    # Defaulting to 1d
-    # Need to get some sort of baseline for this one...
-    # Use SP500 as default for all of them (can we get this data?)
-    # Or pick one of the assets as a baseline
+def variance(backtest_data, trading_period=86400):
     returns = backtest_data['returns']['value']
-    return round(metrics.beta(returns), 2)
+    ppy = periods_per_year(trading_period)
+    return round(100.0 * metrics.variance(returns, ppy), 2)
 
+def beta(backtest_data, trading_period=86400):
+    # Drop the first index because it is NaN
+    returns = backtest_data['returns']['value'][1:]
+    benchmark = backtest_data['benchmark_returns']['value'][1:]
+    ppy = periods_per_year(trading_period)
+    return round(100.0 * metrics.beta(returns, benchmark, ppy), 2)
 
 def var(backtest_data):
     returns = backtest_data['returns']['value']

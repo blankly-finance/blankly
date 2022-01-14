@@ -1,17 +1,14 @@
 """
     Utils file for assisting with trades or market analysis.
     Copyright (C) 2021  Emerson Dove
-
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU Lesser General Public License for more details.
-
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
@@ -107,9 +104,7 @@ class __BlanklySettings:
     def __init__(self, default_path: str, default_settings: dict, not_found_err: str):
         """
         Create a class that can manage caching for loading and writing to user preferences with a low overhead.
-
         This can dramatically accelerate instantiation of new interfaces or other objects
-
         Args:
             default_path: The default path to look for settings - such as ./settings.json
             default_settings: The default settings in which to compare the loaded settings to. This helps the user
@@ -549,7 +544,6 @@ def get_ohlcv(candles, n, from_zero: bool):
 def aggregate_candles(history: pd.DataFrame, aggregation_size: int):
     """
     Aggregate history data (such as turn 1m data into 15m data)
-
     Args:
         history: A blankly generated dataframe
         aggregation_size: How many rows of history to aggregate - ex: aggregation_size=15 on 1m data produces
@@ -578,7 +572,6 @@ def aggregate_candles(history: pd.DataFrame, aggregation_size: int):
 def get_ohlcv_from_list(tick_list: list, last_price: float):
     """
     Created with the purpose of parsing ticker data into a viable OHLCV pattern. The
-
     Args:
         tick_list (list): List of data containing price ticks. Needs to be at least: [{'price': 343, 'size': 3.4}, ...]
             The data must also be ordered oldest to most recent at the end
@@ -647,12 +640,9 @@ def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_
 class AttributeDict(dict):
     """
     This is adds functions to the dictionary class, no other modifications. This gives dictionaries abilities like:
-
     print(account.BTC) -> {'available': 1, 'hold': 0}
-
     account.BTC = "cool"
     print(account.BTC) -> cool
-
     Basically you can get and set attributes with a dot instead of [] - like dict.available rather than
      dict['available']
     """
@@ -679,7 +669,6 @@ def format_with_new_line(original_string, *components):
 def trunc(number: float, decimals: int) -> float:
     """
     Truncate a number instead of rounding (ex: trunc(9.9999999, 2) == 9.99 instead of round(9.9999999, 2) == 10.0)
-
     Args:
         number (float): Number to truncate
         decimals (int): Number of decimals to keep: trunc(9.9999999, 2) == 9.99
@@ -691,7 +680,6 @@ def trunc(number: float, decimals: int) -> float:
 def info_print(message):
     """
     This prints directly to stderr which allows a way to distinguish package info calls/errors from generic stdout
-
     Args:
         message: The message to print. INFO: will be prepended
     """
@@ -701,13 +689,11 @@ def info_print(message):
 class Email:
     """
     Object wrapper for simplifying interaction with SMTP servers & the blankly.reporter.email function.
-
     Alternatively a notify.json can be created which automatically integrates with blankly.reporter.email()
     """
     def __init__(self, smtp_server: str, sender_email: str, password: str, port: int = 465):
         """
         Create the email wrapper:
-
         Args:
             smtp_server: The address of the smtp server
             sender_email: The email attached to the smtp account
@@ -722,7 +708,6 @@ class Email:
     def send(self, receiver_email: str, message: str):
         """
         Send an email to the receiver_email specified
-
         Args:
             receiver_email (str): The email that the message is sent to
             message (str): The body of the message

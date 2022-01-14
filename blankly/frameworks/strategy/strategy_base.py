@@ -166,7 +166,6 @@ class Strategy:
         # Make sure variables is always an empty dictionary if None
         if variables is None:
             variables = {}
-
         resolution = time_interval_to_seconds(resolution)
 
         self.__scheduling_pair.append([symbol, resolution, type_])
