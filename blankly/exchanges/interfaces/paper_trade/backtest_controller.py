@@ -20,6 +20,7 @@ import os
 import traceback
 import typing
 from datetime import datetime as dt
+import copy
 
 import numpy as np
 import pandas as pd
@@ -254,7 +255,7 @@ class BackTestController:
 
             # Attempt to find the same symbol/asset possibilities in the backtest blocks
             try:
-                download_ranges = local_history_blocks[asset][resolution]
+                download_ranges = copy.deepcopy(local_history_blocks[asset][resolution])
             except KeyError:
                 pass
 

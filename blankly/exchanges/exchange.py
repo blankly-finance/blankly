@@ -23,21 +23,22 @@ from blankly.exchanges.abc_exchange import ABCExchange
 from blankly.exchanges.auth.auth_constructor import write_auth_cache
 from blankly.exchanges.auth.auth_factory import AuthFactory
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
-from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
 from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
+from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
 
 
 class Exchange(ABCExchange, abc.ABC):
     interface: ABCExchangeInterface
 
     def __init__(self, exchange_type, portfolio_name, keys_path, preferences_path):
-        self.__type = exchange_type  # coinbase_pro, binance, alpaca, oanda
+        self.__type = exchange_type  # coinbase_pro, binance, alpaca, oanda, ftx
         self.__name = portfolio_name  # my_cool_portfolio
         self.__factory = AuthFactory()
 
         self.__auth = self.__factory.create_auth(keys_path, self.__type, self.__name)
         self.__direct_calls_factory = DirectCallsFactory()
+
         self.calls, self.interface = self.__direct_calls_factory.create(self.__type, self.__auth, preferences_path)
         write_auth_cache(exchange_type, portfolio_name, self.calls)
 

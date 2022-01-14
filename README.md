@@ -168,7 +168,7 @@ For more info, and ways to do more advanced things, check out our [getting start
 | Binance       | 🟢          | 🟢         | 🟢            | 🟢          |
 | Alpaca        | 🟢          | 🟢         | 🟢            | 🟢          |
 | OANDA         | 🟢          | 🟡         | 🟢            | 🟢          |
-| FTX           | 🟡          | 🟡         | 🟡            | 🟡          |
+| FTX           | 🟢          | 🟢         | 🟡            | 🟢          |
 | KuCoin        | 🟡          | 🟡         | 🟡            | 🟡          |
 | TD Ameritrade | 🔴          | 🔴         | 🔴            | 🔴          |
 | Webull        | 🔴          | 🔴         | 🔴            | 🔴          |

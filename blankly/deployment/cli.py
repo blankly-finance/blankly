@@ -70,83 +70,107 @@ def choose_option(choice: str, options: list, descriptions: list):
             miocro:
                 CPU: 5,
                 RAM: 10
-        '
-        ]
+        ']
     """
-    import fcntl
-    import termios
-    fd = sys.stdin.fileno()
 
-    largest_option_name = 0
-    for i in options:
-        if len(i) > largest_option_name:
-            largest_option_name = len(i)
+    def print_descriptions(descriptions_: list, show_index: bool):
+        index_ = 0
+        for j in descriptions_:
+            if show_index:
+                j = TermColors.ENDC + str(index_) + ": " + j
+            print(j)
+            index_ += 1
 
-    def print_selection_index(index_):
-        # We pass none when they haven't selected yet
-        if index_ is None:
-            chosen_plan = "None"
-        # When its given a number it will index and find the lengths
-        else:
-            if index_ < 0:
-                index_ = len(options) - 1
-            elif index_ >= len(options):
-                index_ = 0
-            chosen_plan = options[index_]
-
-        # Carry it in this string
-        string_ = "\r" + TermColors.UNDERLINE + TermColors.OKCYAN + "You have chosen:" + \
-                  TermColors.ENDC + " " + TermColors.BOLD + TermColors.OKBLUE + chosen_plan
-
-        remaining_chars = largest_option_name - len(chosen_plan)
-        string_ += " " * remaining_chars
-
-        # Final print and flush the buffer
-        sys.stdout.write(string_)
-        sys.stdout.flush()
-
-        return index_
-
-    print(TermColors.BOLD + TermColors.WARNING + f"Choose a {choice}: " + TermColors.ENDC +
-          TermColors.UNDERLINE + "(Use your arrow keys ← →)" + TermColors.ENDC)
-    for i in descriptions:
-        print(i)
-
-    # TODO Add a very simple version that can take simple input() if this fails
-    oldterm = termios.tcgetattr(fd)
-    newattr = termios.tcgetattr(fd)
-    newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
-    termios.tcsetattr(fd, termios.TCSANOW, newattr)
-
-    oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
-    fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
-
-    index = 0
-    print_selection_index(None)
     try:
-        while True:
-            try:
-                c = sys.stdin.read(1)
-                if c == '[':
+        import fcntl
+        import termios
+        fd = sys.stdin.fileno()
+
+        largest_option_name = 0
+        for i in options:
+            if len(i) > largest_option_name:
+                largest_option_name = len(i)
+
+        def print_selection_index(index_):
+            # We pass none when they haven't selected yet
+            if index_ is None:
+                chosen_plan = "None"
+            # When its given a number it will index and find the lengths
+            else:
+                if index_ < 0:
+                    index_ = len(options) - 1
+                elif index_ >= len(options):
+                    index_ = 0
+                chosen_plan = options[index_]
+
+            # Carry it in this string
+            string_ = "\r" + TermColors.UNDERLINE + TermColors.OKCYAN + "You have chosen: " + \
+                      TermColors.ENDC + " " + TermColors.BOLD + TermColors.OKBLUE + chosen_plan
+
+            remaining_chars = largest_option_name - len(chosen_plan)
+            string_ += " " * remaining_chars
+
+            # Final print and flush the buffer
+            sys.stdout.write(string_)
+            sys.stdout.flush()
+
+            return index_
+
+        print(TermColors.BOLD + TermColors.WARNING + f"Choose a {choice}: " + TermColors.ENDC +
+              TermColors.UNDERLINE + "(Use your arrow keys ← →)" + TermColors.ENDC)
+
+        # Print everything out with no index
+        print_descriptions(descriptions, False)
+
+        # TODO Add a very simple version that can take simple input() if this fails
+        oldterm = termios.tcgetattr(fd)
+        newattr = termios.tcgetattr(fd)
+        newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
+        termios.tcsetattr(fd, termios.TCSANOW, newattr)
+
+        oldflags = fcntl.fcntl(fd, fcntl.F_GETFL)
+        fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
+
+        index = 0
+        print_selection_index(None)
+        try:
+            while True:
+                try:
                     c = sys.stdin.read(1)
-                    if c == 'C':
-                        index += 1
-                        index = print_selection_index(index)
-                    elif c == 'D':
-                        index -= 1
-                        index = print_selection_index(index)
-                elif c == '\n':
-                    break
-            except IOError:
-                pass
-    finally:
-        termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
-        fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
+                    if c == '[':
+                        c = sys.stdin.read(1)
+                        if c == 'C':
+                            index += 1
+                            index = print_selection_index(index)
+                        elif c == 'D':
+                            index -= 1
+                            index = print_selection_index(index)
+                    elif c == '\n':
+                        break
+                except IOError:
+                    pass
+        finally:
+            termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
+            fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
 
-    print('\n' + TermColors.BOLD + TermColors.WARNING + f"Chose {choice}:" + TermColors.ENDC + " " +
-          TermColors.BOLD + TermColors.OKBLUE + options[index] + TermColors.ENDC)
+        print('\n' + TermColors.BOLD + TermColors.WARNING + f"Chose {choice}:" + TermColors.ENDC + " " +
+              TermColors.BOLD + TermColors.OKBLUE + options[index] + TermColors.ENDC)
 
-    return options[index]
+        return options[index]
+    except Exception:
+        # info_print("Using non-interactive selection on this device.")
+
+        print_descriptions(descriptions, True)
+
+        print(TermColors.BOLD + TermColors.WARNING + f"Choose a {choice}: " + TermColors.ENDC +
+              TermColors.UNDERLINE + "(Input the index of your selection)" + TermColors.ENDC)
+
+        index = int(input(TermColors.UNDERLINE + TermColors.OKCYAN + "You have chosen:" + TermColors.ENDC + " "))
+
+        print('\n' + TermColors.BOLD + TermColors.WARNING + f"Chose {choice}:" + TermColors.ENDC + " " +
+              TermColors.BOLD + TermColors.OKBLUE + options[index] + TermColors.ENDC)
+
+        return options[index]
 
 
 def get_project_model_and_name(args, projects):
@@ -201,7 +225,8 @@ def get_project_model_and_name(args, projects):
         raise FileNotFoundError(f"A {deployment_script_name} file must be present at the top level of the "
                                 f"directory specified.")
 
-    return model_name, project_id, model_id, create_new, general_description, deployment_options
+    python_version = deployment_options['python_version']
+    return model_name, project_id, model_id, create_new, general_description, deployment_options, python_version
 
 
 temporary_zip_file = None
@@ -260,7 +285,7 @@ def create_and_write_file(filename: str, default_contents: str = None):
         if default_contents is not None:
             file.write(default_contents)
     except FileExistsError:
-        print("Already exists - skipping...")
+        print(f"{TermColors.WARNING}Already exists - skipping...{TermColors.ENDC}")
 
 
 parser = argparse.ArgumentParser(description='Blankly CLI & deployment tool.')
@@ -314,6 +339,7 @@ def login(remove_cache: bool = False):
             # If we're not removing cache this will use the old files to look for the token
             if not remove_cache:
                 # If it's different from the one that was just created, remove the one just created
+                os.close(fd)
                 os.remove(os.path.join(temp_folder, file_name))
                 # Reassign file name just in case its needed below to write into the file
                 # Note that we protect against corrupted files below by overwriting any contents in case
@@ -407,16 +433,20 @@ def zipdir(path, ziph, ignore_files: list):
     # directories
     # ziph is zipfile handle
 
+    filtered_ignore_files = []
     # Set all the ignored files to be absolute
     for i in range(len(ignore_files)):
-        ignore_files[i] = os.path.abspath(ignore_files[i])
+        # Reject this case
+        if ignore_files[i] == "":
+            continue
+        filtered_ignore_files.append(os.path.abspath(ignore_files[i]))
 
     for root, dirs, files in os.walk(path, topdown=True):
         for file in files:
             # (Modification) Skip everything that is in the blankly_dist folder
             filepath = os.path.join(root, file)
 
-            if not (os.path.abspath(filepath) in ignore_files) and not (root in ignore_files):
+            if not (os.path.abspath(filepath) in filtered_ignore_files) and not (root in filtered_ignore_files):
                 # This takes of the first part of the relative path and replaces it with /model/
                 print(f'\tAdding: {file} in folder {root}.')
                 relpath = os.path.relpath(filepath,
@@ -449,7 +479,7 @@ def main():
             return
 
         # Read and write to the deployment options if necessary
-        model_name, project_id, model_id, create_new, general_description, deployment_options = \
+        model_name, project_id, model_id, create_new, general_description, deployment_options, python_version = \
             get_project_model_and_name(args, projects)
 
         info_print("Zipping...")
@@ -469,7 +499,8 @@ def main():
                               version_description=version_description,
                               general_description=general_description,
                               name=model_name,
-                              create_new=create_new)
+                              create_new=create_new,
+                              python_version=python_version)
         if 'error' in response:
             info_print('Error: ' + response['error'])
         elif 'status' in response and response['status'] == 'success':
@@ -506,14 +537,19 @@ def main():
 
         print("Writing deployment defaults...")
         # Interpret defaults and write to this folder
+        print("Detecting python version...")
         py_version = platform.python_version_tuple()
+        print(f"{TermColors.OKCYAN}{TermColors.BOLD}Found python version: "
+              f"{py_version[0]}.{py_version[1]}{TermColors.ENDC}")
         deploy = {
             "main_script": "./bot.py",
             "python_version": py_version[0] + "." + py_version[1],
             "requirements": "./requirements.txt",
             "working_directory": ".",
-            "ignore_files": [''],
-            "backtest_args": {}
+            "ignore_files": ['price_caches'],
+            "backtest_args": {
+                'to': '1y'
+            }
         }
         create_and_write_file(deployment_script_name, json.dumps(deploy, indent=2))
 
@@ -521,7 +557,7 @@ def main():
         print("Writing requirements.txt defaults...")
         create_and_write_file('requirements.txt', 'blankly')
 
-        print("Done!")
+        print(f"{TermColors.OKGREEN}{TermColors.UNDERLINE}Success!{TermColors.ENDC}")
 
     elif which == 'login':
         login(remove_cache=True)
@@ -544,14 +580,13 @@ def main():
         projects = api.list_projects()
 
         # Read and write to the deployment options if necessary
-        model_name, project_id, model_id, create_new, general_description, deployment_options = \
+        model_name, project_id, model_id, create_new, general_description, deployment_options, python_version = \
             get_project_model_and_name(args, projects)
 
         info_print("Zipping...")
 
         model_path = zip_dir(args, deployment_options)
 
-        print(model_path)
         chosen_plan = select_plan(api, 'backtesting')
 
         backtest_description = input(TermColors.BOLD + TermColors.WARNING +
@@ -564,6 +599,7 @@ def main():
                                 plan=chosen_plan,
                                 file_path=model_path,
                                 create_new=create_new,
+                                python_version=python_version,
                                 name=model_name)
 
         info_print("Uploading...")

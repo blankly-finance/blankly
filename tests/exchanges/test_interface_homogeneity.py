@@ -87,6 +87,13 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.Oanda_Interface = cls.Oanda.get_interface()
         cls.interfaces.append(cls.Oanda_Interface)
         cls.data_interfaces.append(cls.Oanda_Interface)
+        
+        cls.FTX = blankly.FTX(portfolio_name="Main Account",
+                              keys_path='./tests/config/keys.json',
+                              settings_path="./tests/config/settings.json")
+        cls.FTX_Interface = cls.FTX.get_interface()
+        cls.interfaces.append(cls.FTX_Interface)
+        cls.data_interfaces.append(cls.FTX_Interface)
 
         # Paper trade wraps binance
         cls.paper_trade_binance = blankly.PaperTrade(cls.Binance)
@@ -168,8 +175,10 @@ class InterfaceHomogeneity(unittest.TestCase):
         # These are the immediate exchange responses that we aggregate & check
         exchange_responses = []
         for i in self.interfaces:
-            type_ = i.get_exchange_type()
 
+            type_ = i.get_exchange_type()
+            if type_ == "ftx":
+                continue
             if not (type_ == 'alpaca' or type_ == 'oanda'):
                 size = .01
             else:
@@ -452,7 +461,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             end_time = i['time'].iloc[-1]
 
             # Make sure that the final time we have is within the resolution window. Notice this is shifted backwards
-            self.assertTrue(current_time-(build_day()) < end_time < current_time)
+            self.assertTrue(current_time-(build_day()) < end_time < current_time, f"\ncurrent_time-(build_day()): {current_time-(build_day())}\nend_time: {end_time}\ncurrent_time: {current_time}\n")
 
             # Do the same, the start time has to be within a resolution interval of the actual time
             # This is shifted forward
@@ -462,9 +471,10 @@ class InterfaceHomogeneity(unittest.TestCase):
 
     def test_get_order_filter(self):
         responses = []
-
+        types = []
         for i in self.interfaces:
             type_ = i.get_exchange_type()
+            types.append(type_)
             responses.append(i.get_order_filter(get_valid_symbol(type_)))
 
         self.assertTrue(compare_responses(responses))
