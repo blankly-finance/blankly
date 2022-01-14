@@ -1,17 +1,14 @@
 """
     Utils file for assisting with trades or market analysis.
     Copyright (C) 2021  Emerson Dove
-
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU Lesser General Public License for more details.
-
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
@@ -24,7 +21,7 @@ import decimal
 import os
 from datetime import datetime as dt, timezone
 from math import ceil, trunc as math_trunc
-from typing import Type, Union
+from typing import Union
 
 import dateutil.parser as dp
 import numpy as np
@@ -32,81 +29,67 @@ import pandas as pd
 import pandas_market_calendars as mcal
 
 from blankly.utils.time_builder import time_interval_to_seconds
-import blankly.utils.import_checks as import_checks
-
 
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
-        "account_update_time": import_checks.UserInputParser(5000, (int, str)),  
-        "use_sandbox": import_checks.UserInputParser(False, bool),
-        "use_sandbox_websockets": import_checks.UserInputParser(False, bool),
-        "websocket_buffer_size": import_checks.UserInputParser(10000, int, import_checks.is_positive),
-        "test_connectivity_on_auth": import_checks.UserInputParser(True, bool),
+        "account_update_time": 5000,
+        "use_sandbox": False,
+        "use_sandbox_websockets": False,
+        "websocket_buffer_size": 10000,
+        "test_connectivity_on_auth": True,
 
         "coinbase_pro": {
-            "cash": import_checks.UserInputParser("USD", str),  # This is default USD but really
-                                                               # designed to be anything - imagine
-                                                               # trading ETH-BTC
+            "cash": "USD"
         },
         "binance": {
-            "cash": import_checks.UserInputParser("USDT", str),
-            "binance_tld": import_checks.UserInputParser("us", str, import_checks.is_in_list, {"allowable": ["us", "com"]})
+            "cash": "USDT",
+            "binance_tld": "us"
         },
         "alpaca": {
-            "websocket_stream": import_checks.UserInputParser("iex", str),
-            "cash": import_checks.UserInputParser("USD", str),
-            "enable_shorting" : import_checks.UserInputParser(True, bool),
-            "use_yfinance": import_checks.UserInputParser(False, bool)
+            "websocket_stream": "iex",
+            "cash": "USD",
+            "enable_shorting": True,
+            "use_yfinance": False,
         },
         "oanda": {
-            "cash": import_checks.UserInputParser("USD", str)
+            "cash": "USD"
         }
     }
 }
 
 default_backtest_settings = {
     "price_data": {
-        "assets": import_checks.UserInputParser([],str)
+        "assets": []
     },
     "settings": {
-        "use_price": import_checks.UserInputParser("close", str, import_checks.is_in_list,
-                                                   {"allowable": ["close", "open", "high", "low"]}),
-        "smooth_prices": import_checks.UserInputParser(False, bool),
-        "GUI_output": import_checks.UserInputParser(True, bool),
-        "show_tickers_with_zero_delta": import_checks.UserInputParser(False, bool),
-        "save_initial_account_value": import_checks.UserInputParser(True, bool),
-        "show_progress_during_backtest": import_checks.UserInputParser(True, bool),
-
-        "cache_location": import_checks.UserInputParser("./price_caches", str),
-
-        "continuous_caching": import_checks.UserInputParser(True, bool),
-        "resample_account_value_for_metrics": import_checks.UserInputParser("1d", (int, str), import_checks.is_timeframe),
-        "quote_account_value_in": import_checks.UserInputParser("USD", str, import_checks.is_in_list,
-                                                                {"allowable": "USD", "case_sensitive": True}),
-        "ignore_user_exceptions": import_checks.UserInputParser(False, bool),
-        "risk_free_return_rate": import_checks.UserInputParser(0.0, float, import_checks.in_range,
-                                                               {"allowable_range": (0, 0.1)}),
-        "benchmark_symbol" : import_checks.UserInputParser(None, (str, type(None)))                                                     
+        "use_price": "close",
+        "smooth_prices": False,
+        "GUI_output": True,
+        "show_tickers_with_zero_delta": False,
+        "save_initial_account_value": True,
+        "show_progress_during_backtest": True,
+        "cache_location": "./price_caches",
+        "continuous_caching": True,
+        "resample_account_value_for_metrics": "1d",
+        "quote_account_value_in": "USD",
+        "ignore_user_exceptions": False,
+        "risk_free_return_rate": 0.0
     }
 }
 
 default_notify_settings = {
-    "email": {
-        "port": import_checks.UserInputParser(465, int, import_checks.is_in_list,
-                                              {"allowable": [25, 2525, 587, 465, 25, 2526]}),
-        "smtp_server": import_checks.UserInputParser("smtp.website.com", str),
-        # Assuming any errors will get caught on connection
-        "sender_email": import_checks.UserInputParser("email_attached_to_smtp_account@web.com", str,
-                                                      import_checks.is_valid_email),
-        "receiver_email": import_checks.UserInputParser("email_to_send_to@web.com", str, import_checks.is_valid_email),
-        "password": import_checks.UserInputParser("my_password", str)
-    },
-    "text": {
-        "phone_number": import_checks.UserInputParser("1234567683", (str,int)),
-        "provider": import_checks.UserInputParser("verizon", str, import_checks.is_in_list, {
-            "allowable": ["verizon", "att", "boost", "cricket", "sprint", "t_mobile", "us_cellular", "virgin_mobile"]})
-    }
+  "email": {
+    "port": 465,
+    "smtp_server": "smtp.website.com",
+    "sender_email": "email_attached_to_smtp_account@web.com",
+    "receiver_email": "email_to_send_to@web.com",
+    "password": "my_password"
+  },
+  "text": {
+    "phone_number": "1234567683",
+    "provider": "verizon"
+  }
 }
 
 
@@ -121,9 +104,7 @@ class __BlanklySettings:
     def __init__(self, default_path: str, default_settings: dict, not_found_err: str):
         """
         Create a class that can manage caching for loading and writing to user preferences with a low overhead.
-
         This can dramatically accelerate instantiation of new interfaces or other objects
-
         Args:
             default_path: The default path to look for settings - such as ./settings.json
             default_settings: The default settings in which to compare the loaded settings to. This helps the user
@@ -147,28 +128,13 @@ class __BlanklySettings:
                     info_print(warning_string)
                     user_settings[k] = v
             else:
-
-                # V is an instance of User_Input_Checker 
-                v: import_checks.UserInputParser
-
                 if k in user_settings:
-
-                    # Check if the user's input is valid
-                    try:
-                        v.is_valid(user_settings[k])
-                    except Exception as err:
-                        warning_string = [f"User-provided value for key \'{k}\' is invalid: "]
-                        warning_string += [str(err)]
-                        warning_string += ["\t"*3 + f"Overwriting user-provided value with the default value: \'{v.default}\' \n"]
-                        info_print("".join(warning_string))
-                        user_settings[k] = v.default
-
+                    continue
                 else:
-                    warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + \
-                                     str(v.default) + "\""
+                    warning_string = "\"" + str(k) + "\" not specified in preferences, defaulting to: \"" + str(v) + \
+                                     "\""
                     info_print(warning_string)
-                    user_settings[k] = v.default
-
+                    user_settings[k] = v
         return user_settings
 
     def load(self, override_path=None) -> dict:
@@ -578,7 +544,6 @@ def get_ohlcv(candles, n, from_zero: bool):
 def aggregate_candles(history: pd.DataFrame, aggregation_size: int):
     """
     Aggregate history data (such as turn 1m data into 15m data)
-
     Args:
         history: A blankly generated dataframe
         aggregation_size: How many rows of history to aggregate - ex: aggregation_size=15 on 1m data produces
@@ -607,7 +572,6 @@ def aggregate_candles(history: pd.DataFrame, aggregation_size: int):
 def get_ohlcv_from_list(tick_list: list, last_price: float):
     """
     Created with the purpose of parsing ticker data into a viable OHLCV pattern. The
-
     Args:
         tick_list (list): List of data containing price ticks. Needs to be at least: [{'price': 343, 'size': 3.4}, ...]
             The data must also be ordered oldest to most recent at the end
@@ -644,6 +608,7 @@ OVERESTIMATE_CONSTANT = 1.5
 
 
 def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_multiplier):
+
     nyse = mcal.get_calendar('NYSE')
     required_length = ceil(limit * OVERESTIMATE_CONSTANT)
     resolution = time_interval_to_seconds(resolution_str)
@@ -675,16 +640,12 @@ def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_
 class AttributeDict(dict):
     """
     This is adds functions to the dictionary class, no other modifications. This gives dictionaries abilities like:
-
     print(account.BTC) -> {'available': 1, 'hold': 0}
-
     account.BTC = "cool"
     print(account.BTC) -> cool
-
     Basically you can get and set attributes with a dot instead of [] - like dict.available rather than
      dict['available']
     """
-
     def __getattr__(self, attr):
         # Try catch is wrapped to support copying objects
         try:
@@ -708,7 +669,6 @@ def format_with_new_line(original_string, *components):
 def trunc(number: float, decimals: int) -> float:
     """
     Truncate a number instead of rounding (ex: trunc(9.9999999, 2) == 9.99 instead of round(9.9999999, 2) == 10.0)
-
     Args:
         number (float): Number to truncate
         decimals (int): Number of decimals to keep: trunc(9.9999999, 2) == 9.99
@@ -720,7 +680,6 @@ def trunc(number: float, decimals: int) -> float:
 def info_print(message):
     """
     This prints directly to stderr which allows a way to distinguish package info calls/errors from generic stdout
-
     Args:
         message: The message to print. INFO: will be prepended
     """
@@ -730,14 +689,11 @@ def info_print(message):
 class Email:
     """
     Object wrapper for simplifying interaction with SMTP servers & the blankly.reporter.email function.
-
     Alternatively a notify.json can be created which automatically integrates with blankly.reporter.email()
     """
-
     def __init__(self, smtp_server: str, sender_email: str, password: str, port: int = 465):
         """
         Create the email wrapper:
-
         Args:
             smtp_server: The address of the smtp server
             sender_email: The email attached to the smtp account
@@ -752,7 +708,6 @@ class Email:
     def send(self, receiver_email: str, message: str):
         """
         Send an email to the receiver_email specified
-
         Args:
             receiver_email (str): The email that the message is sent to
             message (str): The body of the message

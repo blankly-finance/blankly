@@ -1,7 +1,7 @@
 {
   "settings": {
     "account_update_time": 5000,
-    "use_sandbox": false,
+    "use_sandbox": true,
     "use_sandbox_websockets": false,
     "websocket_buffer_size": 10000,
     "test_connectivity_on_auth": true,

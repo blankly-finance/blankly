@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import copy
+
 import os
 import traceback
 import typing
@@ -28,7 +28,6 @@ from bokeh.layouts import column as bokeh_columns
 from bokeh.models import HoverTool
 from bokeh.palettes import Category10_10
 from bokeh.plotting import ColumnDataSource, figure, show
-from typing import List
 
 import blankly.exchanges.interfaces.paper_trade.metrics as metrics
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
@@ -932,8 +931,8 @@ class BackTestController:
                 if result == np.NAN:
                     result = None
                 return result
-            except ZeroDivisionError:
-                return 'failed'
+            except (ZeroDivisionError, Exception) as e_:
+                return f'failed: {e_}'
 
         risk_free_return_rate = self.preferences['settings']["risk_free_return_rate"]
         metrics_indicators['Max Drawdown (%)'] = attempt(metrics.max_drawdown, history_and_returns)
