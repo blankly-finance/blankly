@@ -21,4 +21,4 @@ def formatter(results, state: SignalState):
   
 alpaca = Alpaca() # initialize our interface
 signal = Signal(alpaca, is_stock_buy, symbols=tickers, formatter=formatter, resolution='1d') # find oversold every day
-signal.notify()
+print(signal.formatted_results)
