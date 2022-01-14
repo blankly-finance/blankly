@@ -63,7 +63,12 @@ class InterfaceHomogeneity(unittest.TestCase):
                                     settings_path="./tests/config/settings.json")
         cls.Kucoin_Interface = cls.Kucoin.get_interface()
         cls.interfaces.append(cls.Kucoin_Interface)
-        cls.data_interfaces.append(cls.Kucoin_Interface)
+
+        cls.Kucoin_data = blankly.Kucoin(portfolio_name="KC Data Keys",
+                                    keys_path='./tests/config/keys.json',
+                                    settings_path="./tests/config/settings_live_enabled.json")
+        cls.Kucoin_Interface_data = cls.Kucoin_data.get_interface()
+        cls.data_interfaces.append(cls.Kucoin_Interface_data)
 
         # Binance definition and appending
         cls.Binance = blankly.Binance(portfolio_name="Spot Test Key",
@@ -263,8 +268,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         oanda_sell = self.Oanda_Interface.limit_order('EUR-USD', 'sell', 100000, 1)
         self.check_limit_order(oanda_sell, 'sell', 1, 'EUR-USD')
 
-        limits = [binance_buy, binance_sell, coinbase_buy, coinbase_sell, alpaca_sell, alpaca_buy,
-                  oanda_buy, oanda_sell]
+        limits = [binance_buy, binance_sell, coinbase_buy, coinbase_sell, kucoin_buy, kucoin_sell,
+                  alpaca_sell, alpaca_buy, oanda_buy, oanda_sell]
         responses = []
         status = []
 
