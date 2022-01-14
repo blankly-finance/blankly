@@ -44,6 +44,8 @@ paper trading, sandbox testing, and live cross-exchange deployment without modif
 
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
 
+[YouTube - Under 25 Lines Build a Binance RSI Crypto Trading Bot](https://youtu.be/pcm0h63rhUU)
+
 ### Trade Stocks, Crypto, and Forex Seamlessly
 
 ```python
