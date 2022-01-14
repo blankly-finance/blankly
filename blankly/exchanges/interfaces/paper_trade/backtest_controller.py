@@ -347,12 +347,14 @@ class BackTestController:
 
                 # Write the file but this time include very accurately the start and end times
                 if self.preferences['settings']['continuous_caching']:
-                    download.to_csv(os.path.join(cache_folder, f'{asset},'
-                                                               f'{j[0]},'
-                                                               f'{j[1]+resolution},'  # This adds resolution back to the
-                                                                                      #  exported time series
-                                                               f'{resolution}.csv'),
-                                    index=False)
+                    if not download.empty:
+                        download.to_csv(os.path.join(cache_folder, f'{asset},'
+                                                                   f'{j[0]},'
+                                                                   f'{j[1]+resolution},'  # This adds resolution 
+                                                                                          # back to the exported
+                                                                                          # time series
+                                                                   f'{resolution}.csv'),
+                                        index=False)
 
                 # Write these into the data array
                 if asset not in list(final_prices.keys()):
@@ -597,9 +599,22 @@ class BackTestController:
             try:
                 self.interface.receive_price(k, v[use_price].iloc[0])
             except IndexError:
-                raise IndexError('No cached or downloaded data available. Try adding arguments such as to="1y" '
-                                 'in the backtest command. If there should be data downloaded, try deleting your'
-                                 ' ./price_caches folder.')
+                def check_if_any_column_has_prices(price_dict: dict) -> bool:
+                    """
+                    In dictionary of symbols, check if at least one key has data
+                    """
+                    for j in price_dict:
+                        if not price_dict[j].empty:
+                            return True
+                    return False
+
+                if not check_if_any_column_has_prices(prices):
+                    raise IndexError('No cached or downloaded data available. Try adding arguments such as to="1y" '
+                                     'in the backtest command. If there should be data downloaded, try deleting your'
+                                     ' ./price_caches folder.')
+                else:
+                    raise IndexError(f"Data for symbol {k} is empty. Are you using a symbol that is incompatible "
+                                     f"with this exchange?")
 
             # Be sure to send in the initial time
             self.interface.receive_time(v['time'].iloc[0])
