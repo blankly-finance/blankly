@@ -13,17 +13,18 @@ from blankly.utils.exceptions import APIException, InvalidOrder
 
 class KucoinInterface(ExchangeInterface):
     def __init__(self, exchange_name, authenticated_api):
+
         super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 180, 300, 900, 1800,
                                                                               3600, 7200, 14400, 21600,
                                                                               28800, 43200, 86400, 604800])
-        self.calls = self.calls
 
         self._market: KucoinAPI.Market = self.calls['market']
         self._trade: KucoinAPI.Trade = self.calls['trade']
         self._user: KucoinAPI.User = self.calls['user']
 
+
     def init_exchange(self):
-        fees = self._user.get_base_fee()
+        fees = self.calls['user'].get_base_fee()
         try:
             if fees['msg'] == "Invalid API Key":
                 raise LookupError("Invalid API Key - are you trying to use your normal exchange keys "
@@ -136,7 +137,7 @@ class KucoinInterface(ExchangeInterface):
         if "msg" in response:
             raise InvalidOrder("Invalid Order: " + response["msg"])
 
-        response_details = self._trade.get_order_details(response)
+        response_details = self._trade.get_order_details(response['orderId'])
         """
         {
             "id": "5c35c02703aa673ceec2a168", //
@@ -172,7 +173,6 @@ class KucoinInterface(ExchangeInterface):
         }
         """
 
-        response_details["createdAt"] = utils.epoch_from_ISO8601(response["createdAt"])
         response_details["created_at"] = response_details.pop('createdAt')
         response_details["status"] = response_details.pop('isActive')
         response_details = utils.isolate_specific(needed, response_details)
@@ -201,7 +201,8 @@ class KucoinInterface(ExchangeInterface):
         if "msg" in response:
             raise InvalidOrder("Invalid Order: " + response["msg"])
 
-        response_details = self._trade.get_order_details(response)
+        response_details = self._trade.get_order_details(response['orderId'])
+        print(response_details)
         """
                {
                    "id": "5c35c02703aa673ceec2a168", //
@@ -237,7 +238,6 @@ class KucoinInterface(ExchangeInterface):
                }
                """
 
-        response_details["createdAt"] = utils.epoch_from_ISO8601(response["createdAt"])
         response_details["created_at"] = response_details.pop('createdAt')
         response_details["time_in_force"] = response_details.pop('timeInForce')
         response_details["status"] = response_details.pop('isActive')
@@ -299,9 +299,9 @@ class KucoinInterface(ExchangeInterface):
          }
         """
         if symbol is None:
-            open_orders = list(self._trade.get_order_list())
+            open_orders = list(self._trade.get_order_list()["items"])
         else:
-            open_orders = list(self._trade.get_order_list(symbol=symbol))
+            open_orders = list(self._trade.get_order_list(symbol=symbol)["items"])
 
         if len(open_orders) == 0:
             return []
@@ -309,7 +309,7 @@ class KucoinInterface(ExchangeInterface):
             raise InvalidOrder("Invalid Order: " + str(open_orders))
 
         for i in range(len(open_orders)):
-            open_orders[i]["createdAt"] = utils.epoch_from_ISO8601(open_orders[i]["createdAt"])
+            # open_orders[i]["createdAt"] = utils.epoch_from_ISO8601(open_orders[i]["createdAt"])
             needed = self.choose_order_specificity(open_orders[i]['type'])
             open_orders[i]["time_in_force"] = open_orders[i].pop('timeInForce')
             open_orders[i]["created_at"] = open_orders[i].pop('created_at')
@@ -388,6 +388,20 @@ class KucoinInterface(ExchangeInterface):
         fees["maker_fee_rate"] = fees.pop('makerFeeRate')
         return utils.isolate_specific(needed, fees)
 
+    def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
+        to = kwargs['to']
+
+        if to is not None and (isinstance(to, int) or isinstance(to, float)):
+            int(to)
+        elif to is not None and isinstance(to, str):
+            resolution = blankly.time_builder.time_interval_to_seconds(to)
+
+        resolution = int(resolution)
+
+        epoch_start -= resolution
+
+        self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
         """
         Returns the product history from an exchange
@@ -401,10 +415,8 @@ class KucoinInterface(ExchangeInterface):
         """
         resolution = blankly.time_builder.time_interval_to_seconds(resolution)
 
-        epoch_start = utils.convert_epochs(epoch_start)
-        epoch_stop = utils.convert_epochs(epoch_stop)
-        epoch_start = int(epoch_start)
-        epoch_stop = int(epoch_stop)
+        epoch_start = int(utils.convert_epochs(epoch_start))
+        epoch_stop = int(utils.convert_epochs(epoch_stop))
 
         accepted_grans = [60, 180, 300, 900, 1800, 3600, 7200, 14400, 21600, 28800, 43200, 86400, 604800]
 
@@ -413,20 +425,24 @@ class KucoinInterface(ExchangeInterface):
             resolution = accepted_grans[min(range(len(accepted_grans)),
                                             key=lambda i: abs(accepted_grans[i] - resolution))]
 
+        resolution = int(resolution)
+
+        epoch_start -= resolution
+
         lookup_dict = {
-            60: "1min",
-            180: "3min",
-            300: "5min",
-            900: "15min",
-            1800: "30min",
-            3600: "1hour",
-            7200: "2hour",
-            14400: "4hour",
-            21600: "6hour",
-            28800: "8hour",
-            43200: "12hour",
-            86400: "1day",
-            604800: "1week"
+            60: '1min',
+            180: '3min',
+            300: '5min',
+            900: '15min',
+            1800: '30min',
+            3600: '1hour',
+            7200: '2hour',
+            14400: '4hour',
+            21600: '6hour',
+            28800: '8hour',
+            43200: '12hour',
+            86400: '1day',
+            604800: '1week',
         }
         gran_string = lookup_dict[resolution]
 
@@ -436,12 +452,13 @@ class KucoinInterface(ExchangeInterface):
         window_open = epoch_start
         history = []
 
-        symbol = utils.to_exchange_symbol(symbol, 'kucoin')
         while need > 1500:
             # Close is always 300 points ahead
             window_close = int(window_open + 1500 * resolution)
             response = self._market.get_kline(symbol, gran_string,
                                               startAt=window_open, endAt=window_close)
+            if isinstance(response, dict):
+                raise APIException(response['msg'])
             history = history + response
 
             window_open = window_close
@@ -452,26 +469,19 @@ class KucoinInterface(ExchangeInterface):
         # Fill the remainder
         response = self._market.get_kline(symbol, gran_string,
                                           startAt=window_open, endAt=epoch_stop)
+        if isinstance(response, dict):
+            raise APIException(response['msg'])
 
         history = history + response
-        history_block = history
-        history_block.sort(key=lambda x: x[0])
+        history.sort(key=lambda x: x[0])
 
-        df = pd.DataFrame(history_block, columns=['time', 'open', 'close', 'high', 'low', 'volume', 'turnover'])
-
+        df = pd.DataFrame(history, columns=['time', 'open', 'close', 'high', 'low', 'volume', 'turnover'])
         del df['turnover']
 
         # Have to cast this for some reason
-        df[['time']] = df[['time']].astype(float)
+        # df[['time']] = df[['time']].astype(float)
         df[['time']] = df[['time']].astype(int)
-
-        df = df.astype({
-            'open': float,
-            'close': float,
-            'high': float,
-            'low': float,
-            'volume': float,
-        })
+        df[['open', 'close', 'high', 'low', 'volume']] = df[['open', 'close', 'high', 'low', 'volume']].astype(float)
 
         return df.reindex(columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 
