@@ -214,7 +214,7 @@ class ABCExchangeInterface(abc.ABC):
 
     @abc.abstractmethod
     def get_order_filter(self,
-                         symbol: str):
+                         symbol: str) -> dict:
         """
         Find order limits for the exchange
         Args:

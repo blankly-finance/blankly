@@ -62,11 +62,14 @@ def load_auth(exchange_type, keys_file=None, name=None):
             # Default to the cached path if the passed variable is wrong
             keys_file = keys_path_cache
     else:
-        # If its not non then there's no problem, just write it to the cache though
+        # If it's not none then there's no problem, just write it to the cache though
         keys_path_cache = keys_file
 
     auth_object = load_json(keys_file)
-    exchange_keys = auth_object[exchange_type]
+    try:
+        exchange_keys = auth_object[exchange_type]
+    except KeyError as e:
+        raise KeyError(f"Cannot find exchange {e} the keys file.")
     if name is None:
         name, portfolio = __determine_first_key(exchange_keys)
     else:

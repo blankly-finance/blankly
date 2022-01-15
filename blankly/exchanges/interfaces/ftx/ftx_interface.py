@@ -100,7 +100,7 @@ class FTXInterface(ExchangeInterface):
 
         for index, product in enumerate(products):
             if product['type'] == "spot":
-                product['symbol'] = product.pop('name')
+                product['symbol'] = utils.to_blankly_symbol(product.pop('name'), 'ftx')
                 product['base_asset'] = product.pop('baseCurrency')
                 product['quote_asset'] = product.pop('quoteCurrency')
                 product['base_min_size'] = product.pop('minProvideSize')
@@ -156,6 +156,19 @@ class FTXInterface(ExchangeInterface):
                     'available': float(account['available']),
                     'hold': float(account['hold'])
                 })
+            all_products = self.get_products()
+            base_symbols = []
+            quote_symbols = []
+            for i in all_products:
+                base_symbols.append(utils.get_base_asset(i['symbol']))
+                quote_symbols.append(utils.get_quote_asset(i['symbol']))
+
+            for i in (base_symbols + quote_symbols):
+                if i not in parsed_dictionary:
+                    parsed_dictionary[i] = {
+                        'available': 0.0,
+                        'hold': 0.0
+                    }
             return parsed_dictionary
 
     """
@@ -205,7 +218,7 @@ class FTXInterface(ExchangeInterface):
 
         response = self.get_calls().place_order(symbol, side, None, size, order_type="market")
 
-        response["symbol"] = response.pop("market")
+        response["symbol"] = utils.to_blankly_symbol(response.pop("market"), 'ftx')
         response["created_at"] = utils.epoch_from_ISO8601(response.pop("createdAt"))
 
         response = utils.isolate_specific(needed, response)
@@ -283,14 +296,12 @@ class FTXInterface(ExchangeInterface):
             'type': 'limit'
         }
 
-        response["symbol"] = response.pop("market")
+        response["symbol"] = utils.to_blankly_symbol(response.pop("market"), 'ftx')
         response["created_at"] = utils.epoch_from_ISO8601(response.pop("createdAt"))
         response["time_in_force"] = "GTC"
         response = utils.isolate_specific(needed, response)
 
         return LimitOrder(order, response, self)
-
-    #    def stop_limit(self, symbol, side, stop_price, limit_price, size, stop = 'loss'):
 
     def cancel_order(self, symbol: str, order_id: str) -> dict:
         """
@@ -347,7 +358,7 @@ class FTXInterface(ExchangeInterface):
             return []
 
         for open_order in response:
-            open_order['symbol'] = open_order.pop('market')
+            open_order['symbol'] = utils.to_blankly_symbol(open_order.pop('market'), 'ftx')
             if open_order["type"] == "limit":
                 needed = self.choose_order_specificity("limit")
                 open_order['time_in_force'] = "GTC"
@@ -395,7 +406,7 @@ class FTXInterface(ExchangeInterface):
 
         needed = self.choose_order_specificity(response["type"])
 
-        response['symbol'] = response.pop('market')
+        response['symbol'] = utils.to_blankly_symbol(response.pop('market'), 'ftx')
         response['created_at'] = utils.epoch_from_ISO8601(response.pop('createdAt'))
 
         if response["type"] == "limit":
@@ -456,7 +467,7 @@ class FTXInterface(ExchangeInterface):
         initial_need = need
         window_open = epoch_start
         history = []
-        # Iterate while its more than max
+        # Iterate while it's more than max
         while need > 1501:
             # Close is always 1501 points ahead
             window_close = window_open + 1501 * resolution
@@ -532,7 +543,8 @@ class FTXInterface(ExchangeInterface):
             exchange_specific_keys.pop(key)
 
         return {
-            "symbol": market_info["name"],  # make function in utils (or static) to switch slash to dash
+            "symbol": utils.to_blankly_symbol(market_info["name"], 'ftx'),  # make function in utils (or static)
+                                                                            # to switch slash to dash
             "base_asset": market_info["baseCurrency"],
             "quote_asset": market_info["quoteCurrency"],
             "max_orders": 99999999,
@@ -541,8 +553,8 @@ class FTXInterface(ExchangeInterface):
                 "base_max_size": 99999999,
                 "base_increment": market_info["sizeIncrement"],
                 "price_increment": market_info["priceIncrement"],
-                "min_price": market_info["minProvideSize"] * market_info["price"],
-                "max_price": 99999999 * market_info["price"]
+                "min_price": .75 * market_info["price"],
+                "max_price": 1.25 * market_info["price"]
             },
             "market_order": {
                 "base_min_size": market_info["minProvideSize"],
@@ -550,17 +562,16 @@ class FTXInterface(ExchangeInterface):
                 "base_increment": market_info["sizeIncrement"],
                 "quote_increment": market_info["priceIncrement"],
                 "buy": {
-                    "min_funds": None,
-                    "max_funds": None
+                    "min_funds": market_info["sizeIncrement"],
+                    "max_funds": market_info["sizeIncrement"]
                 },
                 "sell": {
-                    "min_funds": None,
-                    "max_funds": None
+                    "min_funds": market_info["sizeIncrement"],
+                    "max_funds": market_info["sizeIncrement"]
                 },
 
             },
             "exchange_specific": exchange_specific_keys
-
         }
 
     def get_price(self, symbol: str) -> float:

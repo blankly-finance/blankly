@@ -289,7 +289,7 @@ def to_blankly_symbol(symbol, exchange, quote_guess=None) -> str:
         return symbol
 
     if exchange == "ftx":
-        return symbol.replace("-", "/")
+        return symbol.replace("/", "-")
 
 
 def __check_ending(full_string, checked_ending) -> bool:
