@@ -74,7 +74,8 @@ default_backtest_settings = {
         "resample_account_value_for_metrics": "1d",
         "quote_account_value_in": "USD",
         "ignore_user_exceptions": False,
-        "risk_free_return_rate": 0.0
+        "risk_free_return_rate": 0.0,
+        "benchmark_symbol": None
     }
 }
 

@@ -41,7 +41,6 @@ class AlpacaInterface(ExchangeInterface):
     def __init__(self, authenticated_api: API, preferences_path: str):
         self.__unique_assets = None
         super().__init__('alpaca', authenticated_api, preferences_path, valid_resolutions=[60, 60*5, 60*15,
-                                                                                           60*60,
                                                                                            60*60*24])
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
