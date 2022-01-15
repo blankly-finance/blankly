@@ -277,7 +277,7 @@ def to_blankly_symbol(symbol, exchange, quote_guess=None) -> str:
             return symbol + "-" + quote_guess
         else:
             # Try your best to try to parse anyway
-            quotes = ['BNB', 'BTC', 'TRX', 'XRP', 'ETH', 'USDT', 'BUSD', 'AUD', 'BRL', 'EUR', 'GBP', 'RUB',
+            quotes = ['BNB', 'BTC', 'TRX', 'XRP', 'ETH', 'USDT', 'USD', 'BUSD', 'AUD', 'BRL', 'EUR', 'GBP', 'RUB',
                       'TRY', 'TUSD', 'USDC', 'PAX', 'BIDR', 'DAI', 'IDRT', 'UAH', 'NGN', 'VAI', 'BVND']
             for i in quotes:
                 if __check_ending(symbol, i):

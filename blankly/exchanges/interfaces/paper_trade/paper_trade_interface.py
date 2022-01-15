@@ -127,10 +127,13 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             traceback.print_exc()
             raise AttributeError("Are you passing a non-exchange object into the paper trade constructor?")
 
-        self.__exchange_properties = {
-            "maker_fee_rate": fees['maker_fee_rate'],
-            "taker_fee_rate": fees['taker_fee_rate']
-        }
+        try:
+            self.__exchange_properties = {
+                "maker_fee_rate": fees['maker_fee_rate'],
+                "taker_fee_rate": fees['taker_fee_rate']
+            }
+        except KeyError:
+            raise KeyError(f'Invalid exchange response: {fees}')
 
     """ Needs to be overridden here """
 

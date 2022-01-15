@@ -16,22 +16,18 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import collections
 import json
-import ssl
-import threading
 import time
 import traceback
 
-from websocket import create_connection
-
 import blankly
 import blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket_utils as websocket_utils
-from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
+from blankly.exchanges.interfaces.websocket import Websocket
+from blankly.utils.utils import info_print
 
 
 def create_ticker_connection(id, url, channel):
-    ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
+    ws = None  # create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
     request = """{
     "type": "subscribe",
     "product_ids": [
@@ -54,7 +50,7 @@ def create_ticker_connection(id, url, channel):
 # ]
 
 
-class Tickers(ABCExchangeWebsocket):
+class Tickers(Websocket):
     def __init__(self, symbol, stream, log=None,
                  pre_event_callback=None, initially_stopped=False, WEBSOCKET_URL="wss://ws-feed.pro.coinbase.com"):
         """
@@ -64,58 +60,33 @@ class Tickers(ABCExchangeWebsocket):
             log: Fill this with a path to a log file that should be created
             WEBSOCKET_URL: Default websocket URL feed.
         """
-        self.__id = symbol
-        self.__stream = stream
         self.__logging_callback, self.__interface_callback, log_message = websocket_utils.switch_type(stream)
 
-        # Initialize log file
-        if log is not None:
-            self.__log = True
-            self.__filePath = log
-            try:
-                self.__file = open(log, 'x+')
-                self.__file.write(log_message)
-            except FileExistsError:
-                self.__file = open(log, 'a')
-        else:
-            self.__log = False
+        super().__init__(symbol, stream, log, log_message, WEBSOCKET_URL, pre_event_callback)
 
-        self.URL = WEBSOCKET_URL
-        self.ws = None
-        self.__response = None
-        self.__most_recent_tick = None
-        self.__most_recent_time = None
-        self.__callbacks = []
-        self.__pre_event_callback = pre_event_callback
-
-        # Reload preferences
-        self.__preferences = blankly.utils.load_user_preferences()
-        buffer_size = self.__preferences["settings"]["websocket_buffer_size"]
-        self.__ticker_feed = collections.deque(maxlen=buffer_size)
-        self.__time_feed = collections.deque(maxlen=buffer_size)
+        self.__pre_event_callback_filled = False
 
         # Start the websocket
         if not initially_stopped:
-            self.start_websocket()
+            self.start_websocket(
+                self.on_open,
+                self.on_message,
+                self.on_error,
+                self.on_close,
+                self.run_forever
+            )
 
-    def start_websocket(self):
+    def run_forever(self):
         """
-        Restart websocket if it was asked to stop.
-        """
-        if self.ws is None:
-            self.ws = create_ticker_connection(self.__id, self.URL, self.__stream)
-            self.__response = self.ws.recv()
-            thread = threading.Thread(target=self.read_websocket)
-            thread.start()
-        else:
-            if self.ws.connected:
-                print("Already running...")
-                pass
-            else:
-                # Use recursion to restart, continue appending to time feed and ticker feed
-                self.ws = None
-                self.start_websocket()
+        This is the target from the super
 
+        It's renamed to run_forever in coinbase pro because I think that ancient code below is cool
+        """
+        self.ws.run_forever()
+
+    """
+    This function has some of the oldest code in the entire package
+    """
     def read_websocket(self):
         # This is unique because coinbase first sends the entire orderbook to use
         if self.__pre_event_callback is not None and self.__stream == "level2":
@@ -169,59 +140,73 @@ class Tickers(ABCExchangeWebsocket):
                     # Give a delay so this doesn't eat up from the main thread if it takes many tries to initialize
                     time.sleep(2)
                     self.ws.close()
-                    self.ws = create_ticker_connection(self.__id, self.URL, self.__stream)
                     # Update response
-                    self.__response = self.ws.recv()
+                    self.response = self.ws.recv()
 
-    """ Required in manager """
+    def on_message(self, ws, message):
+        received_string = message
+        received = json.loads(received_string)
 
-    def is_websocket_open(self):
-        return self.ws.connected
+        if received['type'] == 'subscriptions':
+            info_print(f"Subscribed to {received['channels']}")
+            return
 
-    def get_currency_id(self):
-        return self.__id
+        # This is unique because coinbase first sends the entire orderbook to use
+        if (self.pre_event_callback is not None) and (not self.__pre_event_callback_filled) and \
+                (self.stream == "level2"):
+            if received['type'] == 'snapshot':
+                try:
+                    self.pre_event_callback(received)
+                except Exception:
+                    traceback.print_exc()
 
-    """ Required in manager """
+            self.__pre_event_callback_filled = True
+            return
 
-    def append_callback(self, obj):
-        self.__callbacks.append(obj)
+        # Modify time to use epoch
+        self.most_recent_time = blankly.utils.epoch_from_ISO8601(received["time"])
+        received["time"] = self.most_recent_time
+        self.time_feed.append(self.most_recent_time)
 
-    """ Define a variable each time so there is no array manipulation """
-    """ Required in manager """
+        self.log_response(self.__logging_callback, received)
 
-    def get_most_recent_tick(self):
-        return self.__most_recent_tick
+        # Manage price events and fire for each manager attached
+        interface_message = self.__interface_callback(received)
+        self.ticker_feed.append(interface_message)
+        self.most_recent_tick = interface_message
 
-    """ Required in manager """
+        try:
+            for i in self.callbacks:
+                i(interface_message)
+        except Exception:
+            traceback.print_exc()
 
-    def get_most_recent_time(self):
-        return self.__most_recent_time
+        self.message_count += 1
 
-    """ Required in manager """
+    def on_error(self, ws, error):
+        info_print(error)
 
-    def get_time_feed(self):
-        return list(self.__time_feed)
+    def on_close(self, ws):
+        # This repeats the close behavior just in case something happens
+        pass
 
-    """ Parallel with time feed """
-    """ Required in manager """
-
-    def get_feed(self):
-        return list(self.__ticker_feed)
-
-    """ Required in manager """
-
-    def get_response(self):
-        return self.__response
-
-    """ Required in manager """
-
-    def close_websocket(self):
-        if self.ws.connected:
-            self.ws.close()
-        else:
-            print("Websocket for " + self.__id + ' on channel ' + self.__stream + " is already closed")
-
-    """ Required in manager """
+    def on_open(self, ws):
+        request = json.dumps({
+            'type': 'subscribe',
+            'product_ids': [self.symbol],
+            'channels': [self.stream]
+        })
+        ws.send(request)
 
     def restart_ticker(self):
-        self.start_websocket()
+        """
+        This is the only abstract function that should be placed individually
+        into each websocket file
+        """
+        self.start_websocket(
+            self.on_open,
+            self.on_message,
+            self.on_error,
+            self.on_close,
+            self.read_websocket
+        )

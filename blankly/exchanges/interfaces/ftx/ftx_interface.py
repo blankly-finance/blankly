@@ -35,7 +35,6 @@ class FTXInterface(ExchangeInterface):
         super().__init__('ftx', authenticated_API, preferences_path, valid_resolutions=None)
 
     def init_exchange(self):
-
         """
             Attempts an API call. If API key is invalid, this 
             method will throw another error specifying that it 
@@ -67,7 +66,8 @@ class FTXInterface(ExchangeInterface):
             "name": "ABNB/USD",
             "enabled": true,
             "postOnly": false,
-            "priceIncrement": 0.005, //NOTE: api call returns both price and size increment. base_increment is currently set to size, however this may not be the expected result
+            "priceIncrement": 0.005, //NOTE: api call returns both price and size increment. base_increment is currently
+             set to size, however this may not be the expected result
             "sizeIncrement": 0.025,
             "minProvideSize": 0.025,
             "last": 169.09,
