@@ -20,8 +20,8 @@ from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro import CoinbasePro
 from blankly.exchanges.interfaces.binance.binance import Binance
 from blankly.exchanges.interfaces.alpaca.alpaca import Alpaca
 from blankly.exchanges.interfaces.oanda.oanda import Oanda
+from blankly.exchanges.interfaces.kucoin.kucoin import Kucoin
 from blankly.exchanges.interfaces.ftx.ftx import FTX
-
 from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.frameworks.strategy import Strategy as Strategy
 from blankly.frameworks.strategy import StrategyState as StrategyState

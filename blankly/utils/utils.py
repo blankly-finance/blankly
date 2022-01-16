@@ -302,7 +302,7 @@ def to_exchange_symbol(blankly_symbol, exchange):
         return blankly_symbol.replace('-', '')
     if exchange == "alpaca":
         return get_base_asset(blankly_symbol)
-    if exchange == "coinbase_pro":
+    if exchange == "coinbase_pro" or exchange == "kucoin":
         return blankly_symbol
     if exchange == 'ftx':
         return blankly_symbol.replace("-", "/")

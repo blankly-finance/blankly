@@ -18,7 +18,7 @@
 
 
 def get_valid_symbol(exchange: str):
-    if exchange == 'binance':
+    if exchange == 'binance' or exchange == 'kucoin':
         return 'BTC-USDT'
     elif exchange == 'coinbase_pro':
         return 'BTC-USD'

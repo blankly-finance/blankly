@@ -15,7 +15,6 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
 import time
 import unittest
 from datetime import datetime as dt
@@ -57,6 +56,19 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.Coinbase_Pro_Interface = cls.Coinbase_Pro.get_interface()
         cls.interfaces.append(cls.Coinbase_Pro_Interface)
         cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
+
+        # Kucoin definition and appending
+        cls.Kucoin = blankly.Kucoin(portfolio_name="KC Sandbox Portfolio",
+                                    keys_path='./tests/config/keys.json',
+                                    settings_path="./tests/config/settings.json")
+        cls.Kucoin_Interface = cls.Kucoin.get_interface()
+        cls.interfaces.append(cls.Kucoin_Interface)
+
+        cls.Kucoin_data = blankly.Kucoin(portfolio_name="KC Data Keys",
+                                    keys_path='./tests/config/keys.json',
+                                    settings_path="./tests/config/settings_live_enabled.json")
+        cls.Kucoin_Interface_data = cls.Kucoin_data.get_interface()
+        cls.data_interfaces.append(cls.Kucoin_Interface_data)
 
         # Binance definition and appending
         cls.Binance = blankly.Binance(portfolio_name="Spot Test Key",
@@ -122,7 +134,6 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
 
         availability_results = []
-
         for i in range(len(self.interfaces)):
             if self.interfaces[i].get_exchange_type() == "alpaca":
                 responses.append(self.interfaces[i].get_account()['AAPL'])
@@ -248,6 +259,12 @@ class InterfaceHomogeneity(unittest.TestCase):
         coinbase_sell = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'sell', 100000, 1)
         self.check_limit_order(coinbase_sell, 'sell', 1, 'BTC-USD')
 
+        kucoin_buy = self.Kucoin_Interface.limit_order('BTC-USDT', 'buy', .01, 1)
+        self.check_limit_order(kucoin_buy, 'buy', 1, 'BTC-USDT')
+
+        kucoin_sell = self.Kucoin_Interface.limit_order('BTC-USDT', 'sell', 100000, 1)
+        self.check_limit_order(kucoin_sell, 'sell', 1, 'BTC-USDT')
+
         alpaca_buy = self.Alpaca_Interface.limit_order('AAPL', 'buy', 10, 1)
         self.check_limit_order(alpaca_buy, 'buy', 1, 'AAPL')
 
@@ -260,8 +277,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         oanda_sell = self.Oanda_Interface.limit_order('EUR-USD', 'sell', 100000, 1)
         self.check_limit_order(oanda_sell, 'sell', 1, 'EUR-USD')
 
-        limits = [binance_buy, binance_sell, coinbase_buy, coinbase_sell, alpaca_sell, alpaca_buy,
-                  oanda_buy, oanda_sell]
+        limits = [binance_buy, binance_sell, coinbase_buy, coinbase_sell, kucoin_buy, kucoin_sell,
+                  alpaca_sell, alpaca_buy, oanda_buy, oanda_sell]
         responses = []
         status = []
 
@@ -270,6 +287,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         open_orders = {
             'coinbase_pro': self.Coinbase_Pro_Interface.get_open_orders('BTC-USD'),
             'binance': self.Binance_Interface.get_open_orders('BTC-USDT'),
+            'kucoin': self.Kucoin_Interface.get_open_orders('BTC-USDT'),
             'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
             'oanda': self.Oanda_Interface.get_open_orders('EUR-USD')
         }
@@ -281,6 +299,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         # Just scan through both simultaneously to reduce code copying
         all_orders = open_orders['coinbase_pro']
         all_orders = all_orders + open_orders['binance']
+        all_orders = all_orders + open_orders['kucoin']
         all_orders = all_orders + open_orders['alpaca']
         all_orders = all_orders + open_orders['oanda']
 
@@ -309,6 +328,9 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_buy.get_id()))
         cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_sell.get_id()))
+
+        cancels.append(self.Kucoin_Interface.cancel_order('BTC-USDT', kucoin_buy.get_id()))
+        cancels.append(self.Kucoin_Interface.cancel_order('BTC-USDT', kucoin_sell.get_id()))
 
         cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_sell.get_id()))
         cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_buy.get_id()))
