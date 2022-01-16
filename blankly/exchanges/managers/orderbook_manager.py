@@ -21,7 +21,7 @@ from typing import List
 
 import requests
 
-import blankly.exchanges.auth.auth_constructor
+import blankly.exchanges.auth.utils
 import blankly.utils.utils
 from blankly.exchanges.interfaces.alpaca.alpaca_websocket import Tickers as Alpaca_Websocket
 from blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Binance_Orderbook

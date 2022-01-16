@@ -20,7 +20,6 @@
 import requests
 from typing import Optional, Dict, Any, List
 import urllib.parse
-from blankly.exchanges.auth.abc_auth import ABCAuth
 from blankly.utils.utils import epoch_from_ISO8601
 import time
 import hmac
@@ -30,11 +29,11 @@ class FTXAPI:
     _API_URL = "https://ftx.us/api/"
 
     # no option to instantiate with sandbox mode, unlike every other exchange
-    def __init__(self, auth: ABCAuth, _subaccount_name=None):
+    def __init__(self, api_key, api_secret, _subaccount_name=None):
 
         self._ftx_session = requests.Session()
-        self._api_key = auth.keys['API_KEY']
-        self._api_secret = auth.keys['API_SECRET']
+        self._api_key = api_key
+        self._api_secret = api_secret
         self._subaccount_name = _subaccount_name
 
     def _signed_request(self, method: str, path: str, **kwargs):

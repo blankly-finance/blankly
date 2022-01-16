@@ -16,14 +16,32 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+from blankly.exchanges.auth.auth_constructor import AuthConstructor
 from blankly.exchanges.exchange import Exchange
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as CoinbaseProAPI
 
 
 class CoinbasePro(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
-        # Giving the preferences path as none allows us to create a default
-        Exchange.__init__(self, "coinbase_pro", portfolio_name, keys_path, settings_path)
+        Exchange.__init__(self, "coinbase_pro", portfolio_name, settings_path)
+
+        # Load the auth from the keys file
+        auth = AuthConstructor(keys_path, portfolio_name, 'coinbase_pro', ['API_KEY', 'API_SECRET', 'API_PASS'])
+
+        keys = auth.keys
+        if self.preferences["settings"]["use_sandbox"]:
+            calls = CoinbaseProAPI(api_key=keys['API_KEY'],
+                                   api_secret=keys['API_SECRET'],
+                                   api_pass=keys['API_PASS'],
+                                   API_URL="https://api-public.sandbox.pro.coinbase.com/")
+        else:
+            # Create the authenticated object
+            calls = CoinbaseProAPI(api_key=keys['API_KEY'],
+                                   api_secret=keys['API_SECRET'],
+                                   api_pass=keys['API_PASS'])
+
+        # Always finish the method with this function
+        super().construct_interface_and_cache(calls)
 
     """
     Builds information about the asset on this exchange by making particular API calls

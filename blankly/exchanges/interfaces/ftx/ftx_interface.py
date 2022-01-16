@@ -31,8 +31,8 @@ from typing import List
 class FTXInterface(ExchangeInterface):
 
     # note, FTX has no sandbox mode
-    def __init__(self, authenticated_API: FTXAPI, preferences_path: str):
-        super().__init__('ftx', authenticated_API, preferences_path, valid_resolutions=None)
+    def __init__(self, exchange_name, authenticated_api: FTXAPI):
+        super().__init__(exchange_name, authenticated_api, valid_resolutions=None)
 
     def init_exchange(self):
         """

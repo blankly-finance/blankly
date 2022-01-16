@@ -24,14 +24,12 @@ pass if everything works properly.
 
 import time
 import sys
-from blankly.exchanges.orders.limit_order import LimitOrder
-from blankly.utils import utils
+
+import blankly
 from pathlib import Path
 from typing import List
 
-from blankly.exchanges.interfaces.ftx.ftx_auth import FTXAuth
 from blankly.exchanges.interfaces.ftx.ftx_interface import FTXInterface
-from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 import test_ftx_interface_utils as test_utils
 
 
@@ -39,9 +37,13 @@ def ftx_interface() -> FTXInterface:
     keys_file_path = Path("../../../config/keys.json").resolve()
     settings_file_path = Path("../../../config/settings.json").resolve()
 
-    auth_obj = FTXAuth(str(keys_file_path), "Main Account")
-    _, ftx_interface = DirectCallsFactory.create("ftx", auth_obj, str(settings_file_path))
-    return ftx_interface
+    ftx = blankly.FTX(keys_path=keys_file_path,
+                               settings_path=settings_file_path,
+                               portfolio_name='Main Account')
+
+    # auth_obj = FTXAuth(str(keys_file_path), "Main Account")
+    # _, ftx_interface = DirectCallsFactory.create("ftx", auth_obj, str(settings_file_path))
+    return ftx.interface
 
 
 """
