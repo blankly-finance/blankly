@@ -22,9 +22,8 @@ from pathlib import Path
 import pytest
 
 import blankly
-from blankly.exchanges.interfaces.binance.binance_auth import BinanceAuth
+
 from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
-from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 from blankly.utils.utils import AttributeDict
 
 
@@ -46,9 +45,10 @@ def binance_interface():
     keys_file_path = Path("tests/config/keys.json").resolve()
     settings_file_path = Path("tests/config/settings.json").resolve()
 
-    auth_obj = BinanceAuth(str(keys_file_path), "Spot Test Key")
-    _, binance_interface = DirectCallsFactory.create("binance", auth_obj, str(settings_file_path))
-    return binance_interface
+    binance = blankly.Binance(keys_path=keys_file_path,
+                              settings_path=settings_file_path, portfolio_name='Spot Test Key')
+
+    return binance.interface
 
 
 def test_get_exchange(binance_interface: BinanceInterface) -> None:

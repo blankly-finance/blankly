@@ -19,12 +19,27 @@
 from binance.client import Client
 
 from blankly.exchanges.exchange import Exchange
+from blankly.exchanges.auth.auth_constructor import AuthConstructor
 from blankly.utils import utils
 
 
 class Binance(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
-        Exchange.__init__(self, "binance", portfolio_name, keys_path, settings_path)
+        Exchange.__init__(self, "binance", portfolio_name, settings_path)
+
+        # Load the auth from the keys file
+        auth = AuthConstructor(keys_path, portfolio_name, 'binance', ['API_KEY', 'API_SECRET'])
+
+        if self.preferences["settings"]["use_sandbox"]:
+            calls = Client(api_key=auth.keys['API_KEY'], api_secret=auth.keys['API_SECRET'],
+                           tld=self.preferences["settings"]['binance']["binance_tld"],
+                           testnet=True)
+        else:
+            calls = Client(api_key=auth.keys['API_KEY'], api_secret=auth.keys['API_SECRET'],
+                           tld=self.preferences["settings"]['binance']["binance_tld"])
+
+        # Always finish the method with this function
+        super().construct_interface_and_cache(calls)
 
     """
     Builds information about the symbol on this exchange by making particular API calls

@@ -19,12 +19,31 @@
 
 from blankly.exchanges.exchange import Exchange
 from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
+from blankly.exchanges.auth.auth_constructor import AuthConstructor
+from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
+from blankly.exchanges.interfaces.ftx.ftx_interface import FTXInterface
+from blankly.utils import utils
 
 
 class FTX(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
-        # Giving the preferences path as none allows us to create a default
-        Exchange.__init__(self, "ftx", portfolio_name, keys_path, settings_path)
+        Exchange.__init__(self, "ftx", portfolio_name, settings_path)
+
+        # Load the auth from the keys file
+        auth = AuthConstructor(keys_path, portfolio_name, 'ftx', ['API_KEY', 'API_SECRET'])
+
+        keys = auth.keys
+        sandbox = self.preferences["settings"]["use_sandbox"]
+        calls = FTXAPI(keys['API_KEY'], keys['API_SECRET'])
+
+        # Always finish the method with this function
+        super().construct_interface_and_cache(calls)
+
+        # FTX is unique because we can continue by wrapping the interface in paper trade
+        if sandbox:
+            utils.info_print('The setting use_sandbox is enabled. FTX has been created as a paper trading '
+                             'instance.')
+            self.interface = PaperTradeInterface(FTXInterface('ftx', calls))
 
     """
     Builds information about the asset on this exchange by making particular API calls
