@@ -22,7 +22,6 @@ class KucoinInterface(ExchangeInterface):
         self._trade: KucoinAPI.Trade = self.calls['trade']
         self._user: KucoinAPI.User = self.calls['user']
 
-
     def init_exchange(self):
         fees = self.calls['user'].get_base_fee()
         try:
@@ -400,7 +399,7 @@ class KucoinInterface(ExchangeInterface):
 
         epoch_start -= resolution
 
-        self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
         """
