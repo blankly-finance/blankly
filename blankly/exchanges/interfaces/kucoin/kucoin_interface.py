@@ -1,7 +1,25 @@
+"""
+    Base authentication for kucoin
+    Copyright (C) 2021  Emerson Dove
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
+
 import time
 
 import pandas as pd
-from kucoin import client as KucoinAPI
 
 import blankly.utils.time_builder
 import blankly.utils.utils as utils
@@ -17,6 +35,11 @@ class KucoinInterface(ExchangeInterface):
         super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 180, 300, 900, 1800,
                                                                               3600, 7200, 14400, 21600,
                                                                               28800, 43200, 86400, 604800])
+
+        try:
+            from kucoin import client as KucoinAPI
+        except ImportError:
+            raise ImportError("Please \"pip install kucoin-python\" to use kucoin with blankly.")
 
         self._market: KucoinAPI.Market = self.calls['market']
         self._trade: KucoinAPI.Trade = self.calls['trade']
@@ -356,7 +379,7 @@ class KucoinInterface(ExchangeInterface):
 
         if 'msg' in response:
             raise APIException("Invalid: " + str(response['msg']) + ", was the order canceled?")
-        response["createdAt"] = utils.epoch_from_ISO8601(response["createdAt"])
+        response["createdAt"] = utils.epoch_from_iso8601(response["createdAt"])
 
         if response['type'] == 'market':
             needed = self.needed['market_order']
@@ -388,16 +411,16 @@ class KucoinInterface(ExchangeInterface):
         return utils.isolate_specific(needed, fees)
 
     def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
+        """
+        Kucoin is strange because it's exclusive instead of inclusive. This generally invovles adding an extra
+        datapoint so this is here to do some of that work
+        """
         to = kwargs['to']
 
-        if to is not None and (isinstance(to, int) or isinstance(to, float)):
-            int(to)
-        elif to is not None and isinstance(to, str):
-            resolution = blankly.time_builder.time_interval_to_seconds(to)
-
-        resolution = int(resolution)
-
-        epoch_start -= resolution
+        if isinstance(to, str):
+            epoch_start -= resolution
+        elif isinstance(to, int):
+            epoch_start = epoch_stop - (to * resolution)
 
         return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
@@ -481,6 +504,12 @@ class KucoinInterface(ExchangeInterface):
         # df[['time']] = df[['time']].astype(float)
         df[['time']] = df[['time']].astype(int)
         df[['open', 'close', 'high', 'low', 'volume']] = df[['open', 'close', 'high', 'low', 'volume']].astype(float)
+
+        try:
+            epoch_start += resolution
+            df = (df.iloc[int(-(epoch_stop-epoch_start)/resolution):]).reset_index(drop=True)
+        except Exception:
+            pass
 
         return df.reindex(columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 

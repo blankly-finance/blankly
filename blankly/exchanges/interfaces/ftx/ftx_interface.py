@@ -219,7 +219,7 @@ class FTXInterface(ExchangeInterface):
         response = self.get_calls().place_order(symbol, side, None, size, order_type="market")
 
         response["symbol"] = utils.to_blankly_symbol(response.pop("market"), 'ftx')
-        response["created_at"] = utils.epoch_from_ISO8601(response.pop("createdAt"))
+        response["created_at"] = utils.epoch_from_iso8601(response.pop("createdAt"))
 
         response = utils.isolate_specific(needed, response)
 
@@ -297,7 +297,7 @@ class FTXInterface(ExchangeInterface):
         }
 
         response["symbol"] = utils.to_blankly_symbol(response.pop("market"), 'ftx')
-        response["created_at"] = utils.epoch_from_ISO8601(response.pop("createdAt"))
+        response["created_at"] = utils.epoch_from_iso8601(response.pop("createdAt"))
         response["time_in_force"] = "GTC"
         response = utils.isolate_specific(needed, response)
 
@@ -368,7 +368,7 @@ class FTXInterface(ExchangeInterface):
                 print(f"Order type {open_order['type']} is not supported.")
                 continue
 
-            open_order['created_at'] = utils.epoch_from_ISO8601(open_order.pop('createdAt'))
+            open_order['created_at'] = utils.epoch_from_iso8601(open_order.pop('createdAt'))
             open_order = utils.isolate_specific(needed, open_order)
             response_needed_fulfilled.append(open_order)
 
@@ -407,7 +407,7 @@ class FTXInterface(ExchangeInterface):
         needed = self.choose_order_specificity(response["type"])
 
         response['symbol'] = utils.to_blankly_symbol(response.pop('market'), 'ftx')
-        response['created_at'] = utils.epoch_from_ISO8601(response.pop('createdAt'))
+        response['created_at'] = utils.epoch_from_iso8601(response.pop('createdAt'))
 
         if response["type"] == "limit":
             response['time_in_force'] = "GTC"

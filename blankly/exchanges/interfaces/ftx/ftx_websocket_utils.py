@@ -60,7 +60,7 @@ def process_trades(response: dict) -> List[dict]:
     for trade_ in trades_data:
         trade_['symbol'] = response['market']
         trade_['trade_id'] = trade_.pop('id')
-        trade_['time'] = utils.epoch_from_ISO8601(trade_['time'])
+        trade_['time'] = utils.epoch_from_iso8601(trade_['time'])
         trade_['symbol'] = trade_['symbol'].replace('/', '-')
 
         list_trades.append(utils.isolate_specific(needed, trade_))

@@ -106,7 +106,7 @@ class Tickers(Websocket):
                 received_string = self.ws.recv()
                 received = json.loads(received_string)
                 # Modify time to use epoch
-                self.__most_recent_time = blankly.utils.epoch_from_ISO8601(received["time"])
+                self.__most_recent_time = blankly.utils.epoch_from_iso8601(received["time"])
                 received["time"] = self.__most_recent_time
                 self.__time_feed.append(self.__most_recent_time)
 
@@ -164,7 +164,7 @@ class Tickers(Websocket):
             return
 
         # Modify time to use epoch
-        self.most_recent_time = blankly.utils.epoch_from_ISO8601(received["time"])
+        self.most_recent_time = blankly.utils.epoch_from_iso8601(received["time"])
         received["time"] = self.most_recent_time
         self.time_feed.append(self.most_recent_time)
 

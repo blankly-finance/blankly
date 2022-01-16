@@ -487,11 +487,11 @@ class AlpacaInterface(ExchangeInterface):
                     epoch_stop -= resolution_seconds * 1000
 
                     frames.append(self.calls.get_barset(symbol, time_interval, limit=1000,
-                                                        end=utils.ISO8601_from_epoch(epoch_stop))[symbol])
+                                                        end=utils.iso8601_from_epoch(epoch_stop))[symbol])
                     to -= 1000
 
                 frames.append(self.calls.get_barset(symbol, time_interval, limit=to,
-                                                    end=utils.ISO8601_from_epoch(epoch_stop))[symbol])
+                                                    end=utils.iso8601_from_epoch(epoch_stop))[symbol])
 
                 for i in range(len(frames)):
                     frames[i] = pd.DataFrame(frames[i])

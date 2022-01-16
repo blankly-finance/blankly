@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from blankly.utils.utils import pretty_print_JSON
+from blankly.utils.utils import pretty_print_json
 
 
 class Order:
@@ -62,10 +62,10 @@ class Order:
         return_string = self.add_new_line(return_string, "General Order Parameters: ")
 
         return_string = self.add_new_line(return_string, "Response: ")
-        return_string = self.add_new_line(return_string, pretty_print_JSON(self.get_response(), actually_print=False))
+        return_string = self.add_new_line(return_string, pretty_print_json(self.get_response(), actually_print=False))
 
         return_string = self.add_new_line(return_string, "Full Status: ")
-        return_string = self.add_new_line(return_string, pretty_print_JSON(self.get_status(full=True),
+        return_string = self.add_new_line(return_string, pretty_print_json(self.get_status(full=True),
                                                                            actually_print=False))
 
         return_string = self.add_new_line(return_string, "ID: ", self.get_id())

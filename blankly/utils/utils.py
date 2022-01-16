@@ -33,7 +33,6 @@ from blankly.utils.time_builder import time_interval_to_seconds
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
-        "account_update_time": 5000,
         "use_sandbox": False,
         "use_sandbox_websockets": False,
         "websocket_buffer_size": 10000,
@@ -45,6 +44,12 @@ default_general_settings = {
         "binance": {
             "cash": "USDT",
             "binance_tld": "us"
+        },
+        "kucoin": {
+            "cash": "USDT"
+        },
+        "ftx": {
+            "cash": "USD"
         },
         "alpaca": {
             "websocket_stream": "iex",
@@ -196,7 +201,7 @@ def load_notify_preferences(override_path=None) -> dict:
     return notify_settings.load(override_path)
 
 
-def pretty_print_JSON(json_object, actually_print=True):
+def pretty_print_json(json_object, actually_print=True):
     """
     Json pretty printer for general string usage
     """
@@ -206,13 +211,13 @@ def pretty_print_JSON(json_object, actually_print=True):
     return out
 
 
-def epoch_from_ISO8601(ISO8601) -> float:
-    return dp.parse(ISO8601).timestamp()
+def epoch_from_iso8601(iso8601: str) -> float:
+    return dp.parse(iso8601).timestamp()
 
 
 def convert_input_to_epoch(value: Union[str, dt]) -> float:
     if isinstance(value, str):
-        return epoch_from_ISO8601(value)
+        return epoch_from_iso8601(value)
     elif isinstance(value, dt):
         return value.timestamp()
     elif isinstance(value, float):
@@ -220,7 +225,7 @@ def convert_input_to_epoch(value: Union[str, dt]) -> float:
     raise ValueError("Incorrect value input given, expected string or value but got: {}".format(type(value)))
 
 
-def ISO8601_from_epoch(epoch) -> str:
+def iso8601_from_epoch(epoch) -> str:
     return dt.utcfromtimestamp(epoch).isoformat() + 'Z'
 
 # Removed due to sklearn dependency

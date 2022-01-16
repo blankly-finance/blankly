@@ -65,8 +65,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.interfaces.append(cls.Kucoin_Interface)
 
         cls.Kucoin_data = blankly.Kucoin(portfolio_name="KC Data Keys",
-                                    keys_path='./tests/config/keys.json',
-                                    settings_path="./tests/config/settings_live_enabled.json")
+                                         keys_path='./tests/config/keys.json',
+                                         settings_path="./tests/config/settings_live_enabled.json")
         cls.Kucoin_Interface_data = cls.Kucoin_data.get_interface()
         cls.data_interfaces.append(cls.Kucoin_Interface_data)
 

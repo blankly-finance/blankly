@@ -20,7 +20,7 @@
 import requests
 from typing import Optional, Dict, Any, List
 import urllib.parse
-from blankly.utils.utils import epoch_from_ISO8601
+from blankly.utils.utils import epoch_from_iso8601
 import time
 import hmac
 
@@ -307,7 +307,7 @@ class FTXAPI:
 
             if len(resp) == 0:
                 break
-            interval_end = min(epoch_from_ISO8601(time_['time']) for time_ in resp)
+            interval_end = min(epoch_from_iso8601(time_['time']) for time_ in resp)
             if lim > len(resp):
                 break
 
