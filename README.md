@@ -42,7 +42,9 @@
 
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
 
-[YouTube - Under 25 Lines Build a Binance RSI Crypto Trading Bot](https://youtu.be/pcm0h63rhUU)
+[YouTube - Under 25 Lines Build an Alpaca RSI Trading Bot](https://youtu.be/pcm0h63rhUU)
+<a target="_blank" href="https://youtu.be/pcm0h63rhUU"><img src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/github%2Fbuild_a_bot_readme_thumbnail.png?alt=media&token=5193b40b-c949-46df-b385-8214474dc26a"></a>
+
 
 ### Trade Stocks, Crypto, and Forex Seamlessly
 
