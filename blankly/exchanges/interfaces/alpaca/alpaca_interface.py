@@ -564,6 +564,10 @@ class AlpacaInterface(ExchangeInterface):
             # base_increment = product['base_increment']
             min_price = 0.0001
             max_price = 10000000000
+
+            # Guaranteed nano share if fractionable
+            base_min_size = 1e-9
+            base_increment = 1e-9
         else:
             quote_increment = current_price
             min_funds_buy = current_price
@@ -574,6 +578,10 @@ class AlpacaInterface(ExchangeInterface):
             # base_increment = product['base_increment']
             min_price = 0.0001
             max_price = 10000000000
+
+            # Always 1 if not fractionable
+            base_min_size = 1
+            base_increment = 1
 
         max_funds = current_price * 10000000000
 
@@ -595,9 +603,9 @@ class AlpacaInterface(ExchangeInterface):
             'market_order': {
                 "fractionable": fractionable,
 
-                "base_min_size": 1e-9,  # Minimum size to buy
+                "base_min_size": base_min_size,  # Minimum size to buy
                 "base_max_size": base_max_size,  # Maximum size to buy
-                "base_increment": 1e-9,  # Specifies the minimum increment for the base_asset.
+                "base_increment": base_increment,  # Specifies the minimum increment for the base_asset.
 
                 "quote_increment": quote_increment,  # Specifies the min order price as well as the price increment.
                 "buy": {

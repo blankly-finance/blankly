@@ -114,6 +114,10 @@ class KucoinInterface(ExchangeInterface):
         """
         accounts = self._user.get_account_list()
 
+        # If we have no positions this is a case that things can go wrong
+        if isinstance(accounts, dict):
+            accounts = []
+
         parsed_dictionary = utils.AttributeDict({})
 
         # We have to sort through it if the accounts are none
@@ -124,12 +128,21 @@ class KucoinInterface(ExchangeInterface):
                         'available': float(i['available']),
                         'hold': float(i['holds'])
                     })
-            raise ValueError("Symbol not found")
+
+        # If the first loop didn't find it we'll try again here
         for i in range(len(accounts)):
             parsed_dictionary[accounts[i]['currency']] = utils.AttributeDict({
                 'available': float(accounts[i]['available']),
                 'hold': float(accounts[i]['holds'])
             })
+
+        parsed_dictionary = utils.add_all_products(parsed_dictionary, self.get_products())
+
+        if symbol is not None:
+            if symbol in parsed_dictionary:
+                return parsed_dictionary[symbol]
+            else:
+                raise KeyError(f'Could not find account for asset {symbol}')
 
         return parsed_dictionary
 
@@ -263,6 +276,10 @@ class KucoinInterface(ExchangeInterface):
         response_details["created_at"] = response_details.pop('createdAt')
         response_details["time_in_force"] = response_details.pop('timeInForce')
         response_details["status"] = response_details.pop('isActive')
+        if response_details["status"]:
+            response_details["status"] = 'pending'
+        else:
+            response_details["status"] = 'done'
         response_details = utils.isolate_specific(needed, response_details)
         return LimitOrder(order, response_details, self)
 
@@ -321,21 +338,26 @@ class KucoinInterface(ExchangeInterface):
          }
         """
         if symbol is None:
-            open_orders = list(self._trade.get_order_list()["items"])
+            open_orders = list(self._trade.get_order_list(status='active')["items"])
         else:
-            open_orders = list(self._trade.get_order_list(symbol=symbol)["items"])
+            open_orders = list(self._trade.get_order_list(status='active', symbol=symbol)["items"])
 
         if len(open_orders) == 0:
             return []
         if open_orders[0] == 'msg':
-            raise InvalidOrder("Invalid Order: " + str(open_orders))
+            raise APIException("Error: " + str(open_orders))
 
         for i in range(len(open_orders)):
             # open_orders[i]["createdAt"] = utils.epoch_from_ISO8601(open_orders[i]["createdAt"])
             needed = self.choose_order_specificity(open_orders[i]['type'])
             open_orders[i]["time_in_force"] = open_orders[i].pop('timeInForce')
-            open_orders[i]["created_at"] = open_orders[i].pop('created_at')
+            open_orders[i]["created_at"] = open_orders[i].pop('createdAt')
             open_orders[i]["status"] = open_orders[i].pop('isActive')
+            if open_orders[i]["status"]:
+                open_orders[i]["status"] = 'pending'
+            else:
+                open_orders[i]["status"] = 'done'
+
             open_orders[i] = utils.isolate_specific(needed, open_orders[i])
 
         return open_orders
@@ -379,7 +401,9 @@ class KucoinInterface(ExchangeInterface):
 
         if 'msg' in response:
             raise APIException("Invalid: " + str(response['msg']) + ", was the order canceled?")
-        response["createdAt"] = utils.epoch_from_iso8601(response["createdAt"])
+
+        if isinstance(response['createdAt'], str):
+            response["createdAt"] = utils.epoch_from_iso8601(response["createdAt"])
 
         if response['type'] == 'market':
             needed = self.needed['market_order']
@@ -390,6 +414,10 @@ class KucoinInterface(ExchangeInterface):
 
         response["created_at"] = response.pop('createdAt')
         response["status"] = response.pop('isActive')
+        if response["status"]:
+            response["status"] = 'pending'
+        else:
+            response["status"] = 'done'
         response["time_in_force"] = response.pop('timeInForce')
 
         return utils.isolate_specific(needed, response)

@@ -18,7 +18,7 @@
 
 
 def get_valid_symbol(exchange: str):
-    if exchange == 'binance' or exchange == 'kucoin':
+    if exchange == 'binance':
         return 'BTC-USDT'
     elif exchange == 'coinbase_pro':
         return 'BTC-USD'
@@ -28,5 +28,7 @@ def get_valid_symbol(exchange: str):
         return 'EUR-USD'
     elif exchange == 'ftx':
         return 'BTC-USD'
+    elif exchange == 'kucoin':
+        return 'ETH-USDT'
     else:
         raise LookupError("Specified exchange not found.")

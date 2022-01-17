@@ -750,3 +750,20 @@ def order_protection(func):
             raise Exception("Blocked attempt at live order inside backtesting environment")
         return func(*args, **kwargs)
     return wrapper
+
+
+def add_all_products(nonzero_products: dict, unused_products: list):
+    base_symbols = []
+    quote_symbols = []
+    for i in unused_products:
+        base_symbols.append(get_base_asset(i['symbol']))
+        quote_symbols.append(get_quote_asset(i['symbol']))
+
+    for i in (base_symbols + quote_symbols):
+        if i not in nonzero_products:
+            nonzero_products[i] = {
+                'available': 0.0,
+                'hold': 0.0
+            }
+
+    return nonzero_products

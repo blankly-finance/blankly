@@ -156,20 +156,8 @@ class FTXInterface(ExchangeInterface):
                     'available': float(account['available']),
                     'hold': float(account['hold'])
                 })
-            all_products = self.get_products()
-            base_symbols = []
-            quote_symbols = []
-            for i in all_products:
-                base_symbols.append(utils.get_base_asset(i['symbol']))
-                quote_symbols.append(utils.get_quote_asset(i['symbol']))
 
-            for i in (base_symbols + quote_symbols):
-                if i not in parsed_dictionary:
-                    parsed_dictionary[i] = {
-                        'available': 0.0,
-                        'hold': 0.0
-                    }
-            return parsed_dictionary
+            return utils.add_all_products(parsed_dictionary, self.get_products())
 
     """
     needed:
