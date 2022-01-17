@@ -37,7 +37,6 @@ setup(
         'pandas >= 1.1.5',
         'pandas_market_calendars >= 3.2',
         'python-binance >= 1.0.15',
-        'kucoin-python >= 1.0.10'
         'requests >= 2.26.0',
         'websocket-client >= 1.2.1',
     ],

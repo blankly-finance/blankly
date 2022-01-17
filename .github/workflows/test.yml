@@ -28,6 +28,7 @@ jobs:
         pip install -e .
         pip install pytest
         pip install pytest-mock
+        pip install kucoin-python
 
     - name: Inject Keys
       run: |

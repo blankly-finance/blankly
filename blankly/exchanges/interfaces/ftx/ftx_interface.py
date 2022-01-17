@@ -468,16 +468,16 @@ class FTXInterface(ExchangeInterface):
         window_open = epoch_start
         history = []
         # Iterate while it's more than max
-        while need > 1501:
-            # Close is always 1501 points ahead
-            window_close = window_open + 1501 * resolution
+        while need > 1500:
+            # Close is always 1500 points ahead
+            window_close = window_open + 1500 * resolution
 
             response = self.get_calls().get_product_history(symbol, window_open, window_close, resolution)
 
             history = history + response
 
             window_open = window_close
-            need -= 1501
+            need -= 1500
             time.sleep(.2)
             utils.update_progress((initial_need - need) / initial_need)
 
