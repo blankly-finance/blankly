@@ -36,10 +36,9 @@
 
 ## Why Blankly? 
 
-Blankly is an elegant python library for interacting with crypto, stocks, and forex for in a consistent and streamlined way. Now, no more reading API or struggling to get data. Blankly offers a powerful feature-set, optimized for speed and ease of use, better backtesting, and ultimately better models. 
+​	Blankly is a live trading engine, backtest runner and development framework wrapped into one powerful open source package. Models can be instantly backtested in one line, paper traded, sandbox tested and run live by simply changing a single line. We built blankly for every type of quant including training & running ML models in the same environment, cross-exchange/cross-symbol arbitrage, and even long/short positions on stocks.
 
-We're bridging the gap between local development systems & live APIs by building a framework which allows backtesting, 
-paper trading, sandbox testing, and live cross-exchange deployment without modifying a single line of trading logic.
+​	Convert your existing model or build a new one - unlock the ability to run & optimize across all of our supported exchanges. Getting started is easy - just `pip install blankly` and `blankly init`.
 
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
 
@@ -132,7 +131,7 @@ $ blankly init
 ```
 This will initialize your working directory.
 
-The command will create the files `keys.json`, `settings.json`, `backtest.json`, `deploy.json` and an example script called `bot.py`.
+The command will create the files `keys.json`, `settings.json`, `backtest.json`, `blankly.json` and an example script called `bot.py`.
 
 If you don't want to use our `init` command, you can find the same files in the `examples` folder under [`settings.json`](https://github.com/Blankly-Finance/Blankly/blob/main/examples/settings.json) and [`keys_example.json`](https://github.com/Blankly-Finance/Blankly/blob/main/examples/keys_example.json)
 
@@ -142,7 +141,7 @@ More information can be found on our [docs](https://docs.blankly.finance)
 
 ### Directory format
 
-The working directory format should have at least these files:
+The working directory format should have *at least* these files:
 ```
 Project
    |-bot.py
@@ -163,17 +162,18 @@ For more info, and ways to do more advanced things, check out our [getting start
 
 ## Supported Exchanges
 
-| Exchange      | Integration | Websockets | Paper Trading | Backtesting |
-|---------------|-------------|------------|---------------|-------------|
-| Coinbase Pro  | 🟢          | 🟢         | 🟢            | 🟢          |
-| Binance       | 🟢          | 🟢         | 🟢            | 🟢          |
-| Alpaca        | 🟢          | 🟢         | 🟢            | 🟢          |
-| OANDA         | 🟢          | 🟡         | 🟢            | 🟢          |
-| FTX           | 🟢          | 🟢         | 🟡            | 🟢          |
-| KuCoin        | 🟡          | 🟡         | 🟡            | 🟡          |
-| TD Ameritrade | 🔴          | 🔴         | 🔴            | 🔴          |
-| Webull        | 🔴          | 🔴         | 🔴            | 🔴          |
-| Robinhood     | 🔴          | 🔴         | 🔴            | 🔴          |
+| Exchange      | Live Trading | Websockets | Paper Trading | Backtesting |
+| ------------- | ------------ | ---------- | ------------- | ----------- |
+| Coinbase Pro  | 🟢            | 🟢          | 🟢             | 🟢           |
+| Binance       | 🟢            | 🟢          | 🟢             | 🟢           |
+| Alpaca        | 🟢            | 🟢          | 🟢             | 🟢           |
+| OANDA         | 🟢            | 🟡          | 🟢             | 🟢           |
+| FTX           | 🟢            | 🟢          | 🟢             | 🟢           |
+| KuCoin        | 🟢            | 🟡          | 🟢             | 🟢           |
+| Kraken        | 🟡            | 🟡          | 🟡             | 🟡           |
+| TD Ameritrade | 🔴            | 🔴          | 🔴             | 🔴           |
+| Webull        | 🔴            | 🔴          | 🔴             | 🔴           |
+| Robinhood     | 🔴            | 🔴          | 🔴             | 🔴           |
 
 
 🟢  = working
@@ -181,8 +181,6 @@ For more info, and ways to do more advanced things, check out our [getting start
 🟡  = in development, some or most features are working
 
 🔴  = planned but not yet in development
-
-* Interface calls take ~300 µs extra to homogenize the exchange data.
 
 ## RSI Example
 
