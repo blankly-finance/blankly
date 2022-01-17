@@ -689,7 +689,7 @@ def info_print(message):
     Args:
         message: The message to print. INFO: will be prepended
     """
-    print('INFO: ' + message, file=sys.stderr)
+    print('INFO: ' + str(message), file=sys.stderr)
 
 
 class Email:

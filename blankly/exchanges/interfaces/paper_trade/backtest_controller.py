@@ -1007,7 +1007,7 @@ class BackTestController:
                                                                               None)
         # Lastly remove Nan values in the metrics
         for i in metrics_indicators:
-            if np.isnan(metrics_indicators[i]):
+            if not isinstance(metrics_indicators[i], str) and np.isnan(metrics_indicators[i]):
                 metrics_indicators[i] = None
 
         # Assign all these new values back to the result object

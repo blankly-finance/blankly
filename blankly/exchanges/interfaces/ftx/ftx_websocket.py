@@ -84,6 +84,7 @@ class Tickers(Websocket):
         if received_dict['type'] == 'subscribed':
             info_print(f"Subscribed to {received_dict['channel']}")
             return
+
         parsed_received_trades = websocket_utils.process_trades(received_dict)
         for received in parsed_received_trades:
             # ISO8601 is converted to epoch in process_trades

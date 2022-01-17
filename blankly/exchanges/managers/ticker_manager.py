@@ -101,6 +101,7 @@ class TickerManager(WebsocketManager):
                                         "aggTrade",
                                         log=log)
             ticker.append_callback(callback)
+            override_symbol = override_symbol.upper()
             self.__tickers['binance'][override_symbol] = ticker
             return ticker
         elif exchange_name == "alpaca":
@@ -126,6 +127,8 @@ class TickerManager(WebsocketManager):
         elif exchange_name == "ftx":
             if override_symbol is None:
                 override_symbol = self.__default_symbol
+
+            override_symbol = blankly.utils.to_exchange_symbol(override_symbol, "ftx")
 
             if sandbox_mode:
                 raise ValueError("Error: FTX does not have a sandbox mode")

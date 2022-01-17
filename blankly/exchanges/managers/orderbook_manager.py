@@ -81,17 +81,13 @@ class OrderbookManager(WebsocketManager):
         self.__default_exchange = default_exchange
         self.__default_currency = default_symbol
 
-        self.__orderbooks = {}
-        self.__orderbooks[default_exchange] = {}
+        self.__orderbooks = {default_exchange: {}}
 
-        self.__websockets = {}
-        self.__websockets[default_exchange] = {}
+        self.__websockets = {default_exchange: {}}
 
-        self.__websockets_callbacks = {}
-        self.__websockets_callbacks[default_exchange] = {}
+        self.__websockets_callbacks = {default_exchange: {}}
 
-        self.__websockets_kwargs = {}
-        self.__websockets_kwargs[default_exchange] = {}
+        self.__websockets_kwargs = {default_exchange: {}}
 
         # Create the abstraction for adding many managers
         super().__init__(self.__websockets, default_symbol, default_exchange)
@@ -123,6 +119,10 @@ class OrderbookManager(WebsocketManager):
                 self.__websockets_kwargs[override_exchange] = {}
             # Write this value so it can be used later
             exchange_name = override_exchange
+
+        # Ensure that we always have a key the relevant orderbook
+        if exchange_name not in self.__orderbooks:
+            self.__orderbooks[exchange_name] = {}
 
         if exchange_name == "coinbase_pro":
             if override_symbol is None:
