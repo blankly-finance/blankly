@@ -60,41 +60,40 @@ class StrategyTest(unittest.TestCase):
                   'settings_path': "./tests/config/settings.json"}
 
         self.exchanges = [
-            blankly.FTX(**kwargs),
             blankly.Kucoin(**kwargs),
+            blankly.FTX(**kwargs),
             blankly.CoinbasePro(**kwargs),
             blankly.Binance(**kwargs),
             blankly.Oanda(**kwargs),
-            # TODO for some reason if you run on alpaca before last it will stay on AAPL and not go to the next symbol
             blankly.Alpaca(**kwargs)
         ]
 
-        self.strats = []
         for i in range(len(self.exchanges)):
             strategy = blankly.Strategy(self.exchanges[i])
             type_ = self.exchanges[i].interface.get_exchange_type()
             strategy.add_price_event(self.price_event, get_valid_symbol(type_), '1d')
             strategy.add_bar_event(self.bar_event, get_valid_symbol(type_), '1d')
             print(f'Associated {get_valid_symbol(type_)} with {type_}.')
-            self.strats.append(strategy)
 
-        for i in range(len(self.exchanges)):
             print(f"Testing: {self.exchanges[i].interface.get_exchange_type()} without benchmark")
             quote_asset = get_quote_asset(get_valid_symbol(self.exchanges[i].interface.get_exchange_type()))
-            self.strats[i].backtest(to='1y', settings_path='./tests/config/backtest.json',
-                                    quote_account_value_in=quote_asset,
-                                    initial_values={quote_asset: 1000000000})
+            strategy.backtest(to='1y', settings_path='./tests/config/backtest.json',
+                              quote_account_value_in=quote_asset,
+                              initial_values={quote_asset: 1000000000},
+                              benchmark_symbol=None,
+                              continuous_caching=False)
             # Of course, it'll pass if the function never runs, make sure it does
             assert self.ran_price_event
             self.ran_price_event = False
             assert self.ran_bar_event
             self.ran_bar_event = False
             print(f"Testing: {self.exchanges[i].interface.get_exchange_type()} with benchmark")
-            self.strats[i].backtest(to='1y', settings_path='./tests/config/backtest.json',
-                                    quote_account_value_in=get_quote_asset(get_valid_symbol(
+            strategy.backtest(to='1y', settings_path='./tests/config/backtest.json',
+                              quote_account_value_in=get_quote_asset(get_valid_symbol(
                                         self.exchanges[i].interface.get_exchange_type())),
-                                    benchmark_symbol=get_valid_symbol(self.exchanges[i].interface.get_exchange_type()),
-                                    initial_values={quote_asset: 1000000000})
+                              benchmark_symbol=get_valid_symbol(self.exchanges[i].interface.get_exchange_type()),
+                              initial_values={quote_asset: 1000000000},
+                              continuous_caching=False)
             assert self.ran_price_event
             self.ran_price_event = False
             assert self.ran_bar_event

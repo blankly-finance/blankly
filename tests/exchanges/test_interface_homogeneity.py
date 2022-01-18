@@ -259,11 +259,11 @@ class InterfaceHomogeneity(unittest.TestCase):
         coinbase_sell = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'sell', 100000, 1)
         self.check_limit_order(coinbase_sell, 'sell', 1, 'BTC-USD')
 
-        kucoin_buy = self.Kucoin_Interface.limit_order('BTC-USDT', 'buy', .01, 1)
-        self.check_limit_order(kucoin_buy, 'buy', 1, 'BTC-USDT')
+        kucoin_buy = self.Kucoin_Interface.limit_order('ETH-USDT', 'buy', .01, 1)
+        self.check_limit_order(kucoin_buy, 'buy', 1, 'ETH-USDT')
 
-        kucoin_sell = self.Kucoin_Interface.limit_order('BTC-USDT', 'sell', 100000, 1)
-        self.check_limit_order(kucoin_sell, 'sell', 1, 'BTC-USDT')
+        kucoin_sell = self.Kucoin_Interface.limit_order('ETH-USDT', 'sell', 100000, 1)
+        self.check_limit_order(kucoin_sell, 'sell', 1, 'ETH-USDT')
 
         alpaca_buy = self.Alpaca_Interface.limit_order('AAPL', 'buy', 10, 1)
         self.check_limit_order(alpaca_buy, 'buy', 1, 'AAPL')
@@ -287,7 +287,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         open_orders = {
             'coinbase_pro': self.Coinbase_Pro_Interface.get_open_orders('BTC-USD'),
             'binance': self.Binance_Interface.get_open_orders('BTC-USDT'),
-            'kucoin': self.Kucoin_Interface.get_open_orders('BTC-USDT'),
+            'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
             'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
             'oanda': self.Oanda_Interface.get_open_orders('EUR-USD')
         }
@@ -329,8 +329,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_buy.get_id()))
         cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_sell.get_id()))
 
-        cancels.append(self.Kucoin_Interface.cancel_order('BTC-USDT', kucoin_buy.get_id()))
-        cancels.append(self.Kucoin_Interface.cancel_order('BTC-USDT', kucoin_sell.get_id()))
+        cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', kucoin_buy.get_id()))
+        cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', kucoin_sell.get_id()))
 
         cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_sell.get_id()))
         cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_buy.get_id()))

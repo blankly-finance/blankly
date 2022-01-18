@@ -113,27 +113,32 @@ class KucoinInterface(ExchangeInterface):
               }
         """
         accounts = self._user.get_account_list()
+        trade_accounts = []
+        # Filter for only the trade accounts
+        for i in accounts:
+            if i['type'] == 'trade':
+                trade_accounts.append(i)
 
         # If we have no positions this is a case that things can go wrong
-        if isinstance(accounts, dict):
-            accounts = []
-
-        parsed_dictionary = utils.AttributeDict({})
+        if isinstance(trade_accounts, dict):
+            trade_accounts = []
 
         # We have to sort through it if the accounts are none
         if symbol is not None:
-            for i in accounts:
+            for i in trade_accounts:
                 if i["currency"] == symbol:
                     return utils.AttributeDict({
                         'available': float(i['available']),
                         'hold': float(i['holds'])
                     })
 
+        parsed_dictionary = utils.AttributeDict({})
+
         # If the first loop didn't find it we'll try again here
-        for i in range(len(accounts)):
-            parsed_dictionary[accounts[i]['currency']] = utils.AttributeDict({
-                'available': float(accounts[i]['available']),
-                'hold': float(accounts[i]['holds'])
+        for i in range(len(trade_accounts)):
+            parsed_dictionary[trade_accounts[i]['currency']] = utils.AttributeDict({
+                'available': float(trade_accounts[i]['available']),
+                'hold': float(trade_accounts[i]['holds'])
             })
 
         parsed_dictionary = utils.add_all_products(parsed_dictionary, self.get_products())
@@ -237,7 +242,6 @@ class KucoinInterface(ExchangeInterface):
             raise InvalidOrder("Invalid Order: " + response["msg"])
 
         response_details = self._trade.get_order_details(response['orderId'])
-        print(response_details)
         """
                {
                    "id": "5c35c02703aa673ceec2a168", //
@@ -289,7 +293,7 @@ class KucoinInterface(ExchangeInterface):
            dict: Containing the order_id of cancelled order. Example::
            { "cancelledOrderIds": ["c5ab5eae-76be-480e-8961-00792dc7e138"]}
         """
-        return {"order_id": self._trade.cancel_order(order_id)}
+        return {"order_id": self._trade.cancel_order(order_id)['cancelledOrderIds'][0]}
 
     def get_open_orders(self, symbol=None):
         """

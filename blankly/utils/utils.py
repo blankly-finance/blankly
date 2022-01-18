@@ -752,10 +752,10 @@ def order_protection(func):
     return wrapper
 
 
-def add_all_products(nonzero_products: dict, unused_products: list):
+def add_all_products(nonzero_products: dict, all_products: list):
     base_symbols = []
     quote_symbols = []
-    for i in unused_products:
+    for i in all_products:
         base_symbols.append(get_base_asset(i['symbol']))
         quote_symbols.append(get_quote_asset(i['symbol']))
 
