@@ -57,11 +57,16 @@ class CryptoWebsockets:
 
         self.price_manager.create_ticker(self.coinbase_price, override_symbol='BTC-USD',
                                          override_exchange='coinbase_pro')
+
+        # Subscribe to a bunch with binance
         self.price_manager.create_ticker(self.binance_price, override_symbol='BTC-USDT', override_exchange='binance')
+        self.price_manager.create_ticker(self.binance_price, override_symbol='ETH-USDT', override_exchange='binance')
+
         self.price_manager.create_ticker(self.ftx_price, override_symbol='BTC-USD', override_exchange='ftx')
 
         self.orderbook_manager.create_orderbook(self.coinbase_orderbook, override_symbol='BTC-USD',
                                                 override_exchange='coinbase_pro')
+
         self.orderbook_manager.create_orderbook(self.binance_orderbook, override_symbol='BTC-USDT',
                                                 override_exchange='binance')
 
@@ -131,6 +136,7 @@ class CryptoWebsockets:
         if self.validate_price_event(message):
             self.validated_responses['prices']['binance'] = True
             self.price_manager.close_websocket('BTC-USDT', 'binance')
+            self.price_manager.close_websocket('ETH-USDT', 'binance')
 
     def ftx_price(self, message):
         if self.validate_price_event(message):
