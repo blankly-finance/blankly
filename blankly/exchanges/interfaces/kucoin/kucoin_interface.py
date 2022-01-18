@@ -517,7 +517,7 @@ class KucoinInterface(ExchangeInterface):
 
             window_open = window_close
             need -= 1500
-            time.sleep(.4)
+            time.sleep(1)
             utils.update_progress((initial_need - need) / initial_need)
 
         # Fill the remainder
