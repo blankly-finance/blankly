@@ -19,11 +19,21 @@
 import alpaca_trade_api
 
 from blankly.exchanges.exchange import Exchange
+from blankly.exchanges.auth.auth_constructor import AuthConstructor
+from blankly.exchanges.interfaces.alpaca.alpaca_api import create_alpaca_client
 
 
 class Alpaca(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
-        Exchange.__init__(self, 'alpaca', portfolio_name, keys_path, settings_path)
+        Exchange.__init__(self, "alpaca", portfolio_name, settings_path)
+
+        # Load the auth from the keys file
+        auth = AuthConstructor(keys_path, portfolio_name, 'alpaca', ['API_KEY', 'API_SECRET'])
+
+        calls = create_alpaca_client(auth, self.preferences["settings"]["use_sandbox"])
+
+        # Always finish the method with this function
+        super().construct_interface_and_cache(calls)
 
     def get_exchange_state(self):
         return self.interface.get_fees()

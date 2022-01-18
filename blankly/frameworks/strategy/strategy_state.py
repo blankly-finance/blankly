@@ -17,7 +17,7 @@
 """
 
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface as Interface
-from blankly.utils.utils import AttributeDict, get_base_asset, get_quote_asset, format_with_new_line, pretty_print_JSON
+from blankly.utils.utils import AttributeDict, get_base_asset, get_quote_asset, format_with_new_line, pretty_print_json
 
 
 class StrategyState:
@@ -26,7 +26,7 @@ class StrategyState:
     resolution: int
 
     """Strategy State"""
-    def __init__(self, strategy, variables: AttributeDict, symbol, resolution: int = None):
+    def __init__(self, strategy, variables: AttributeDict, symbol, resolution: [int, float] = None):
         self.strategy = strategy
         self.variables = variables
         self.resolution = resolution
@@ -59,6 +59,6 @@ class StrategyState:
 
         output = format_with_new_line(output, "Variables: ")
 
-        output = format_with_new_line(output, pretty_print_JSON(self.variables, actually_print=False))
+        output = format_with_new_line(output, pretty_print_json(self.variables, actually_print=False))
 
         return output

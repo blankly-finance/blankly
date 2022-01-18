@@ -26,5 +26,9 @@ def get_valid_symbol(exchange: str):
         return 'AAPL'
     elif exchange == 'oanda':
         return 'EUR-USD'
+    elif exchange == 'ftx':
+        return 'BTC-USD'
+    elif exchange == 'kucoin':
+        return 'ETH-USDT'
     else:
         raise LookupError("Specified exchange not found.")

@@ -19,7 +19,6 @@
 
 import json
 
-from blankly.exchanges.auth.abc_auth import ABCAuth
 import requests
 from collections import OrderedDict
 
@@ -40,9 +39,9 @@ class OandaAPI:
     API_URL = 'https://api-fxtrade.oanda.com'
     API_PRACTICE_URL = 'https://api-fxpractice.oanda.com'
 
-    def __init__(self, auth: ABCAuth, sandbox: bool = False):
-        self.__api_key = auth.keys['PERSONAL_ACCESS_TOKEN']
-        self.default_account = auth.keys['ACCOUNT_ID']
+    def __init__(self, personal_access_token: str, account_id: str, sandbox: bool = False):
+        self.__api_key = personal_access_token
+        self.default_account = account_id
 
         if not sandbox:
             self.__api_url = self.API_URL

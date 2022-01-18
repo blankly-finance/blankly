@@ -199,13 +199,14 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
             # Figure out the next point and then subtract to the last stamp
             most_recent_valid_resolution = utils.ceil_date(dt.now(),
                                                            seconds=resolution_seconds).timestamp() - resolution_seconds
-            # Binance is nice enough to update OHLCV data so we have to exclude that by subtracting a resolution
+            # Binance is nice enough to update OHLCV data, so we have to exclude that by subtracting a resolution
             epoch_stop = most_recent_valid_resolution - resolution_seconds
             count_from = most_recent_valid_resolution
         else:
             if isinstance(end_date, str):
                 parsed_date = parser.parse(end_date)
-            elif isinstance(end_date, float) or isinstance(end_date, numpy.int64) or isinstance(end_date, int):
+            elif isinstance(end_date, float) or isinstance(end_date, numpy.int64) or isinstance(end_date, int) or \
+                    isinstance(end_date, numpy.int32):
                 parsed_date = dt.fromtimestamp(end_date)
             else:
                 parsed_date = end_date

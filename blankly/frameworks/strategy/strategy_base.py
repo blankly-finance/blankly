@@ -36,10 +36,12 @@ from blankly.exchanges.strategy_logger import StrategyLogger
 
 
 class Strategy:
-    def __init__(self, exchange: Exchange, currency_pair='BTC-USD'):
+    def __init__(self, exchange: Exchange):
         """
         Create a new strategy object. A strategy can be used to run your code live while be backtestable and modular
          across exchanges.
+         Args:
+             exchange: An exchange object. This can be created by doing something similar to exchange = blankly.Alpaca()
 
         Function Signatures:
         init(symbol: str, state: blankly.StrategyState)
@@ -50,10 +52,13 @@ class Strategy:
         """
         self.__remote_backtesting = blankly._backtesting
         self.__exchange = exchange
-        self.ticker_manager = blankly.TickerManager(self.__exchange.get_type(), currency_pair)
-        self.orderbook_manager = blankly.OrderbookManager(self.__exchange.get_type(), currency_pair)
 
-        self.__scheduling_pair = []  # Object to hold a currency and the resolution its pulled at: ["BTC-USD", 60]
+        blankly.reporter.export_used_exchange(self.__exchange.get_type())
+
+        self.ticker_manager = blankly.TickerManager(self.__exchange.get_type(), '')
+        self.orderbook_manager = blankly.OrderbookManager(self.__exchange.get_type(), '')
+
+        self.__scheduling_pair = []  # Object to hold a currency and the resolution it's pulled at: ["BTC-USD", 60]
         self.interface = StrategyLogger(interface=exchange.get_interface(), strategy=self)
 
         # Create a cache for the current interface, and a wrapped paper trade object for user backtesting
@@ -89,6 +94,15 @@ class Strategy:
         hashed = hash(callable_)
         self.__variables[hashed][key] = value
 
+    # # TODO these could have some parameters assigned by a super class
+    # def add_arbitrage_event(self, callback: typing.Callable, symbols: list, resolution: typing.Union[str, float],
+    #                         init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False,
+    #                         variables: dict = None):
+    #     """
+    #     Add Arbitrage Event - This allows periodic events where prices are gathered asynchronously. When run live at a
+    #      small interval, this allows minimal latency when gathering the price of the requested symbols.
+    #     """
+
     def add_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
                         init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False,
                         variables: dict = None):
@@ -105,7 +119,8 @@ class Strategy:
             synced: Sync the function to
             variables: A dictionary to initialize the state's internal values
         """
-        self.__custom_price_event(callback, symbol, resolution, init, synced, teardown=teardown, variables=variables)
+        self.__custom_price_event(callback=callback, symbol=symbol, resolution=resolution, init=init, synced=synced,
+                                  teardown=teardown, variables=variables, type_='price_event')
 
     def add_bar_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
                       init: typing.Callable = None, teardown: typing.Callable = None, variables: dict = None):
@@ -121,15 +136,22 @@ class Strategy:
                 positions, writing or cleaning up data or anything else useful
             variables: A dictionary to initialize the state's internal values
         """
-        self.__custom_price_event(callback, symbol, resolution, init, synced=True, bar=True, teardown=teardown,
-                                  variables=variables)
+        self.__custom_price_event(type_='bar', synced=True, bar=True, callback=callback, symbol=symbol,
+                                  resolution=resolution, init=init, teardown=teardown, variables=variables)
 
-    def __custom_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
-                             init: typing.Callable = None, synced: bool = False, bar: bool = False,
+    def __custom_price_event(self,
+                             type_: str,
+                             callback: typing.Callable = None,
+                             symbol: str = None,
+                             resolution: typing.Union[str, float] = None,
+                             init: typing.Callable = None,
+                             synced: bool = False,
+                             bar: bool = False,
                              teardown: typing.Callable = None, variables: dict = None):
         """
         Add Price Event
         Args:
+            type_: The type of event that the price event refers to
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
             symbol: Currency pair to create the price event for
             resolution: The resolution that the callback will be run - in seconds
@@ -139,17 +161,14 @@ class Strategy:
                 positions, writing or cleaning up data or anything else useful
             synced: Sync the function to
             bar: Get the OHLCV data for a valid exchange interval
+            variables: Initial dictionary to write into the state variable
         """
         # Make sure variables is always an empty dictionary if None
         if variables is None:
             variables = {}
-
         resolution = time_interval_to_seconds(resolution)
 
-        if bar:
-            self.__scheduling_pair.append([symbol, resolution, 'bar'])
-        else:
-            self.__scheduling_pair.append([symbol, resolution, 'price_event'])
+        self.__scheduling_pair.append([symbol, resolution, type_])
 
         variables_ = AttributeDict(variables)
         state = StrategyState(self, variables_, symbol, resolution=resolution)
@@ -187,6 +206,9 @@ class Strategy:
                                   teardown=teardown,
                                   symbol=symbol)
             )
+
+        # Export a new symbol to the backend
+        blankly.reporter.export_used_symbol(symbol)
 
     def __idle_event(self, *args, **kwargs):
         """
@@ -374,8 +396,8 @@ class Strategy:
     def backtest(self,
                  to: str = None,
                  initial_values: dict = None,
-                 start_date: str = None,
-                 end_date: str = None,
+                 start_date: typing.Union[str, float, int] = None,
+                 end_date: typing.Union[str, float, int] = None,
                  save: bool = False,
                  settings_path: str = None,
                  callbacks: list = None,
@@ -391,8 +413,10 @@ class Strategy:
             to (str): Declare an amount of time before now to backtest from: ex: '5y' or '10h'
             initial_values (dict): Dictionary of initial value sizes (i.e { 'BTC': 3, 'USD': 5650}).
                 Using this will override the values that are currently on your exchange.
-            start_date (str): Override argument "to" by specifying a start date such as "03/06/2018"
-            end_date (str): End the backtest at a date such as "03/06/2018"
+            start_date (str): Override argument "to" by specifying a start date such as "03/06/2018". This can also
+                be an epoch time as a float or int.
+            end_date (str): End the backtest at a date such as "03/06/2018". This can also be an epoch type as a float
+                or int
             save (bool): Save the price data references to the data required for the backtest as well as
                 overriden settings.
             settings_path (str): Path to the backtest.json file.
@@ -455,14 +479,20 @@ class Strategy:
             end = time.time()
 
         if start_date is not None:
-            start_date = pd.to_datetime(start_date)
-            epoch = datetime.datetime.utcfromtimestamp(0)
-            start = (start_date - epoch).total_seconds()
+            if isinstance(end_date, (int, float)):
+                start = start_date
+            else:
+                start_date = pd.to_datetime(start_date)
+                epoch = datetime.datetime.utcfromtimestamp(0)
+                start = (start_date - epoch).total_seconds()
 
         if end_date is not None:
-            end_date = pd.to_datetime(end_date)
-            epoch = datetime.datetime.utcfromtimestamp(0)
-            end = (end_date - epoch).total_seconds()
+            if isinstance(end_date, (int, float)):
+                end = end_date
+            else:
+                end_date = pd.to_datetime(end_date)
+                epoch = datetime.datetime.utcfromtimestamp(0)
+                end = (end_date - epoch).total_seconds()
 
         # If start/ends are specified unevenly
         if (start_date is None and end_date is not None) or (start_date is not None and end_date is None):

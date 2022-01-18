@@ -16,9 +16,12 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import requests
+import json
 
-blankly_frontend_api_url = "http://localhost:8081"
+import requests
+from blankly.utils.utils import info_print
+
+blankly_deployment_url = 'https://deploy.blankly.finance'
 
 
 class API:
@@ -26,7 +29,7 @@ class API:
         if override_url:
             self.url = override_url
         else:
-            self.url = blankly_frontend_api_url
+            self.url = blankly_deployment_url
 
         self.token = None
         self.auth_data = self.exchange_token(token)
@@ -61,7 +64,7 @@ class API:
 
         # Add the token if we have it
         if self.token is not None:
-            kwargs['headers'] = {'token': self.token, 'uid': self.user_id}
+            kwargs['headers'] = {'token': self.token}
 
         try:
             if type_ == "get":
@@ -74,6 +77,11 @@ class API:
                 raise LookupError("Request type is not implemented or does not exist.")
         except requests.exceptions.ConnectionError:
             raise requests.exceptions.ConnectionError("Failed to connect to deployment service.")
+
+        # Show info that the request was not authorized but still
+        #  allow the process to continue
+        if out.status_code == 401:
+            info_print("Unauthorized request.")
 
         try:
             return out.json()
@@ -91,10 +99,10 @@ class API:
         """
         Get the details route
         """
-        return self.__request('get', 'model/details', data={'modelId': model_id})
+        return self.__request('post', 'model/details', data={'modelId': model_id})
 
-    def get_status(self, model_id: str):
-        return self.__request('get', 'model/status', data={'modelId': model_id})
+    def get_status(self):
+        return self.__request('get', 'model/status')
 
     def list_projects(self):
         return self.__request('get', 'project/list')
@@ -104,21 +112,47 @@ class API:
         Args:
             type_: Can be 'backtesting' or 'live'
         """
-        return self.__request('get', 'project/plans', data={'type': type_})
+        return self.__request('post', 'project/plans', data={'type': type_})
 
     def create_project(self, name: str, description: str):
         return self.__request('post', 'project/create', data={'name': name,
                                                               'description': description})
 
-    def deploy(self, file_path: str, plan: str, project_id, description: str, name: str):
+    def deploy(self, file_path: str, plan: str, project_id, model_id: str,
+               general_description: str, version_description: str, name: str, create_new: bool,
+               python_version: float):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
         return self.__request('post', 'model/deploy', file=file, data={'plan': plan,
                                                                        'name': name,
+                                                                       'modelId': model_id,
                                                                        'projectId': project_id,
-                                                                       'description': description})
+                                                                       'generalDescription': general_description,
+                                                                       'versionDescription': version_description,
+                                                                       'createNew': create_new,
+                                                                       'pythonVersion': str(python_version)})
 
-    def backtest(self, project_id: str, model_id: str, args: dict):
-        return self.__request('post', 'model/backtest', data={'project_id': project_id,
-                                                              'model_id': model_id,
-                                                              'args': args})
+    def backtest_deployed(self, project_id: str, model_id: str, args: dict, version_id: str, backtest_description: str):
+        return self.__request('post', 'model/backtestUploadedModel',
+                              json_={'projectId': project_id,
+                                     'modelId': model_id,
+                                     'versionId': version_id,
+                                     'backtestArgs': args,
+                                     'backtestDescription': backtest_description})
+
+    def backtest(self, file_path: str, project_id: str, model_id: str, args: dict, plan: str,
+                 create_new: bool, name: str, python_version: float, backtest_description: str = ""):
+        file_path = r'{}'.format(file_path)
+        file = {'model': open(file_path, 'rb')}
+        return self.__request('post', 'model/backtest', file=file,
+                              data={'projectId': project_id,
+                                    'modelId': model_id,
+                                    'plan': plan,
+                                    'backtestDescription': backtest_description,
+                                    'backtestArgs': json.dumps(args),
+                                    'createNew': create_new,
+                                    'name': name,
+                                    'pythonVersion': str(python_version)})
+
+    def signal(self):
+        return self.__request('get', 'model/signalTest')

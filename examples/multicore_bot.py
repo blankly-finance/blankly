@@ -66,5 +66,5 @@ if __name__ == "__main__":
     while True:
         # Print the state from the model we just started every second
         state = portfolio.get_full_state("BTC-USD")
-        blankly.utils.pretty_print_JSON(state)
+        blankly.utils.pretty_print_json(state)
         time.sleep(1)

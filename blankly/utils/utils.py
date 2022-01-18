@@ -1,17 +1,14 @@
 """
     Utils file for assisting with trades or market analysis.
     Copyright (C) 2021  Emerson Dove
-
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU Lesser General Public License for more details.
-
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
@@ -36,7 +33,6 @@ from blankly.utils.time_builder import time_interval_to_seconds
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
-        "account_update_time": 5000,
         "use_sandbox": False,
         "use_sandbox_websockets": False,
         "websocket_buffer_size": 10000,
@@ -49,10 +45,17 @@ default_general_settings = {
             "cash": "USDT",
             "binance_tld": "us"
         },
+        "kucoin": {
+            "cash": "USDT"
+        },
+        "ftx": {
+            "cash": "USD"
+        },
         "alpaca": {
             "websocket_stream": "iex",
             "cash": "USD",
             "enable_shorting": True,
+            "use_yfinance": False,
         },
         "oanda": {
             "cash": "USD"
@@ -76,7 +79,8 @@ default_backtest_settings = {
         "resample_account_value_for_metrics": "1d",
         "quote_account_value_in": "USD",
         "ignore_user_exceptions": False,
-        "risk_free_return_rate": 0.0
+        "risk_free_return_rate": 0.0,
+        "benchmark_symbol": None
     }
 }
 
@@ -106,9 +110,7 @@ class __BlanklySettings:
     def __init__(self, default_path: str, default_settings: dict, not_found_err: str):
         """
         Create a class that can manage caching for loading and writing to user preferences with a low overhead.
-
         This can dramatically accelerate instantiation of new interfaces or other objects
-
         Args:
             default_path: The default path to look for settings - such as ./settings.json
             default_settings: The default settings in which to compare the loaded settings to. This helps the user
@@ -199,7 +201,7 @@ def load_notify_preferences(override_path=None) -> dict:
     return notify_settings.load(override_path)
 
 
-def pretty_print_JSON(json_object, actually_print=True):
+def pretty_print_json(json_object, actually_print=True):
     """
     Json pretty printer for general string usage
     """
@@ -209,13 +211,13 @@ def pretty_print_JSON(json_object, actually_print=True):
     return out
 
 
-def epoch_from_ISO8601(ISO8601) -> float:
-    return dp.parse(ISO8601).timestamp()
+def epoch_from_iso8601(iso8601: str) -> float:
+    return dp.parse(iso8601).timestamp()
 
 
 def convert_input_to_epoch(value: Union[str, dt]) -> float:
     if isinstance(value, str):
-        return epoch_from_ISO8601(value)
+        return epoch_from_iso8601(value)
     elif isinstance(value, dt):
         return value.timestamp()
     elif isinstance(value, float):
@@ -223,7 +225,7 @@ def convert_input_to_epoch(value: Union[str, dt]) -> float:
     raise ValueError("Incorrect value input given, expected string or value but got: {}".format(type(value)))
 
 
-def ISO8601_from_epoch(epoch) -> str:
+def iso8601_from_epoch(epoch) -> str:
     return dt.utcfromtimestamp(epoch).isoformat() + 'Z'
 
 # Removed due to sklearn dependency
@@ -281,7 +283,7 @@ def to_blankly_symbol(symbol, exchange, quote_guess=None) -> str:
             return symbol + "-" + quote_guess
         else:
             # Try your best to try to parse anyway
-            quotes = ['BNB', 'BTC', 'TRX', 'XRP', 'ETH', 'USDT', 'BUSD', 'AUD', 'BRL', 'EUR', 'GBP', 'RUB',
+            quotes = ['BNB', 'BTC', 'TRX', 'XRP', 'ETH', 'USDT', 'USD', 'BUSD', 'AUD', 'BRL', 'EUR', 'GBP', 'RUB',
                       'TRY', 'TUSD', 'USDC', 'PAX', 'BIDR', 'DAI', 'IDRT', 'UAH', 'NGN', 'VAI', 'BVND']
             for i in quotes:
                 if __check_ending(symbol, i):
@@ -290,6 +292,9 @@ def to_blankly_symbol(symbol, exchange, quote_guess=None) -> str:
 
     if exchange == "coinbase_pro":
         return symbol
+
+    if exchange == "ftx":
+        return symbol.replace("/", "-")
 
 
 def __check_ending(full_string, checked_ending) -> bool:
@@ -302,8 +307,10 @@ def to_exchange_symbol(blankly_symbol, exchange):
         return blankly_symbol.replace('-', '')
     if exchange == "alpaca":
         return get_base_asset(blankly_symbol)
-    if exchange == "coinbase_pro":
+    if exchange == "coinbase_pro" or exchange == "kucoin":
         return blankly_symbol
+    if exchange == 'ftx':
+        return blankly_symbol.replace("-", "/")
 
 
 def get_base_asset(symbol):
@@ -543,7 +550,6 @@ def get_ohlcv(candles, n, from_zero: bool):
 def aggregate_candles(history: pd.DataFrame, aggregation_size: int):
     """
     Aggregate history data (such as turn 1m data into 15m data)
-
     Args:
         history: A blankly generated dataframe
         aggregation_size: How many rows of history to aggregate - ex: aggregation_size=15 on 1m data produces
@@ -572,7 +578,6 @@ def aggregate_candles(history: pd.DataFrame, aggregation_size: int):
 def get_ohlcv_from_list(tick_list: list, last_price: float):
     """
     Created with the purpose of parsing ticker data into a viable OHLCV pattern. The
-
     Args:
         tick_list (list): List of data containing price ticks. Needs to be at least: [{'price': 343, 'size': 3.4}, ...]
             The data must also be ordered oldest to most recent at the end
@@ -641,12 +646,9 @@ def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_
 class AttributeDict(dict):
     """
     This is adds functions to the dictionary class, no other modifications. This gives dictionaries abilities like:
-
     print(account.BTC) -> {'available': 1, 'hold': 0}
-
     account.BTC = "cool"
     print(account.BTC) -> cool
-
     Basically you can get and set attributes with a dot instead of [] - like dict.available rather than
      dict['available']
     """
@@ -673,7 +675,6 @@ def format_with_new_line(original_string, *components):
 def trunc(number: float, decimals: int) -> float:
     """
     Truncate a number instead of rounding (ex: trunc(9.9999999, 2) == 9.99 instead of round(9.9999999, 2) == 10.0)
-
     Args:
         number (float): Number to truncate
         decimals (int): Number of decimals to keep: trunc(9.9999999, 2) == 9.99
@@ -685,23 +686,20 @@ def trunc(number: float, decimals: int) -> float:
 def info_print(message):
     """
     This prints directly to stderr which allows a way to distinguish package info calls/errors from generic stdout
-
     Args:
         message: The message to print. INFO: will be prepended
     """
-    print('INFO: ' + message, file=sys.stderr)
+    print('INFO: ' + str(message), file=sys.stderr)
 
 
 class Email:
     """
     Object wrapper for simplifying interaction with SMTP servers & the blankly.reporter.email function.
-
     Alternatively a notify.json can be created which automatically integrates with blankly.reporter.email()
     """
     def __init__(self, smtp_server: str, sender_email: str, password: str, port: int = 465):
         """
         Create the email wrapper:
-
         Args:
             smtp_server: The address of the smtp server
             sender_email: The email attached to the smtp account
@@ -716,7 +714,6 @@ class Email:
     def send(self, receiver_email: str, message: str):
         """
         Send an email to the receiver_email specified
-
         Args:
             receiver_email (str): The email that the message is sent to
             message (str): The body of the message
@@ -753,3 +750,20 @@ def order_protection(func):
             raise Exception("Blocked attempt at live order inside backtesting environment")
         return func(*args, **kwargs)
     return wrapper
+
+
+def add_all_products(nonzero_products: dict, all_products: list):
+    base_symbols = []
+    quote_symbols = []
+    for i in all_products:
+        base_symbols.append(get_base_asset(i['symbol']))
+        quote_symbols.append(get_quote_asset(i['symbol']))
+
+    for i in (base_symbols + quote_symbols):
+        if i not in nonzero_products:
+            nonzero_products[i] = {
+                'available': 0.0,
+                'hold': 0.0
+            }
+
+    return nonzero_products

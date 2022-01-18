@@ -33,7 +33,14 @@ from blankly.utils.exceptions import APIException, InvalidOrder
 
 class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
     def __init__(self, derived_interface: ABCExchangeInterface, initial_account_values: dict = None):
+        # This paper trade orders keeps a live track of the orders
         self.paper_trade_orders = []
+        # These two keep track of which limit orders and when the order finishes
+        self.canceled_orders = []
+        self.executed_orders = []
+
+        # Save the market order execution details for later
+        self.market_order_execution_details = []
 
         self.get_products_cache = None
         self.get_fees_cache = None
@@ -120,15 +127,18 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             traceback.print_exc()
             raise AttributeError("Are you passing a non-exchange object into the paper trade constructor?")
 
-        self.__exchange_properties = {
-            "maker_fee_rate": fees['maker_fee_rate'],
-            "taker_fee_rate": fees['taker_fee_rate']
-        }
+        try:
+            self.__exchange_properties = {
+                "maker_fee_rate": fees['maker_fee_rate'],
+                "taker_fee_rate": fees['taker_fee_rate']
+            }
+        except KeyError:
+            raise KeyError(f'Invalid exchange response: {fees}')
 
     """ Needs to be overridden here """
 
     def start_paper_trade_watchdog(self):
-        # TODO, this process could use variable update time/websocket usage, poll time and a variety of settings
+        # TODO, this process could use variable update time/websocket usage, poll `time` and a variety of settings
         #  to create a robust trading system
         # Create the watchdog for watching limit orders
         self.__thread = threading.Thread(target=self.__paper_trade_watchdog(), daemon=True)
@@ -251,6 +261,12 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                         order['status'] = 'done'
                         order['settled'] = 'true'
 
+                        # Add this to the executed orders
+                        self.executed_orders.append({
+                            'id': index['id'],
+                            'executed_time': self.time(),
+                        })
+
                         self.paper_trade_orders[i] = order
                 elif index['side'] == 'sell':
                     if index['price'] < prices[index['symbol']]:
@@ -280,6 +296,12 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                                                        )
                         order['status'] = 'done'
                         order['settled'] = 'true'
+
+                        # Add this to the executed orders
+                        self.executed_orders.append({
+                            'id': index['id'],
+                            'executed_time': self.time(),
+                        })
 
                         self.paper_trade_orders[i] = order
 
@@ -344,7 +366,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             raise InvalidOrder(f"Size is too small. Minimum is: {min_size}. You requested {size}.")
 
         if size > max_size:
-            raise InvalidOrder(f"Size is too large. Maximum is: {min_size}. You requested {size}.")
+            raise InvalidOrder(f"Size is too large. Maximum is: {max_size}. You requested {size}.")
 
         base_increment = market_limits['market_order']['base_increment']
         base_decimals = self.__get_decimals(base_increment)
@@ -426,6 +448,11 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             raise APIException("Invalid trade side: " + str(side))
 
         self.__check_trading_assets(symbol)
+
+        self.market_order_execution_details.append({
+            'id': response['id'],
+            'executed_price': price
+        })
         return MarketOrder(order, response, self)
 
     def limit_order(self, symbol, side, price, size) -> LimitOrder:
@@ -548,7 +575,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             # Loose the size when selling
             self.local_account.update_available(base, available - size)
 
-            # Gain size on hold when buying
+            # Gain size on hold when selling
             hold = self.local_account.get_account(base)['hold']
             self.local_account.update_hold(base, hold + size)
         return LimitOrder(order, response, self)
@@ -562,9 +589,17 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             index = self.paper_trade_orders[i]
             if index['status'] == 'pending' and index['id'] == order_id:
                 order_index = i
+                break
 
         if order_index is not None:
             order_id = self.paper_trade_orders[order_index]['id']
+            # Make sure to save this as a canceled order just before closing it
+            # Make sure to write in the time also
+            self.canceled_orders.append({
+                'id': self.paper_trade_orders[order_index]['id'],
+                'canceled_time': self.time()
+            })
+
             del self.paper_trade_orders[order_index]
             return {"order_id": order_id}
 

@@ -20,7 +20,9 @@ import os
 import traceback
 import typing
 from datetime import datetime as dt
+import copy
 
+import numpy as np
 import pandas as pd
 from bokeh.layouts import column as bokeh_columns
 from bokeh.models import HoverTool
@@ -33,7 +35,7 @@ from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import load_backtest_preferences, update_progress, write_backtest_preferences, \
-    get_base_asset, get_quote_asset
+    get_base_asset, get_quote_asset, info_print
 
 
 def to_string_key(separated_list):
@@ -174,7 +176,7 @@ class BackTestController:
 
         self.__exchange_type = self.interface.get_exchange_type()
 
-        # Create our own traded assets dictionary because we customize it a bit
+        # Create our own traded assets' dictionary because we customize it a bit
         self.__traded_assets = []
 
         # Because the times are run in order we can use this variable to optimize account value searching
@@ -183,7 +185,23 @@ class BackTestController:
         # Export a time for use in other classes
         self.time = None
 
+        # Set these when prices are added to find the first price and the last price
+        self.user_start = None
+        self.user_stop = None
+
+        self.min_resolution = None
+
     def sync_prices(self) -> dict:
+        """
+        Parse the local file cache for the requested data, if it doesn't exist, request it from the exchange
+
+        args:
+            items: list of lists organized as ['symbol', 'start_time', 'end_time', 'resolution']
+
+        returns:
+            dictionary with keys for each 'symbol'
+        """
+        
         cache_folder = self.preferences['settings']["cache_location"]
         # Make sure the cache folder exists and read files
         try:
@@ -237,23 +255,27 @@ class BackTestController:
         #     return ranges
 
         # This is the data the user has requested: [asset_id, start_time, end_time, resolution]
+        items = self.__user_added_times
+
         final_prices = {}
-        for i in range(len(self.__user_added_times)):
-            if self.__user_added_times[i] is None:
+        for i in range(len(items)):
+            if items[i] is None:
                 continue
-            asset = self.__user_added_times[i][0]
-            resolution = self.__user_added_times[i][3]
-            start_time = self.__user_added_times[i][1]
-            end_time = self.__user_added_times[i][2] - resolution
+            asset = items[i][0]
+            resolution = items[i][3]
+            start_time = items[i][1]
+            end_time = items[i][2] - resolution
 
             if end_time < start_time:
-                raise RuntimeError("Must specify  a longer timeframe to run the backtest.")
+                raise RuntimeError("Must specify a longer timeframe to run the backtest.")
 
             download_ranges = []
 
             # Attempt to find the same symbol/asset possibilities in the backtest blocks
             try:
-                download_ranges = local_history_blocks[asset][resolution]
+                # Make sure to copy it because if you don't you delete this for any similar resolution
+                # If you don't copy it fails if you use two price events at the same resolution
+                download_ranges = copy.deepcopy(local_history_blocks[asset][resolution])
             except KeyError:
                 pass
 
@@ -325,12 +347,14 @@ class BackTestController:
 
                 # Write the file but this time include very accurately the start and end times
                 if self.preferences['settings']['continuous_caching']:
-                    download.to_csv(os.path.join(cache_folder, f'{asset},'
-                                                               f'{j[0]},'
-                                                               f'{j[1]+resolution},'  # This adds resolution back to the
-                                                                                      #  exported time series
-                                                               f'{resolution}.csv'),
-                                    index=False)
+                    if not download.empty:
+                        download.to_csv(os.path.join(cache_folder, f'{asset},'
+                                                                   f'{j[0]},'
+                                                                   f'{j[1]+resolution},'  # This adds resolution 
+                                                                                          # back to the exported
+                                                                                          # time series
+                                                                   f'{resolution}.csv'),
+                                        index=False)
 
                 # Write these into the data array
                 if asset not in list(final_prices.keys()):
@@ -406,6 +430,27 @@ class BackTestController:
             self.__user_added_times.append(identifier)
             if save:
                 self.queue_backtest_write = True
+
+            # This makes sure that we keep track of our bounds which is just generally kind of useful
+            # Any time a new price event is added we check this
+            if self.user_start is None:
+                self.user_start = start_time
+            else:
+                if start_time < self.user_start:
+                    self.user_start = start_time
+
+            if self.user_stop is None:
+                self.user_stop = end_time
+            else:
+                if end_time > self.user_stop:
+                    self.user_stop = end_time
+
+            # Now keep track of the smallest price event added
+            if self.min_resolution is None:
+                self.min_resolution = resolution
+            else:
+                if resolution < self.min_resolution:
+                    self.min_resolution = resolution
         else:
             print("already identified")
 
@@ -500,7 +545,7 @@ class BackTestController:
     def __account_was_used(self, column) -> bool:
         show_zero_delta = self.preferences['settings']['show_tickers_with_zero_delta']
 
-        # Just check if its in the traded assets or if the zero delta is enabled
+        # Just check if it's in the traded assets or if the zero delta is enabled
         used = self.__traded_assets
         is_used = column in used or 'Account Value (' + self.quote_currency + ')' == column
 
@@ -509,7 +554,7 @@ class BackTestController:
         return output
 
     def __next_color(self):
-        # This should be a generator but it doesn't work without doing a foreach loop
+        # This should be a generator, but it doesn't work without doing a foreach loop
         try:
             return next(self.__color_generator)
         except StopIteration:
@@ -532,6 +577,13 @@ class BackTestController:
         #  don't need to happen for every single key type
         self.quote_currency = self.preferences['settings']['quote_account_value_in']
 
+        # Get the symbol used for the benchmark
+        benchmark_symbol = self.preferences["settings"]["benchmark_symbol"]
+
+        if benchmark_symbol is not None:
+            # Check locally for the data and add to price_cache if we do not have it
+            self.add_prices(benchmark_symbol, self.user_start, self.user_stop, self.min_resolution)
+
         prices = self.sync_prices()
 
         # Organize each price into this structure: [epoch, "BTC-USD", price, open, high, low, close, volume]
@@ -547,9 +599,22 @@ class BackTestController:
             try:
                 self.interface.receive_price(k, v[use_price].iloc[0])
             except IndexError:
-                raise IndexError('No cached or downloaded data available. Try adding arguments such as to="1y" '
-                                 'in the backtest command. If there should be data downloaded, try deleting your'
-                                 ' ./price_caches folder.')
+                def check_if_any_column_has_prices(price_dict: dict) -> bool:
+                    """
+                    In dictionary of symbols, check if at least one key has data
+                    """
+                    for j in price_dict:
+                        if not price_dict[j].empty:
+                            return True
+                    return False
+
+                if not check_if_any_column_has_prices(prices):
+                    raise IndexError('No cached or downloaded data available. Try adding arguments such as to="1y" '
+                                     'in the backtest command. If there should be data downloaded, try deleting your'
+                                     ' ./price_caches folder.')
+                else:
+                    raise IndexError(f"Data for symbol {k} is empty. Are you using a symbol that is incompatible "
+                                     f"with this exchange?")
 
             # Be sure to send in the initial time
             self.interface.receive_time(v['time'].iloc[0])
@@ -565,6 +630,11 @@ class BackTestController:
 
         # pushing these prices together makes the time go weird
         self.prices = sorted(self.prices)
+
+        if prices == {} or self.price_events == []:
+            raise ValueError("Either no price data or backtest events given. "
+                             "Try setting an argument such as to='1y' in the .backtest() command.\n"
+                             "Example: strategy.backtest(to='1y')")
 
         self.current_time = self.prices[0][0]
 
@@ -582,11 +652,6 @@ class BackTestController:
                 'init': self.price_events[i][5],
                 'teardown': self.price_events[i][6]
             }
-
-        if prices == {} or self.price_events == []:
-            raise ValueError("Either no price data or backtest events given. "
-                             "Use .append_backtest_price_data or "
-                             "append_backtest_price_event to create the backtest model.")
 
         # Initialize this before the callbacks so it works in the initialization functions
         self.time = self.initial_time
@@ -754,9 +819,19 @@ class BackTestController:
             # display a tooltip whenever the cursor is vertically in line with a glyph
             mode='vline'
         )
-
-        # Back up the epoch list so that it can be used later for re-sampling
-        epoch_backup = cycle_status['time'].tolist()
+        
+        # Define a helper function to avoid repeating code
+        def add_trace(self_, figure_, time_, data_, label):
+            source = ColumnDataSource(data=dict(
+                        time=time_,
+                        value=data_.values.tolist()
+                    ))
+            figure_.step('time', 'value',
+                         source=source,
+                         line_width=2,
+                         color=self_.__next_color(),
+                         legend_label=label,
+                         mode="after")
 
         if self.preferences['settings']['GUI_output']:
             global_x_range = None
@@ -766,31 +841,34 @@ class BackTestController:
             for column in cycle_status:
                 if column != 'time' and self.__account_was_used(column):
                     p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
-                    source = ColumnDataSource(data=dict(
-                        time=time,
-                        value=cycle_status[column].tolist()
-                    ))
-                    p.step('time', 'value',
-                           source=source,
-                           line_width=2,
-                           color=self.__next_color(),
-                           legend_label=column,
-                           mode="after",
-                           )
+                    add_trace(self, p, time, cycle_status[column], column)
 
-                    # Replica of whats above to add the no-trade line to the backtest
+                    # Add the no-trade line to the backtest
                     if column == 'Account Value (' + self.quote_currency + ')':
-                        source = ColumnDataSource(data=dict(
-                            time=time,
-                            value=no_trade_cycle_status['Account Value (No Trades)'].tolist()
-                        ))
-                        p.step('time', 'value',
-                               source=source,
-                               line_width=2,
-                               color=self.__next_color(),
-                               legend_label='Account Value (No Trades)',
-                               mode="after")
+                        add_trace(self, p, time, no_trade_cycle_status['Account Value (No Trades)'],
+                                  'Account Value (No Trades)')
 
+                        # Add the benchmark, if requested
+                        if benchmark_symbol is not None:
+                            # This normalizes the benchmark value
+                            initial_account_value = cycle_status['Account Value (' + self.quote_currency + ')'].iloc[0]
+                            initial_benchmark_value = prices[benchmark_symbol][use_price].iloc[0]
+
+                            # This multiplier brings the initial asset price to the initial account value
+                            # initial_account_value = initial_benchmark_value * x
+                            multiplier = initial_account_value / initial_benchmark_value
+
+                            normalized_compare_series = prices[benchmark_symbol][use_price].multiply(multiplier)
+                            normalized_compare_time_series = prices[benchmark_symbol]['time']
+
+                            # We need to also cast the time series that is needed to compare
+                            # because it's only been done for the cycle status time
+                            normalized_compare_time_series = [dt.fromtimestamp(ts) for ts in
+                                                              normalized_compare_time_series]
+                            add_trace(self, p, normalized_compare_time_series,
+                                      normalized_compare_series,
+                                      f'Normalized Benchmark ({benchmark_symbol})')
+                            
                     p.add_tools(hover)
 
                     # Format graph
@@ -815,128 +893,127 @@ class BackTestController:
             except ValueError:
                 return False
 
-        dataframes = {
+        history_and_returns = {
             'history': cycle_status
         }
         metrics_indicators = {}
         user_callbacks = {}
 
-        # Check if it needs resampling
+        result_object = BacktestResult(history_and_returns, {
+            'created': self.interface.paper_trade_orders,
+            'limits_executed': self.interface.executed_orders,
+            'limits_canceled': self.interface.canceled_orders,
+            'executed_market_orders': self.interface.market_order_execution_details
+        }, self.pd_prices, self.initial_time, self.interface.time(), self.quote_currency, self.price_events)
+
+        # If they set resampling we use resampling for everything
         resample_setting = self.preferences['settings']['resample_account_value_for_metrics']
         if isinstance(resample_setting, str) or is_number(resample_setting):
-            # Backing arrays. We can't append directly to the dataframe so array has to also be made
+            resample_to = resample_setting
+        else:
+            info_print('Resampling value not set, defaulting to 1 day.')
+            resample_to = '1d'
 
-            def search_price(asset_id, epoch):
-                # In this case because each asset is called individually
-                def search(arr, size, x):
-                    while True:
-                        if self.__current_search_index == size:
-                            # Must be the last one in the list
-                            return self.__current_search_index - 1
+        interval_value = time_interval_to_seconds(resample_to)
 
-                        if arr[self.__current_search_index] <= x <= arr[self.__current_search_index + 1]:
-                            # Found it in this range
-                            return self.__current_search_index
-                        else:
-                            self.__current_search_index += 1
-                try:
-                    prices_ = self.pd_prices[asset_id][self.use_price]  # type: pd.Series
-                    times = self.pd_prices[asset_id]['time']  # type: pd.Series
+        # This is where we run the actual resample
+        resampled_account_data_frame = result_object.resample_account('Account Value (' + self.quote_currency + ')',
+                                                                      interval_value)
 
-                    # Iterate and find the correct quote price
-                    index_ = search(times, times.size, epoch)
-                    # print('Found price for', asset_id, prices[index])
-                    return prices_[index_]
-                except KeyError:
-                    # Not a currency that we have data for at all
-                    return 0
+        history_and_returns['resampled_account_value'] = resampled_account_data_frame
 
-            resampled_returns = pd.DataFrame(columns=['time', 'value'])
-            resampled_backing_array = []
+        returns = resampled_account_data_frame.copy(deep=True)
 
-            # Find the interval second value
-            interval_value = time_interval_to_seconds(resample_setting)
+        # Default diff parameters should do it
+        returns['value'] = returns['value'].pct_change()
 
-            # Assign start and stop limits
-            epoch_start = epoch_backup[0]
-            epoch_max = epoch_backup[len(epoch_backup) - 1]
+        # Now write it to our dictionary
+        history_and_returns['returns'] = returns
 
-            # Reset the current search index to zero for re-searching
-            self.__current_search_index = 0
-            # Going to push this in as a single column version of our price data so that __determine_price can handle it
-            self.pd_prices['Account Value (' + self.quote_currency + ')'] = pd.DataFrame()
-            self.pd_prices['Account Value (' + self.quote_currency + ')'][use_price] = \
-                cycle_status['Account Value (' + self.quote_currency + ')']
+        # -----=====*****=====-----
+        metrics_indicators['Compound Annual Growth Rate (%)'] = metrics.cagr(history_and_returns)
+        try:
+            metrics_indicators['Cumulative Returns (%)'] = metrics.cum_returns(history_and_returns)
+        except ZeroDivisionError:
+            raise ZeroDivisionError("Division by zero when calculating cumulative returns. "
+                                    "Are there valid account datapoints?")
 
-            self.pd_prices['Account Value (' + self.quote_currency + ')']['time'] = cycle_status['time']
-
-            while epoch_start <= epoch_max:
-                # Append this dict to the array
-                resampled_backing_array.append({
-                    'time': epoch_start,
-                    'value': search_price('Account Value (' + self.quote_currency + ')', epoch_start)
-                })
-
-                # Increase the epoch value
-                epoch_start += interval_value
-
-            # Put this in the dataframe
-            resampled_returns = resampled_returns.append(resampled_backing_array, ignore_index=True)
-
-            # This is the resampled version
-            dataframes['resampled_account_value'] = resampled_returns
-
-            # Now we need to copy it and find the differences
-            returns = resampled_returns.copy(deep=True)
-
-            # Default diff parameters should do it
-            returns['value'] = returns['value'].pct_change()
-
-            # Now write it to our dictionary
-            dataframes['returns'] = returns
-
-            # -----=====*****=====-----
-            metrics_indicators['Compound Annual Growth Rate (%)'] = metrics.cagr(dataframes)
+        def attempt(math_callable: typing.Callable, dict_of_dataframes: dict, kwargs: dict = None):
             try:
-                metrics_indicators['Cumulative Returns (%)'] = metrics.cum_returns(dataframes)
-            except ZeroDivisionError:
-                raise ZeroDivisionError("Division by zero when calculating cum returns. "
-                                        "Are there valid account datapoints?")
+                if kwargs is None:
+                    kwargs = {}
+                result = math_callable(dict_of_dataframes, **kwargs)
+                if result == np.NAN:
+                    result = None
+                return result
+            except (ZeroDivisionError, Exception) as e_:
+                return f'failed: {e_}'
 
-            def attempt(math_callable: typing.Callable, dict_of_dataframes: dict, kwargs: dict = None):
-                try:
-                    if kwargs is None:
-                        kwargs = {}
-                    return math_callable(dict_of_dataframes, **kwargs)
-                except ZeroDivisionError:
-                    return 'failed'
+        risk_free_return_rate = self.preferences['settings']["risk_free_return_rate"]
+        metrics_indicators['Max Drawdown (%)'] = attempt(metrics.max_drawdown, history_and_returns)
+        metrics_indicators['Variance (%)'] = attempt(metrics.variance, history_and_returns,
+                                                     {'trading_period': interval_value})
+        metrics_indicators['Sortino Ratio'] = attempt(metrics.sortino, history_and_returns,
+                                                      {'risk_free_rate': risk_free_return_rate,
+                                                       'trading_period': interval_value})
+        metrics_indicators['Sharpe Ratio'] = attempt(metrics.sharpe, history_and_returns,
+                                                     {'risk_free_rate': risk_free_return_rate,
+                                                      'trading_period': interval_value})
+        metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, history_and_returns, 
+                                                     {'trading_period': interval_value})
+        metrics_indicators['Volatility'] = attempt(metrics.volatility, history_and_returns,
+                                                   {'trading_period': interval_value})
+        metrics_indicators['Value-at-Risk'] = attempt(metrics.var, history_and_returns)
+        metrics_indicators['Conditional Value-at-Risk'] = attempt(metrics.cvar, history_and_returns)
+        
+        # Add risk-free-return rate to dictionary
+        metrics_indicators['Risk Free Return Rate'] = risk_free_return_rate
+        # metrics_indicators['beta'] = attempt(metrics.beta, dataframes)
+        # Add the interval value to dictionary
+        metrics_indicators['Resampled Time'] = interval_value
+        # -----=====*****=====-----
 
-            risk_free_return_rate = self.preferences['settings']["risk_free_return_rate"]
-            trading_period = interval_value
-            metrics_indicators['Max Drawdown (%)'] = attempt(metrics.max_drawdown, dataframes)
-            metrics_indicators['Variance (%)'] = attempt(metrics.variance, dataframes)
-            metrics_indicators['Sortino Ratio'] = attempt(metrics.sortino, dataframes,
-                                                          {'risk_free_rate': risk_free_return_rate,
-                                                           'trading_period': trading_period})
-            metrics_indicators['Sharpe Ratio'] = attempt(metrics.sharpe, dataframes,
-                                                         {'risk_free_rate': risk_free_return_rate,
-                                                          'trading_period': trading_period})
-            metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, dataframes, {'trading_period': trading_period})
-            metrics_indicators['Volatility'] = attempt(metrics.volatility, dataframes)
-            metrics_indicators['Value-at-Risk'] = attempt(metrics.var, dataframes)
-            metrics_indicators['Conditional Value-at-Risk'] = attempt(metrics.cvar, dataframes)
-            # Add risk-free-return rate to dictionary
-            metrics_indicators['Risk Free Return Rate'] = risk_free_return_rate
-            # metrics_indicators['beta'] = attempt(metrics.beta, dataframes)
-            # Add the interval value to dictionary
-            metrics_indicators['Resampled Time'] = interval_value
-            # -----=====*****=====-----
+        # If a benchmark was requested, add it to the pd_prices frame
+        if benchmark_symbol is not None:
+            # Resample the benchmark results
+            resampled_benchmark_value = result_object.resample_account(benchmark_symbol,
+                                                                       interval_value,
+                                                                       use_asset_history=True,
+                                                                       use_price=use_price)
+            
+            # Push data into the dictionary for use by the metrics
+            history_and_returns['benchmark_value'] = resampled_benchmark_value
+            history_and_returns['benchmark_returns'] = resampled_benchmark_value.copy(deep=True)
+            history_and_returns['benchmark_returns']['value'] = \
+                history_and_returns['benchmark_returns']['value'].pct_change()
+            
+            # Calculate beta
+            metrics_indicators['Beta'] = attempt(metrics.beta, history_and_returns, 
+                                                 {"trading_period": interval_value})
 
+        # This trys to reference vars created in the resample portion, so it has to also be in the specified
+        #  resample if
+        # --
         # Run this last so that the user can override what they want
         for callback in self.callbacks:
-            user_callbacks[callback.__name__] = callback(dataframes)
+            user_callbacks[callback.__name__] = callback(history_and_returns, metrics_indicators)
 
-        result_object = BacktestResult(dataframes, metrics_indicators, user_callbacks)
+        # Remove NaN values here
+        history_and_returns['resampled_account_value'] = history_and_returns['resampled_account_value'].\
+            where(history_and_returns['resampled_account_value'].notnull(), None)
+
+        # Remove NaN values on this one too
+        history_and_returns['returns'] = history_and_returns['returns'].where(history_and_returns['returns'].notnull(),
+                                                                              None)
+        # Lastly remove Nan values in the metrics
+        for i in metrics_indicators:
+            if not isinstance(metrics_indicators[i], str) and np.isnan(metrics_indicators[i]):
+                metrics_indicators[i] = None
+
+        # Assign all these new values back to the result object
+        result_object.history_and_returns = history_and_returns
+        result_object.metrics = metrics_indicators
+        result_object.user_callbacks = user_callbacks
 
         self.interface.set_backtesting(False)
         return result_object

@@ -21,9 +21,8 @@ from pathlib import Path
 
 import pytest
 
-from blankly.exchanges.interfaces.oanda.oanda_auth import OandaAuth
+import blankly
 from blankly.exchanges.interfaces.oanda.oanda_interface import OandaInterface
-from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 from tests.helpers.comparisons import validate_response
 
 
@@ -32,9 +31,13 @@ def oanda_interface():
     keys_file_path = Path("tests/config/keys.json").resolve()
     settings_file_path = Path("tests/config/settings.json").resolve()
 
-    auth_obj = OandaAuth(str(keys_file_path), "oanda test portfolio")
-    _, oanda_interface = DirectCallsFactory.create("oanda", auth_obj, str(settings_file_path))
-    return oanda_interface
+    oanda = blankly.Oanda(keys_path=keys_file_path,
+                          settings_path=settings_file_path,
+                          portfolio_name='oanda test portfolio')
+
+    # auth_obj = OandaAuth(str(keys_file_path), "oanda test portfolio")
+    # _, oanda_interface = DirectCallsFactory.create("oanda", auth_obj, str(settings_file_path))
+    return oanda.interface
 
 
 def test_get_exchange(oanda_interface: OandaInterface) -> None:
