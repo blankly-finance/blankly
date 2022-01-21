@@ -1,0 +1,20 @@
+{
+  "price_data": {
+    "assets": []
+  },
+  "settings": {
+    "use_price": "close",
+    "smooth_prices": false,
+    "GUI_output": true,
+    "show_tickers_with_zero_delta": false,
+    "save_initial_account_value": true,
+    "show_progress_during_backtest": true,
+    "cache_location": "./price_caches",
+    "continuous_caching": true,
+    "resample_account_value_for_metrics": "1d",
+    "quote_account_value_in": "USDT",
+    "ignore_user_exceptions": true,
+    "risk_free_return_rate": 0.0,
+    "benchmark_symbol" : null
+  }
+}

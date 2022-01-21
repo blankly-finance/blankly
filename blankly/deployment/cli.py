@@ -58,6 +58,8 @@ class TermColors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+SUPPORTED_EXCHANGES = ['binance-com', 'binance-us' 'cbpro', 'alpaca', 'ftx', 'oanda', 'kucoin']
+
 
 def choose_option(choice: str, options: list, descriptions: list):
     """
@@ -296,6 +298,7 @@ subparsers = parser.add_subparsers(help='Different blankly commands.')
 
 init_parser = subparsers.add_parser('init', help='Sub command to create a blankly-enabled development environment.')
 init_parser.set_defaults(which='init')
+init_parser.add_argument('exchange', nargs='?', default='none', type=str, help='One of Blankly\'s Supported Exchanges')
 
 login_parser = subparsers.add_parser('login', help='Log in to your blankly account.')
 login_parser.set_defaults(which='login')
@@ -511,9 +514,18 @@ def main():
             info_print(f"\tProject:\t{response['projectId']}")
 
     elif which == 'init':
+        exchange = args['exchange']
+        user_defined_exchange = exchange.lower()
+
         print("Initializing...")
         print(very_important_string)
 
+        if user_defined_exchange not in SUPPORTED_EXCHANGES and user_defined_exchange != 'binance': 
+            base_str = 'Error: Please use one of our supported exchanges'
+            exchanges = ', '.join(SUPPORTED_EXCHANGES)
+            info_print(f'{base_str}: {exchanges}, you inputted {user_defined_exchange}')
+            return
+        
         # Directly download keys.json
         print("Downloading keys template...")
         keys_example = requests.get('https://raw.githubusercontent.com/Blankly-Finance/'
@@ -521,18 +533,32 @@ def main():
         create_and_write_file('keys.json', keys_example.text)
 
         # Directly download settings.json
-        print("Downloading settings defaults...")
-        settings = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/settings.json')
+        if user_defined_exchange == 'binance' or user_defined_exchange == 'binance-us': 
+            print("Downloading settings defaults for Binance US...")
+            settings = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/settings.json')
+        elif user_defined_exchange == 'binance-com':
+            print("Downloading settings defaults for Binance COM...")
+            settings = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/settings-com.json')
+        else:
+            print("Downloading settings defaults...")
+            settings = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/settings.json')
         create_and_write_file('settings.json', settings.text)
 
         # Directly download backtest.json
-        print("Downloading backtest defaults...")
-        backtest = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/backtest.json')
+        if user_defined_exchange == 'alpaca' or user_defined_exchange == 'cbpro' or user_defined_exchange == 'oanda':
+            print("Downloading backtest defaults for USD account values...")
+            backtest = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/backtest.json')
+        else:
+            print("Downloading backtest defaults for USDT account values...")
+            backtest = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/backtest-usdt.json')
         create_and_write_file('backtest.json', backtest.text)
 
         # Directly download a rsi bot
         print("Downloading RSI bot example...")
-        bot = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/rsi.py')
+        if user_defined_exchange == 'binance-com' or user_defined_exchange == 'binance-us':
+            bot = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/rsi-examples/rsi-binance.py')
+        else:
+            bot = requests.get(f'https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/rsi-examples/rsi-{user_defined_exchange}.py')
         create_and_write_file('bot.py', bot.text)
 
         print("Writing deployment defaults...")
