@@ -515,7 +515,10 @@ def main():
 
     elif which == 'init':
         exchange = args['exchange']
-        user_defined_exchange = exchange.lower()
+        if exchange != 'none': 
+            user_defined_exchange = exchange.lower()
+        else:
+            user_defined_exchange = 'cbpro' # default to cbpro
 
         print("Initializing...")
         print(very_important_string)
