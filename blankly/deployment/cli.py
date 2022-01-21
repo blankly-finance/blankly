@@ -550,7 +550,7 @@ def main():
         create_and_write_file('keys.json', keys_example.text)
 
         # Directly download settings.json
-        if user_defined_exchange == 'binance-com':
+        if user_defined_exchange == 'binance.com':
             print("Downloading settings defaults for Binance COM...")
             settings = requests.get(
                 'https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/settings.json')
@@ -558,7 +558,7 @@ def main():
             res['binance']['binance_tld'] = 'com'
             create_and_write_file('settings.json', json.dumps(res))
         else:
-            if user_defined_exchange == 'binance' or user_defined_exchange == 'binance-us':
+            if user_defined_exchange == 'binance' or user_defined_exchange == 'binance.us':
                 print("Downloading settings defaults for Binance US...")
             else:
                 print("Downloading settings defaults...")
@@ -567,7 +567,7 @@ def main():
             create_and_write_file('settings.json', settings.text)
 
         # Directly download backtest.json
-        if user_defined_exchange == 'alpaca' or user_defined_exchange == 'cbpro' or user_defined_exchange == 'oanda':
+        if user_defined_exchange == 'alpaca' or user_defined_exchange == 'coinbase_pro' or user_defined_exchange == 'oanda':
             print("Downloading backtest defaults for USD account values...")
             backtest = requests.get(
                 'https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/backtest.json')
@@ -582,7 +582,7 @@ def main():
 
         # Directly download a rsi bot
         print("Downloading RSI bot example...")
-        if user_defined_exchange == 'binance-com' or user_defined_exchange == 'binance-us':
+        if user_defined_exchange == 'binance.com' or user_defined_exchange == 'binance.us':
             bot = requests.get(
                 'https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/rsi-examples/rsi-binance.py')
         else:
