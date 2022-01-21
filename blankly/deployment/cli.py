@@ -555,8 +555,8 @@ def main():
             settings = requests.get(
                 'https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/settings.json')
             res = settings.json()
-            res['binance']['binance_tld'] = 'com'
-            create_and_write_file('settings.json', json.dumps(res))
+            res['settings']['binance']['binance_tld'] = 'com'
+            create_and_write_file('settings.json', json.dumps(res, indent=2))
         else:
             if user_defined_exchange == 'binance' or user_defined_exchange == 'binance.us':
                 print("Downloading settings defaults for Binance US...")
@@ -578,7 +578,7 @@ def main():
                 'https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/backtest.json')
             res = backtest.json()
             res['settings']['quote_account_value_in'] = 'USDT'
-            create_and_write_file('backtest.json', json.dumps(res))
+            create_and_write_file('backtest.json', json.dumps(res, indent=2))
 
         # Directly download a rsi bot
         print("Downloading RSI bot example...")
