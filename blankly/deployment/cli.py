@@ -567,7 +567,8 @@ def main():
             create_and_write_file('settings.json', settings.text)
 
         # Directly download backtest.json
-        if user_defined_exchange == 'alpaca' or user_defined_exchange == 'coinbase_pro' or user_defined_exchange == 'oanda':
+        if user_defined_exchange == 'alpaca' or user_defined_exchange == 'coinbase_pro' or \
+                user_defined_exchange == 'oanda':
             print("Downloading backtest defaults for USD account values...")
             backtest = requests.get(
                 'https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/backtest.json')
@@ -587,7 +588,8 @@ def main():
                 'https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/rsi-examples/rsi-binance.py')
         else:
             bot = requests.get(
-                f'https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/rsi-examples/rsi-{user_defined_exchange}.py')
+                f'https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/'
+                f'rsi-examples/rsi-{user_defined_exchange}.py')
         create_and_write_file('bot.py', bot.text)
 
         print("Writing deployment defaults...")
