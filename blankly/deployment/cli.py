@@ -173,15 +173,12 @@ def choose_option(choice: str, options: list, descriptions: list):
         return options[index]
 
 
-def get_project_model_and_name(args, projects):
+def get_project_model_and_name(args, projects, api: API):
     if args['path'] is None:
         print(TermColors.WARNING + "Warning - No filepath specified. Assuming the current directory (./)\n" +
               TermColors.ENDC)
 
         args['path'] = './'
-
-    create_new = False
-    general_description = None
 
     try:
         f = open(os.path.join(args['path'], deployment_script_name))
@@ -196,6 +193,9 @@ def get_project_model_and_name(args, projects):
             for i in projects:
                 ids.append(i['projectId'])
             descriptions = []
+
+            default_type = 'strategy'
+
             for i in projects:
                 descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
                                     TermColors.ENDC + TermColors.OKCYAN + i['name'])
@@ -204,29 +204,31 @@ def get_project_model_and_name(args, projects):
             model_name = input(TermColors.BOLD + TermColors.WARNING +
                                "Enter a name for your model: " + TermColors.ENDC)
 
-            deployment_options['project_id'] = project_id
-            deployment_options['model_id'] = str(uuid.uuid4())
-            deployment_options['model_name'] = model_name
-
-            create_new = True
-
+            # Now we know to go ahead and create a new model on the server
             general_description = input(TermColors.BOLD + TermColors.WARNING +
                                         "Enter a general description for this model model: " + TermColors.ENDC)
 
-            info_print(f"Generating new model id for this blankly.json: {deployment_options['model_id']}")
+            model_id = api.create_model(project_id, default_type, model_name, general_description)['modelId']
+
+            info_print(f"Created a new model in blankly.json with ID: {model_id}")
+
+            deployment_options['type'] = default_type
+            deployment_options['model_id'] = model_id
+            deployment_options['project_id'] = project_id
+            deployment_options['model_name'] = model_name
+
             # Write the modified version with the ID back into the json file
             f = open(os.path.join(args['path'], deployment_script_name), 'w+')
             f.write(json.dumps(deployment_options, indent=2))
             f.close()
         model_name = deployment_options['model_name']
         project_id = deployment_options['project_id']
-        model_id = deployment_options['model_id']
     except FileNotFoundError:
         raise FileNotFoundError(f"A {deployment_script_name} file must be present at the top level of the "
                                 f"directory specified.")
 
     python_version = deployment_options['python_version']
-    return model_name, project_id, model_id, create_new, general_description, deployment_options, python_version
+    return model_name, project_id, deployment_options, python_version
 
 
 temporary_zip_file = None
@@ -479,8 +481,8 @@ def main():
             return
 
         # Read and write to the deployment options if necessary
-        model_name, project_id, model_id, create_new, general_description, deployment_options, python_version = \
-            get_project_model_and_name(args, projects)
+        model_name, project_id, deployment_options, python_version = \
+            get_project_model_and_name(args, projects, api)
 
         info_print("Zipping...")
 
@@ -492,15 +494,13 @@ def main():
                                     "Enter a description for this version of the model: " + TermColors.ENDC)
 
         info_print("Uploading...")
-        response = api.deploy(model_path,
+        response = api.deploy(file_path=model_path,
                               project_id=project_id,
-                              model_id=model_id,
-                              plan=chosen_plan,
+                              model_id=deployment_options['model_id'],
                               version_description=version_description,
-                              general_description=general_description,
-                              name=model_name,
-                              create_new=create_new,
-                              python_version=python_version)
+                              python_version=python_version,
+                              type_=deployment_options['type'],
+                              plan=chosen_plan)
         if 'error' in response:
             info_print('Error: ' + response['error'])
         elif 'status' in response and response['status'] == 'success':
@@ -580,8 +580,8 @@ def main():
         projects = api.list_projects()
 
         # Read and write to the deployment options if necessary
-        model_name, project_id, model_id, create_new, general_description, deployment_options, python_version = \
-            get_project_model_and_name(args, projects)
+        model_name, project_id, deployment_options, python_version = \
+            get_project_model_and_name(args, projects, api)
 
         info_print("Zipping...")
 
@@ -592,15 +592,14 @@ def main():
         backtest_description = input(TermColors.BOLD + TermColors.WARNING +
                                      "Enter a backtest description for this version of the model: " + TermColors.ENDC)
 
-        response = api.backtest(project_id=project_id,
-                                model_id=model_id,
+        response = api.backtest(file_path=model_path,
+                                project_id=project_id,
+                                model_id=deployment_options['model_id'],
                                 args=deployment_options['backtest_args'],
-                                backtest_description=backtest_description,
                                 plan=chosen_plan,
-                                file_path=model_path,
-                                create_new=create_new,
                                 python_version=python_version,
-                                name=model_name)
+                                backtest_description=backtest_description,
+                                type_=deployment_options['type'])
 
         info_print("Uploading...")
         info_print(f"Backtest upload completed at {response['timestamp']}:")

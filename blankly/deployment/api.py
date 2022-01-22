@@ -21,7 +21,7 @@ import json
 import requests
 from blankly.utils.utils import info_print
 
-blankly_deployment_url = 'https://deploy.blankly.finance'
+blankly_deployment_url = 'http://localhost'  # 'https://deploy.blankly.finance'
 
 
 class API:
@@ -118,19 +118,16 @@ class API:
         return self.__request('post', 'project/create', data={'name': name,
                                                               'description': description})
 
-    def deploy(self, file_path: str, plan: str, project_id, model_id: str,
-               general_description: str, version_description: str, name: str, create_new: bool,
-               python_version: float):
+    def deploy(self, file_path: str, project_id, model_id: str, version_description: str,
+               python_version: float, type_: str, plan: str):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
-        return self.__request('post', 'model/deploy', file=file, data={'plan': plan,
-                                                                       'name': name,
-                                                                       'modelId': model_id,
-                                                                       'projectId': project_id,
-                                                                       'generalDescription': general_description,
+        return self.__request('post', 'model/deploy', file=file, data={'pythonVersion': python_version,
                                                                        'versionDescription': version_description,
-                                                                       'createNew': create_new,
-                                                                       'pythonVersion': str(python_version)})
+                                                                       'projectId': project_id,
+                                                                       'modelId': model_id,
+                                                                       'type': type_,
+                                                                       'plan': plan})
 
     def backtest_deployed(self, project_id: str, model_id: str, args: dict, version_id: str, backtest_description: str):
         return self.__request('post', 'model/backtestUploadedModel',
@@ -141,18 +138,27 @@ class API:
                                      'backtestDescription': backtest_description})
 
     def backtest(self, file_path: str, project_id: str, model_id: str, args: dict, plan: str,
-                 create_new: bool, name: str, python_version: float, backtest_description: str = ""):
+                 type_: str, python_version: float, backtest_description: str = ""):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
         return self.__request('post', 'model/backtest', file=file,
-                              data={'projectId': project_id,
+                              data={'pythonVersion': str(python_version),
+                                    'projectId': project_id,
                                     'modelId': model_id,
-                                    'plan': plan,
-                                    'backtestDescription': backtest_description,
+                                    'type': type_,
                                     'backtestArgs': json.dumps(args),
-                                    'createNew': create_new,
-                                    'name': name,
-                                    'pythonVersion': str(python_version)})
+                                    'backtestDescription': backtest_description,
+                                    'plan': plan,
+                                    })
+
+    def create_model(self, project_id: str, type_: str, name: str, description: str):
+        return self.__request('post', 'model/create-model',
+                              data={
+                                  'projectId': project_id,
+                                  'type': type_,
+                                  'name': name,
+                                  'description': description
+                              })
 
     def signal(self):
         return self.__request('get', 'model/signalTest')
