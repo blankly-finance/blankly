@@ -591,6 +591,7 @@ def main():
 
         backtest_description = input(TermColors.BOLD + TermColors.WARNING +
                                      "Enter a backtest description for this version of the model: " + TermColors.ENDC)
+        info_print("Uploading...")
 
         response = api.backtest(file_path=model_path,
                                 project_id=project_id,
