@@ -20,7 +20,9 @@ import os
 import traceback
 import typing
 from datetime import datetime as dt
+import copy
 
+import numpy as np
 import pandas as pd
 from bokeh.layouts import column as bokeh_columns
 from bokeh.models import HoverTool
@@ -33,7 +35,7 @@ from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import load_backtest_preferences, update_progress, write_backtest_preferences, \
-    get_base_asset, get_quote_asset
+    get_base_asset, get_quote_asset, info_print
 
 
 def to_string_key(separated_list):
@@ -174,7 +176,7 @@ class BackTestController:
 
         self.__exchange_type = self.interface.get_exchange_type()
 
-        # Create our own traded assets dictionary because we customize it a bit
+        # Create our own traded assets' dictionary because we customize it a bit
         self.__traded_assets = []
 
         # Because the times are run in order we can use this variable to optimize account value searching
@@ -253,7 +255,7 @@ class BackTestController:
 
             # Attempt to find the same symbol/asset possibilities in the backtest blocks
             try:
-                download_ranges = local_history_blocks[asset][resolution]
+                download_ranges = copy.deepcopy(local_history_blocks[asset][resolution])
             except KeyError:
                 pass
 
@@ -500,7 +502,7 @@ class BackTestController:
     def __account_was_used(self, column) -> bool:
         show_zero_delta = self.preferences['settings']['show_tickers_with_zero_delta']
 
-        # Just check if its in the traded assets or if the zero delta is enabled
+        # Just check if it's in the traded assets or if the zero delta is enabled
         used = self.__traded_assets
         is_used = column in used or 'Account Value (' + self.quote_currency + ')' == column
 
@@ -509,7 +511,7 @@ class BackTestController:
         return output
 
     def __next_color(self):
-        # This should be a generator but it doesn't work without doing a foreach loop
+        # This should be a generator, but it doesn't work without doing a foreach loop
         try:
             return next(self.__color_generator)
         except StopIteration:
@@ -566,6 +568,11 @@ class BackTestController:
         # pushing these prices together makes the time go weird
         self.prices = sorted(self.prices)
 
+        if prices == {} or self.price_events == []:
+            raise ValueError("Either no price data or backtest events given. "
+                             "Try setting an argument such as to='1y' in the .backtest() command.\n"
+                             "Example: strategy.backtest(to='1y')")
+
         self.current_time = self.prices[0][0]
 
         self.initial_time = self.current_time
@@ -582,11 +589,6 @@ class BackTestController:
                 'init': self.price_events[i][5],
                 'teardown': self.price_events[i][6]
             }
-
-        if prices == {} or self.price_events == []:
-            raise ValueError("Either no price data or backtest events given. "
-                             "Use .append_backtest_price_data or "
-                             "append_backtest_price_event to create the backtest model.")
 
         # Initialize this before the callbacks so it works in the initialization functions
         self.time = self.initial_time
@@ -755,9 +757,6 @@ class BackTestController:
             mode='vline'
         )
 
-        # Back up the epoch list so that it can be used later for re-sampling
-        epoch_backup = cycle_status['time'].tolist()
-
         if self.preferences['settings']['GUI_output']:
             global_x_range = None
 
@@ -815,128 +814,106 @@ class BackTestController:
             except ValueError:
                 return False
 
-        dataframes = {
+        history_and_returns = {
             'history': cycle_status
         }
         metrics_indicators = {}
         user_callbacks = {}
 
-        # Check if it needs resampling
+        result_object = BacktestResult(history_and_returns, {
+            'created': self.interface.paper_trade_orders,
+            'limits_executed': self.interface.executed_orders,
+            'limits_canceled': self.interface.canceled_orders,
+            'executed_market_orders': self.interface.market_order_execution_details
+        }, self.pd_prices, self.initial_time, self.interface.time(), self.quote_currency, self.price_events)
+
+        # If they set resampling we use resampling for everything
         resample_setting = self.preferences['settings']['resample_account_value_for_metrics']
         if isinstance(resample_setting, str) or is_number(resample_setting):
-            # Backing arrays. We can't append directly to the dataframe so array has to also be made
+            resample_to = resample_setting
+        else:
+            info_print('Resampling value not set, defaulting to 1 day.')
+            resample_to = '1d'
 
-            def search_price(asset_id, epoch):
-                # In this case because each asset is called individually
-                def search(arr, size, x):
-                    while True:
-                        if self.__current_search_index == size:
-                            # Must be the last one in the list
-                            return self.__current_search_index - 1
+        interval_value = time_interval_to_seconds(resample_to)
 
-                        if arr[self.__current_search_index] <= x <= arr[self.__current_search_index + 1]:
-                            # Found it in this range
-                            return self.__current_search_index
-                        else:
-                            self.__current_search_index += 1
-                try:
-                    prices_ = self.pd_prices[asset_id][self.use_price]  # type: pd.Series
-                    times = self.pd_prices[asset_id]['time']  # type: pd.Series
+        # This is where we run the actual resample
+        resampled_account_data_frame = result_object.resample_account('Account Value (' + self.quote_currency + ')',
+                                                                      interval_value)
 
-                    # Iterate and find the correct quote price
-                    index_ = search(times, times.size, epoch)
-                    # print('Found price for', asset_id, prices[index])
-                    return prices_[index_]
-                except KeyError:
-                    # Not a currency that we have data for at all
-                    return 0
+        history_and_returns['resampled_account_value'] = resampled_account_data_frame
 
-            resampled_returns = pd.DataFrame(columns=['time', 'value'])
-            resampled_backing_array = []
+        returns = resampled_account_data_frame.copy(deep=True)
 
-            # Find the interval second value
-            interval_value = time_interval_to_seconds(resample_setting)
+        # Default diff parameters should do it
+        returns['value'] = returns['value'].pct_change()
 
-            # Assign start and stop limits
-            epoch_start = epoch_backup[0]
-            epoch_max = epoch_backup[len(epoch_backup) - 1]
+        # Now write it to our dictionary
+        history_and_returns['returns'] = returns
 
-            # Reset the current search index to zero for re-searching
-            self.__current_search_index = 0
-            # Going to push this in as a single column version of our price data so that __determine_price can handle it
-            self.pd_prices['Account Value (' + self.quote_currency + ')'] = pd.DataFrame()
-            self.pd_prices['Account Value (' + self.quote_currency + ')'][use_price] = \
-                cycle_status['Account Value (' + self.quote_currency + ')']
+        # -----=====*****=====-----
+        metrics_indicators['Compound Annual Growth Rate (%)'] = metrics.cagr(history_and_returns)
+        try:
+            metrics_indicators['Cumulative Returns (%)'] = metrics.cum_returns(history_and_returns)
+        except ZeroDivisionError:
+            raise ZeroDivisionError("Division by zero when calculating cumulative returns. "
+                                    "Are there valid account datapoints?")
 
-            self.pd_prices['Account Value (' + self.quote_currency + ')']['time'] = cycle_status['time']
-
-            while epoch_start <= epoch_max:
-                # Append this dict to the array
-                resampled_backing_array.append({
-                    'time': epoch_start,
-                    'value': search_price('Account Value (' + self.quote_currency + ')', epoch_start)
-                })
-
-                # Increase the epoch value
-                epoch_start += interval_value
-
-            # Put this in the dataframe
-            resampled_returns = resampled_returns.append(resampled_backing_array, ignore_index=True)
-
-            # This is the resampled version
-            dataframes['resampled_account_value'] = resampled_returns
-
-            # Now we need to copy it and find the differences
-            returns = resampled_returns.copy(deep=True)
-
-            # Default diff parameters should do it
-            returns['value'] = returns['value'].pct_change()
-
-            # Now write it to our dictionary
-            dataframes['returns'] = returns
-
-            # -----=====*****=====-----
-            metrics_indicators['Compound Annual Growth Rate (%)'] = metrics.cagr(dataframes)
+        def attempt(math_callable: typing.Callable, dict_of_dataframes: dict, kwargs: dict = None):
             try:
-                metrics_indicators['Cumulative Returns (%)'] = metrics.cum_returns(dataframes)
+                if kwargs is None:
+                    kwargs = {}
+                result = math_callable(dict_of_dataframes, **kwargs)
+                if result == np.NAN:
+                    result = None
+                return result
             except ZeroDivisionError:
-                raise ZeroDivisionError("Division by zero when calculating cum returns. "
-                                        "Are there valid account datapoints?")
+                return 'failed'
 
-            def attempt(math_callable: typing.Callable, dict_of_dataframes: dict, kwargs: dict = None):
-                try:
-                    if kwargs is None:
-                        kwargs = {}
-                    return math_callable(dict_of_dataframes, **kwargs)
-                except ZeroDivisionError:
-                    return 'failed'
+        risk_free_return_rate = self.preferences['settings']["risk_free_return_rate"]
+        metrics_indicators['Max Drawdown (%)'] = attempt(metrics.max_drawdown, history_and_returns)
+        metrics_indicators['Variance (%)'] = attempt(metrics.variance, history_and_returns)
+        metrics_indicators['Sortino Ratio'] = attempt(metrics.sortino, history_and_returns,
+                                                      {'risk_free_rate': risk_free_return_rate,
+                                                       'trading_period': interval_value})
+        metrics_indicators['Sharpe Ratio'] = attempt(metrics.sharpe, history_and_returns,
+                                                     {'risk_free_rate': risk_free_return_rate,
+                                                      'trading_period': interval_value})
+        metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, history_and_returns, {'trading_period':
+                                                                                           interval_value})
+        metrics_indicators['Volatility'] = attempt(metrics.volatility, history_and_returns)
+        metrics_indicators['Value-at-Risk'] = attempt(metrics.var, history_and_returns)
+        metrics_indicators['Conditional Value-at-Risk'] = attempt(metrics.cvar, history_and_returns)
+        # Add risk-free-return rate to dictionary
+        metrics_indicators['Risk Free Return Rate'] = risk_free_return_rate
+        # metrics_indicators['beta'] = attempt(metrics.beta, dataframes)
+        # Add the interval value to dictionary
+        metrics_indicators['Resampled Time'] = interval_value
+        # -----=====*****=====-----
 
-            risk_free_return_rate = self.preferences['settings']["risk_free_return_rate"]
-            trading_period = interval_value
-            metrics_indicators['Max Drawdown (%)'] = attempt(metrics.max_drawdown, dataframes)
-            metrics_indicators['Variance (%)'] = attempt(metrics.variance, dataframes)
-            metrics_indicators['Sortino Ratio'] = attempt(metrics.sortino, dataframes,
-                                                          {'risk_free_rate': risk_free_return_rate,
-                                                           'trading_period': trading_period})
-            metrics_indicators['Sharpe Ratio'] = attempt(metrics.sharpe, dataframes,
-                                                         {'risk_free_rate': risk_free_return_rate,
-                                                          'trading_period': trading_period})
-            metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, dataframes, {'trading_period': trading_period})
-            metrics_indicators['Volatility'] = attempt(metrics.volatility, dataframes)
-            metrics_indicators['Value-at-Risk'] = attempt(metrics.var, dataframes)
-            metrics_indicators['Conditional Value-at-Risk'] = attempt(metrics.cvar, dataframes)
-            # Add risk-free-return rate to dictionary
-            metrics_indicators['Risk Free Return Rate'] = risk_free_return_rate
-            # metrics_indicators['beta'] = attempt(metrics.beta, dataframes)
-            # Add the interval value to dictionary
-            metrics_indicators['Resampled Time'] = interval_value
-            # -----=====*****=====-----
-
+        # This trys to reference vars created in the resample portion, so it has to also be in the specified
+        #  resample if
+        # --
         # Run this last so that the user can override what they want
         for callback in self.callbacks:
-            user_callbacks[callback.__name__] = callback(dataframes)
+            user_callbacks[callback.__name__] = callback(history_and_returns)
 
-        result_object = BacktestResult(dataframes, metrics_indicators, user_callbacks)
+        # Remove NaN values here
+        history_and_returns['resampled_account_value'] = history_and_returns['resampled_account_value'].\
+            where(history_and_returns['resampled_account_value'].notnull(), None)
+
+        # Remove NaN values on this one too
+        history_and_returns['returns'] = history_and_returns['returns'].where(history_and_returns['returns'].notnull(),
+                                                                              None)
+        # Lastly remove Nan values in the metrics
+        for i in metrics_indicators:
+            if np.isnan(metrics_indicators[i]):
+                metrics_indicators[i] = None
+
+        # Assign all these new values back to the result object
+        result_object.history_and_returns = history_and_returns
+        result_object.metrics = metrics_indicators
+        result_object.user_callbacks = user_callbacks
 
         self.interface.set_backtesting(False)
         return result_object

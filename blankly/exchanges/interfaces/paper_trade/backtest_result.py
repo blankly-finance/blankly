@@ -17,22 +17,33 @@
 """
 
 from pandas import DataFrame
+from blankly.utils.utils import time_interval_to_seconds as _time_interval_to_seconds
 
 
 class BacktestResult:
-    def __init__(self, dataframes: dict, metrics: dict, user_callbacks: dict):
-        self.dataframes = dataframes
-        self.metrics = metrics
-        self.user_callbacks = user_callbacks
+    def __init__(self, history_and_returns: dict, trades: dict, history: dict,
+                 start_time: float, stop_time: float, quote_currency: str, price_events: list):
+        # This can use a ton of memory if these attributes are not cleared
+        self.history_and_returns = history_and_returns
+        self.metrics = None  # Assigned after construction
+        self.user_callbacks = None  # Assigned after construction
+        self.trades = trades
+        self.history = history
+
+        self.quote_currency = quote_currency
+        self.price_events = price_events
+
+        self.start_time = start_time
+        self.stop_time = stop_time
 
     def get_account_history(self) -> DataFrame:
-        return self.dataframes['history']
+        return self.history_and_returns['history']
 
     def get_returns(self) -> DataFrame:
-        return self.dataframes['returns']
+        return self.history_and_returns['returns']
 
     def get_resampled_account(self) -> DataFrame:
-        return self.dataframes['resampled_account_value']
+        return self.history_and_returns['resampled_account_value']
 
     def get_user_callback_results(self) -> dict:
         return self.user_callbacks
@@ -40,20 +51,80 @@ class BacktestResult:
     def get_metrics(self) -> dict:
         return self.metrics
 
+    def resample_account(self, symbol, interval: [str, float]) -> DataFrame:
+        """
+        Resample the raw account value metrics to any resolution
+
+        Args:
+            symbol: The column to resample at the interval resolution. This can include the account value column
+            interval: A string such as '1h' or '1m' or a number in seconds such as 3600 or 60 which the values
+            will be resampled at
+        """
+        search_index = 0
+
+        def search_price(values, times, epoch):
+            # In this case because each asset is called individually
+            def search(arr, size, x):
+                # Use a global search index to accelerate search
+                nonlocal search_index
+
+                while True:
+                    if search_index == size:
+                        # Must be the last one in the list
+                        return search_index - 1
+
+                    if arr[search_index] <= x <= arr[search_index + 1]:
+                        # Found it in this range
+                        return search_index
+                    else:
+                        search_index += 1
+            try:
+                # Iterate and find the correct quote price
+                index_ = search(times, len(times), epoch)
+                return values[index_]
+            except KeyError:
+                # Not a currency that we have data for at all
+                return 0
+
+        resampled_array = []
+        interval = _time_interval_to_seconds(interval)
+
+        # Find the necessary values to assemble the resamples
+        time_array = self.history_and_returns['history']['time'].tolist()
+        price_array = self.history_and_returns['history'][symbol].tolist()
+
+        # Add the epoch
+        epoch_start = time_array[0]
+        epoch_stop = time_array[-1]
+
+        while epoch_start <= epoch_stop:
+            # Append this dict to the array
+            resampled_array.append({
+                'time': epoch_start,
+                'value': search_price(price_array, time_array, epoch_start)
+            })
+
+            # Increase the epoch value
+            epoch_start += interval
+
+        # Turn that resample into a dataframe
+        df_conversion = DataFrame(columns=['time', 'value'])
+        return df_conversion.append(resampled_array, ignore_index=True)
+
     def __str__(self):
         return_string = "\n"
         return_string += "Historical Dataframes: \n"
 
         return_string += "Account History: \n"
-        return_string += self.dataframes['history'].__str__()
+        return_string += self.history_and_returns['history'].__str__()
         return_string += "\n"
 
         return_string += "Account Returns: \n"
-        return_string += self.dataframes['returns'].__str__()
+        return_string += self.history_and_returns['returns'].__str__()
         return_string += "\n"
 
         return_string += "Resampled Account Value: \n"
-        return_string += self.dataframes['resampled_account_value'].__str__()
+        return_string += self.history_and_returns['resampled_account_value'].__str__()
         return_string += "\n"
 
         return_string += "Blankly Metrics: \n"

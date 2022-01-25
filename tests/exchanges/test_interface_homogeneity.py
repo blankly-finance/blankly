@@ -19,7 +19,6 @@
 import time
 import unittest
 from datetime import datetime as dt
-import pdb
 
 import dateparser
 import numpy
@@ -116,8 +115,6 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
         for i in range(len(self.interfaces)):
             responses.append(self.interfaces[i].get_products()[0])
-
-        #pdb.set_trace()
 
         self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
@@ -479,8 +476,6 @@ class InterfaceHomogeneity(unittest.TestCase):
             type_ = i.get_exchange_type()
             types.append(type_)
             responses.append(i.get_order_filter(get_valid_symbol(type_)))
-
-        #pdb.set_trace()
 
         self.assertTrue(compare_responses(responses))
 

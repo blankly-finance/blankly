@@ -1,4 +1,3 @@
-import math
 import pandas as pd
 import time
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
@@ -6,17 +5,15 @@ from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
 import blankly.utils.utils as utils
-import json
 import copy
 from typing import List
-#
+
+
 class FTXInterface(ExchangeInterface):
-    
-    #note, FTX has no sandbox mode
+
+    # note, FTX has no sandbox mode
     def __init__(self, authenticated_API: FTXAPI, preferences_path: str):
         super().__init__('ftx', authenticated_API, preferences_path, valid_resolutions=None)
-
-  
 
     def init_exchange(self):
 
@@ -72,13 +69,13 @@ class FTXInterface(ExchangeInterface):
             "volumeUsd24h": 12.76575
         },
     """
-    #only includes markets of type "spot" (i.e. excludes futures) 
+
+    # only includes markets of type "spot" (i.e. excludes futures)
     def get_products(self) -> list:
 
         needed = self.needed['get_products']
 
-        
-        products : List[dict] = self.get_calls().list_markets()
+        products: List[dict] = self.get_calls().list_markets()
 
         end_products = []
 
@@ -96,14 +93,10 @@ class FTXInterface(ExchangeInterface):
                 end_products.append(product)
 
             else:
-                #note: we are not including futures in the result
-                pass
-                
-
+                continue
 
         return end_products
 
-    
     def get_account(self, symbol: str = None) -> utils.AttributeDict:
         """
         Get all assets in an account, or sort by symbol/account_id
@@ -115,7 +108,7 @@ class FTXInterface(ExchangeInterface):
         TODO add return example
         """
 
-        symbol = super().get_account(symbol = symbol)
+        symbol = super().get_account(symbol=symbol)
 
         needed = self.needed['get_account']
         parsed_dictionary = utils.AttributeDict({})
@@ -134,7 +127,7 @@ class FTXInterface(ExchangeInterface):
                     })
                     return requested_account
             raise ValueError("Symbol not found")
-        
+
         else:
             for account in balances:
                 account['hold'] = account['total'] - account['free']
@@ -180,6 +173,7 @@ class FTXInterface(ExchangeInterface):
     }
     """
 
+    @utils.order_protection
     def market_order(self, symbol: str, side: str, size: float) -> MarketOrder:
         """
         Used for buying or selling market orders
@@ -190,7 +184,7 @@ class FTXInterface(ExchangeInterface):
         """
         needed = self.needed['market_order']
 
-        response = self.get_calls().place_order(symbol, side, None, size, order_type = "market")
+        response = self.get_calls().place_order(symbol, side, None, size, order_type="market")
 
         response["symbol"] = response.pop("market")
         response["created_at"] = utils.epoch_from_ISO8601(response.pop("createdAt"))
@@ -205,7 +199,7 @@ class FTXInterface(ExchangeInterface):
         }
 
         return MarketOrder(order, response, self)
-    
+
     """
     needed
 
@@ -245,6 +239,7 @@ class FTXInterface(ExchangeInterface):
     }
     """
 
+    @utils.order_protection
     def limit_order(self,
                     symbol: str,
                     side: str,
@@ -259,7 +254,7 @@ class FTXInterface(ExchangeInterface):
             size: amount of asset (like BTC) for the limit to be valued
         """
         needed = self.needed['limit_order']
-        response = self.get_calls().place_order(symbol, side, price, size, order_type = "limit")
+        response = self.get_calls().place_order(symbol, side, price, size, order_type="limit")
 
         order = {
             'size': size,
@@ -275,10 +270,8 @@ class FTXInterface(ExchangeInterface):
         response = utils.isolate_specific(needed, response)
 
         return LimitOrder(order, response, self)
-    
 
-#    def stop_limit(self, symbol, side, stop_price, limit_price, size, stop = 'loss'):
-
+    #    def stop_limit(self, symbol, side, stop_price, limit_price, size, stop = 'loss'):
 
     def cancel_order(self, symbol: str, order_id: str) -> dict:
         """
@@ -290,7 +283,7 @@ class FTXInterface(ExchangeInterface):
 
         """
         self.get_calls().cancel_order(order_id)
-        return order_id
+        return {'order_id': order_id}
 
     """
     [
@@ -322,6 +315,7 @@ class FTXInterface(ExchangeInterface):
 
     ]
     """
+
     def get_open_orders(self, symbol: str = None) -> list:
         """
         List open orders.
@@ -330,7 +324,7 @@ class FTXInterface(ExchangeInterface):
         """
         response = self.get_calls().get_open_orders(symbol)
         response_needed_fulfilled = []
-        if(len(response) == 0):
+        if len(response) == 0:
             return []
 
         for open_order in response:
@@ -340,11 +334,14 @@ class FTXInterface(ExchangeInterface):
                 open_order['time_in_force'] = "GTC"
             elif open_order["type"] == "market":
                 needed = self.choose_order_specificity("market")
+            else:
+                print(f"Order type {open_order['type']} is not supported.")
+                continue
 
             open_order['created_at'] = utils.epoch_from_ISO8601(open_order.pop('createdAt'))
             open_order = utils.isolate_specific(needed, open_order)
             response_needed_fulfilled.append(open_order)
-        
+
         return response
 
     """
@@ -379,7 +376,6 @@ class FTXInterface(ExchangeInterface):
 
         needed = self.choose_order_specificity(response["type"])
 
-        
         response['symbol'] = response.pop('market')
         response['created_at'] = utils.epoch_from_ISO8601(response.pop('createdAt'))
 
@@ -389,7 +385,6 @@ class FTXInterface(ExchangeInterface):
         response = utils.isolate_specific(needed, response)
         return response
 
-    
     def get_fees(self) -> dict:
         """
         Get market fees
@@ -404,7 +399,6 @@ class FTXInterface(ExchangeInterface):
         account_info['maker_fee_rate'] = account_info.pop('makerFee')
         account_info['taker_fee_rate'] = account_info.pop('takerFee')
         account_info = utils.isolate_specific(needed, account_info)
-        
 
         return account_info
 
@@ -429,14 +423,14 @@ class FTXInterface(ExchangeInterface):
 
         accepted_grans = [15, 60, 300, 900, 3600, 14400, 86400]
 
-        #ftx accepts the above resolutions plus any multiple of 86400 up to 30 * 86400
+        # ftx accepts the above resolutions plus any multiple of 86400 up to 30 * 86400
         for i in range(2, 31):
             accepted_grans.append(i * 86400)
 
         if resolution not in accepted_grans:
             utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
             resolution = accepted_grans[min(range(len(accepted_grans)),
-                                            key=lambda i: abs(accepted_grans[i] - resolution))]
+                                            key=lambda j: abs(accepted_grans[j] - resolution))]
 
         # Figure out how many points are needed
         need = int((epoch_stop - epoch_start) / resolution)
@@ -447,9 +441,9 @@ class FTXInterface(ExchangeInterface):
         while need > 1501:
             # Close is always 1501 points ahead
             window_close = window_open + 1501 * resolution
-            
+
             response = self.get_calls().get_product_history(symbol, window_open, window_close, resolution)
-            
+
             history = history + response
 
             window_open = window_close
@@ -461,20 +455,19 @@ class FTXInterface(ExchangeInterface):
         window_close = epoch_stop
         response = self.get_calls().get_product_history(symbol, window_open, window_close, resolution)
         history_block = history + response
-        #print(history_block)
+        # print(history_block)
         history_block.sort(key=lambda x: x["time"])
 
         df = pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
         # df[['time']] = df[['time']].astype(int)
-        
-        
+
         df["time"] = df["time"].apply(lambda x: x / 1000)
         df[['time']] = df[['time']].astype(int)
 
         df[['low', 'high', 'open', 'close', 'volume']] = df[['low', 'high', 'open', 'close', 'volume']].astype(float)
 
         return df
-    
+
     def get_order_filter(self, symbol: str):
         """
         Find order limits for the exchange
@@ -508,19 +501,19 @@ class FTXInterface(ExchangeInterface):
         """
         if "-" in symbol:
             symbol = symbol.replace("-", "/")
-        
 
         market_info = self.get_calls().get_market(symbol)
 
         exchange_specific_keys = copy.deepcopy(market_info)
 
-        keys_to_remove = ["name", "baseCurrency", "quoteCurrency", "minProvideSize", "sizeIncrement", "priceIncrement", "price"]
+        keys_to_remove = ["name", "baseCurrency", "quoteCurrency", "minProvideSize", "sizeIncrement", "priceIncrement",
+                          "price"]
 
         for key in keys_to_remove:
             exchange_specific_keys.pop(key)
 
         return {
-            "symbol": market_info["name"], #make function in utils (or static) to switch slash to dash
+            "symbol": market_info["name"],  # make function in utils (or static) to switch slash to dash
             "base_asset": market_info["baseCurrency"],
             "quote_asset": market_info["quoteCurrency"],
             "max_orders": 99999999,
@@ -545,13 +538,12 @@ class FTXInterface(ExchangeInterface):
                     "min_funds": None,
                     "max_funds": None
                 },
-                
+
             },
             "exchange_specific": exchange_specific_keys
-            
+
         }
 
-    
     def get_price(self, symbol: str) -> float:
         """
         Returns just the price of a symbol.
@@ -559,4 +551,3 @@ class FTXInterface(ExchangeInterface):
             symbol: The asset such as (BTC-USD, or MSFT)
         """
         return float(self.get_calls().get_market(symbol)['price'])
-

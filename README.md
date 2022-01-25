@@ -162,16 +162,17 @@ For more info, and ways to do more advanced things, check out our [getting start
 
 ## Supported Exchanges
 
-| Exchange     | Integrate | Websockets  | Paper Trading | Backtesting |
-| ------------ | ------------ | ---------------- | ---------- | --------- |
-| Coinbase Pro | 🟢           | 🟢               | 🟢        | 🟢        |
-| Binance      | 🟢           | 🟢               | 🟢        | 🟢       |
-| Alpaca       | 🟢         | 🟢             | 🟢      | 🟢        |
-| OANDA | 🟢 | 🟡 | 🟢 | 🟢 |
-| FTX | 🔴 | 🔴 | 🔴 | 🔴 |
-| TD Ameritrade | 🔴 | 🔴 | 🔴 | 🔴 |
-| Webull | 🔴 | 🔴 | 🔴 | 🔴 |
-| Robinhood | 🔴 | 🔴 | 🔴 | 🔴 |
+| Exchange      | Integration | Websockets | Paper Trading | Backtesting |
+|---------------|-------------|------------|---------------|-------------|
+| Coinbase Pro  | 🟢          | 🟢         | 🟢            | 🟢          |
+| Binance       | 🟢          | 🟢         | 🟢            | 🟢          |
+| Alpaca        | 🟢          | 🟢         | 🟢            | 🟢          |
+| OANDA         | 🟢          | 🟡         | 🟢            | 🟢          |
+| FTX           | 🟢          | 🟢         | 🟡            | 🟢          |
+| KuCoin        | 🟡          | 🟡         | 🟡            | 🟡          |
+| TD Ameritrade | 🔴          | 🔴         | 🔴            | 🔴          |
+| Webull        | 🔴          | 🔴         | 🔴            | 🔴          |
+| Robinhood     | 🔴          | 🔴         | 🔴            | 🔴          |
 
 
 🟢  = working

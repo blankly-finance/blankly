@@ -12,12 +12,12 @@ import blankly.exchanges.interfaces.ftx.ftx_websocket_utils as websocket_utils
 from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
 
 
-def create_ticker_connection(id, url, channel):
+def create_ticker_connection(id_, url, channel):
     ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
     request = json.dumps({
-    "op": "subscribe",
-    "channel": channel,
-    "market": id
+        "op": "subscribe",
+        "channel": channel,
+        "market": id_
     })
     ws.send(request)
     return ws
@@ -107,7 +107,7 @@ class Tickers(ABCExchangeWebsocket):
                 received_dict = json.loads(received_string)
                 parsed_received_trades = websocket_utils.process_trades(received_dict)
                 for received in parsed_received_trades:
-                    #ISO8601 is converted to epoch in process_trades
+                    # ISO8601 is converted to epoch in process_trades
                     self.__most_recent_time = received["time"]
                     self.__time_feed.append(self.__most_recent_time)
 
