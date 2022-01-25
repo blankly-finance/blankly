@@ -216,10 +216,14 @@ class BackTestController:
             # Remove the .csv from each of the files: BTC-USD.1622400000.1622510793.60
             identifier = files[i][:-4].split(",")
             # Cast to float first before
-            identifier[1] = int(float(identifier[1]))
-            identifier[2] = int(float(identifier[2]))
-            identifier[3] = int(float(identifier[3]))
-            available_files.append(identifier)
+            try:
+                identifier[1] = int(float(identifier[1]))
+                identifier[2] = int(float(identifier[2]))
+                identifier[3] = int(float(identifier[3]))
+                available_files.append(identifier)
+            except IndexError:
+                raise IndexError(f"Please remove file {files[i]} in your price caches or "
+                                 f"match the blankly cache format.")
 
         # This is only the downloaded data
         local_history_blocks = {}

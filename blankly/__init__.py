@@ -23,6 +23,7 @@ from blankly.exchanges.interfaces.oanda.oanda import Oanda
 from blankly.exchanges.interfaces.kucoin.kucoin import Kucoin
 from blankly.exchanges.interfaces.ftx.ftx import FTX
 from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
+from blankly.exchanges.interfaces.keyless.keyless import KeylessExchange
 from blankly.frameworks.strategy import Strategy as Strategy
 from blankly.frameworks.strategy import StrategyState as StrategyState
 from blankly.frameworks.signal.signal import Signal
