@@ -20,6 +20,9 @@
     },
     "oanda": {
       "cash": "USD"
+    },
+    "keyless": {
+      "cash": "USD"
     }
   }
 }

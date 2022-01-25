@@ -59,6 +59,9 @@ default_general_settings = {
         },
         "oanda": {
             "cash": "USD"
+        },
+        "keyless": {
+            "cash": "USD"
         }
     }
 }
