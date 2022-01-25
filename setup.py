@@ -39,6 +39,7 @@ setup(
         'python-binance',
         'requests',
         'websocket-client',
+        'ciso8601'
     ],
     classifiers=[
         # Possible: "3 - Alpha", "4 - Beta" or "5 - Production/Stable"

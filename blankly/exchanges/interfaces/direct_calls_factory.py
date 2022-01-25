@@ -24,6 +24,8 @@ from blankly.exchanges.interfaces.alpaca.alpaca_api import create_alpaca_client
 from blankly.exchanges.interfaces.alpaca.alpaca_interface import AlpacaInterface
 from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as CoinbaseProAPI
+from blankly.exchanges.interfaces.kraken.kraken_api import API as KrakenAPI
+from blankly.exchanges.interfaces.kraken.kraken_interface import KrakenInterface
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
 from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
 from blankly.exchanges.interfaces.ftx.ftx_interface import FTXInterface
@@ -66,6 +68,10 @@ class DirectCallsFactory:
         elif exchange_name == 'oanda':
             calls = OandaAPI(auth, preferences["settings"]["use_sandbox"])
             return calls, OandaInterface(calls, preferences_path)
+
+        elif exchange_name == 'kraken':
+            calls = KrakenAPI(auth)
+            return calls, KrakenInterface(calls, preferences_path) 
 
         elif exchange_name == 'paper_trade':
             return None, None

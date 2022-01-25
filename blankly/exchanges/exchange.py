@@ -23,7 +23,6 @@ from blankly.exchanges.abc_exchange import ABCExchange
 from blankly.exchanges.auth.auth_constructor import write_auth_cache
 from blankly.exchanges.auth.auth_factory import AuthFactory
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
-from blankly.exchanges.interfaces.ftx.ftx_interface import FTXInterface
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
 from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
