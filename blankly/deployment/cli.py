@@ -603,11 +603,14 @@ def main():
                                 type_=deployment_options['type'])
 
         info_print("Uploading...")
-        info_print(f"Backtest upload completed at {response['timestamp']}:")
-        info_print(f"\tModel ID:\t{response['modelId']}")
-        info_print(f"\tVersion:\t{response['versionId']}")
-        info_print(f"\tStatus:  \t{response['status']}")
-        info_print(f"\tProject:\t{response['projectId']}")
+        if 'error' in response:
+            info_print(response['error'])
+        else:
+            info_print(f"Backtest upload completed at {response['timestamp']}:")
+            info_print(f"\tModel ID:\t{response['modelId']}")
+            info_print(f"\tVersion:\t{response['versionId']}")
+            info_print(f"\tStatus:  \t{response['status']}")
+            info_print(f"\tProject:\t{response['projectId']}")
 
     elif which == 'create':
         api = API(login())
