@@ -7,12 +7,12 @@ def price_event(price, symbol, state: blankly.StrategyState):
     rsi = blankly.indicators.rsi(state.variables['history'])
     if rsi[-1] < 30 and not state.variables['owns_position']:
         # Dollar cost average buy
-        buy = blankly.trunc(state.interface.cash/price, 2)
+        buy = int(state.interface.cash/price)
         state.interface.market_order(symbol, side='buy', size=buy)
         state.variables['owns_position'] = True
     elif rsi[-1] > 70 and state.variables['owns_position']:
         # Dollar cost average sell
-        curr_value = blankly.trunc(state.interface.account[state.base_asset].available)
+        curr_value = int(state.interface.account[state.base_asset].available)
         state.interface.market_order(symbol, side='sell', size=curr_value)
         state.variables['owns_position'] = False
 

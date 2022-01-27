@@ -45,8 +45,7 @@ def cagr(backtest_data):
 
 
 def cum_returns(backtest_data):
-    account_values = backtest_data['resampled_account_value']
-    return round(metrics.cum_returns(account_values['value'][0], account_values['value'].iloc[-1]), 2) * 100
+    return round(metrics.cum_returns(backtest_data.iloc[0], backtest_data.iloc[-1]), 2) * 100
 
 
 def sortino(backtest_data, trading_period=86400, risk_free_rate=0):
