@@ -357,7 +357,7 @@ def login(remove_cache: bool = False):
                 # If it's different from the one that was just created, remove the one just created
                 os.close(fd)
                 os.remove(os.path.join(temp_folder, file_name))
-                # Reassign file name just in case its needed below to write into the file
+                # Reassign file name just in case its needed below to write into the file 
                 # Note that we protect against corrupted files below by overwriting any contents in case
                 #  'token' not in token_file
                 file_name = i
