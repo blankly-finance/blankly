@@ -23,14 +23,14 @@ from typing import Any
 
 from blankly.utils.utils import load_notify_preferences
 from blankly.frameworks.strategy import Strategy
-from blankly.frameworks.signal.signal import Signal
+from blankly.frameworks.screener.screener import Screener
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
 
 
 class Reporter:
     def __init__(self):
         self.__live_vars = {}
-        self.__signal = None
+        self.__screener = None
         pass
 
     def export_live_var(self, var: Any, name: str, description: str = None):
@@ -63,30 +63,30 @@ class Reporter:
         """
         pass
 
-    def export_signal(self, signal: Signal):
+    def export_screener(self, screener: Screener):
         """
-        Export a signal object to the backend for monitoring
+        Export a screener object to the backend for monitoring
 
         Args:
-            signal: A signal object to export
+            screener: A screener object to export
         """
-        if self.__signal is None:
-            self.__signal = signal
+        if self.__screener is None:
+            self.__screener = screener
         else:
-            raise RuntimeError("Currently only a single signal can be exported per model.")
+            raise RuntimeError("Currently only a single screener can be exported per model.")
 
-    def export_signal_result(self, signal: Signal):
+    def export_screener_result(self, screener: Screener):
         """
-        Re-export for the finished signal result
+        Re-export for the finished screener result
 
         Args:
-            signal: A signal object to export
+            screener: A screener object to export
         """
         pass
 
     def export_backtest_result(self, backtest_result: BacktestResult):
         """
-        Re-export for the finished signal result
+        Re-export for the finished screener result
 
         Args:
             backtest_result: A blankly backtest result object

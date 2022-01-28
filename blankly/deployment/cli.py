@@ -194,8 +194,6 @@ def get_project_model_and_name(args, projects, api: API):
                 ids.append(i['projectId'])
             descriptions = []
 
-            default_type = 'strategy'
-
             for i in projects:
                 descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
                                     TermColors.ENDC + TermColors.OKCYAN + i['name'])
@@ -208,11 +206,15 @@ def get_project_model_and_name(args, projects, api: API):
             general_description = input(TermColors.BOLD + TermColors.WARNING +
                                         "Enter a general description for this model model: " + TermColors.ENDC)
 
-            model_id = api.create_model(project_id, default_type, model_name, general_description)['modelId']
+            type_ = choose_option('What type of model is this project?', ['strategy', 'screener'],
+                                  ['A strategy is a model that uses blankly.Strategy',
+                                   'A screener is a model uses blankly.Screener'])
+
+            model_id = api.create_model(project_id, type_, model_name, general_description)['modelId']
 
             info_print(f"Created a new model in blankly.json with ID: {model_id}")
 
-            deployment_options['type'] = default_type
+            deployment_options['type'] = type_
             deployment_options['model_id'] = model_id
             deployment_options['project_id'] = project_id
             deployment_options['model_name'] = model_name

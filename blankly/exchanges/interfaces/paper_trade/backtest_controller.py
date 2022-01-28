@@ -908,7 +908,7 @@ class BackTestController:
             'limits_executed': self.interface.executed_orders,
             'limits_canceled': self.interface.canceled_orders,
             'executed_market_orders': self.interface.market_order_execution_details
-        }, self.pd_prices, self.initial_time, self.interface.time(), self.quote_currency, self.price_events)
+        }, self.pd_prices, self.initial_time, self.interface.time(), self.quote_currency, self.price_events, figures)
 
         # If they set resampling we use resampling for everything
         resample_setting = self.preferences['settings']['resample_account_value_for_metrics']

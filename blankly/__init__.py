@@ -26,8 +26,8 @@ from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.interfaces.keyless.keyless import KeylessExchange
 from blankly.frameworks.strategy import Strategy as Strategy
 from blankly.frameworks.strategy import StrategyState as StrategyState
-from blankly.frameworks.signal.signal import Signal
-from blankly.frameworks.signal.signal_state import SignalState
+from blankly.frameworks.screener.screener import Screener
+from blankly.frameworks.screener.screener_state import ScreenerState
 
 from blankly.exchanges.managers.ticker_manager import TickerManager
 from blankly.exchanges.managers.orderbook_manager import OrderbookManager
@@ -42,7 +42,7 @@ from blankly.utils import time_builder
 
 from blankly.deployment.reporter_headers import Reporter as __Reporter_Headers
 is_deployed = False
-_signal_runner = None
+_screener_runner = None
 
 _backtesting = blankly.utils.check_backtesting()
 try:

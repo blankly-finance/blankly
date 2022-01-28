@@ -160,5 +160,3 @@ class API:
                                   'description': description
                               })
 
-    def signal(self):
-        return self.__request('get', 'model/signalTest')

@@ -1,5 +1,5 @@
 """
-    This class is able to maintain the state of the process and run signals when needed
+    This class is able to maintain the state of the process and run screeners when needed
     Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@ from blankly.utils.scheduler import Scheduler
 import __main__
 
 
-class SignalRunner:
+class ScreenerRunner:
     def __init__(self, resolution: float):
         self.__main = __main__.__file__
 

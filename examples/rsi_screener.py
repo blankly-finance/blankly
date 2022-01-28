@@ -1,11 +1,11 @@
-from blankly import Signal, Alpaca, SignalState
+from blankly import Screener, Alpaca, ScreenerState
 from blankly.indicators import rsi
 
 tickers = ['AAPL', 'GME', 'MSFT']  # any stocks that you may want
 
 
 # This function is our evaluator and runs per stock
-def is_stock_buy(symbol, state: SignalState):
+def is_stock_buy(symbol, state: ScreenerState):
     # This runs per stock
     prices = state.interface.history(symbol, 40, resolution=state.resolution,
                                      return_as='list')  # get past 40 data points
@@ -14,7 +14,7 @@ def is_stock_buy(symbol, state: SignalState):
     return {'is_oversold': rsi_values[-1] < 30, 'price': price, 'symbol': symbol}
 
 
-def formatter(results, state: SignalState):
+def formatter(results, state: ScreenerState):
     # results is a dictionary on a per-symbol basis
     result_string = 'These are all the stocks that are currently oversold: \n'
     for symbol in results:
@@ -25,7 +25,7 @@ def formatter(results, state: SignalState):
 
 if __name__ == "__main__":
     alpaca = Alpaca()  # initialize our interface
-    signal = Signal(alpaca, is_stock_buy, symbols=tickers, formatter=formatter, resolution='1d')  # find oversold
+    screener = Screener(alpaca, is_stock_buy, symbols=tickers, formatter=formatter, resolution='1d')  # find oversold
     # every day
 
-    print(signal.formatted_results)
+    print(screener.formatted_results)

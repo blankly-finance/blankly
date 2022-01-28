@@ -1,5 +1,5 @@
 """
-    Signal management system for starting & stopping long term monitoring
+    Screener management system for starting & stopping long term monitoring
     Copyright (C) 2021  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
@@ -18,15 +18,15 @@
 
 import typing
 from typing import List
-from blankly.frameworks.signal.signal_runner import SignalRunner
+from blankly.frameworks.screener.screener_runner import ScreenerRunner
 
 import blankly
 from blankly.exchanges.exchange import Exchange
-from blankly.frameworks.signal.signal_state import SignalState
+from blankly.frameworks.screener.screener_state import ScreenerState
 from copy import deepcopy
 
 
-class Signal:
+class Screener:
     def __init__(self, exchange: Exchange,
                  evaluator: typing.Callable,
                  symbols: List[str],
@@ -35,33 +35,33 @@ class Signal:
                  final: typing.Callable = None,
                  formatter: typing.Callable = None):
         """
-        Create a new signal.
+        Create a new screener.
 
         Function Signatures:
-        init(signal_state: blankly.SignalState)
-        evaluator(symbol: str, signal_state: blankly.SignalState)
-        final(signalState: blankly.SignalState)
-        formatter(raw_results: dict, signal_state: blankly.SignalState)
+        init(screener_state: blankly.ScreenerState)
+        evaluator(symbol: str, screener_state: blankly.ScreenerState)
+        final(ScreenerState: blankly.ScreenerState)
+        formatter(raw_results: dict, screener_state: blankly.ScreenerState)
 
         This heavily differs from Strategy objects. While a Strategy is optimized for the implementation of
-         short or long-term trading strategies, a Signal is optimized for long-term monitoring & reporting of many
-         symbols. Signals are designed to be scheduled to run over intervals of days & weeks. When deployed live,
-         a signal-based script will only start when scheduled, then exit entirely.
+         short or long-term trading strategies, a Screener is optimized for long-term monitoring & reporting of many
+         symbols. Screeners are designed to be scheduled to run over intervals of days & weeks. When deployed live,
+         a screener-based script will only start when scheduled, then exit entirely.
 
         Args:
-            exchange: An exchange object to construct the signal on
-            evaluator: The function that can take information about a signal & classify that signal based on parameters
+            exchange: An exchange object to construct the screener on
+            evaluator: The function that can take information about a screener & classify that screener based on parameters
             symbols: A list of symbols to run on.
-            resolution: The resolution for the signal to run like '1w' or '3d' or 86400
+            resolution: The resolution for the screener to run like '1w' or '3d' or 86400
             init: Optional setup code to run when the program starts
             final: Optional teardown code to run before the program finishes. This will be run every time the
-             signal finishes a cycle
+             screener finishes a cycle
             formatter: Optional formatting function that pretties the results form the evaluator
         """
         self.resolution = blankly.utils.time_interval_to_seconds(resolution)
 
-        if not blankly.is_deployed and blankly._signal_runner is None:
-            blankly._signal_runner = SignalRunner(self.resolution)
+        if not blankly.is_deployed and blankly._screener_runner is None:
+            blankly._screener_runner = ScreenerRunner(self.resolution)
 
         self.exchange = exchange
         self.symbols = symbols
@@ -75,24 +75,24 @@ class Signal:
         }
         self.interface = exchange.interface
 
-        # Creat the signal state and pass in this signal object
-        self.signal_state = SignalState(self)
+        # Creat the screener state and pass in this screener object
+        self.screener_state = ScreenerState(self)
 
         self.raw_results = {}
         self.formatted_results = {}
 
-        # Note that only a single signal can be exported at a time for a model
+        # Note that only a single screener can be exported at a time for a model
         if blankly.is_deployed:
-            blankly.reporter.export_signal(self)
+            blankly.reporter.export_screener(self)
 
         self.__run()
 
     def __run(self):
         init = self.__callables['init']
         if callable(init):
-            init(self.signal_state)
+            init(self.screener_state)
 
-        self.symbols = self.signal_state.symbols
+        self.symbols = self.screener_state.symbols
 
         # Evaluate using the evaluator function
         # 'symbol': {
@@ -109,9 +109,9 @@ class Signal:
             raise TypeError("Must pass a callable for the evaluator.")
 
         for i in self.symbols:
-            self.raw_results[i] = evaluator(i, self.signal_state)
+            self.raw_results[i] = evaluator(i, self.screener_state)
 
-        self.symbols = self.signal_state.symbols
+        self.symbols = self.screener_state.symbols
 
         # Copy the evaluator results so that they can be formatted
         self.formatted_results = deepcopy(self.raw_results)
@@ -119,17 +119,17 @@ class Signal:
         formatter = self.__callables['formatter']
         if callable(formatter):
             # Mutate the copied dictionary
-            self.formatted_results = formatter(self.formatted_results, self.signal_state)
+            self.formatted_results = formatter(self.formatted_results, self.screener_state)
 
-        self.symbols = self.signal_state.symbols
+        self.symbols = self.screener_state.symbols
 
         teardown = self.__callables['teardown']
         if callable(teardown):
-            teardown(self.signal_state)
+            teardown(self.screener_state)
 
-        self.symbols = self.signal_state.symbols
+        self.symbols = self.screener_state.symbols
 
-        blankly.reporter.export_signal_result(self)
+        blankly.reporter.export_screener_result(self)
 
     def notify(self, message: str = None):
         """
