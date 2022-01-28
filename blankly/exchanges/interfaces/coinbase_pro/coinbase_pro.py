@@ -26,10 +26,11 @@ class CoinbasePro(Exchange):
         Exchange.__init__(self, "coinbase_pro", portfolio_name, settings_path)
 
         # Load the auth from the keys file
-        auth = AuthConstructor(keys_path, portfolio_name, 'coinbase_pro', ['API_KEY', 'API_SECRET', 'API_PASS'])
+        auth = AuthConstructor(keys_path, portfolio_name, 'coinbase_pro', ['API_KEY', 'API_SECRET', 'API_PASS',
+                                                                           'sandbox'])
 
         keys = auth.keys
-        if self.preferences["settings"]["use_sandbox"]:
+        if keys['sandbox']:
             calls = CoinbaseProAPI(api_key=keys['API_KEY'],
                                    api_secret=keys['API_SECRET'],
                                    api_pass=keys['API_PASS'],

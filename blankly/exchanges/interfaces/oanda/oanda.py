@@ -8,12 +8,12 @@ class Oanda(Exchange):
         Exchange.__init__(self, "oanda", portfolio_name, settings_path)
 
         # Load the auth from the keys file
-        auth = AuthConstructor(keys_path, portfolio_name, 'oanda', ['PERSONAL_ACCESS_TOKEN', 'ACCOUNT_ID'])
+        auth = AuthConstructor(keys_path, portfolio_name, 'oanda', ['PERSONAL_ACCESS_TOKEN', 'ACCOUNT_ID', 'sandbox'])
 
         keys = auth.keys
         calls = OandaAPI(personal_access_token=keys['PERSONAL_ACCESS_TOKEN'],
                          account_id=keys['ACCOUNT_ID'],
-                         sandbox=self.preferences["settings"]["use_sandbox"])
+                         sandbox=auth.keys['sandbox'])
 
         # Always finish the method with this function
         super().construct_interface_and_cache(calls)

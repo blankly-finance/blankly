@@ -33,7 +33,6 @@ from blankly.utils.time_builder import time_interval_to_seconds
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
-        "use_sandbox": False,
         "use_sandbox_websockets": False,
         "websocket_buffer_size": 10000,
         "test_connectivity_on_auth": True,
