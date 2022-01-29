@@ -33,7 +33,8 @@ class FTX(Exchange):
         auth = AuthConstructor(keys_path, portfolio_name, 'ftx', ['API_KEY', 'API_SECRET', 'sandbox'])
 
         keys = auth.keys
-        sandbox = keys['sandbox']
+        sandbox = super().evaluate_sandbox(auth)
+
         calls = FTXAPI(keys['API_KEY'], keys['API_SECRET'])
 
         # Always finish the method with this function

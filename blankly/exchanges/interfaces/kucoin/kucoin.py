@@ -28,7 +28,8 @@ class Kucoin(Exchange):
         # Load the auth from the keys file
         auth = AuthConstructor(keys_path, portfolio_name, 'kucoin', ['API_KEY', 'API_SECRET', 'API_PASS', 'sandbox'])
 
-        sandbox = auth.keys['sandbox']
+        sandbox = super().evaluate_sandbox(auth)
+
         try:
             from kucoin import client as KucoinAPI
         except ImportError:

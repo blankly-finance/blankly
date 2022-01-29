@@ -47,6 +47,20 @@ class Exchange(ABCExchange, abc.ABC):
         # Fill this in the method below
         self.calls = None
 
+    # TODO this will be removed in the next update
+    def evaluate_sandbox(self, auth):
+        """
+        This will try to maintain compatibility with older versions if they fail to pivot to the new version immediately
+        """
+        if 'sandbox' not in auth.keys:
+            try:
+                return self.preferences['settings']['use_sandbox']
+            except KeyError:
+                raise KeyError("No sandbox setting found in either settings.json or keys.json. Please use the example"
+                               " above this error to modify your keys.json.")
+        else:
+            return auth.keys['sandbox']
+
     def construct_interface_and_cache(self, calls):
         """
         If you are a contributor, you need to modify this function to add exchanges

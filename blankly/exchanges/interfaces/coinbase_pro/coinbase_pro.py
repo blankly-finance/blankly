@@ -29,8 +29,10 @@ class CoinbasePro(Exchange):
         auth = AuthConstructor(keys_path, portfolio_name, 'coinbase_pro', ['API_KEY', 'API_SECRET', 'API_PASS',
                                                                            'sandbox'])
 
+        sandbox = super().evaluate_sandbox(auth)
+
         keys = auth.keys
-        if keys['sandbox']:
+        if sandbox:
             calls = CoinbaseProAPI(api_key=keys['API_KEY'],
                                    api_secret=keys['API_SECRET'],
                                    api_pass=keys['API_PASS'],
