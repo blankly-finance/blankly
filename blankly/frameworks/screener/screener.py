@@ -50,7 +50,8 @@ class Screener:
 
         Args:
             exchange: An exchange object to construct the screener on
-            evaluator: The function that can take information about a screener & classify that screener based on parameters
+            evaluator: The function that can take information about a screener & classify that screener based on
+             parameters
             symbols: A list of symbols to run on.
             init: Optional setup code to run when the program starts
             final: Optional teardown code to run before the program finishes. This will be run every time the
@@ -62,6 +63,7 @@ class Screener:
             cron_settings = load_deployment_settings()['screener']['schedule']
             blankly._screener_runner = ScreenerRunner(cron_settings)
 
+        # TODO export the symbols here as a list
         self.exchange = exchange
         self.symbols = symbols
 

@@ -66,6 +66,8 @@ class Exchange(ABCExchange, abc.ABC):
         elif self.__type == "kucoin":
             self.interface = KucoinInterface(self.__type, calls)
 
+        blankly.reporter.export_used_exchange(self.__type)
+
         write_auth_cache(self.__type, self.__name, calls)
 
     def get_name(self):

@@ -126,7 +126,7 @@ def load_json_file(override_path=None):
 
 
 class __BlanklySettings:
-    def __init__(self, default_path: str, default_settings: dict, not_found_err: str):
+    def __init__(self, default_path: str, default_settings: dict, not_found_err: str, allow_nonexistent: bool = False):
         """
         Create a class that can manage caching for loading and writing to user preferences with a low overhead.
         This can dramatically accelerate instantiation of new interfaces or other objects
@@ -135,11 +135,13 @@ class __BlanklySettings:
             default_settings: The default settings in which to compare the loaded settings to. This helps the user
              learn if they're missing important settings and avoids keyerrors later on
             not_found_err: A string that is shown if the file they specify is not found
+            allow_nonexistent: Enable this to create the file if not found
         """
         self.__settings_cache = {}
         self.__default_path = default_path
         self.__default_settings = default_settings
         self.__not_found_err = not_found_err
+        self.__allow_nonexistent = allow_nonexistent
 
     # Recursively check if the user has all the preferences, inform when defaults are missing
     def __compare_dicts(self, default_settings, user_settings):
@@ -172,7 +174,12 @@ class __BlanklySettings:
             try:
                 preferences = load_json_file(self.__default_path)
             except FileNotFoundError:
-                raise FileNotFoundError(self.__not_found_err)
+                if self.__allow_nonexistent:
+                    self.write(self.__default_settings)
+                    # Recursively run this
+                    return self.load(override_path)
+                else:
+                    raise FileNotFoundError(self.__not_found_err)
             preferences = self.__compare_dicts(self.__default_settings, preferences)
             self.__settings_cache[self.__default_path] = preferences
             return preferences
@@ -205,7 +212,7 @@ notify_settings = __BlanklySettings('./notify.json', default_notify_settings,
 
 deployment_settings = __BlanklySettings('./blankly.json', default_deploy_settings,
                                         "Make sure a blankly.json file is placed in the same folder as the project "
-                                        "working directory!")
+                                        "working directory!", allow_nonexistent=True)
 
 
 def load_user_preferences(override_path=None) -> dict:
@@ -216,8 +223,8 @@ def load_backtest_preferences(override_path=None) -> dict:
     return backtest_settings.load(override_path)
 
 
-def load_deployment_settings(override_path=None) -> dict:
-    return deployment_settings.load(override_path)
+def load_deployment_settings() -> dict:
+    return deployment_settings.load()
 
 
 def write_backtest_preferences(json_file, override_path=None):
