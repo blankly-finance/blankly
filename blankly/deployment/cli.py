@@ -18,7 +18,6 @@
 
 import argparse
 import sys
-import uuid
 import warnings
 import os
 import platform
@@ -31,7 +30,7 @@ import tempfile
 import webbrowser
 
 from blankly.deployment.api import API
-from blankly.utils.utils import load_json_file, info_print
+from blankly.utils.utils import load_json_file, info_print, load_deployment_settings
 
 very_important_string = """
 ██████╗ ██╗      █████╗ ███╗   ██╗██╗  ██╗██╗  ██╗   ██╗    ███████╗██╗███╗   ██╗ █████╗ ███╗   ██╗ ██████╗███████╗
@@ -543,16 +542,9 @@ def main():
         py_version = platform.python_version_tuple()
         print(f"{TermColors.OKCYAN}{TermColors.BOLD}Found python version: "
               f"{py_version[0]}.{py_version[1]}{TermColors.ENDC}")
-        deploy = {
-            "main_script": "./bot.py",
-            "python_version": py_version[0] + "." + py_version[1],
-            "requirements": "./requirements.txt",
-            "working_directory": ".",
-            "ignore_files": ['price_caches'],
-            "backtest_args": {
-                'to': '1y'
-            }
-        }
+
+        deploy = load_deployment_settings()
+        deploy['python_version'] = py_version[0] + "." + py_version[1]
         create_and_write_file(deployment_script_name, json.dumps(deploy, indent=2))
 
         # Write in a blank requirements file

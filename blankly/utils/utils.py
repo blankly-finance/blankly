@@ -12,6 +12,8 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
+
 import blankly
 
 import datetime
@@ -101,6 +103,20 @@ default_notify_settings = {
   }
 }
 
+default_deploy_settings = {
+    "main_script": "./bot.py",
+    "python_version": '3.7',
+    "requirements": "./requirements.txt",
+    "working_directory": ".",
+    "ignore_files": ['price_caches'],
+    "backtest_args": {
+        'to': '1y'
+    },
+    "screener": {
+        "schedule": "30 14 * * 1-5"  # Set this default stock-like schedule
+    }
+}
+
 
 def load_json_file(override_path=None):
     f = open(override_path, )
@@ -187,6 +203,10 @@ notify_settings = __BlanklySettings('./notify.json', default_notify_settings,
                                     "as the project working directory. This is not necessary when deployed live on "
                                     "blankly cloud.")
 
+deployment_settings = __BlanklySettings('./blankly.json', default_deploy_settings,
+                                        "Make sure a blankly.json file is placed in the same folder as the project "
+                                        "working directory!")
+
 
 def load_user_preferences(override_path=None) -> dict:
     return general_settings.load(override_path)
@@ -194,6 +214,10 @@ def load_user_preferences(override_path=None) -> dict:
 
 def load_backtest_preferences(override_path=None) -> dict:
     return backtest_settings.load(override_path)
+
+
+def load_deployment_settings(override_path=None) -> dict:
+    return deployment_settings.load(override_path)
 
 
 def write_backtest_preferences(json_file, override_path=None):

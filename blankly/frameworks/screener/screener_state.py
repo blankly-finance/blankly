@@ -38,7 +38,6 @@ class ScreenerState:
         self.screener = screener
         self.variables = AttributeDict({})
         self.symbols = screener.symbols
-        self.resolution = screener.resolution
 
     @property
     def interface(self) -> Interface:

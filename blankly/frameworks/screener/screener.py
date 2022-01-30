@@ -19,6 +19,7 @@
 import typing
 from typing import List
 from blankly.frameworks.screener.screener_runner import ScreenerRunner
+from blankly.utils.utils import load_deployment_settings
 
 import blankly
 from blankly.exchanges.exchange import Exchange
@@ -30,7 +31,6 @@ class Screener:
     def __init__(self, exchange: Exchange,
                  evaluator: typing.Callable,
                  symbols: List[str],
-                 resolution: typing.Union[str, float],
                  init: typing.Callable = None,
                  final: typing.Callable = None,
                  formatter: typing.Callable = None):
@@ -52,16 +52,15 @@ class Screener:
             exchange: An exchange object to construct the screener on
             evaluator: The function that can take information about a screener & classify that screener based on parameters
             symbols: A list of symbols to run on.
-            resolution: The resolution for the screener to run like '1w' or '3d' or 86400
             init: Optional setup code to run when the program starts
             final: Optional teardown code to run before the program finishes. This will be run every time the
              screener finishes a cycle
             formatter: Optional formatting function that pretties the results form the evaluator
         """
-        self.resolution = blankly.utils.time_interval_to_seconds(resolution)
 
         if not blankly.is_deployed and blankly._screener_runner is None:
-            blankly._screener_runner = ScreenerRunner(self.resolution)
+            cron_settings = load_deployment_settings()['screener']['schedule']
+            blankly._screener_runner = ScreenerRunner(cron_settings)
 
         self.exchange = exchange
         self.symbols = symbols
