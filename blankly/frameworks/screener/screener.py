@@ -110,7 +110,14 @@ class Screener:
             raise TypeError("Must pass a callable for the evaluator.")
 
         for i in self.symbols:
-            self.raw_results[i] = evaluator(i, self.screener_state)
+            # Parse the types for the symbol
+            # If it's a dictionary it's A ok but if it's a non-dict give it the value column
+            result = evaluator(i, self.screener_state)
+            if not isinstance(result, dict):
+                result = {
+                    'value': result
+                }
+            self.raw_results[i] = result
 
         self.symbols = self.screener_state.symbols
 
