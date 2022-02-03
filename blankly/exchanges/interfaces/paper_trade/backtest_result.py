@@ -36,8 +36,6 @@ class BacktestResult:
         self.start_time = start_time
         self.stop_time = stop_time
 
-        self.quantstats_metrics = None  # Assigned when user first queries quantstats funcs
-
     def get_account_history(self) -> DataFrame:
         return self.history_and_returns['history']
 
@@ -123,21 +121,17 @@ class BacktestResult:
         return df_conversion.append(resampled_array, ignore_index=True)
 
     def get_quantstats_metrics(self):
-        if self.quantstats_metrics is not None:
-            return self.quantstats_metrics
-        else:
+        try:
+            import quantstats as qs
             try:
-                import quantstats as qs
-                try:
-                    returns = self.get_returns()['value']
-                    returns.index = to_datetime(returns.index, origin=Timestamp(self.start_time, unit='s'), unit='D')
-                    self.quantstats_metrics = qs.reports.metrics(returns, display=False)
-                    return self.quantstats_metrics
-                except ValueError as e:
-                    info_print(e)
-            except ImportError:
-                info_print(
-                    "Quantstats not installed. Run 'pip install quantstats' to calculate metrics using Quantstats.")
+                returns = self.get_returns()['value']
+                returns.index = to_datetime(returns.index, origin=Timestamp(self.start_time, unit='s'), unit='D')
+                return qs.reports.metrics(returns, display=False)
+            except ValueError as e:
+                info_print(e)
+        except ImportError:
+            raise ImportError(
+                "Quantstats not installed. Run 'pip install quantstats' to calculate metrics using Quantstats.")
 
     def __str__(self):
         return_string = "\n"
