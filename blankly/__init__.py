@@ -27,9 +27,7 @@ from blankly.exchanges.interfaces.keyless.keyless import KeylessExchange
 from blankly.frameworks.strategy import Strategy as Strategy
 from blankly.frameworks.strategy import StrategyState as StrategyState
 from blankly.frameworks.screener.screener import Screener
-from blankly.frameworks.screener.screener import Screener as Signal
 from blankly.frameworks.screener.screener_state import ScreenerState
-from blankly.frameworks.screener.screener_state import ScreenerState as SignalState
 
 from blankly.exchanges.managers.ticker_manager import TickerManager
 from blankly.exchanges.managers.orderbook_manager import OrderbookManager
