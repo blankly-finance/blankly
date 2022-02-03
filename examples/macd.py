@@ -69,4 +69,4 @@ if __name__ == "__main__":
     s.add_price_event(price_event, 'D', resolution='1d', init=init)
     s.add_price_event(price_event, 'GME', resolution='1d', init=init)
 
-    print(s.backtest(initial_values={'USD': 10000}, to='2y'))
+    print(s.backtest(initial_values={'USD': 10000}, to='2y').get_quantstats_metrics())
