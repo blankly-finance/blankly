@@ -11,8 +11,7 @@ def is_stock_buy(symbol, state: ScreenerState):
                                      return_as='list')  # get past 40 data points
     price = state.interface.get_price(symbol)
     rsi_values = rsi(prices['close'], 14)
-    return {'is_oversold': rsi_values[-1] < 30, 'price': price, 'symbol': symbol}
-
+    return {'is_oversold': bool(rsi_values[-1] < 30), 'price': price, 'symbol': symbol}
 
 def formatter(results, state: ScreenerState):
     # results is a dictionary on a per-symbol basis
