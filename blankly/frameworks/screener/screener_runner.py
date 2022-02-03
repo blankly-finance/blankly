@@ -31,7 +31,7 @@ class ScreenerRunner:
             from croniter import croniter
             self.croniter = croniter
         except ImportError:
-            raise ImportError("To run signals locally, please \"pip install croniter\".")
+            raise ImportError("To run screeners locally, please \"pip install croniter\".")
         self.__main = __main__.__file__
 
         self.croniter = self.croniter(cronjob, datetime.datetime.fromtimestamp(time.time()).astimezone(timezone.utc))

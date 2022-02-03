@@ -768,11 +768,8 @@ def check_backtesting() -> bool:
     Tests if the environment is configured for backtesting. Primarily used for platform deployments but is
     applicable elsewhere
     """
-    backtesting_env = os.getenv('BACKTESTING')
-    if backtesting_env is not None:
-        return backtesting_env == '1'
-    else:
-        return False
+    type_ = os.getenv('TYPE')
+    return type_ == 'STRATEGY_BACKTEST'
 
 
 def order_protection(func):
