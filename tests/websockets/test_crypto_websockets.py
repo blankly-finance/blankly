@@ -32,7 +32,8 @@ class CryptoWebsockets:
         self.validated_responses = {
             'orderbook': {
                 'coinbase_pro': False,
-                'binance': False
+                'binance': False,
+                'kucoin': False # added extra
             },
             'prices': {
                 'coinbase_pro': False,
@@ -67,6 +68,9 @@ class CryptoWebsockets:
 
         self.orderbook_manager.create_orderbook(self.coinbase_orderbook, override_symbol='BTC-USD',
                                                 override_exchange='coinbase_pro')
+
+        self.orderbook_manager.create_orderbook(self.kucoin_orderbook, override_symbol='BTC-USDT',
+                                                override_exchange='kucoin')
 
         self.orderbook_manager.create_orderbook(self.binance_orderbook, override_symbol='BTC-USDT',
                                                 override_exchange='binance')
@@ -161,3 +165,8 @@ class CryptoWebsockets:
         if self.validate_orderbook_event(message):
             self.validated_responses['orderbook']['binance'] = True
             self.orderbook_manager.close_websocket('BTC-USDT', 'binance')
+
+    def kucoin_orderbook(self, message):
+        if self.validate_orderbook_event(message):
+            self.validated_responses['orderbook']['kucoin'] = True
+            self.orderbook_manager.close_websocket('BTC-USDT', 'kucoin')

@@ -156,23 +156,23 @@ class OrderbookManager(WebsocketManager):
             if override_symbol is None:
                 override_symbol = self.__default_currency
 
-            request_data =(requests.post('https://api.kucoin.com/api/v1/bullet-public').json())
+            request_data = (requests.post('https://api.kucoin.com/api/v1/bullet-public').json())
 
             if use_sandbox:
                 base_endpoint = request_data['data']['instanceServers'][0]['endpoint']
                 token = request_data['data']['token']
                 websocket = Kucoin_Orderbook(override_symbol, "level2",
-                                                   pre_event_callback=self.kucoin_snapshot_update,
-                                                   initially_stopped=initially_stopped,
-                                                   websocket_url=f"{base_endpoint}/socket.io/?token={token}")
+                                             pre_event_callback=self.kucoin_snapshot_update,
+                                             initially_stopped=initially_stopped,
+                                             websocket_url=f"{base_endpoint}/socket.io/?token={token}")
             else:
                 base_endpoint = request_data['data']['instanceServers'][0]['endpoint']
                 token = request_data['data']['token']
                 websocket = Kucoin_Orderbook(override_symbol, "level2",
-                                                   pre_event_callback=self.kucoin_snapshot_update,
-                                                   initially_stopped=initially_stopped,
-                                                   websocket_url=f"{base_endpoint}?token={token}&[connectId={random.randint(1, 100000000) * 100000000}]"
-                                                   )
+                                             pre_event_callback=self.kucoin_snapshot_update,
+                                             initially_stopped=initially_stopped,
+                                             websocket_url=f"{base_endpoint}?token={token}&[connectId={random.randint(1, 200000000) * 100000000}]"
+                                             )
             # This is where the sorting magic happens
             websocket.append_callback(self.kucoin_update)
 
@@ -302,25 +302,35 @@ class OrderbookManager(WebsocketManager):
         symbol = update['data']['symbol']
 
         # Get symbol for orderbook
-        book_buys = self.__orderbooks['kucoin'][symbol]['bids']  # type: list
+        book_buys = self.__orderbooks['kucoin'][symbol]['bids']
         book_sells = self.__orderbooks['kucoin'][symbol]['asks']  # type: list
 
-        new_buys = update['data']['changes']['bids'][0][1][::-1]  # type: list
+        new_buys = update['data']['changes']['bids'][::-1]  # type: list
+        if len(new_buys) == 0:
+            pass
+        else:
+            new_buys[0] = new_buys[0][:-1]
+
         for i in new_buys:
-            i[0] = float(i[0])
-            i[1] = float(i[1])
+            i[0] = float(i[0])  # price
+            i[1] = float(i[1])  # size
             if i[1] == 0:
-                book_buys = remove_price(book_buys, i[0])
+                book_buys = remove_price(book_buys, i[1])
             else:
                 book_buys.append((i[0], i[1]))
 
         # Asks are sells, these are also counted from low to high
-        new_sells = update['data']['changes']['asks'][0][1]  # type: list
+        new_sells = update['data']['changes']['asks']  # type: list
+        if len(new_sells) == 0:
+            pass
+        else:
+            new_sells[0] = new_sells[0][:-1]
+
         for i in new_sells:
             i[0] = float(i[0])
             i[1] = float(i[1])
             if i[1] == 0:
-                book_sells = remove_price(book_sells, i[0])
+                book_sells = remove_price(book_sells, i[1])
             else:
                 book_sells.append((i[0], i[1]))
 
@@ -345,13 +355,15 @@ class OrderbookManager(WebsocketManager):
             "asks": []
         }
         # Get all bids
-        buys = update['data']['changes']['bids'][0]
+        buys = update['data']['changes']['bids'] # [0][:-1]
+        buys[0] = buys[0][:-1]
         # Convert these to float and write to our order dictionaries
         for i in range(len(buys)):
             buy = buys[i]
             book['bids'].append((float(buy[0]), float(buy[1])))
 
-        sells = update['data']['changes']['asks'][0]
+        sells = update['data']['changes']['asks'] # [0][:-1]
+        sells[0] = sells[0][:-1]
         for i in range(len(sells)):
             sell = sells[i]
             book['asks'].append((float(sell[0]), float(sell[1])))

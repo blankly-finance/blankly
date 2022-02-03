@@ -4,7 +4,6 @@ import traceback
 
 import requests
 
-from blankly.utils.utils import epoch_from_iso8601
 import blankly.exchanges.interfaces.kucoin.kucoin_websocket_utils as websocket_utils
 from blankly.exchanges.interfaces.websocket import Websocket
 from blankly.utils.utils import info_print
