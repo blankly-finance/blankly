@@ -797,6 +797,9 @@ class BinanceInterface(ExchangeInterface):
 
                 "min_price": min_price,
                 "max_price": max_price,
+
+                "hard_min_price": hard_min_price,
+                "hard_max_price": hard_max_price,
             },
             'market_order': {
                 "fractionable": True,
