@@ -769,7 +769,12 @@ def check_backtesting() -> bool:
     applicable elsewhere
     """
     type_ = os.getenv('TYPE')
-    return type_ == 'STRATEGY_BACKTEST'
+
+    # Could be undefined
+    if type_ is not None:
+        return type_ == 'STRATEGY_BACKTEST'
+    else:
+        return False
 
 
 def order_protection(func):

@@ -938,9 +938,8 @@ class BackTestController:
         metrics_indicators['Compound Annual Growth Rate (%)'] = metrics.cagr(history_and_returns)
         try:
             metrics_indicators['Cumulative Returns (%)'] = metrics.cum_returns(history_and_returns)
-        except ZeroDivisionError:
-            raise ZeroDivisionError("Division by zero when calculating cumulative returns. "
-                                    "Are there valid account datapoints?")
+        except ZeroDivisionError as e_:
+            metrics_indicators['Cumulative Returns (%)'] = f'failed: {e_}'
 
         def attempt(math_callable: typing.Callable, dict_of_dataframes: dict, kwargs: dict = None):
             try:
