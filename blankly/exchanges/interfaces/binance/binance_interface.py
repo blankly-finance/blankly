@@ -815,7 +815,10 @@ class BinanceInterface(ExchangeInterface):
                     "max_funds": max_market_notational,
                 },
             },
-            "exchange_specific": {}
+            "exchange_specific": {
+                'limit_multiplier_up': float(filters[1]["multiplierUp"]),
+                'limit_multiplier_down': float(filters[1]["multiplierDown"])
+            }
         }
 
     def get_price(self, symbol) -> float:
