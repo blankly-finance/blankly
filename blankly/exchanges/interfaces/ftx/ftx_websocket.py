@@ -18,9 +18,10 @@
 
 import json
 import traceback
-
+import blankly
 import blankly.exchanges.interfaces.ftx.ftx_websocket_utils as websocket_utils
 from blankly.exchanges.interfaces.websocket import Websocket
+# from blankly.utils import time
 from blankly.utils.utils import info_print
 
 
@@ -60,6 +61,9 @@ class Tickers(Websocket):
 
         super().__init__(symbol, stream, log, log_message, WEBSOCKET_URL, pre_event_callback)
 
+        self.__pre_event_callback_filled = False
+
+
         # Start the websocket
         if not initially_stopped:
             self.start_websocket(
@@ -80,32 +84,47 @@ class Tickers(Websocket):
         """
         Behavior for this exchange
         """
-        received_dict = json.loads(message)
-        if received_dict['type'] == 'subscribed':
-            info_print(f"Subscribed to {received_dict['channel']}")
+        #received_string = message
+        received = json.loads(message)
+        if received['type'] == 'subscribed':
+            info_print(f"Subscribed to {received['channel']}")
             return
 
-        parsed_received_trades = websocket_utils.process_trades(received_dict)
-        for received in parsed_received_trades:
+        # self.pre_event_callback(received_dict)
+
+        if (self.pre_event_callback is not None) and (not self.__pre_event_callback_filled) and \
+                (self.stream == "orderbook"):
+            if received['type'] == 'partial':
+                try:
+                    self.pre_event_callback(received)
+                except Exception:
+                    traceback.print_exc()
+
+            self.__pre_event_callback_filled = True
+            return
+
+        # parsed_received_trades = websocket_utils.process_trades(received_dict)
+        # for received in parsed_received_trades:
             # ISO8601 is converted to epoch in process_trades
-            self.most_recent_time = received["time"]
-            self.time_feed.append(self.most_recent_time)
+        self.most_recent_time = blankly.utils.convert_epochs(received['data']['time'])
+        received["data"]["time"] = self.most_recent_time
+        self.time_feed.append(self.most_recent_time)
 
-            self.log_response(self.__logging_callback, received)
+        self.log_response(self.__logging_callback, received)
 
-            # Manage price events and fire for each manager attached
-            interface_message = self.__interface_callback(received)
-            self.ticker_feed.append(interface_message)
-            self.most_recent_tick = interface_message
+        # Manage price events and fire for each manager attached
+        interface_message = self.__interface_callback(received)
+        self.ticker_feed.append(interface_message)
+        self.most_recent_tick = interface_message
 
-            try:
-                for i in self.callbacks:
-                    i(interface_message)
-            except Exception as e:
-                info_print(e)
-                traceback.print_exc()
+        try:
+            for i in self.callbacks:
+                i(interface_message)
+        except Exception as e:
+            info_print(e)
+            traceback.print_exc()
 
-            self.message_count += 1
+        self.message_count += 1
 
     def on_error(self, ws, error):
         info_print(error)
@@ -130,3 +149,9 @@ class Tickers(Websocket):
             self.on_close,
             self.read_websocket
         )
+
+# if __name__ == "__main__":
+#     a = Tickers('a', 'b')
+#
+#     while True:
+#         time.sleep(1)

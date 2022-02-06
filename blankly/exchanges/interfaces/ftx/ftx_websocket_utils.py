@@ -27,7 +27,7 @@ def switch_type(stream):
                process_trades, \
                "time,system_time,price,open_24h,volume_24h,low_24h,high_24h,volume_30d,best_bid,best_ask," \
                "last_size\n"
-    elif stream == "level2":
+    elif stream == "orderbook":
         return no_callback, \
                no_callback, \
                ""
@@ -68,6 +68,26 @@ def process_trades(response: dict) -> List[dict]:
     assert (num_trades == len(list_trades))
 
     return list_trades
+
+# def process_trades(response: dict) -> List[dict]:
+#     list_trades: List = []
+#     trades_data: dict = response
+#
+#     needed = [
+#         ["symbol", str],
+#         ["price", float],
+#         ["time", float],
+#         ["trade_id", int],
+#         ["size", float]
+#     ]
+#
+#     trades_data['symbol'] = trades_data['market']
+#     trades_data['trade_id'] = trades_data.pop('id') #not there
+#     trades_data['time'] = utils.epoch_from_iso8601(trades_data['data']['time'])
+#     trades_data['symbol'] = trades_data['symbol'].replace('/', '-')
+#
+#     list_trades.append(utils.isolate_specific(needed, response))
+#     return list_trades
 
 
 def trade(received):

@@ -1,6 +1,6 @@
 import time
 
-from blankly.utils.utils import isolate_specific, rename_to
+from blankly.utils.utils import isolate_specific
 
 
 def switch_type(stream):
