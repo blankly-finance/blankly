@@ -435,7 +435,8 @@ class OrderbookManager(WebsocketManager):
             i(self.__orderbooks['ftx'][symbol],
               **self.__websockets_kwargs['ftx'][symbol])
     def ftx_snapshot_update(self, update):
-        print("Orderbook snapshot acquired for: " + update['market'])
+        market = update['market'].replace('/', '-')
+        print("Orderbook snapshot acquired for: " + market)
         book = {
             "bids": [],
             "asks": []
