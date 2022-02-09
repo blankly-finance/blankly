@@ -798,12 +798,13 @@ class BackTestController:
         self.time = None
 
         # Push the accounts to the dataframe
-        cycle_status = cycle_status.append(price_data, ignore_index=True).sort_values(by=['time'])
+        cycle_status = pd.concat([cycle_status, pd.DataFrame(price_data)], ignore_index=True).sort_values(by=['time'])
 
         if len(cycle_status) == 0:
             raise RuntimeError("Empty result - no valid backtesting events occurred. Was there an error?.")
 
-        no_trade_cycle_status = no_trade_cycle_status.append(no_trade, ignore_index=True).sort_values(by=['time'])
+        no_trade_cycle_status = pd.concat([no_trade_cycle_status, pd.DataFrame(no_trade)], ignore_index=True)\
+            .sort_values(by=['time'])
 
         figures = []
         # for i in self.prices:
