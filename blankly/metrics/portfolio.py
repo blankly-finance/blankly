@@ -25,6 +25,8 @@ from blankly.utils.utils import info_print
 
 
 def cagr(start_value, end_value, years):
+    if years == 0:
+        return 0.0
     if end_value < start_value:
         info_print('End Value less than Start Value makes CAGR meaningless, returning 0')
         return 0.0
@@ -65,6 +67,8 @@ def volatility(returns, n=None):
 
 
 def variance(returns, n=None):
+    if len(returns) <= 1:
+        return 0.0
     return np.nanvar(returns) * n if n else np.nanvar(returns)
 
 
