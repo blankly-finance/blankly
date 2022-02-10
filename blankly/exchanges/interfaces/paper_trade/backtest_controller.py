@@ -786,6 +786,10 @@ class BackTestController:
 
                     no_trade.append(no_trade_dict)
 
+            # Finish filling the progress bar
+            if show_progress:
+                update_progress(1)
+
             # Finally, run the teardown functions
             for i in self.price_events:
                 # Pull the teardown and pass the state object
