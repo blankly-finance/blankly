@@ -23,6 +23,12 @@
     },
     "keyless": {
       "cash": "USD"
+    },
+    "kucoin": {
+      "cash": "USDT"
+    },
+    "ftx": {
+      "cash": "USD"
     }
   }
 }
