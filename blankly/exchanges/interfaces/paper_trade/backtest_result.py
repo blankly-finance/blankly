@@ -119,8 +119,7 @@ class BacktestResult:
             epoch_start += interval
 
         # Turn that resample into a dataframe
-        df_conversion = DataFrame(columns=['time', 'value'])
-        return df_conversion.append(resampled_array, ignore_index=True)
+        return DataFrame(resampled_array, columns=['time', 'value'])
 
     def get_quantstats_metrics(self):
         try:
