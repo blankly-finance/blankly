@@ -268,6 +268,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
             point_count = to
         else:
             point_count = (epoch_stop-epoch_start)/resolution_seconds + 1
+        response.index = response['time'] * 10 ** 9 
         return self.cast_type(response, return_as, point_count)
 
     def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
