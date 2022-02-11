@@ -38,6 +38,6 @@ jobs:
         KEYS_FILE: ${{ secrets.SANDBOX_KEYS }}
     - name: Run test file
       run: |
-        echo "Sleeping for delay..."
-        sleep 60
         pytest
+        echo "Sleeping to reduce rate limit pressure..."
+        sleep 100
