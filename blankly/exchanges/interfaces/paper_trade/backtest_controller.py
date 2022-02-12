@@ -35,7 +35,7 @@ from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import load_backtest_preferences, update_progress, write_backtest_preferences, \
-    get_base_asset, get_quote_asset, info_print
+    get_base_asset, get_quote_asset, info_print, to_blankly_symbol
 
 
 def to_string_key(separated_list):
@@ -684,8 +684,15 @@ class BackTestController:
             column_keys.append(self.quote_currency)
         # If they start a price event on something they don't own, this should also be included
         for i in self.price_events:
-            base_asset = get_base_asset(i['asset_id'])
-            quote_asset = get_quote_asset(i['asset_id'])
+            # If we don't homogenize the asset_id here, then ids like BTCUSDT
+            # will confuse utils.get_base_asset and utils.get_quote_asset
+
+            # TODO should this really be fixed here, in utils.get_base_asset,
+            #  or should asset ids be homogenized elsewhere?
+            symbol = to_blankly_symbol(i['asset_id'], self.interface.exchange_name)
+
+            base_asset = get_base_asset(symbol)
+            quote_asset = get_quote_asset(symbol)
             if base_asset not in column_keys:
                 column_keys.append(base_asset)
             if quote_asset not in column_keys:
