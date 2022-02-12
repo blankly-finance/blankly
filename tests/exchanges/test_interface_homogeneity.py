@@ -72,6 +72,14 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.Binance_Interface_data = cls.Binance_data.get_interface()
         cls.data_interfaces.append(cls.Binance_Interface_data)
 
+        #kraken definition and appending
+        cls.Kraken = blankly.Kraken(portfolio_name="default",
+                                               keys_path='./tests/config/keys.json',
+                                               settings_path="./tests/config/settings.json")
+        cls.Kraken_Interface = cls.Kraken.get_interface()
+        cls.interfaces.append(cls.Kraken_Interface)
+        cls.data_interfaces.append(cls.Kraken_Interface)
+
         # alpaca definition and appending
         cls.alpaca = blankly.Alpaca(portfolio_name="alpaca test portfolio",
                                     keys_path='./tests/config/keys.json',

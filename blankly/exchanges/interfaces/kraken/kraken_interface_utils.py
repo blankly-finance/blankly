@@ -5,7 +5,7 @@ from blankly.exchanges.interfaces.kraken.kraken_auth import KrakenAuth
 
 
 def kraken_api() -> KrakenAPI:
-    keys_file_path = Path("keys.json").resolve()
+    keys_file_path = Path("./tests/config/keys.json")
 
     auth_obj = KrakenAuth(str(keys_file_path), "default")
     api = KrakenAPI(auth_obj)

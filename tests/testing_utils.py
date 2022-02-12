@@ -28,5 +28,7 @@ def get_valid_symbol(exchange: str):
         return 'EUR-USD'
     elif exchange == 'ftx':
         return 'BTC-USD'
+    elif exchange == 'kraken':
+        return 'BTC-USD'
     else:
         raise LookupError("Specified exchange not found.")

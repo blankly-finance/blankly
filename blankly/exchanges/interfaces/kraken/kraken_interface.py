@@ -225,11 +225,16 @@ class KrakenInterface(ExchangeInterface):
         return response
     
     #NOTE fees are dependent on asset pair, so this is a required parameter to call the function
-    def get_fees(self, asset_symbol: str, size: float) -> dict:
+    def get_fees(self) -> dict:
+        asset_symbol = "XBTUSDT"
+        size = 1
         asset_pair_info = self.get_calls().asset_pairs()
-        
-        fees_maker: List[List[float]] = asset_pair_info[interface_utils.blankly_symbol_to_kraken_symbol(asset_symbol)]["fees_maker"]
-        fees_taker: List[List[float]] = asset_pair_info[interface_utils.blankly_symbol_to_kraken_symbol(asset_symbol)]["fees"]
+
+        fees_maker: List[List[float]] = asset_pair_info[(asset_symbol)]["fees_maker"]
+        fees_taker: List[List[float]] = asset_pair_info[(asset_symbol)]["fees"]
+
+        # fees_maker: List[List[float]] = asset_pair_info[interface_utils.blankly_symbol_to_kraken_symbol(asset_symbol)]["fees_maker"]
+        # fees_taker: List[List[float]] = asset_pair_info[interface_utils.blankly_symbol_to_kraken_symbol(asset_symbol)]["fees"]
         
         for volume_fee in reversed(fees_maker):
             if size > volume_fee[0]:
@@ -248,7 +253,7 @@ class KrakenInterface(ExchangeInterface):
     
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution) -> pd.DataFrame:
         
-        symbol = interface_utils.blankly_symbol_to_kraken_symbol(symbol)
+        #symbol = interface_utils.blankly_symbol_to_kraken_symbol(symbol)
         
         accepted_grans = [60, 300, 900, 1800, 3600, 14400, 86400, 604800, 1296000]
 
@@ -291,13 +296,17 @@ class KrakenInterface(ExchangeInterface):
         return df
         
     def get_order_filter(self, symbol: str) -> dict:
-        
-        
-        kraken_symbol = interface_utils.blankly_symbol_to_kraken_symbol(symbol)
+
+        symbol = "XBTUSDT"
+        kraken_symbol = symbol
+        #kraken_symbol = interface_utils.blankly_symbol_to_kraken_symbol(symbol)
         
         asset_info = self.get_calls().asset_pairs(pairs = kraken_symbol)
         
         price = self.get_calls().ticker(kraken_symbol)[kraken_symbol]["c"][0]
+
+        # max_orders = self.account_levels_to_max_open_orders[self.user_preferences["settings"]["kraken"]["account_type"]]
+
         return {
             "symbol":  symbol,
             "base_asset": asset_info[kraken_symbol]["wsname"].split("/")[0],
@@ -338,7 +347,8 @@ class KrakenInterface(ExchangeInterface):
         Args:
             symbol: The asset such as (BTC-USD, or MSFT)
         """
-        symbol = interface_utils.blankly_symbol_to_kraken_symbol(symbol)
+        symbol = "XBTUSDT"
+        # symbol = interface_utils.blankly_symbol_to_kraken_symbol(symbol)
         
         resp = self.get_calls().ticker(symbol)
         
@@ -346,4 +356,4 @@ class KrakenInterface(ExchangeInterface):
         volume_weighted_average_price = float(resp[symbol]["p"][0])
         last_price = float(resp[symbol]["c"][0])
         
-        return volume_weighted_average_price   
+        return volume_weighted_average_price

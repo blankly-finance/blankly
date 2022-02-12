@@ -19,6 +19,9 @@
     },
     "oanda": {
       "cash": "USD"
+    },
+    "kraken": {
+      "account_type": "Starter"
     }
   }
 }
