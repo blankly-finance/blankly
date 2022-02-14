@@ -15,14 +15,12 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from blankly import FuturesStrategy
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.utils.utils import AttributeDict, get_base_asset, get_quote_asset, pretty_print_json
 
 
 class FuturesStrategyState:
     interface: FuturesExchangeInterface
-    strategy: FuturesStrategy
     variables: AttributeDict
     resolution: int
 
