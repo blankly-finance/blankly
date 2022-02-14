@@ -1,6 +1,6 @@
 """
-    Interface for exchange objects.
-    Copyright (C) 2021  Emerson Dove
+    Limit Order
+    Copyright (C) 2022 Matias Kotlik
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -15,12 +15,18 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
-import abc
-
-from blankly.exchanges.abc_base_exchange import ABCBaseExchange
-from blankly.exchanges.interfaces.abc_base_exchange_interface import ABCBaseExchangeInterface
+from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 
 
-class ABCExchange(ABCBaseExchange, abc.ABC):
-    pass
+class FuturesLimitOrder(FuturesOrder):
+    needed = [*FuturesOrder.needed, ['time_in_force', str]]
+
+    def __init__(self, response, order, interface):
+        super().__init__(response, order, interface)
+
+    def get_time_in_force(self) -> str:
+        return self.response['time_in_force']
+
+    def __str__(self):
+        return super().__str__() + f"""Limit Order Parameters:
+Time In Force: {self.get_time_in_force()}"""

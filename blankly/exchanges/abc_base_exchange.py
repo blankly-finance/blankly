@@ -1,6 +1,6 @@
 """
-    Interface for exchange objects.
-    Copyright (C) 2021  Emerson Dove
+    Base Exchange object.
+    Copyright (C) 2022 Matias Kotlik
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -15,12 +15,19 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
 import abc
 
-from blankly.exchanges.abc_base_exchange import ABCBaseExchange
-from blankly.exchanges.interfaces.abc_base_exchange_interface import ABCBaseExchangeInterface
 
+class ABCBaseExchange(abc.ABC):
 
-class ABCExchange(ABCBaseExchange, abc.ABC):
-    pass
+    @abc.abstractmethod
+    def get_interface(self):
+        pass
+
+    @abc.abstractmethod
+    def get_name(self) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_type(self) -> str:
+        pass

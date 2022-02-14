@@ -37,6 +37,7 @@ setup(
         'pandas >= 1.1.5',
         'pandas_market_calendars >= 3.2',
         'python-binance >= 1.0.15',
+        'binance-futures-connector >= 1.7',
         'requests >= 2.26.0',
         'websocket-client >= 1.2.1',
     ],
