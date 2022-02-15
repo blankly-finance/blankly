@@ -768,11 +768,11 @@ def check_backtesting() -> bool:
     Tests if the environment is configured for backtesting. Primarily used for platform deployments but is
     applicable elsewhere
     """
-    type_ = os.getenv('TYPE')
+    backtesting = os.getenv('BACKTESTING')
 
     # Could be undefined
-    if type_ is not None:
-        return type_ == 'STRATEGY_BACKTEST'
+    if backtesting is not None:
+        return backtesting == '1'
     else:
         return False
 
