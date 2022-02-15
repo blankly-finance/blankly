@@ -38,4 +38,5 @@ jobs:
         KEYS_FILE: ${{ secrets.SANDBOX_KEYS }}
     - name: Run test file
       run: |
+        sleep 40
         pytest
