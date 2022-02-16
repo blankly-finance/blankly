@@ -108,7 +108,7 @@ class Order:
         """
         return self.__response["created_at"]
 
-    def get_status(self, full=False) -> dict:
+    def get_status(self, full=True) -> dict:
         """
         Calls the exchange with the order id of this purchase and returns the homogenized output
         Args:
