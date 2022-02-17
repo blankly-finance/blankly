@@ -31,6 +31,7 @@ class StrategyLogger(ABCExchangeInterface):
     def __init__(self, interface=None, strategy=None):
         self.interface = interface
         self.strategy = strategy
+        self.__type = self.interface.get_exchange_type()
 
     def get_calls(self):
         """
@@ -81,19 +82,17 @@ class StrategyLogger(ABCExchangeInterface):
                                       end_date=end_date, return_as=return_as)
     
     def market_order(self, symbol: str, side: str, size: float) -> MarketOrder:
-        args = locals()
         out = self.interface.market_order(symbol, side, size)
 
         # Record this market order along with the arguments
-        blankly.reporter.log_strategy_event(self.strategy, 'market_order', out.get_response(), args=args)
+        blankly.reporter.log_market_order(out, self.__type)
         return out
     
     def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
-        args = locals()
         out = self.interface.limit_order(symbol, side, price, size)
 
         # Record limit order along with the arguments
-        blankly.reporter.log_strategy_event(self.strategy, 'limit_order', out.get_response(), args=args)
+        blankly.reporter.log_limit_order(out, self.__type)
         return out
     
     def cancel_order(self, symbol: str, order_id: str) -> dict:
@@ -112,11 +111,10 @@ class StrategyLogger(ABCExchangeInterface):
         """
         TODO - this needs to update the order on the backend
         """
-        args = locals()
         out = self.interface.get_order(symbol, order_id)
 
         # Record the arguments
-        blankly.reporter.log_strategy_event(self.strategy, 'get_order', out, args=args)
+        blankly.reporter.update_order(out, self.__type)
         return out
 
     def get_fees(self) -> dict:
