@@ -828,7 +828,7 @@ class BackTestController:
                     ))
             figure_.step('time', 'value',
                          source=source,
-                         line_width=2,
+                         line_width=1,
                          color=self_.__next_color(),
                          legend_label=label,
                          mode="after")
@@ -840,14 +840,13 @@ class BackTestController:
 
             for column in cycle_status:
                 if column != 'time' and self.__account_was_used(column):
-                    p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
+                    p = figure(plot_width=800, plot_height=250, x_axis_type='datetime')
                     add_trace(self, p, time, cycle_status[column], column)
 
                     # Add the no-trade line to the backtest
                     if column == 'Account Value (' + self.quote_currency + ')':
                         add_trace(self, p, time, no_trade_cycle_status['Account Value (No Trades)'],
                                   'Account Value (No Trades)')
-
                         # Add the benchmark, if requested
                         if benchmark_symbol is not None:
                             # This normalizes the benchmark value
@@ -872,10 +871,10 @@ class BackTestController:
                     p.add_tools(hover)
 
                     # Format graph
-                    p.legend.location = "top_left"
+                    p.legend.location = "top_center"
                     p.legend.title = column
                     p.legend.title_text_font_style = "bold"
-                    p.legend.title_text_font_size = "20px"
+                    p.legend.title_text_font_size = "10px"
                     if global_x_range is None:
                         global_x_range = p.x_range
                     else:
@@ -883,7 +882,34 @@ class BackTestController:
 
                     figures.append(p)
 
+            # prices has an entry for each market being considered: prices['LUNA-USDT'] and prices['MATIC-USDT'] for ex.
+            # Each ones have the same number of entries
+            # They need to be inserted each in a separate chart because the quote currency might not be the same.
+            # So the 'time' array must be trimmed down (it currently contains an entry for each market)
+            #
+            #add_trace(self, chart, time[::nb_markets], prices['LUNA-USDT']['open'], "LUNA orders")
+            nb_markets = len(prices)
+            individual_time = time[::nb_markets]
+            for p in prices:
+                # add a chart with a trace for each market and add all transactions to it
+                chart = figure(plot_width=800, plot_height=250, x_axis_type='datetime')
+                add_trace(self, chart, individual_time, prices[p]['open'], p)
+
+                # add markers for each transaction that pertain to that market
+                for order in self.interface.executed_orders:
+                    details = next((item for item in self.interface.paper_trade_orders if item['id'] == order['id']), None)
+                    if details['symbol']==p:
+                        if details['side']=='buy':
+                            chart.circle_cross(dt.fromtimestamp(order['executed_time']), details['price'], size=7, fill_color = 'green', line_color="green", fill_alpha = 0.2, line_width = 1)
+                        else:
+                            chart.circle_x(dt.fromtimestamp(order['executed_time']), details['price'], size=7, fill_color = 'red', line_color="red", fill_alpha = 0.2, line_width = 1)
+                                
+                chart.x_range = global_x_range
+
+                figures.append(chart)
+
             show(bokeh_columns(figures))
+
 
         def is_number(s):
             try:
