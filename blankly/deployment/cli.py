@@ -30,7 +30,7 @@ import tempfile
 import webbrowser
 
 from blankly.deployment.api import API
-from blankly.utils.utils import load_json_file, info_print
+from blankly.utils.utils import load_json_file, info_print, load_deployment_settings
 
 very_important_string = """
 ██████╗ ██╗      █████╗ ███╗   ██╗██╗  ██╗██╗  ██╗   ██╗    ███████╗██╗███╗   ██╗ █████╗ ███╗   ██╗ ██████╗███████╗
@@ -199,8 +199,6 @@ def get_project_model_and_name(args, projects, api: API):
                 ids.append(i['projectId'])
             descriptions = []
 
-            default_type = 'strategy'
-
             for i in projects:
                 descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
                                     TermColors.ENDC + TermColors.OKCYAN + i['name'])
@@ -213,11 +211,17 @@ def get_project_model_and_name(args, projects, api: API):
             general_description = input(TermColors.BOLD + TermColors.WARNING +
                                         "Enter a general description for this model model: " + TermColors.ENDC)
 
-            model_id = api.create_model(project_id, default_type, model_name, general_description)['modelId']
+            type_ = choose_option('model type', ['strategy', 'screener'],
+                                  ["\t" + TermColors.BOLD + TermColors.WARNING +
+                                   'A strategy is a model that uses blankly.Strategy' + TermColors.ENDC,
+                                   "\t" + TermColors.BOLD + TermColors.WARNING +
+                                   'A screener is a model uses blankly.Screener' + TermColors.ENDC])
+
+            model_id = api.create_model(project_id, type_, model_name, general_description)['modelId']
 
             info_print(f"Created a new model in blankly.json with ID: {model_id}")
 
-            deployment_options['type'] = default_type
+            deployment_options['type'] = type_
             deployment_options['model_id'] = model_id
             deployment_options['project_id'] = project_id
             deployment_options['model_name'] = model_name
@@ -511,13 +515,19 @@ def main():
                                     "Enter a description for this version of the model: " + TermColors.ENDC)
 
         info_print("Uploading...")
-        response = api.deploy(file_path=model_path,
-                              project_id=project_id,
-                              model_id=deployment_options['model_id'],
-                              version_description=version_description,
-                              python_version=python_version,
-                              type_=deployment_options['type'],
-                              plan=chosen_plan)
+        kwargs = {
+            'file_path': model_path,
+            'project_id': project_id,
+            'model_id': deployment_options['model_id'],
+            'version_description': version_description,
+            'python_version': python_version,
+            'type_': deployment_options['type'],
+            'plan': chosen_plan
+        }
+        if kwargs['type_'] == 'screener':
+            kwargs['schedule'] = deployment_options['screener']['schedule']
+
+        response = api.deploy(**kwargs)
         if 'error' in response:
             info_print('Error: ' + response['error'])
         elif 'status' in response and response['status'] == 'success':
@@ -710,6 +720,9 @@ def main():
         # Read and write to the deployment options if necessary
         model_name, project_id, deployment_options, python_version = \
             get_project_model_and_name(args, projects, api)
+
+        if deployment_options['type'] == 'screener':
+            raise AttributeError("Screeners are not backtestable.")
 
         info_print("Zipping...")
 

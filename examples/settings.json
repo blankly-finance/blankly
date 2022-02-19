@@ -1,6 +1,5 @@
 {
   "settings": {
-    "use_sandbox": false,
     "use_sandbox_websockets": false,
     "websocket_buffer_size": 10000,
     "test_connectivity_on_auth": true,
@@ -24,11 +23,11 @@
     "keyless": {
       "cash": "USD"
     },
-    "ftx": {
-      "cash": "USDT"
-    },
     "kucoin": {
       "cash": "USDT"
+    },
+    "ftx": {
+      "cash": "USD"
     }
   }
 }

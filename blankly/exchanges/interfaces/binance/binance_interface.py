@@ -43,7 +43,7 @@ class BinanceInterface(ExchangeInterface):
         except binance.exceptions.BinanceAPIException:
             raise exceptions.APIException("Invalid API Key, IP, or permissions for action - are you trying "
                                           "to use your normal exchange keys while in sandbox mode? "
-                                          "\nTry toggling the \'use_sandbox\' setting in your settings.json, check "
+                                          "\nTry toggling the \'sandbox\' setting in your keys.json, check "
                                           "if the keys were input correctly into your keys.json or ensure you have set "
                                           "the correct binance_tld in settings.json.")
 
@@ -815,7 +815,10 @@ class BinanceInterface(ExchangeInterface):
                     "max_funds": max_market_notational,
                 },
             },
-            "exchange_specific": {}
+            "exchange_specific": {
+                'limit_multiplier_up': float(filters[1]["multiplierUp"]),
+                'limit_multiplier_down': float(filters[1]["multiplierDown"])
+            }
         }
 
     def get_price(self, symbol) -> float:

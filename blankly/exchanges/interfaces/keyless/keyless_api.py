@@ -77,12 +77,7 @@ class KeylessAPI(ExchangeInterface):
         return df
 
     def get_products(self) -> list:
-        symbols_list = []
-        for i in self.__products:
-            symbols_list.append({
-                'symbol': i
-            })
-        return symbols_list
+        return self.__products
 
     def market_order(self, symbol: str, side: str, size: float):
         self.__invalid_live()

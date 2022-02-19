@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import blankly
 from blankly.exchanges.exchange import Exchange
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
@@ -29,6 +30,9 @@ class KeylessExchange(Exchange):
         self.calls = KeylessAPI(dataset_path)
 
         self.interface = PaperTradeInterface(self.calls, initial_account_values=initial_account_values)
+
+        # This one must be exported manually
+        blankly.reporter.export_used_exchange("keyless")
 
     """
     Builds information about the asset on this exchange by making particular API calls

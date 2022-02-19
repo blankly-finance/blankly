@@ -39,3 +39,5 @@ jobs:
     - name: Run test file
       run: |
         pytest
+        echo "Sleeping to reduce rate limit pressure..."
+        sleep 100

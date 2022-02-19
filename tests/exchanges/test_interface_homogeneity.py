@@ -66,7 +66,7 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         cls.Kucoin_data = blankly.Kucoin(portfolio_name="KC Data Keys",
                                          keys_path='./tests/config/keys.json',
-                                         settings_path="./tests/config/settings_live_enabled.json")
+                                         settings_path="./tests/config/settings.json")
         cls.Kucoin_Interface_data = cls.Kucoin_data.get_interface()
         cls.data_interfaces.append(cls.Kucoin_Interface_data)
 
@@ -80,7 +80,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         # Create a Binance interface that is specifically for grabbing data
         cls.Binance_data = blankly.Binance(portfolio_name="Data Key",
                                            keys_path='./tests/config/keys.json',
-                                           settings_path="./tests/config/settings_live_enabled.json")
+                                           settings_path="./tests/config/settings.json")
         cls.Binance_Interface_data = cls.Binance_data.get_interface()
         cls.data_interfaces.append(cls.Binance_Interface_data)
 
