@@ -18,7 +18,6 @@
 
 import argparse
 import sys
-import uuid
 import warnings
 import os
 import platform
@@ -31,7 +30,7 @@ import tempfile
 import webbrowser
 
 from blankly.deployment.api import API
-from blankly.utils.utils import load_json_file, info_print
+from blankly.utils.utils import load_json_file, info_print, load_deployment_settings
 
 very_important_string = """
 ██████╗ ██╗      █████╗ ███╗   ██╗██╗  ██╗██╗  ██╗   ██╗    ███████╗██╗███╗   ██╗ █████╗ ███╗   ██╗ ██████╗███████╗
@@ -206,9 +205,11 @@ def get_project_model_and_name(args, projects, api: API):
             general_description = input(TermColors.BOLD + TermColors.WARNING +
                                         "Enter a general description for this model model: " + TermColors.ENDC)
 
-            type_ = choose_option('What type of model is this project?', ['strategy', 'screener'],
-                                  ['A strategy is a model that uses blankly.Strategy',
-                                   'A screener is a model uses blankly.Screener'])
+            type_ = choose_option('model type', ['strategy', 'screener'],
+                                  ["\t" + TermColors.BOLD + TermColors.WARNING +
+                                   'A strategy is a model that uses blankly.Strategy' + TermColors.ENDC,
+                                   "\t" + TermColors.BOLD + TermColors.WARNING +
+                                   'A screener is a model uses blankly.Screener' + TermColors.ENDC])
 
             model_id = api.create_model(project_id, type_, model_name, general_description)['modelId']
 
@@ -496,13 +497,19 @@ def main():
                                     "Enter a description for this version of the model: " + TermColors.ENDC)
 
         info_print("Uploading...")
-        response = api.deploy(file_path=model_path,
-                              project_id=project_id,
-                              model_id=deployment_options['model_id'],
-                              version_description=version_description,
-                              python_version=python_version,
-                              type_=deployment_options['type'],
-                              plan=chosen_plan)
+        kwargs = {
+            'file_path': model_path,
+            'project_id': project_id,
+            'model_id': deployment_options['model_id'],
+            'version_description': version_description,
+            'python_version': python_version,
+            'type_': deployment_options['type'],
+            'plan': chosen_plan
+        }
+        if kwargs['type_'] == 'screener':
+            kwargs['schedule'] = deployment_options['screener']['schedule']
+
+        response = api.deploy(**kwargs)
         if 'error' in response:
             info_print('Error: ' + response['error'])
         elif 'status' in response and response['status'] == 'success':
@@ -543,16 +550,9 @@ def main():
         py_version = platform.python_version_tuple()
         print(f"{TermColors.OKCYAN}{TermColors.BOLD}Found python version: "
               f"{py_version[0]}.{py_version[1]}{TermColors.ENDC}")
-        deploy = {
-            "main_script": "./bot.py",
-            "python_version": py_version[0] + "." + py_version[1],
-            "requirements": "./requirements.txt",
-            "working_directory": ".",
-            "ignore_files": ['price_caches'],
-            "backtest_args": {
-                'to': '1y'
-            }
-        }
+
+        deploy = load_deployment_settings()
+        deploy['python_version'] = py_version[0] + "." + py_version[1]
         create_and_write_file(deployment_script_name, json.dumps(deploy, indent=2))
 
         # Write in a blank requirements file
@@ -584,6 +584,9 @@ def main():
         # Read and write to the deployment options if necessary
         model_name, project_id, deployment_options, python_version = \
             get_project_model_and_name(args, projects, api)
+
+        if deployment_options['type'] == 'screener':
+            raise AttributeError("Screeners are not backtestable.")
 
         info_print("Zipping...")
 

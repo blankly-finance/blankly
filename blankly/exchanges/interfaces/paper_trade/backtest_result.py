@@ -16,8 +16,8 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from pandas import DataFrame
-from blankly.utils.utils import time_interval_to_seconds as _time_interval_to_seconds
+from pandas import DataFrame, to_datetime, Timestamp
+from blankly.utils.utils import time_interval_to_seconds as _time_interval_to_seconds, info_print
 
 
 class BacktestResult:
@@ -119,8 +119,20 @@ class BacktestResult:
             epoch_start += interval
 
         # Turn that resample into a dataframe
-        df_conversion = DataFrame(columns=['time', 'value'])
-        return df_conversion.append(resampled_array, ignore_index=True)
+        return DataFrame(resampled_array, columns=['time', 'value'])
+
+    def get_quantstats_metrics(self):
+        try:
+            import quantstats as qs
+            try:
+                returns = self.get_returns()['value']
+                returns.index = to_datetime(returns.index, origin=Timestamp(self.start_time, unit='s'), unit='D')
+                return qs.reports.metrics(returns, display=False)
+            except ValueError as e:
+                info_print(e)
+        except ImportError:
+            raise ImportError(
+                "Quantstats not installed. Run 'pip install quantstats' to calculate metrics using Quantstats.")
 
     def __str__(self):
         return_string = "\n"

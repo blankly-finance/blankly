@@ -27,6 +27,8 @@ from blankly.indicators.utils import check_series, convert_to_numpy
 
 def rsi(data: Any, period: int = 14, round_rsi: bool = False, use_series=False) -> np.array:
     """ Implements RSI Indicator """
+    if period >= len(data):
+        return pd.Series() if use_series else []
     if check_series(data):
         use_series = True
     data = convert_to_numpy(data)
