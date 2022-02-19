@@ -17,6 +17,7 @@
 """
 
 import abc
+import json
 
 from blankly.exchanges.auth.utils import load_auth
 from blankly.utils.exceptions import AuthError
@@ -38,17 +39,6 @@ class AuthConstructor(abc.ABC):
         # Load from file
         self.portfolio_name, self.keys = load_auth(exchange, keys_file, portfolio_name)
 
-        self.validate_credentials(needed_keys)
-
-    def validate_credentials(self, needed_keys: list):
-        """
-        Args:
-            needed_keys (list): List of keys that the exchange needs in the format ['API_KEY', 'API_SECRET]
-
-        Returns:
-            A boolean that describes if the auth is good or bad (True if good).
-        """
-
         # Create an error message template to throw if needed
         error_message = ""
 
@@ -60,13 +50,21 @@ class AuthConstructor(abc.ABC):
                 keys_dict.pop(i)
             else:
                 # Append a description header if not present
+                example_str = json.dumps({'portfolio': {'API_KEY': '********************',
+                                                        'API_SECRET': '********************',
+                                                        f'{i}': False}}, indent=2)
                 if error_message == "":
-                    error_message += "Error while loading authentication. Required keys for this are missing: \n"
-                error_message += str(str(i) + " is needed, but not defined.\n")
+                    error_message += f"Error while loading authentication. Required keys for this are missing: \n" \
+                                     f"Please add the \"{i}\" key to the keys.json file. For example: \n" \
+                                     f"{example_str}"
+
+                if i != "sandbox":
+                    raise AuthError(error_message)
+                else:
+                    info_print(f"Please add the sandbox keys to your keys.json file. The use_sandbox setting will be "
+                               f"removed in the next update: \n"
+                               f"{example_str}")
 
         if len(keys_dict.keys()) > 0:
             info_print(f"Additional keys for Exchange: {self.exchange} Portfolio: {self.portfolio_name} will be"
                        f" ignored.")
-
-        if error_message != "":
-            raise AuthError(error_message)
