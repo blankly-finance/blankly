@@ -954,25 +954,25 @@ class BackTestController:
                 if result == np.NAN:
                     result = None
                 return result
-            except (ZeroDivisionError, Exception) as e_:
-                return f'failed: {e_}'
+            except (ZeroDivisionError, Exception) as e__:
+                return f'failed: {e__}'
 
         risk_free_return_rate = self.preferences['settings']["risk_free_return_rate"]
-        metrics_indicators['Max Drawdown (%)'] = trunc(attempt(metrics.max_drawdown, history_and_returns), 3)
-        metrics_indicators['Variance (%)'] = trunc(attempt(metrics.variance, history_and_returns,
-                                                     {'trading_period': interval_value}), 3)
-        metrics_indicators['Sortino Ratio'] = trunc(attempt(metrics.sortino, history_and_returns,
+        metrics_indicators['Max Drawdown (%)'] = attempt(metrics.max_drawdown, history_and_returns)
+        metrics_indicators['Variance (%)'] = attempt(metrics.variance, history_and_returns,
+                                                     {'trading_period': interval_value})
+        metrics_indicators['Sortino Ratio'] = attempt(metrics.sortino, history_and_returns,
                                                       {'risk_free_rate': risk_free_return_rate,
-                                                       'trading_period': interval_value}), 3)
-        metrics_indicators['Sharpe Ratio'] = trunc(attempt(metrics.sharpe, history_and_returns,
+                                                       'trading_period': interval_value})
+        metrics_indicators['Sharpe Ratio'] = attempt(metrics.sharpe, history_and_returns,
                                                      {'risk_free_rate': risk_free_return_rate,
-                                                      'trading_period': interval_value}), 3)
-        metrics_indicators['Calmar Ratio'] = trunc(attempt(metrics.calmar, history_and_returns, 
-                                                     {'trading_period': interval_value}), 3)
-        metrics_indicators['Volatility'] = trunc(attempt(metrics.volatility, history_and_returns,
-                                                   {'trading_period': interval_value}), 3)
-        metrics_indicators['Value-at-Risk'] = trunc(attempt(metrics.var, history_and_returns), 2)
-        metrics_indicators['Conditional Value-at-Risk'] = trunc(attempt(metrics.cvar, history_and_returns), 2)
+                                                      'trading_period': interval_value})
+        metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, history_and_returns,
+                                                     {'trading_period': interval_value})
+        metrics_indicators['Volatility'] = attempt(metrics.volatility, history_and_returns,
+                                                   {'trading_period': interval_value})
+        metrics_indicators['Value-at-Risk'] = attempt(metrics.var, history_and_returns)
+        metrics_indicators['Conditional Value-at-Risk'] = attempt(metrics.cvar, history_and_returns)
         
         # Add risk-free-return rate to dictionary
         metrics_indicators['Risk Free Return Rate'] = risk_free_return_rate

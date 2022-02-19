@@ -45,7 +45,8 @@ def cagr(backtest_data):
 
 
 def cum_returns(backtest_data):
-    return round(metrics.cum_returns(backtest_data.iloc[0], backtest_data.iloc[-1]), 2) * 100
+    account_values = backtest_data['resampled_account_value']
+    return round(metrics.cum_returns(account_values['value'][0], account_values['value'].iloc[-1]), 2) * 100
 
 
 def sortino(backtest_data, trading_period=86400, risk_free_rate=0):
@@ -77,12 +78,14 @@ def variance(backtest_data, trading_period=86400):
     ppy = periods_per_year(trading_period)
     return round(100.0 * metrics.variance(returns, ppy), 2)
 
+
 def beta(backtest_data, trading_period=86400):
     # Drop the first index because it is NaN
     returns = backtest_data['returns']['value'][1:]
     benchmark = backtest_data['benchmark_returns']['value'][1:]
     ppy = periods_per_year(trading_period)
     return round(100.0 * metrics.beta(returns, benchmark, ppy), 2)
+
 
 def var(backtest_data):
     returns = backtest_data['returns']['value']
