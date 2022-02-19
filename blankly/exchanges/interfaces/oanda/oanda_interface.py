@@ -55,8 +55,8 @@ class OandaInterface(ExchangeInterface):
     def init_exchange(self):
         account_info = self.calls.get_account()
         if 'errorMessage' in account_info:
-            raise LookupError(f"{account_info['errorMessage']}. \nTry toggling the \'use_sandbox\' setting "
-                              "in your settings.json or check if the keys were input correctly into your "
+            raise LookupError(f"{account_info['errorMessage']}. \nTry toggling the \'sandbox\' setting "
+                              "in your keys.json or check if the keys were input correctly into your "
                               "keys.json.")
         assert account_info['account']['id'] is not None, "Oanda exchange account does not exist"
 

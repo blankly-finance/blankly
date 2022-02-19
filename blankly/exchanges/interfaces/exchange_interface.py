@@ -263,7 +263,13 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
 
             response = response.append(data_append, ignore_index=True)
 
-        return self.cast_type(response, return_as)
+        # Determine the deque length - we really should use this generally
+        if isinstance(to, int):
+            point_count = to
+        else:
+            point_count = (epoch_stop-epoch_start)/resolution_seconds + 1
+        # response.index = pd.to_datetime(response['time'], unit='s')
+        return self.cast_type(response, return_as, point_count)
 
     def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
         return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
@@ -295,15 +301,19 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         return found_multiple, row_divisor
 
     @staticmethod
-    def cast_type(response: pd.DataFrame, return_as: str):
+    def cast_type(response: pd.DataFrame, return_as: str, point_count=None):
         if return_as != 'df' and return_as != 'deque':
             return response.to_dict(return_as)
         elif return_as == 'deque':
             # Create a deque object that has the same length
             response = response.to_dict('list')
             for i in response.keys():
-                response[i] = deque(response[i], len(response[i]))
+                response[i] = deque(response[i], point_count)
             return response
+        elif return_as == 'df':
+            return response
+        else:
+            utils.info_print(f"Return type {return_as} is not supported.")
         return response
 
     def get_account(self, symbol=None):
