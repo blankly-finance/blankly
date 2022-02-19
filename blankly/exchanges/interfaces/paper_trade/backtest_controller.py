@@ -547,10 +547,15 @@ class BackTestController:
 
         # Just check if it's in the traded assets or if the zero delta is enabled
         used = self.__traded_assets
-        is_used = column in used or 'Account Value (' + self.quote_currency + ')' == column
+        is_used = column in used
+        changed = False or 'Account Value (' + self.quote_currency + ')' == column
+        # this cycles through the list of symbols with price updates and determines if column is present (as quote or base)
+        for s in self.pd_prices.keys():
+            changed = changed or (s.find(column)>=0)
 
         # Return true if they are not the same or the setting is set to true
-        output = is_used or show_zero_delta
+        # return true if item was changed or, if show_zero_delta is set, if it was used
+        output = is_used if show_zero_delta else changed
         return output
 
     def __next_color(self):
@@ -811,13 +816,13 @@ class BackTestController:
                 ('value', '@value')
             ],
 
-            # formatters={
-            #     'time': 'datetime',  # use 'datetime' formatter for 'date' field
-            #     '@{value}': 'printf',   # use 'printf' formatter for '@{adj close}' field
-            # },
+            formatters={
+            #    '@time': 'datetime',  # use 'datetime' formatter for 'date' field
+                '@value': 'printf',   # use 'printf' formatter for '@{adj close}' field
+            },
 
             # display a tooltip whenever the cursor is vertically in line with a glyph
-            mode='vline'
+            #mode='vline'
         )
         
         # Define a helper function to avoid repeating code
@@ -895,17 +900,49 @@ class BackTestController:
                 chart = figure(plot_width=800, plot_height=250, x_axis_type='datetime')
                 add_trace(self, chart, individual_time, prices[p]['open'], p)
 
+                source = ColumnDataSource(data=dict(
+                    time=[],
+                    price=[],
+                    color=[],
+                    side=[]
+                ))
                 # add markers for each transaction that pertain to that market
                 for order in self.interface.executed_orders:
                     details = next((item for item in self.interface.paper_trade_orders if item['id'] == order['id']), None)
                     if details['symbol']==p:
-                        if details['side']=='buy':
-                            chart.circle_cross(dt.fromtimestamp(order['executed_time']), details['price'], size=7, fill_color = 'green', line_color="green", fill_alpha = 0.2, line_width = 1)
-                        else:
-                            chart.circle_x(dt.fromtimestamp(order['executed_time']), details['price'], size=7, fill_color = 'red', line_color="red", fill_alpha = 0.2, line_width = 1)
-                                
+                        source.data['color'].append('green' if details['side']=='buy' else 'red')
+                        source.data['price'].append(details['price'])
+                        source.data['side'].append(details['side'])
+                        source.data['time'].append(dt.fromtimestamp(order['executed_time']))
+                    #chart.circle_x(dt.fromtimestamp(order['executed_time']), 'price', source=details, size=7, fill_color = color, line_color=color, fill_alpha = 0.2, line_width = 1)                
+                chart.circle_x( 'time', 
+                                'price', 
+                                source=source, 
+                                size=7, 
+                                fill_color='color', 
+                                line_color='color', 
+                                fill_alpha = 0.2, 
+                                line_width = 1
+                )
                 chart.x_range = global_x_range
+                hover = HoverTool(
+                    tooltips=[
+                        ('Order', '@side at @price'),
+                        ('Date', '@time'),# executed_time is not part of details
+                        #('Others', '$name $index')
+                        ],
 
+                        formatters={
+                            '@time': 'datetime',  # use 'datetime' formatter for 'date' field
+                            '@side': '',
+                        #     '@{value}': 'printf',   # use 'printf' formatter for '@{adj close}' field
+                        },
+
+                        # display a tooltip whenever the cursor is vertically in line with a glyph
+                        #mode='vline' # default is 'mouse'
+                )
+
+                chart.add_tools(hover)
                 figures.append(chart)
 
             show(bokeh_columns(figures))
