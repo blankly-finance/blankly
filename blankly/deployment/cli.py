@@ -541,7 +541,8 @@ def main():
             base_str = 'Error: Please use one of our supported exchanges'
             exchanges = ', '.join(supported_exchanges)
             info_print(
-                f'{base_str}: {exchanges}, you inputted {user_defined_exchange}')
+                f'{base_str}: {TermColors.BOLD}{exchanges}{TermColors.ENDC}. '
+                f'\nYour input: {TermColors.BOLD}{user_defined_exchange}{TermColors.ENDC}')
             return
 
         # Directly download keys.json
@@ -552,9 +553,9 @@ def main():
 
         tld = 'com'
         if user_defined_exchange[0:7] == 'binance':
-            user_defined_exchange = 'binance'
             # Find if it's .us if needed
             tld = user_defined_exchange[8:]
+            user_defined_exchange = 'binance'
 
         exchange_config = {
             'settings.json': 'https://raw.githubusercontent.com/blankly-finance/examples/main/configs/'
@@ -587,11 +588,11 @@ def main():
         if user_defined_exchange == 'ftx' or user_defined_exchange == 'kucoin' or user_defined_exchange == 'binance':
             # USDT exchanges
             backtest['settings']['quote_account_value_in'] = 'USDT'
-        create_and_write_file('backtest.json', json.dumps(backtest))
+        create_and_write_file('backtest.json', json.dumps(backtest, indent=2))
 
         # Directly download a rsi bot
         print("Downloading RSI bot example...")
-        bot = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/rsi.py')
+        bot = requests.get(exchange_config['bot_url'])
         create_and_write_file('bot.py', bot.text)
 
         print("Writing deployment defaults...")
@@ -606,11 +607,12 @@ def main():
             "python_version": py_version[0] + "." + py_version[1],
             "requirements": "./requirements.txt",
             "working_directory": ".",
-            "ignore_files": ['price_caches'],
+            "ignore_files": ['price_caches', '.github'],
             "backtest_args": {
                 'to': '1y'
             }
         }
+
         deploy['python_version'] = py_version[0] + "." + py_version[1]
         create_and_write_file(deployment_script_name, json.dumps(deploy, indent=2))
 
@@ -684,8 +686,6 @@ def main():
         # # Write in a blank requirements file
         # print("Writing requirements.txt defaults...")
         # create_and_write_file('requirements.txt', 'blankly')
-
-        print(f"{TermColors.OKGREEN}{TermColors.UNDERLINE}Success!{TermColors.ENDC}")
 
     elif which == 'login':
         login(remove_cache=True)
