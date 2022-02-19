@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import blankly
 from blankly.utils.utils import pretty_print_json
 
 
@@ -108,7 +109,7 @@ class Order:
         """
         return self.__response["created_at"]
 
-    def get_status(self, full=False) -> dict:
+    def get_status(self, full=True) -> dict:
         """
         Calls the exchange with the order id of this purchase and returns the homogenized output
         Args:
@@ -131,6 +132,12 @@ class Order:
         Get the order side such as buy/sell as a str.
         """
         return self.__response["side"]
+
+    def annotate(self, annotation: str) -> None:
+        """
+        Add an annotation to the order on the platform
+        """
+        return blankly.reporter.annotate_order(self.get_id(), annotation)
 
     def get_size(self) -> float:
         """

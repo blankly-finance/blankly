@@ -35,7 +35,6 @@ from blankly.utils.time_builder import time_interval_to_seconds
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
-        "use_sandbox": False,
         "use_sandbox_websockets": False,
         "websocket_buffer_size": 10000,
         "test_connectivity_on_auth": True,
@@ -768,11 +767,11 @@ def check_backtesting() -> bool:
     Tests if the environment is configured for backtesting. Primarily used for platform deployments but is
     applicable elsewhere
     """
-    type_ = os.getenv('TYPE')
+    backtesting = os.getenv('BACKTESTING')
 
     # Could be undefined
-    if type_ is not None:
-        return type_ == 'STRATEGY_BACKTEST'
+    if backtesting is not None:
+        return backtesting == '1'
     else:
         return False
 

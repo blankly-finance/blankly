@@ -54,12 +54,17 @@ def sharpe(returns, n=252, risk_free_rate=None):
     else:
         mean = returns.mean() * n
     std = returns.std() * np.sqrt(n)
+    if std == 0.0:
+        return 0.0
     return mean / std
 
 
 def calmar(returns, n=252):
     return_series = pd.Series(returns)
-    return return_series.mean() * n / abs(max_drawdown(return_series))
+    max_draw = max_drawdown(return_series)
+    if max_draw == 0:
+        return 0.0
+    return return_series.mean() * n / abs(max_draw)
 
 
 def volatility(returns, n=None):
@@ -74,7 +79,7 @@ def variance(returns, n=None):
 
 def beta(returns, market_base_returns, n=None):
     m = np.matrix([returns, market_base_returns])
-    return n * np.cov(m)[0][1] / variance(market_base_returns, n)
+    return np.cov(m)[0][1] / variance(market_base_returns, n)
 
 
 def var(initial_value, returns, alpha: float):
