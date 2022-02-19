@@ -26,14 +26,17 @@ import hmac
 
 
 class FTXAPI:
-    _API_URL = "https://ftx.us/api/"
+    _API_URL = "https://ftx.{}/api/"
 
     # no option to instantiate with sandbox mode, unlike every other exchange
-    def __init__(self, api_key, api_secret, _subaccount_name=None):
+    def __init__(self, api_key, api_secret, tld: str = '.us', _subaccount_name=None):
 
         self._ftx_session = requests.Session()
         self._api_key = api_key
         self._api_secret = api_secret
+
+        self.__api_url = self._API_URL.format(tld)
+
         self._subaccount_name = _subaccount_name
 
     def _signed_request(self, method: str, path: str, **kwargs):

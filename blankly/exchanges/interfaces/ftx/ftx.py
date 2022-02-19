@@ -34,7 +34,8 @@ class FTX(Exchange):
 
         keys = auth.keys
         sandbox = self.preferences["settings"]["use_sandbox"]
-        calls = FTXAPI(keys['API_KEY'], keys['API_SECRET'])
+        calls = FTXAPI(keys['API_KEY'], keys['API_SECRET'],
+                       tld=self.preferences["settings"]["ftx"]["ftx_tld"])
 
         # Always finish the method with this function
         super().construct_interface_and_cache(calls)
