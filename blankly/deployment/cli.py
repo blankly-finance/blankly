@@ -58,7 +58,7 @@ class TermColors:
     UNDERLINE = '\033[4m'
 
 
-supported_exchanges = ['binance.com', 'binance.us', 'binance',
+supported_exchanges = ['binance.com', 'binance.us',
                        'coinbase_pro', 'alpaca', 'ftx', 'oanda', 'kucoin']
 
 
@@ -191,6 +191,7 @@ def get_project_model_and_name(args, projects, api: API):
         f.close()
         if 'model_id' not in deployment_options or \
                 'project_id' not in deployment_options or \
+                'type' not in deployment_options or \
                 'model_name' not in deployment_options:
             # This performs all the querying necessary to send the data up
             ids = []
@@ -536,7 +537,7 @@ def main():
         print("Initializing...")
         print(very_important_string)
 
-        if user_defined_exchange not in supported_exchanges and user_defined_exchange != 'binance':
+        if user_defined_exchange not in supported_exchanges:
             base_str = 'Error: Please use one of our supported exchanges'
             exchanges = ', '.join(supported_exchanges)
             info_print(
@@ -549,46 +550,48 @@ def main():
                                     'Blankly/main/examples/keys_example.json')
         create_and_write_file('keys.json', keys_example.text)
 
+        tld = 'com'
+        if user_defined_exchange[0:7] == 'binance':
+            user_defined_exchange = 'binance'
+            # Find if it's .us if needed
+            tld = user_defined_exchange[8:]
+
+        exchange_config = {
+            'settings.json': 'https://raw.githubusercontent.com/blankly-finance/examples/main/configs/'
+                             'settings_sandbox.json',
+            'keys.json': 'https://raw.githubusercontent.com/blankly-finance/examples/main/keys_example.json',
+            'backtest_usd.json': 'https://raw.githubusercontent.com/blankly-finance/examples/main/configs/'
+                                 'backtest_usd.json',
+            'exchange': user_defined_exchange,
+            'bot_url': f'https://raw.githubusercontent.com/blankly-finance/examples/main/init/rsi_'
+                       f'{user_defined_exchange}.py',
+            'tld': tld,
+        }
+
+        # Directly download keys.json
+        print("Downloading keys template...")
+        keys_example = requests.get(exchange_config['keys.json']).json()
+        # No modification necessary
+        create_and_write_file('keys.json', json.dumps(keys_example, indent=2))
+
         # Directly download settings.json
-        if user_defined_exchange == 'binance.com':
-            print("Downloading settings defaults for binance.com...")
-            settings = requests.get(
-                'https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/settings.json')
-            res = settings.json()
-            res['settings']['binance']['binance_tld'] = 'com'
-            create_and_write_file('settings.json', json.dumps(res, indent=2))
-        else:
-            if user_defined_exchange == 'binance' or user_defined_exchange == 'binance.us':
-                print("Downloading settings defaults for Binance.us...")
-            else:
-                print("Downloading settings defaults...")
-            settings = requests.get('https://raw.githubusercontent.com/Blankly-Finance/'
-                                    'Blankly/main/examples/settings.json')
-            create_and_write_file('settings.json', settings.text)
+        print("Downloading settings defaults...")
+        settings = requests.get(exchange_config['settings.json']).json()
+        # Make sure we write the tld into the settings
+        settings['settings']['binance']['binance_tld'] = exchange_config['tld']
+        create_and_write_file('settings.json', json.dumps(settings, indent=2))
 
         # Directly download backtest.json
-        if user_defined_exchange == 'alpaca' or user_defined_exchange == 'coinbase_pro' or \
-                user_defined_exchange == 'oanda':
-            print("Downloading backtest defaults for USD account values...")
-            backtest = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/'
-                                    'main/examples/backtest.json')
-            create_and_write_file('backtest.json', backtest.text)
-        else:
-            print("Downloading backtest defaults for USDT account values...")
-            backtest = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/'
-                                    'main/examples/backtest.json')
-            res = backtest.json()
-            res['settings']['quote_account_value_in'] = 'USDT'
-            create_and_write_file('backtest.json', json.dumps(res, indent=2))
+        print("Downloading backtest defaults...")
+        backtest = requests.get(exchange_config['backtest_usd.json']).json()
+        if user_defined_exchange == 'ftx' or user_defined_exchange == 'kucoin' or user_defined_exchange == 'binance':
+            # USDT exchanges
+            backtest['settings']['quote_account_value_in'] = 'USDT'
+        create_and_write_file('backtest.json', json.dumps(backtest))
 
         # Directly download a rsi bot
         print("Downloading RSI bot example...")
-        if user_defined_exchange == 'binance.com' or user_defined_exchange == 'binance.us':
-            bot = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/'
-                               'rsi-examples/rsi-binance.py')
-        else:
-            bot = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/'
-                               'rsi-examples/rsi-{user_defined_exchange}.py')
+        bot = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/rsi.py')
         create_and_write_file('bot.py', bot.text)
 
         print("Writing deployment defaults...")
@@ -597,6 +600,7 @@ def main():
         py_version = platform.python_version_tuple()
         print(f"{TermColors.OKCYAN}{TermColors.BOLD}Found python version: "
               f"{py_version[0]}.{py_version[1]}{TermColors.ENDC}")
+
         deploy = {
             "main_script": "./bot.py",
             "python_version": py_version[0] + "." + py_version[1],
@@ -607,12 +611,79 @@ def main():
                 'to': '1y'
             }
         }
-        create_and_write_file(deployment_script_name,
-                              json.dumps(deploy, indent=2))
+        deploy['python_version'] = py_version[0] + "." + py_version[1]
+        create_and_write_file(deployment_script_name, json.dumps(deploy, indent=2))
 
         # Write in a blank requirements file
         print("Writing requirements.txt defaults...")
         create_and_write_file('requirements.txt', 'blankly')
+
+        print(f"{TermColors.OKGREEN}{TermColors.UNDERLINE}Success!{TermColors.ENDC}")
+
+        # # Directly download settings.json
+        # if user_defined_exchange == 'binance.com':
+        #     print("Downloading settings defaults for binance.com...")
+        #     settings = requests.get(
+        #         'https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/settings.json')
+        #     res = settings.json()
+        #     res['settings']['binance']['binance_tld'] = 'com'
+        #     create_and_write_file('settings.json', json.dumps(res, indent=2))
+        # else:
+        #     if user_defined_exchange == 'binance' or user_defined_exchange == 'binance.us':
+        #         print("Downloading settings defaults for Binance.us...")
+        #     else:
+        #         print("Downloading settings defaults...")
+        #     settings = requests.get('https://raw.githubusercontent.com/Blankly-Finance/'
+        #                             'Blankly/main/examples/settings.json')
+        #     create_and_write_file('settings.json', settings.text)
+        #
+        # # Directly download backtest.json
+        # if user_defined_exchange == 'alpaca' or user_defined_exchange == 'coinbase_pro' or \
+        #         user_defined_exchange == 'oanda':
+        #     print("Downloading backtest defaults for USD account values...")
+        #     backtest = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/'
+        #                             'main/examples/backtest.json')
+        #     create_and_write_file('backtest.json', backtest.text)
+        # else:
+        #     print("Downloading backtest defaults for USDT account values...")
+        #     backtest = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/'
+        #                             'main/examples/backtest.json')
+        #     res = backtest.json()
+        #     res['settings']['quote_account_value_in'] = 'USDT'
+        #     create_and_write_file('backtest.json', json.dumps(res, indent=2))
+        #
+        # # Directly download a rsi bot
+        # print("Downloading RSI bot example...")
+        # if user_defined_exchange == 'binance.com' or user_defined_exchange == 'binance.us':
+        #     bot = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/'
+        #                        'rsi-examples/rsi-binance.py')
+        # else:
+        #     bot = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/'
+        #                        'rsi-examples/rsi-{user_defined_exchange}.py')
+        # create_and_write_file('bot.py', bot.text)
+        #
+        # print("Writing deployment defaults...")
+        # # Interpret defaults and write to this folder
+        # print("Detecting python version...")
+        # py_version = platform.python_version_tuple()
+        # print(f"{TermColors.OKCYAN}{TermColors.BOLD}Found python version: "
+        #       f"{py_version[0]}.{py_version[1]}{TermColors.ENDC}")
+        # deploy = {
+        #     "main_script": "./bot.py",
+        #     "python_version": py_version[0] + "." + py_version[1],
+        #     "requirements": "./requirements.txt",
+        #     "working_directory": ".",
+        #     "ignore_files": ['price_caches'],
+        #     "backtest_args": {
+        #         'to': '1y'
+        #     }
+        # }
+        # create_and_write_file(deployment_script_name,
+        #                       json.dumps(deploy, indent=2))
+        #
+        # # Write in a blank requirements file
+        # print("Writing requirements.txt defaults...")
+        # create_and_write_file('requirements.txt', 'blankly')
 
         print(f"{TermColors.OKGREEN}{TermColors.UNDERLINE}Success!{TermColors.ENDC}")
 
