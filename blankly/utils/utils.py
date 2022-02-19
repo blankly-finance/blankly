@@ -12,6 +12,8 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
+
 import blankly
 
 import datetime
@@ -33,7 +35,6 @@ from blankly.utils.time_builder import time_interval_to_seconds
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
-        "use_sandbox": False,
         "use_sandbox_websockets": False,
         "websocket_buffer_size": 10000,
         "test_connectivity_on_auth": True,
@@ -58,6 +59,9 @@ default_general_settings = {
             "use_yfinance": False,
         },
         "oanda": {
+            "cash": "USD"
+        },
+        "keyless": {
             "cash": "USD"
         }
     }
@@ -98,6 +102,20 @@ default_notify_settings = {
   }
 }
 
+default_deploy_settings = {
+    "main_script": "./bot.py",
+    "python_version": '3.7',
+    "requirements": "./requirements.txt",
+    "working_directory": ".",
+    "ignore_files": ['price_caches'],
+    "backtest_args": {
+        'to': '1y'
+    },
+    "screener": {
+        "schedule": "30 14 * * 1-5"  # Set this default stock-like schedule
+    }
+}
+
 
 def load_json_file(override_path=None):
     f = open(override_path, )
@@ -107,7 +125,7 @@ def load_json_file(override_path=None):
 
 
 class __BlanklySettings:
-    def __init__(self, default_path: str, default_settings: dict, not_found_err: str):
+    def __init__(self, default_path: str, default_settings: dict, not_found_err: str, allow_nonexistent: bool = False):
         """
         Create a class that can manage caching for loading and writing to user preferences with a low overhead.
         This can dramatically accelerate instantiation of new interfaces or other objects
@@ -116,11 +134,13 @@ class __BlanklySettings:
             default_settings: The default settings in which to compare the loaded settings to. This helps the user
              learn if they're missing important settings and avoids keyerrors later on
             not_found_err: A string that is shown if the file they specify is not found
+            allow_nonexistent: Enable this to create the file if not found
         """
         self.__settings_cache = {}
         self.__default_path = default_path
         self.__default_settings = default_settings
         self.__not_found_err = not_found_err
+        self.__allow_nonexistent = allow_nonexistent
 
     # Recursively check if the user has all the preferences, inform when defaults are missing
     def __compare_dicts(self, default_settings, user_settings):
@@ -153,7 +173,12 @@ class __BlanklySettings:
             try:
                 preferences = load_json_file(self.__default_path)
             except FileNotFoundError:
-                raise FileNotFoundError(self.__not_found_err)
+                if self.__allow_nonexistent:
+                    self.write(self.__default_settings)
+                    # Recursively run this
+                    return self.load(override_path)
+                else:
+                    raise FileNotFoundError(self.__not_found_err)
             preferences = self.__compare_dicts(self.__default_settings, preferences)
             self.__settings_cache[self.__default_path] = preferences
             return preferences
@@ -184,6 +209,10 @@ notify_settings = __BlanklySettings('./notify.json', default_notify_settings,
                                     "as the project working directory. This is not necessary when deployed live on "
                                     "blankly cloud.")
 
+deployment_settings = __BlanklySettings('./blankly.json', default_deploy_settings,
+                                        "Make sure a blankly.json file is placed in the same folder as the project "
+                                        "working directory!", allow_nonexistent=True)
+
 
 def load_user_preferences(override_path=None) -> dict:
     return general_settings.load(override_path)
@@ -191,6 +220,10 @@ def load_user_preferences(override_path=None) -> dict:
 
 def load_backtest_preferences(override_path=None) -> dict:
     return backtest_settings.load(override_path)
+
+
+def load_deployment_settings() -> dict:
+    return deployment_settings.load()
 
 
 def write_backtest_preferences(json_file, override_path=None):
@@ -734,9 +767,11 @@ def check_backtesting() -> bool:
     Tests if the environment is configured for backtesting. Primarily used for platform deployments but is
     applicable elsewhere
     """
-    backtesting_env = os.getenv('BACKTESTING')
-    if backtesting_env is not None:
-        return backtesting_env == '1'
+    backtesting = os.getenv('BACKTESTING')
+
+    # Could be undefined
+    if backtesting is not None:
+        return backtesting == '1'
     else:
         return False
 

@@ -638,6 +638,10 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         # Don't re-query order filter if its cached
         if symbol not in self.get_order_filter_cache:
             self.get_order_filter_cache[symbol] = self.calls.get_order_filter(symbol)
+
+        if self.get_exchange_type() == 'binance':
+            self.get_order_filter_cache[symbol] = self.__evaluate_binance_limits(self.get_price(symbol),
+                                                                                 self.get_order_filter_cache[symbol])
         return self.get_order_filter_cache[symbol]
 
     def get_price(self, symbol) -> float:
@@ -645,3 +649,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             return self.get_backtesting_price(symbol)
         else:
             return self.calls.get_price(symbol)
+
+    @staticmethod
+    def __evaluate_binance_limits(price: (int, float), order_filter):
+        order_filter['limit_order']['min_price'] = order_filter['exchange_specific']['limit_multiplier_down'] * price
+        order_filter['limit_order']['max_price'] = order_filter['exchange_specific']['limit_multiplier_up'] * price
+        return order_filter

@@ -28,9 +28,11 @@ class Alpaca(Exchange):
         Exchange.__init__(self, "alpaca", portfolio_name, settings_path)
 
         # Load the auth from the keys file
-        auth = AuthConstructor(keys_path, portfolio_name, 'alpaca', ['API_KEY', 'API_SECRET'])
+        auth = AuthConstructor(keys_path, portfolio_name, 'alpaca', ['API_KEY', 'API_SECRET', 'sandbox'])
 
-        calls = create_alpaca_client(auth, self.preferences["settings"]["use_sandbox"])
+        sandbox = super().evaluate_sandbox(auth)
+
+        calls = create_alpaca_client(auth, sandbox)
 
         # Always finish the method with this function
         super().construct_interface_and_cache(calls)

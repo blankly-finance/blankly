@@ -22,30 +22,29 @@ from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInter
 from blankly.utils.utils import AttributeDict, format_with_new_line
 
 
-class SignalState:
+class ScreenerState:
     interface: Interface
     variables: AttributeDict
     symbols: list
 
-    def __init__(self, signal):
+    def __init__(self, screener):
         """
-        This is a SignalState object - a simplified version of StrategyState
+        This is a ScreenerState object - a simplified version of StrategyState
 
         Args:
-            signal: Construct with a signal object to allow interaction
+            screener: Construct with a screener object to allow interaction
         """
 
-        self.signal = signal
+        self.screener = screener
         self.variables = AttributeDict({})
-        self.symbols = signal.symbols
-        self.resolution = signal.resolution
+        self.symbols = screener.symbols
 
     @property
     def interface(self) -> Interface:
         """
         Get the interface object to interact with the exchange
         """
-        return self.signal.interface
+        return self.screener.interface
 
     @property
     def time(self) -> float:
@@ -58,7 +57,7 @@ class SignalState:
         """
         Send the formatted results as an email
         """
-        self.signal.notify(message)
+        self.screener.notify(message)
 
     def __str__(self):
         output = ""

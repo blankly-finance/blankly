@@ -50,8 +50,8 @@ class KucoinInterface(ExchangeInterface):
         try:
             if fees['msg'] == "Invalid API Key":
                 raise LookupError("Invalid API Key - are you trying to use your normal exchange keys "
-                                  "while in sandbox mode? \nTry toggling the \'use_sandbox\' setting "
-                                  "in your settings.json or check if the keys were input correctly into your "
+                                  "while in sandbox mode? \nTry toggling the \'sandbox\' setting "
+                                  "in your keys.json or check if the keys were input correctly into your "
                                   "keys.json.")
         except KeyError:
             pass
@@ -517,7 +517,7 @@ class KucoinInterface(ExchangeInterface):
 
             window_open = window_close
             need -= 1500
-            time.sleep(1)
+            time.sleep(1.5)
             utils.update_progress((initial_need - need) / initial_need)
 
         # Fill the remainder

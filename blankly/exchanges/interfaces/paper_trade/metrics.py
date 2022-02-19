@@ -37,6 +37,7 @@ def periods_per_year(period : int) -> float:
     ppy = trading_seconds_per_year/period
     return ppy
 
+
 def cagr(backtest_data):
     account_values = backtest_data['resampled_account_value']
     years = (account_values['time'].iloc[-1] - account_values['time'].iloc[0]) / build_year()

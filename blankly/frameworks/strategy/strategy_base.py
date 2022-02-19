@@ -53,8 +53,6 @@ class Strategy:
         self.__remote_backtesting = blankly._backtesting
         self.__exchange = exchange
 
-        blankly.reporter.export_used_exchange(self.__exchange.get_type())
-
         self.ticker_manager = blankly.TickerManager(self.__exchange.get_type(), '')
         self.orderbook_manager = blankly.OrderbookManager(self.__exchange.get_type(), '')
 
@@ -233,8 +231,11 @@ class Strategy:
                 # Sometimes coinbase doesn't download recent data correctly
                 try:
                     data = self.interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
-                    if data['time'] + resolution == ohlcv_time:
+                    if self.interface.get_exchange_type() == "alpaca":
                         break
+                    else:
+                        if data['time'] + resolution == ohlcv_time:
+                            break
                 except IndexError:
                     pass
                 time.sleep(.5)

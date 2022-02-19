@@ -32,7 +32,8 @@ class FTXInterface(ExchangeInterface):
 
     # note, FTX has no sandbox mode
     def __init__(self, exchange_name, authenticated_api: FTXAPI):
-        super().__init__(exchange_name, authenticated_api, valid_resolutions=None)
+        super().__init__(exchange_name, authenticated_api, valid_resolutions=[15, 60, 300, 900,
+                                                                              3600, 14400, 86400, 86400])
 
     def init_exchange(self):
         """
