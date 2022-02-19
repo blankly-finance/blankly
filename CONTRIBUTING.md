@@ -20,16 +20,11 @@ The first step to getting started is to install from source. Our best suggestion
 $ git checkout -b MY_BRANCH_NAME
 ```
 
-3. Install blankly
-```bash
-$ cd blankly
-$ pip install -e .
-```
 4. Install testing dependencies
 ```bash
 $ pip install pytest pytest_mock
 ```
-5. Ensure that you have proper API keys on the various exchanges to run the test, or submit a PR and we can run them.
+5. Ensure that you have proper API keys on the various exchanges to run the test, or submit a PR, and we can run them.
 
 Now you should be up and running and installed from source.
 
@@ -39,6 +34,7 @@ In the root blankly directory simply run
 ```bash
 $ pytest
 ```
+If no tests are found add an `__init__.py` file to the `tests` folder.
 
 ### Easy Contributions Right Now
 
