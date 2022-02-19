@@ -134,6 +134,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         availability_results = []
 
         for i in range(len(self.interfaces)):
+            print(i)
             if self.interfaces[i].get_exchange_type() == "alpaca":
                 responses.append(self.interfaces[i].get_account()['AAPL'])
                 responses.append(self.interfaces[i].get_account('AAPL'))
@@ -416,8 +417,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
 
         # This initial selection could fail because of the slightly random day that they delete their data
-        stop_dt = dateparser.parse("2021-08-04")
-        start = "2021-01-07"
+        stop_dt = dateparser.parse("2021-11-08")
+        start = "2021-10-04"
         stop = str(stop_dt.date())
 
         # The dates are offset by one because the time is the open time

@@ -1,18 +1,18 @@
-import time
+# import time
 
 import pandas as pd
 from blankly.exchanges.interfaces.kraken.kraken_api import API as KrakenAPI
 from typing import List
 import warnings
 
-import blankly.utils.time_builder
+# import blankly.utils.time_builder
 import blankly.utils.utils as utils
 import blankly.exchanges.interfaces.kraken.kraken_interface_utils as interface_utils
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
-from blankly.exchanges.orders.stop_limit import StopLimit
-from blankly.utils.exceptions import APIException, InvalidOrder
+# from blankly.exchanges.orders.stop_limit import StopLimit
+# from blankly.utils.exceptions import APIException, InvalidOrder
 
 
 class KrakenInterface(ExchangeInterface):
@@ -74,11 +74,11 @@ class KrakenInterface(ExchangeInterface):
     def get_account(self, symbol=None):
         symbol = super().get_account(symbol)
 
-        positions = self.calls.list_positions()
+        positions = self.get_open_orders()
         positions_dict = utils.AttributeDict({})
 
         for position in positions:
-            curr_symbol = position.pop('symbol')
+            curr_symbol = position["result"]["open"]["desc"]["pair"]
             positions_dict[curr_symbol] = utils.AttributeDict({
                 'available': float(position.pop('vol')),
                 'hold': 0.0
@@ -87,18 +87,12 @@ class KrakenInterface(ExchangeInterface):
         symbols = list(positions_dict.keys())
         # Catch an edge case bug that if there are no positions it won't try to snapshot
         if len(symbols) != 0:
-            open_orders = self.calls.list_orders(status='open', symbols=symbols)
-            snapshot_price = self.calls.get_snapshots(symbols=symbols)
+            open_orders = self.get_open_orders(symbol=symbols)
+                #calls.list_orders(status='open', symbols=symbols)
+            snapshot_price = self.get_open_orders(symbol=symbols)["result"]["open"]["desc"]["price"]
         else:
             open_orders = []
             snapshot_price = {}
-
-        # now grab the available cash in the account
-        account = self.calls.get_account()
-        positions_dict['USD'] = utils.AttributeDict({
-            'available': float(account['buying_power']),
-            'hold': 0.0
-        })
 
         for order in open_orders:
             curr_symbol = order['symbol']
@@ -225,7 +219,7 @@ class KrakenInterface(ExchangeInterface):
         """
         response = self.get_calls().open_orders(symbol)["open"]
         response_needed_fulfilled = []
-        if (len(response) == 0):
+        if len(response) == 0:
             return []
 
         for open_order_id, open_order_info in response.items():
@@ -328,16 +322,38 @@ class KrakenInterface(ExchangeInterface):
             "taker_fee_rate": fee_taker,
         }
 
-    def get_product_history(self, symbol, epoch_start, epoch_stop, resolution) -> pd.DataFrame:
+    def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
+        """
+        Kucoin is strange because it's exclusive instead of inclusive. This generally invovles adding an extra
+        datapoint so this is here to do some of that work
+        """
+        to = kwargs['to']
+
+        if isinstance(to, str):
+            epoch_start -= resolution
+        elif isinstance(to, int):
+            epoch_start = epoch_stop - (to * resolution)
+
+        return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+
+    def get_product_history(self, symbol, epoch_start, epoch_stop, resolution)-> pd.DataFrame:
 
         # symbol = interface_utils.blankly_symbol_to_kraken_symbol(symbol)
         symbol = "XBTUSD"
+
+        # epoch_start = int(utils.convert_epochs(epoch_start))
+        # epoch_stop = int(utils.convert_epochs(epoch_stop))
+
         accepted_grans = [60, 300, 900, 1800, 3600, 14400, 86400, 604800, 1296000]
 
         if resolution not in accepted_grans:
             utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
             resolution = accepted_grans[min(range(len(accepted_grans)),
                                             key=lambda i: abs(accepted_grans[i] - resolution))]
+
+        # resolution = int(resolution)
+        #
+        # epoch_start -= resolution
 
         # kraken processes resolution in seconds, so the granularity must be divided by 60
         product_history = self.get_calls().ohlc(symbol, interval=(resolution / 60), since=epoch_start)
@@ -358,16 +374,18 @@ class KrakenInterface(ExchangeInterface):
             if time > epoch_stop:
                 break
 
-            historical_data_block.append([time, low, high, open_, close, volume])
+            historical_data_block.append([time, open_, close, high, low, volume])
 
             utils.update_progress(i / num_intervals)
 
         print("\n")
-        df = pd.DataFrame(historical_data_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
-        df_start = df["time"][0]
-        if df_start > epoch_start:
+        df = pd.DataFrame(historical_data_block, columns=['time', 'open', 'close', 'high', 'low', 'volume'])
+        df[['time']] = df[['time']].astype(int)
+        # df_start = df["time"][0]
+
+        if df["time"][0] > epoch_start:
             warnings.warn(
-                f"Due to kraken's API limitations, we could only collect OHLC data as far back as unix epoch {df_start}")
+                f"Due to kraken's API limitations, we could only collect OHLC data as far back as unix epoch {df['time'][0]}")
 
         df = df.astype({
             'open': float,
@@ -376,6 +394,7 @@ class KrakenInterface(ExchangeInterface):
             'close': float,
             'volume': float
         })
+
         return df
 
     def get_order_filter(self, symbol: str) -> dict:
@@ -388,7 +407,8 @@ class KrakenInterface(ExchangeInterface):
 
         price = self.get_calls().ticker(kraken_symbol)[kraken_symbol]["c"][0]
 
-        # max_orders = self.account_levels_to_max_open_orders[self.user_preferences["settings"]["kraken"]["account_type"]]
+        # max_orders = self.account_levels_to_max_open_orders[
+        #                                                       self.user_preferences["settings"]["kraken"]["account_type"]]
 
         return {
             "symbol": symbol,
