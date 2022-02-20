@@ -26,7 +26,7 @@ import hmac
 
 
 class FTXAPI:
-    _API_URL = "https://ftx.{}/api/"
+    _API_URL = "https://ftx{}/api/"
 
     # no option to instantiate with sandbox mode, unlike every other exchange
     def __init__(self, api_key, api_secret, tld: str = '.us', _subaccount_name=None):
