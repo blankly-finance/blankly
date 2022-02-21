@@ -36,9 +36,9 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
             ["available", float],
         ],
         'order': [["status", str], ["symbol", str], ["id", str],
-                  ["created_at", float], ["funds", float], ["status", str],
-                  ["type", str], ["contract_type", str], ["side", str],
-                  ["position", str], ["price", float], ["time_in_force", str],
+                  ["created_at", float], ["funds", float], ["type", str],
+                  ["contract_type", str], ["side", str], ["position", str],
+                  ["price", float], ["time_in_force", str],
                   ["stop_price", float]],
     }
 
@@ -97,8 +97,13 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
     #     raise NotImplementedError
 
     @abc.abstractmethod
-    def cancel_order(self, order_id: str) -> dict:
+    def cancel_order(self, symbol: str, order_id: int) -> dict:
         """Cancels an order"""
+        pass
+
+    @abc.abstractmethod
+    def close_position(self, symbol: str = None):
+        """Closes open positions"""
         pass
 
     @abc.abstractmethod

@@ -35,6 +35,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
     def init_exchange(self):
         try:
             self.calls.account()
+            # TODO set/query margin type, leverage, and position type
         except binance.error.ClientError as e:
             raise exceptions.APIException(
                 f"{e.error_message}. Are you trying to use your normal exchange keys while in sandbox mode? \nTry "
@@ -100,18 +101,79 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             return accounts[symbol]
         return accounts
 
+    def _parse_order_response(self, response: dict):
+        # 'order': [["status", str], ["symbol", str], ["id", str],
+        #           ["created_at", float], ["funds", float],
+        #           ["type", str], ["contract_type", str], ["side", str],
+        #           ["position", str], ["price", float], ["time_in_force", str],
+        #           ["stop_price", float]],
+        response = utils.AttributeDict(response)
+        return utils.AttributeDict({
+            'status': response.status,
+            'symbol': response.symbol,
+            'id': response.orderId,
+            'created_at': None,  # TODO
+            'funds': None,  # TODO
+            'type': response.type,
+            'contract_type': 'PERPETUAL',
+            'side': response.side,
+            'position': response.positionSide,
+            'price': response.price,
+            'time_in_force': response.timeInForce,
+            'stop_price': response.stopPrice,
+            'exchange_specific': response
+        })
+
     @utils.order_protection
-    def market_order(self, symbol: str, side: str, size: float,
-                     position: str) -> FuturesMarketOrder:
-        raise NotImplementedError
+    def market_order(self,
+                     symbol: str,
+                     side: str,
+                     size: float,
+                     position: str = 'BOTH') -> FuturesMarketOrder:
+        """
+        Places a market order.
+        In hedge mode, specify either 'short' or 'long' `position`.
+        For one way mode, just `buy` or `sell`.
+        """
+        params = {
+            'type': 'MARKET',
+            'symbol': symbol,
+            'side': side.upper(),
+            'quantity': size,
+            'positionSide': position
+        }
+        response = self.calls.new_order(**params)
+
+        return FuturesMarketOrder(self._parse_order_response(response), params, self)
 
     @utils.order_protection
     def limit_order(self, symbol: str, side: str, price: float, size: float,
-                    position: str) -> FuturesLimitOrder:
-        raise NotImplementedError
+                    position: str = 'BOTH', time_in_force: str = 'GTC') -> FuturesLimitOrder:
+        """
+        Places a limit order.
+        In hedge mode, specify either 'short' or 'long' `position`.
+        For one way mode, just `buy` or `sell`.
+        """
+        params = {
+            'type': 'LIMIT',
+            'symbol': symbol,
+            'side': side.upper(),
+            'price': price,
+            'quantity': size,
+            'positionSide': position,
+            'timeInForce': time_in_force,
+        }
+        response = self.calls.new_order(**params)
 
-    def cancel_order(self, order_id: str) -> dict:
-        raise NotImplementedError
+        return FuturesLimitOrder(self._parse_order_response(response), params, self)
+
+    @utils.order_protection
+    def cancel_order(self, symbol: str, order_id: int) -> dict:
+        self.calls.cancel_order(self, symbol, order_id)
+
+    @utils.order_protection
+    def close_position(self, symbol: str = None):
+        pass
 
     def get_open_orders(self, symbol: str = None) -> list:
         raise NotImplementedError
