@@ -59,7 +59,7 @@ class TermColors:
 
 
 supported_exchanges = ['binance.com', 'binance.us',
-                       'coinbase_pro', 'alpaca', 'ftx', 'oanda', 'kucoin']
+                       'coinbase_pro', 'alpaca', 'ftx', 'oanda']
 
 
 def choose_option(choice: str, options: list, descriptions: list):
@@ -568,8 +568,7 @@ def main():
             user_defined_exchange = 'binance'
 
         exchange_config = {
-            'settings.json': 'https://raw.githubusercontent.com/blankly-finance/examples/main/configs/'
-                             'settings_sandbox.json',
+            'settings.json': 'https://raw.githubusercontent.com/blankly-finance/examples/main/configs/settings.json',
             'keys.json': 'https://raw.githubusercontent.com/blankly-finance/examples/main/keys_example.json',
             'backtest_usd.json': 'https://raw.githubusercontent.com/blankly-finance/examples/main/configs/'
                                  'backtest_usd.json',
@@ -595,7 +594,7 @@ def main():
         # Directly download backtest.json
         print("Downloading backtest defaults...")
         backtest = requests.get(exchange_config['backtest_usd.json']).json()
-        if user_defined_exchange == 'ftx' or user_defined_exchange == 'kucoin' or user_defined_exchange == 'binance':
+        if user_defined_exchange == 'kucoin' or user_defined_exchange == 'binance':
             # USDT exchanges
             backtest['settings']['quote_account_value_in'] = 'USDT'
         create_and_write_file('backtest.json', json.dumps(backtest, indent=2))

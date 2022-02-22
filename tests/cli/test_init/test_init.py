@@ -59,7 +59,7 @@ def check_settings(settings: str, expected_defaults: dict):
 
 
 class TestInit(unittest.TestCase):
-    exchanges = ['binance.com', 'binance.us', 'coinbase_pro', 'alpaca', 'ftx', 'oanda', 'kucoin']
+    exchanges = ['binance.com', 'binance.us', 'coinbase_pro', 'alpaca', 'ftx', 'oanda']
     inits_folder = 'generated_inits'
     exchange_defaults = {
         'alpaca': {
@@ -82,7 +82,7 @@ class TestInit(unittest.TestCase):
         },
         'ftx': {
             'exchange': 'blankly.FTX',
-            'quote_currency': 'USDT'
+            'quote_currency': 'USD'
         },
         'kucoin': {
             'exchange': 'blankly.Kucoin',
@@ -96,8 +96,6 @@ class TestInit(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.exchanges = ['binance.com', 'binance.us',
-                         'coinbase_pro', 'alpaca', 'ftx', 'oanda', 'kucoin']
         try:
             shutil.rmtree(f'./tests/cli/test_init/{cls.inits_folder}')
         except FileNotFoundError:
