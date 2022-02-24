@@ -14,7 +14,8 @@ def convert_binance(exchange_name):
 
 def run_cli(commands: list, cwd=f'./tests/cli'):
     my_env = os.environ.copy()
-    my_env["PYTHONPATH"] = os.path.abspath('./')
+    if 'PYTHONPATH' not in my_env:
+        my_env["PYTHONPATH"] = os.path.abspath('./')
 
     script_abs = os.path.abspath('./blankly/deployment/cli.py')
     all_commands = ['python', script_abs] + commands
