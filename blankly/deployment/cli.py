@@ -545,7 +545,10 @@ def main():
             user_defined_exchange = 'coinbase_pro'  # default to cbpro
 
         print("Initializing...")
-        print(very_important_string)
+        try:
+            print(very_important_string)
+        except UnicodeEncodeError:
+            print("Welcome to blankly!")
 
         if user_defined_exchange not in supported_exchanges:
             base_str = 'Error: Please use one of our supported exchanges'
