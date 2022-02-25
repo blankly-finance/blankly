@@ -35,7 +35,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         'account': [
             ["available", float],
         ],
-        'order': [["status", str], ["symbol", str], ["id", str],
+        'order': [["status", str], ["symbol", str], ["id", int],
                   ["created_at", float], ["funds", float], ["type", str],
                   ["contract_type", str], ["side", str], ["position", str],
                   ["price", float], ["time_in_force", str],
@@ -79,13 +79,13 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
 
     @abc.abstractmethod
     def market_order(self, symbol: str, side: str, size: float,
-                     position: str) -> FuturesMarketOrder:
+                     position: str = 'BOTH') -> FuturesMarketOrder:
         """Places a market order"""
         pass
 
     @abc.abstractmethod
     def limit_order(self, symbol: str, side: str, price: float, size: float,
-                    position: str) -> FuturesLimitOrder:
+                    position: str = 'BOTH') -> FuturesLimitOrder:
         """Places a limit order"""
         pass
 
@@ -97,13 +97,8 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
     #     raise NotImplementedError
 
     @abc.abstractmethod
-    def cancel_order(self, symbol: str, order_id: int) -> dict:
+    def cancel_order(self, symbol: str, order_id: int) -> utils.AttributeDict:
         """Cancels an order"""
-        pass
-
-    @abc.abstractmethod
-    def close_position(self, symbol: str = None):
-        """Closes open positions"""
         pass
 
     @abc.abstractmethod
@@ -112,7 +107,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_order(self, order_id: str) -> dict:
+    def get_order(self, symbol: str, order_id: str) -> utils.AttributeDict:
         """Returns information for the order corresponding to `order_id`"""
         pass
 
@@ -134,4 +129,5 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
     @property
     def cash(self) -> float:
         """The amount of cash in a portfolio. The currency for 'cash' is set in settings.json"""
-        pass
+        using_setting = self.user_preferences['settings'][self.exchange_name]['cash']
+        return self.get_account(using_setting)['available']

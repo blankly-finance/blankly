@@ -44,8 +44,8 @@ Price: {self.get_price()}"""
     def get_response(self) -> dict:
         return self.response
 
-    def get_id(self) -> str:
-        return self.response['id']
+    def get_id(self) -> int:
+        return int(self.response['id'])
 
     def get_asset_id(self) -> str:
         return self.response['symbol']

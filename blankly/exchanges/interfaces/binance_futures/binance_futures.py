@@ -15,32 +15,12 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
-from binance.futures import Futures
+from binance.client import Client
 
 from blankly.exchanges.auth.auth_constructor import AuthConstructor
 from blankly.exchanges.futures.futures_exchange import FuturesExchange
 from blankly.exchanges.interfaces.binance_futures.binance_futures_interface import BinanceFuturesInterface
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
-
-
-def get_binance_url(preferences: dict) -> str:
-    margin_type = preferences['settings']['binance']['futures']['margin_type']
-    if margin_type == 'COIN-M':
-        raise NotImplementedError(
-            'COIN-M Futures are not implemented at this time.')
-        # url_prefix = 'dapi'
-    elif margin_type == 'USDT-M':
-        url_prefix = 'fapi'
-    else:
-        raise ValueError(
-            f"Invalid margin_type for binance_futures: {margin_type}. Must be either 'USDT-M' or 'COIN-M'."
-        )
-
-    if preferences['settings']['use_sandbox']:
-        return 'https://testnet.binancefuture.com'
-    else:
-        return f'https://{url_prefix}.binance.com'
 
 
 class BinanceFutures(FuturesExchange):
@@ -55,10 +35,12 @@ class BinanceFutures(FuturesExchange):
         auth = AuthConstructor(keys_path, portfolio_name, 'binance_futures',
                                ['API_KEY', 'API_SECRET'])
 
-        api_url = get_binance_url(self.preferences)
-        self.__calls = Futures(key=auth.keys['API_KEY'],
-                               secret=auth.keys['API_SECRET'],
-                               base_url=api_url)
+        self.__calls = Client(
+            api_key=auth.keys['API_KEY'],
+            api_secret=auth.keys['API_SECRET'],
+            # pretty sure this breaks futures
+            # tld=self.preferences["settings"]['binance']["binance_tld"],
+            testnet=self.preferences['settings']['use_sandbox'])
 
         self.__interface = BinanceFuturesInterface(self.exchange_type,
                                                    self.calls)
