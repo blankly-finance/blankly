@@ -558,12 +558,6 @@ def main():
                 f'\nYour input: {TermColors.BOLD}{user_defined_exchange}{TermColors.ENDC}')
             return
 
-        # Directly download keys.json
-        print("Downloading keys template...")
-        keys_example = requests.get('https://raw.githubusercontent.com/Blankly-Finance/'
-                                    'Blankly/main/examples/keys_example.json')
-        create_and_write_file('keys.json', keys_example.text)
-
         tld = 'com'
         if user_defined_exchange[0:7] == 'binance':
             # Find if it's .us if needed

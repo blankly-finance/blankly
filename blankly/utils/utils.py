@@ -134,7 +134,7 @@ class __BlanklySettings:
             default_settings: The default settings in which to compare the loaded settings to. This helps the user
              learn if they're missing important settings and avoids keyerrors later on
             not_found_err: A string that is shown if the file they specify is not found
-            allow_nonexistent: Enable this to create the file if not found
+            allow_nonexistent: Enable this to just get the defaults if the file isn't found
         """
         self.__settings_cache = {}
         self.__default_path = default_path
@@ -174,9 +174,10 @@ class __BlanklySettings:
                 preferences = load_json_file(self.__default_path)
             except FileNotFoundError:
                 if self.__allow_nonexistent:
-                    self.write(self.__default_settings)
-                    # Recursively run this
-                    return self.load(override_path)
+                    return self.__default_settings
+                    # self.write(self.__default_settings)
+                    # # Recursively run this
+                    # return self.load(override_path)
                 else:
                     raise FileNotFoundError(self.__not_found_err)
             preferences = self.__compare_dicts(self.__default_settings, preferences)
