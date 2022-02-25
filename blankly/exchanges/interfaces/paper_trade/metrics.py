@@ -78,12 +78,14 @@ def variance(backtest_data, trading_period=86400):
     ppy = periods_per_year(trading_period)
     return round(100.0 * metrics.variance(returns, ppy), 2)
 
+
 def beta(backtest_data, trading_period=86400):
     # Drop the first index because it is NaN
     returns = backtest_data['returns']['value'][1:]
     benchmark = backtest_data['benchmark_returns']['value'][1:]
     ppy = periods_per_year(trading_period)
     return round(100.0 * metrics.beta(returns, benchmark, ppy), 2)
+
 
 def var(backtest_data):
     returns = backtest_data['returns']['value']

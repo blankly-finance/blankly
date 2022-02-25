@@ -99,6 +99,24 @@ class Reporter:
         """
         pass
 
+    def log_market_order(self, exchange_out: dict, exchange_type: str):
+        """
+        Log a market order
+        """
+        pass
+
+    def log_limit_order(self, exchange_out: dict, exchange_type: str):
+        """
+        Log a limit order
+        """
+        pass
+
+    def update_order(self, exchange_out: dict, exchange_type: str):
+        """
+        Update an existing order
+        """
+        pass
+
     def export_used_symbol(self, symbol):
         """
         Export the currency name for a used currency
