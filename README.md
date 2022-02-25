@@ -173,7 +173,7 @@ For more info, and ways to do more advanced things, check out our [getting start
 | FTX                 | 🟢            | 🟢          | 🟢             | 🟢           |
 | KuCoin              | 🟢            | 🟡          | 🟢             | 🟢           |
 | Kraken              | 🟡            | 🟡          | 🟡             | 🟡           |
-| Keyless Backtesting |              |            | 🟢             | 🟢           |
+| Keyless Backtesting |              |            |               | 🟢           |
 | TD Ameritrade       | 🔴            | 🔴          | 🔴             | 🔴           |
 | Webull              | 🔴            | 🔴          | 🔴             | 🔴           |
 | Robinhood           | 🔴            | 🔴          | 🔴             | 🔴           |
@@ -189,7 +189,7 @@ For more info, and ways to do more advanced things, check out our [getting start
 
 We have a pre-built cookbook examples that implement strategies such as RSI, MACD, and the Golden Cross found in our [examples](https://docs.blankly.finance/examples/golden-cross).
 
-The model below will run an RSI check every 30 minutes - **buying** below **30** and **selling** above **70** .
+The model below will run an RSI check every 30 minutes - **buying** below **30** and **selling** above **70**. Try switching the exchange and assets and see how it instantly works on Binance, Coinbase Pro or anything else you trade on.
 
 ```python
 import blankly
