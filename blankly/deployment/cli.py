@@ -58,6 +58,10 @@ class TermColors:
     UNDERLINE = '\033[4m'
 
 
+supported_exchanges = ['binance.com', 'binance.us',
+                       'coinbase_pro', 'alpaca', 'ftx', 'oanda']
+
+
 def choose_option(choice: str, options: list, descriptions: list):
     """
     Generalized CLI tool to choose between given options
@@ -164,7 +168,8 @@ def choose_option(choice: str, options: list, descriptions: list):
         print(TermColors.BOLD + TermColors.WARNING + f"Choose a {choice}: " + TermColors.ENDC +
               TermColors.UNDERLINE + "(Input the index of your selection)" + TermColors.ENDC)
 
-        index = int(input(TermColors.UNDERLINE + TermColors.OKCYAN + "You have chosen:" + TermColors.ENDC + " "))
+        index = int(input(TermColors.UNDERLINE + TermColors.OKCYAN +
+                    "You have chosen:" + TermColors.ENDC + " "))
 
         print('\n' + TermColors.BOLD + TermColors.WARNING + f"Chose {choice}:" + TermColors.ENDC + " " +
               TermColors.BOLD + TermColors.OKBLUE + options[index] + TermColors.ENDC)
@@ -186,6 +191,7 @@ def get_project_model_and_name(args, projects, api: API):
         f.close()
         if 'model_id' not in deployment_options or \
                 'project_id' not in deployment_options or \
+                'type' not in deployment_options or \
                 'model_name' not in deployment_options:
             # This performs all the querying necessary to send the data up
             ids = []
@@ -297,8 +303,19 @@ parser = argparse.ArgumentParser(description='Blankly CLI & deployment tool.')
 
 subparsers = parser.add_subparsers(help='Different blankly commands.')
 
-init_parser = subparsers.add_parser('init', help='Sub command to create a blankly-enabled development environment.')
+supported_exchanges_str = ''
+for i in supported_exchanges:
+    supported_exchanges_str += i + "\n"
+
+init_parser = subparsers.add_parser('init', help=f'Sub command to create a blankly-enabled development environment.'
+                                                 f' Supports blankly init on these exchanges: '
+                                                 f'\n{supported_exchanges_str}- Ex: \'blankly init coinbase_pro\'')
 init_parser.set_defaults(which='init')
+# Generate a help message specific to this command
+init_help_message = 'One of the following supported exchanges: \n'
+for i in supported_exchanges:
+    init_help_message += i + "\n"
+init_parser.add_argument('exchange', nargs='?', default='none', type=str, help=init_help_message)
 
 login_parser = subparsers.add_parser('login', help='Log in to your blankly account.')
 login_parser.set_defaults(which='login')
@@ -346,7 +363,7 @@ def login(remove_cache: bool = False):
                 # If it's different from the one that was just created, remove the one just created
                 os.close(fd)
                 os.remove(os.path.join(temp_folder, file_name))
-                # Reassign file name just in case its needed below to write into the file
+                # Reassign file name just in case its needed below to write into the file 
                 # Note that we protect against corrupted files below by overwriting any contents in case
                 #  'token' not in token_file
                 file_name = i
@@ -480,7 +497,8 @@ def main():
         projects = api.list_projects()
 
         if len(projects) == 0:
-            print(TermColors.FAIL + "Please create a project with 'blankly create' first." + TermColors.ENDC)
+            print(TermColors.FAIL +
+                  "Please create a project with 'blankly create' first." + TermColors.ENDC)
             return
 
         # Read and write to the deployment options if necessary
@@ -520,28 +538,67 @@ def main():
             info_print(f"\tProject:\t{response['projectId']}")
 
     elif which == 'init':
+        exchange = args['exchange']
+        if exchange != 'none':
+            user_defined_exchange = exchange.lower()
+        else:
+            user_defined_exchange = 'coinbase_pro'  # default to cbpro
+
         print("Initializing...")
-        print(very_important_string)
+        try:
+            print(very_important_string)
+        except UnicodeEncodeError:
+            print("Welcome to blankly!")
+
+        if user_defined_exchange not in supported_exchanges:
+            base_str = 'Error: Please use one of our supported exchanges'
+            exchanges = ', '.join(supported_exchanges)
+            info_print(
+                f'{base_str}: {TermColors.BOLD}{exchanges}{TermColors.ENDC}. '
+                f'\nYour input: {TermColors.BOLD}{user_defined_exchange}{TermColors.ENDC}')
+            return
+
+        tld = 'com'
+        if user_defined_exchange[0:7] == 'binance':
+            # Find if it's .us if needed
+            tld = user_defined_exchange[8:]
+            user_defined_exchange = 'binance'
+
+        exchange_config = {
+            'settings.json': 'https://raw.githubusercontent.com/blankly-finance/examples/main/configs/settings.json',
+            'keys.json': 'https://raw.githubusercontent.com/blankly-finance/examples/main/keys_example.json',
+            'backtest_usd.json': 'https://raw.githubusercontent.com/blankly-finance/examples/main/configs/'
+                                 'backtest_usd.json',
+            'exchange': user_defined_exchange,
+            'bot_url': f'https://raw.githubusercontent.com/blankly-finance/examples/main/init/rsi_'
+                       f'{user_defined_exchange}.py',
+            'tld': tld,
+        }
 
         # Directly download keys.json
         print("Downloading keys template...")
-        keys_example = requests.get('https://raw.githubusercontent.com/Blankly-Finance/'
-                                    'Blankly/main/examples/keys_example.json')
-        create_and_write_file('keys.json', keys_example.text)
+        keys_example = requests.get(exchange_config['keys.json']).json()
+        # No modification necessary
+        create_and_write_file('keys.json', json.dumps(keys_example, indent=2))
 
         # Directly download settings.json
         print("Downloading settings defaults...")
-        settings = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/settings.json')
-        create_and_write_file('settings.json', settings.text)
+        settings = requests.get(exchange_config['settings.json']).json()
+        # Make sure we write the tld into the settings
+        settings['settings']['binance']['binance_tld'] = exchange_config['tld']
+        create_and_write_file('settings.json', json.dumps(settings, indent=2))
 
         # Directly download backtest.json
         print("Downloading backtest defaults...")
-        backtest = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/backtest.json')
-        create_and_write_file('backtest.json', backtest.text)
+        backtest = requests.get(exchange_config['backtest_usd.json']).json()
+        if user_defined_exchange == 'kucoin' or user_defined_exchange == 'binance':
+            # USDT exchanges
+            backtest['settings']['quote_account_value_in'] = 'USDT'
+        create_and_write_file('backtest.json', json.dumps(backtest, indent=2))
 
         # Directly download a rsi bot
         print("Downloading RSI bot example...")
-        bot = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/rsi.py')
+        bot = requests.get(exchange_config['bot_url'])
         create_and_write_file('bot.py', bot.text)
 
         print("Writing deployment defaults...")
@@ -552,6 +609,7 @@ def main():
               f"{py_version[0]}.{py_version[1]}{TermColors.ENDC}")
 
         deploy = load_deployment_settings()
+
         deploy['python_version'] = py_version[0] + "." + py_version[1]
         create_and_write_file(deployment_script_name, json.dumps(deploy, indent=2))
 
@@ -641,7 +699,8 @@ def main():
         else:
             current_directory = os.getcwd()
             blankly_folder = os.path.join(current_directory, args['path'])
-            deployment_location = os.path.join(blankly_folder, deployment_script_name)
+            deployment_location = os.path.join(
+                blankly_folder, deployment_script_name)
             try:
                 # Find where the user specified their working directory and migrate to that
                 deployment_dict = load_json_file(deployment_location)

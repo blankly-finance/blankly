@@ -93,21 +93,39 @@ class Reporter:
         """
         pass
 
-    def log_strategy_event(self, strategy_object, event_name, response, args, **kwargs):
-        """
-        Export a strategy event that has occurred
-        """
-        pass
-
     def export_used_exchange(self, exchange_name):
         """
         Export the string identifier for a used exchange
         """
         pass
 
+    def log_market_order(self, exchange_out: dict, exchange_type: str):
+        """
+        Log a market order
+        """
+        pass
+
+    def log_limit_order(self, exchange_out: dict, exchange_type: str):
+        """
+        Log a limit order
+        """
+        pass
+
+    def update_order(self, exchange_out: dict, exchange_type: str):
+        """
+        Update an existing order
+        """
+        pass
+
     def export_used_symbol(self, symbol):
         """
         Export the currency name for a used currency
+        """
+        pass
+
+    def annotate_order(self, order_id, annotation):
+        """
+        Update the annotation on an existing order
         """
         pass
 

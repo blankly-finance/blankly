@@ -118,6 +118,7 @@ class ABCBaseExchangeInterface(abc.ABC):
         else:
             epoch_start = utils.convert_input_to_epoch(start_date)
 
+        # response.index = pd.to_datetime(response['time'], unit='s')
         response = self.get_product_history(symbol, epoch_start, epoch_stop,
                                             resolution_seconds)
 

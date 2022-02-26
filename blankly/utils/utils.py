@@ -35,7 +35,6 @@ from blankly.utils.time_builder import time_interval_to_seconds
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
-        "use_sandbox": False,
         "use_sandbox_websockets": False,
         "websocket_buffer_size": 10000,
         "test_connectivity_on_auth": True,
@@ -135,7 +134,7 @@ class __BlanklySettings:
             default_settings: The default settings in which to compare the loaded settings to. This helps the user
              learn if they're missing important settings and avoids keyerrors later on
             not_found_err: A string that is shown if the file they specify is not found
-            allow_nonexistent: Enable this to create the file if not found
+            allow_nonexistent: Enable this to just get the defaults if the file isn't found
         """
         self.__settings_cache = {}
         self.__default_path = default_path
@@ -175,9 +174,10 @@ class __BlanklySettings:
                 preferences = load_json_file(self.__default_path)
             except FileNotFoundError:
                 if self.__allow_nonexistent:
-                    self.write(self.__default_settings)
-                    # Recursively run this
-                    return self.load(override_path)
+                    return self.__default_settings
+                    # self.write(self.__default_settings)
+                    # # Recursively run this
+                    # return self.load(override_path)
                 else:
                     raise FileNotFoundError(self.__not_found_err)
             preferences = self.__compare_dicts(self.__default_settings, preferences)
@@ -768,11 +768,11 @@ def check_backtesting() -> bool:
     Tests if the environment is configured for backtesting. Primarily used for platform deployments but is
     applicable elsewhere
     """
-    type_ = os.getenv('TYPE')
+    backtesting = os.getenv('BACKTESTING')
 
     # Could be undefined
-    if type_ is not None:
-        return type_ == 'STRATEGY_BACKTEST'
+    if backtesting is not None:
+        return backtesting == '1'
     else:
         return False
 

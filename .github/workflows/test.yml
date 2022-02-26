@@ -12,7 +12,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        os: [windows-latest, macos-latest, ubuntu-latest]
         python-version: ['3.7', '3.8', '3.9', '3.10']
 
     steps:
@@ -39,3 +39,5 @@ jobs:
     - name: Run test file
       run: |
         pytest
+        echo "Sleeping to reduce rate limit pressure..."
+        sleep 200
