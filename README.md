@@ -40,6 +40,9 @@
 
 ​	Convert your existing model or build a new one - unlock the ability to run & optimize across all of our supported exchanges. Getting started is easy - just `pip install blankly` and `blankly init`.
 
+## Sponsored Promotion
+<a target="_blank" href="https://tokenbot.com/?utm_source=github&utm_medium=blankly&utm_campaign=algodevs"><img src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/github%2FTokenBot-Blankly-banner.png?alt=media&token=843c16b0-da39-41a5-b34d-f7d5fdfdf088">
+
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
 
 [YouTube - Under 25 Lines Build an Alpaca RSI Trading Bot](https://youtu.be/pcm0h63rhUU)
