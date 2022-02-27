@@ -75,9 +75,6 @@ class Strategy:
         # This will throw a warning if they're trying to use an orderbook in the backtest
         self.__using_orderbook = False
 
-        # Attempt to report the strategy
-        blankly.reporter.export_strategy(self)
-
         # Create a lock for the teardown so nothing happens while its going on
         self.lock = threading.Lock()
 

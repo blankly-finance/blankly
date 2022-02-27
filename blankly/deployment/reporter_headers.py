@@ -22,7 +22,6 @@ import ssl
 from typing import Any
 
 from blankly.utils.utils import load_notify_preferences
-from blankly.frameworks.strategy import Strategy
 from blankly.frameworks.screener.screener import Screener
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
 
@@ -53,27 +52,6 @@ class Reporter:
             var: The variable that was exported initially
         """
         return self.__live_vars[id(var)]
-
-    def export_strategy(self, strategy: Strategy):
-        """
-        Export a strategy for monitoring. This is used internally on the construction of the strategy object
-
-        Args:
-            strategy (Strategy): The strategy object to monitor
-        """
-        pass
-
-    def export_screener(self, screener: Screener):
-        """
-        Export a screener object to the backend for monitoring
-
-        Args:
-            screener: A screener object to export
-        """
-        if self.__screener is None:
-            self.__screener = screener
-        else:
-            raise RuntimeError("Currently only a single screener can be exported per model.")
 
     def export_screener_result(self, screener: Screener):
         """
