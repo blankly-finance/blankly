@@ -5,38 +5,18 @@ import threading
 import time
 import traceback
 
+import websocket
 from websocket import create_connection
 
 import blankly
 import blankly.exchanges.interfaces.kraken.kraken_websocket_utils as websocket_utils
 from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
-
-
-def create_ticker_connection(id, url, channel):
-    ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
-    request = json.dumps({
-    "op": "subscribe",
-    "channel": channel,
-    "market": id
-    })
-    ws.send(request)
-    return ws
-
-
-# This could be needed:
-# "channels": [
-#     {
-#         "name": "ticker",
-#         "product_ids": [
-#             \"""" + id + """\"
-#         ]
-#     }
-# ]
+from blankly.utils.utils import info_print
 
 
 class Tickers(ABCExchangeWebsocket):
     def __init__(self, symbol, stream, log=None,
-                 pre_event_callback=None, initially_stopped=False, WEBSOCKET_URL="ws.kraken.com"):
+                 pre_event_callback=None, initially_stopped=False, WEBSOCKET_URL="wss://ws.kraken.com"):
         """
         Create and initialize the ticker
         Args:
@@ -60,16 +40,18 @@ class Tickers(ABCExchangeWebsocket):
         else:
             self.__log = False
 
+        self.__preferences = blankly.utils.load_user_preferences()
+
         self.URL = WEBSOCKET_URL
         self.ws = None
         self.__response = None
         self.__most_recent_tick = None
         self.__most_recent_time = None
+        self.__thread = threading.Thread(target=self.read_websocket)
         self.__callbacks = []
         self.__pre_event_callback = pre_event_callback
+        self.__message_count = 0
 
-        # Reload preferences
-        self.__preferences = blankly.utils.load_user_preferences()
         buffer_size = self.__preferences["settings"]["websocket_buffer_size"]
         self.__ticker_feed = collections.deque(maxlen=buffer_size)
         self.__time_feed = collections.deque(maxlen=buffer_size)
@@ -83,72 +65,89 @@ class Tickers(ABCExchangeWebsocket):
         Restart websocket if it was asked to stop.
         """
         if self.ws is None:
-            self.ws = create_ticker_connection(self.__id, self.URL, self.__stream)
-            self.__response = self.ws.recv()
-            thread = threading.Thread(target=self.read_websocket)
-            thread.start()
+            self.ws = websocket.WebSocketApp(self.URL,
+                                             on_open=self.on_open,
+                                             on_message=self.on_message,
+                                             on_error=self.on_error,
+                                             on_close=self.on_close)
+            self.__thread = threading.Thread(target=self.read_websocket)
+            self.__thread.start()
         else:
-            if self.ws.connected:
-                print("Already running...")
-                pass
+            if self.__thread.is_alive():
+                info_print("Already running...")
             else:
                 # Use recursion to restart, continue appending to time feed and ticker feed
                 self.ws = None
                 self.start_websocket()
 
     def read_websocket(self):
-        counter = 0
-        # TODO port this to "WebSocketApp" found in the websockets documentation
-        while self.ws.connected:
-            # In case the user closes while its reading from the websocket, this will let it expire
-            persist_connected = self.ws.connected
-            try:
-                received_string = self.ws.recv()
-                received_dict = json.loads(received_string)
-                parsed_received_trades = websocket_utils.process_trades(received_dict)
-                for received in parsed_received_trades:
-                    #ISO8601 is converted to epoch in process_trades
-                    self.__most_recent_time = received["time"]
-                    self.__time_feed.append(self.__most_recent_time)
+        # Main thread to sit here and run
+        self.ws.run_forever()
+        # This repeats the close behavior just in case something happens
 
-                    if self.__log:
-                        if counter % 100 == 0:
-                            self.__file.close()
-                            self.__file = open(self.__filePath, 'a')
-                        line = self.__logging_callback(received)
-                        self.__file.write(line)
+    def on_message(self, ws, message):
 
-                    # Manage price events and fire for each manager attached
-                    interface_message = self.__interface_callback(received)
-                    self.__ticker_feed.append(interface_message)
-                    self.__most_recent_tick = interface_message
+        message = json.loads(message)
+        print(message)
+        if isinstance(message, dict):
+            if message['status'] == 'subscribed':
+                channel = message['channelName']
+                info_print(f"Subscribed to {channel}")
+                return
+            elif message['status'] == 'heartbeat' or message['status'] == 'online':
+                return
+        else:
+            if message[-2] == 'trade':
+                self.__most_recent_time = message[1][0][2]
+                self.__time_feed.append(self.__most_recent_time)
+                #self.__log_response(self.__logging_callback, message)
 
-                    try:
-                        for i in self.__callbacks:
-                            i(interface_message)
-                    except Exception:
-                        traceback.print_exc()
+                if self.__log:
+                    if self.__message_count % 100 == 0:
+                        self.__file.close()
+                        self.__file = open(self.__filePath, 'a')
+                    line = self.__logging_callback(message)
+                    self.__file.write(line)
 
-                    counter += 1
-            except Exception as e:
-                if persist_connected:
+                # Manage price events and fire for each manager attached
+                interface_message = self.__interface_callback(message)
+                self.__ticker_feed.append(interface_message)
+                self.__most_recent_tick = interface_message
+
+                try:
+                    for i in self.__callbacks:
+                        i(interface_message)
+                except Exception as e:
+                    info_print(e)
                     traceback.print_exc()
-                    pass
-                else:
-                    traceback.print_exc()
-                    print("Error reading ticker websocket for " + self.__id + " on " +
-                          self.__stream + ": attempting to re-initialize")
-                    # Give a delay so this doesn't eat up from the main thread if it takes many tries to initialize
-                    time.sleep(2)
-                    self.ws.close()
-                    self.ws = create_ticker_connection(self.__id, self.URL, self.__stream)
-                    # Update response
-                    self.__response = self.ws.recv()
+
+                self.__message_count += 1
+
+    def on_error(self, ws, error):
+        print(error)
+
+    def on_close(self, ws):
+        # This repeats the close behavior just in case something happens
+        pass
+
+    def on_open(self, ws):
+        #ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
+        request = json.dumps({
+            "event": "subscribe",
+            "pair": [
+                self.__id
+            ],
+            "subscription": {
+                "name": self.__stream
+            }
+        })
+        ws.send(request)
+        return ws
 
     """ Required in manager """
 
     def is_websocket_open(self):
-        return self.ws.connected
+        return self.__thread.is_alive()
 
     def get_currency_id(self):
         return self.__id
@@ -191,7 +190,7 @@ class Tickers(ABCExchangeWebsocket):
         if self.ws.connected:
             self.ws.close()
         else:
-            print("Websocket for " + self.__id + ' on channel ' + self.__stream + " is already closed")
+            print("Websocket for " + self.__id + '@' + self.__stream + " is already closed")
 
     """ Required in manager """
 
