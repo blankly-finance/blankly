@@ -18,11 +18,21 @@
 """
 
 import abc
+from typing import Union
+
+import numpy
+import pandas
+
+from datetime import datetime as dt
+
+from dateutil.parser import parser
 
 import blankly.utils.utils as utils
+from blankly.enums import MarginType, HedgeMode, PositionMode, OrderType, Side, TimeInForce, ContractType
 from blankly.exchanges.interfaces.abc_base_exchange_interface import ABCBaseExchangeInterface
 from blankly.exchanges.orders.futures.futures_limit_order import FuturesLimitOrder
 from blankly.exchanges.orders.futures.futures_market_order import FuturesMarketOrder
+from blankly.utils import time_interval_to_seconds
 
 
 class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
@@ -35,11 +45,15 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         'account': [
             ["available", float],
         ],
+        'position': [["size", float], ["side", PositionMode],
+                     ["entry_price", float], ["max_buying_power", float],
+                     ["leverage", float], ["margin_type", MarginType],
+                     ["unrealized_profit", float]],
         'order': [["status", str], ["symbol", str], ["id", int],
-                  ["created_at", float], ["funds", float], ["type", str],
-                  ["contract_type", str], ["side", str], ["position", str],
-                  ["price", float], ["time_in_force", str],
-                  ["stop_price", float]],
+                  ["created_at", float], ["funds", float], ["type", OrderType],
+                  ["contract_type", ContractType], ["side", Side],
+                  ["position", PositionMode], ["price", float],
+                  ["time_in_force", TimeInForce], ["stop_price", float]],
     }
 
     def __init__(self,
@@ -73,28 +87,76 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_account(self, symbol: str = None) -> utils.AttributeDict:
+    def get_account(self, symbol: str) -> utils.AttributeDict:
         """Returns account information, or information for only one `symbol` if one is given."""
         pass
 
     @abc.abstractmethod
-    def market_order(self, symbol: str, side: str, size: float,
-                     position: str = 'BOTH') -> FuturesMarketOrder:
+    def get_positions(self, symbol: str) -> utils.AttributeDict:
+        """Returns position information, or information for only one `symbol` if one is given"""
+        pass
+
+    @abc.abstractmethod
+    def market_order(self,
+                     symbol: str,
+                     side: Side,
+                     size: float,
+                     position: PositionMode = None,
+                     reduce_only: bool = None) -> FuturesMarketOrder:
         """Places a market order"""
         pass
 
     @abc.abstractmethod
-    def limit_order(self, symbol: str, side: str, price: float, size: float,
-                    position: str = 'BOTH') -> FuturesLimitOrder:
+    def limit_order(self,
+                    symbol: str,
+                    side: Side,
+                    price: float,
+                    size: float,
+                    position: PositionMode = None,
+                    reduce_only: bool = None,
+                    time_in_force: TimeInForce = None) -> FuturesLimitOrder:
         """Places a limit order"""
         pass
 
-    # TODO maybe? it's not even implemented for spot trading
-    # def stop_limit_order(self, symbol: str, side: str, price: float,
-    #                      stop_price: float, size: float,
-    #                      position: str) -> FuturesLimitOrder:
-    #     """Places a stop-limit order"""
-    #     raise NotImplementedError
+    # TODO allow setting a separate limit price for order
+    @abc.abstractmethod
+    def take_profit(self,
+                    symbol: str,
+                    side: Side,
+                    price: float,
+                    size: float,
+                    position: PositionMode = None):
+        """Place a take-profit order for a position"""
+        pass
+
+    # TODO allow setting a separate limit price for order
+    @abc.abstractmethod
+    def stop_loss(self,
+                  symbol: str,
+                  side: Side,
+                  price: float,
+                  size: float,
+                  position: PositionMode = None):
+        """Place a take-profit order for a position"""
+        pass
+
+    # TODO
+    # @abc.abstractmethod
+    # def stop_limit_order(self, symbol: str, side: Side, price: float, stop_price: float, size: float,
+    #                      position: PositionMode) -> FuturesLimitOrder:
+    #     pass
+
+    @abc.abstractmethod
+    def set_hedge_mode(self, hedge_mode: HedgeMode):
+        pass
+
+    @abc.abstractmethod
+    def set_leverage(self, symbol: str, leverage: int) -> float:
+        pass
+
+    @abc.abstractmethod
+    def set_margin_type(self, symbol: str, type: MarginType):
+        pass
 
     @abc.abstractmethod
     def cancel_order(self, symbol: str, order_id: int) -> utils.AttributeDict:
@@ -102,12 +164,12 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_open_orders(self, symbol: str = None) -> list:
+    def get_open_orders(self, symbol: str) -> list:
         """Returns all currently open orders, filtered by `symbol` if one is provided."""
         pass
 
     @abc.abstractmethod
-    def get_order(self, symbol: str, order_id: str) -> utils.AttributeDict:
+    def get_order(self, symbol: str, order_id: int) -> utils.AttributeDict:
         """Returns information for the order corresponding to `order_id`"""
         pass
 
@@ -122,6 +184,11 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         return self.get_account()
 
     @property
+    def positions(self) -> utils.AttributeDict:
+        """Position information"""
+        return self.get_positions()
+
+    @property
     def orders(self) -> list:
         """All currently open orders"""
         return self.get_open_orders()
@@ -129,5 +196,15 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
     @property
     def cash(self) -> float:
         """The amount of cash in a portfolio. The currency for 'cash' is set in settings.json"""
-        using_setting = self.user_preferences['settings'][self.exchange_name]['cash']
+        using_setting = self.user_preferences['settings'][
+            self.exchange_name]['cash']
         return self.get_account(using_setting)['available']
+
+    @abc.abstractmethod
+    def get_funding_rate_history(self, symbol: str, epoch_start: int,
+                                 epoch_stop: int) -> list:
+        """
+        Get the funding rate history between `epoch_start` and `epoch_end`.
+        Returns a list of {'rate': int, 'time': int}
+        """
+        pass

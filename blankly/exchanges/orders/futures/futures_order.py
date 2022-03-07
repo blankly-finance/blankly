@@ -15,13 +15,14 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from blankly.enums import OrderStatus, OrderType, Side, PositionMode, ContractType
 
 
 class FuturesOrder:
     needed = [["symbol", str], ["id", str], ["created_at", float],
-              ["funds", float], ["status", str], ["type", str],
-              ["contract_type", str], ["side", str], ["position", str],
-              ["price", float]]
+              ["funds", float], ["status", OrderStatus], ["type", OrderType],
+              ["contract_type", ContractType], ["side", Side],
+              ["position", PositionMode], ["price", float]]
 
     def __init__(self, response, order, interface):
         self.response = response
@@ -53,24 +54,25 @@ Price: {self.get_price()}"""
     def get_purchase_time(self) -> float:
         return self.response['created_at']
 
-    def get_status(self) -> str:
-        return self.interface.get_order(self.order['symbol'],
-                                        self.get_id())['status']
+    def get_status(self) -> OrderStatus:
+        status = self.interface.get_order(self.order['symbol'],
+                                          self.get_id())['status']
+        return OrderStatus(status.lower())
 
-    def get_type(self) -> str:
-        return self.response['type']
+    def get_type(self) -> OrderType:
+        return OrderType(self.response['type'].lower())
 
-    def get_side(self) -> str:
-        return self.response['side']
+    def get_side(self) -> Side:
+        return Side(self.response['side'].lower())
 
     def get_size(self) -> float:
         return self.response['size']
 
-    def get_contract_type(self) -> str:
-        return self.response['contract_type']
+    def get_contract_type(self) -> ContractType:
+        return ContractType(self.response['contract_type'].lower())
 
-    def get_position(self):
-        return self.response['position']
+    def get_position(self) -> PositionMode:
+        return PositionMode(self.response['position'].lower())
 
-    def get_price(self):
+    def get_price(self) -> float:
         return self.response['price']

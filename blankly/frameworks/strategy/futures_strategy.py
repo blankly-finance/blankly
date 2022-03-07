@@ -18,11 +18,20 @@
 
 import typing
 
+from blankly.exchanges.futures.futures_exchange import FuturesExchange
+from blankly.exchanges.futures.futures_strategy_logger import FuturesStrategyLogger
+from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
-from blankly.frameworks.strategy import StrategyBase
+from blankly.frameworks.strategy.strategy_base import StrategyBase
 
 
 class FuturesStrategy(StrategyBase):
+    exchange: FuturesExchange
+    interface: FuturesExchangeInterface
+
+    def __init__(self, exchange: FuturesExchange):
+        super().__init__(
+            exchange, FuturesStrategyLogger(exchange.interface, strategy=self))
 
     def backtest(self,
                  to: str = None,

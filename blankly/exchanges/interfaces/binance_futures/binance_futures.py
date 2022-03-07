@@ -38,9 +38,8 @@ class BinanceFutures(FuturesExchange):
         self.__calls = Client(
             api_key=auth.keys['API_KEY'],
             api_secret=auth.keys['API_SECRET'],
-            # pretty sure this breaks futures
-            # tld=self.preferences["settings"]['binance']["binance_tld"],
-            testnet=self.preferences['settings']['use_sandbox'])
+            testnet=auth.keys['sandbox'])
+        # TODO does futures even have a tld switch?
 
         self.__interface = BinanceFuturesInterface(self.exchange_type,
                                                    self.calls)

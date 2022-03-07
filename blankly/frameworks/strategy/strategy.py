@@ -9,6 +9,7 @@ import blankly
 from blankly.exchanges.exchange import Exchange
 from blankly.exchanges.interfaces.paper_trade.backtest_controller import BackTestController
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
+from blankly.exchanges.strategy_logger import StrategyLogger
 from blankly.frameworks.strategy import StrategyBase
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import info_print
@@ -18,7 +19,7 @@ class Strategy(StrategyBase):
     _exchange: Exchange
 
     def __init__(self, exchange: Exchange):
-        super().__init__(exchange)
+        super().__init__(exchange, StrategyLogger(exchange.get_interface(), strategy=self))
         self._paper_trade_exchange = blankly.PaperTrade(self._exchange)
 
     def backtest(self,

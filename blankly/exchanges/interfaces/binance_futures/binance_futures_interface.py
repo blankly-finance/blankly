@@ -16,22 +16,39 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import time
+from typing import Optional
 
+from datetime import datetime as dt
 import binance.error
 import pandas as pd
 from binance.client import Client
+from binance.exceptions import BinanceAPIException
 
 import blankly
 import blankly.utils.exceptions as exceptions
 import blankly.utils.utils as utils
+from blankly.enums import MarginType, PositionMode, Side, TimeInForce, HedgeMode
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.exchanges.orders.futures.futures_limit_order import FuturesLimitOrder
 from blankly.exchanges.orders.futures.futures_market_order import FuturesMarketOrder
+from blankly.exchanges.orders.futures.futures_order import FuturesOrder
+
+BINANCE_FUTURES_FEES = [
+    (0.020, 0.040),
+    (0.016, 0.040),
+    (0.014, 0.035),
+    (0.012, 0.032),
+    (0.010, 0.030),
+    (0.008, 0.027),
+    (0.006, 0.025),
+    (0.004, 0.022),
+    (0.002, 0.020),
+    (0.000, 0.017),
+]
 
 
 class BinanceFuturesInterface(FuturesExchangeInterface):
     calls: Client
-    available_currencies: list
 
     def __init__(self, exchange_name, authenticated_api):
         super().__init__(exchange_name, authenticated_api)
@@ -45,18 +62,35 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                 "toggling the 'use_sandbox' setting in your settings.json or check if the keys were input "
                 "correctly into your keys.json.")
 
-        # TODO allow hedge mode
-        # if self.calls.futures_get_position_mode()['dualSidePosition']:
-        #     self.calls.futures_change_position_mode(dualSidePosition=False)
+    def set_hedge_mode(self, hedge_mode: HedgeMode):
+        is_hedge = True if hedge_mode == HedgeMode.HEDGE else False
 
-        # TODO global margin type option
-        # https://binance-docs.github.io/apidocs/futures/en/#exchange-information
-        symbols = self.calls.futures_exchange_info()["symbols"]
-        base_assets = [s['baseAsset'] for s in symbols]
-        quote_assets = [s['quoteAsset'] for s in symbols]
+        if self.calls.futures_get_position_mode(
+        )['dualSidePosition'] != is_hedge:
+            self.calls.futures_change_position_mode(dualSidePosition=is_hedge)
 
-        # filter duplicates, symbols are given as trading pairs
-        self.available_currencies = list(set(base_assets + quote_assets))
+    @utils.order_protection
+    def set_leverage(self, symbol: str, leverage: int) -> float:
+        """
+        Change the leverage for a symbol.
+        Returns buying power at this leverage, or -1 if there was an error.
+        """
+        symbol = utils.to_exchange_symbol(symbol, 'binance')
+        return self.calls.futures_change_leverage(
+            symbol=symbol, leverage=leverage)['maxNotionalValue']
+
+    @utils.order_protection
+    def set_margin_type(self, symbol: str, type: MarginType):
+        """
+        Set margin type for a symbol.
+        """
+        symbol = utils.to_exchange_symbol(symbol, 'binance')
+        try:
+            self.calls.futures_change_margin_type(symbol=symbol,
+                                                  marginType=type.upper())
+        except BinanceAPIException as e:
+            if e.code != -4046:  # -4046 NO_NEED_TO_CHANGE_MARGIN_TYPE (margin type is already set)
+                raise e
 
     def get_products(self) -> list:
         needed = self.needed['products']
@@ -68,14 +102,10 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                 {
                     **symbol,
                     # binance asset ids are weird so just recreate it in the "normal" BASE-QUOTE form
-                    'symbol':
-                    symbol['baseAsset'] + '-' + symbol['quoteAsset'],
-                    'base_asset':
-                    symbol['baseAsset'],
-                    'quote_asset':
-                    symbol['quoteAsset'],
-                    'contract_type':
-                    symbol['contractType']
+                    'symbol': symbol['baseAsset'] + '-' + symbol['quoteAsset'],
+                    'base_asset': symbol['baseAsset'],
+                    'quote_asset': symbol['quoteAsset'],
+                    'contract_type': symbol['contractType']
                 }) for symbol in symbols
         ]
 
@@ -83,25 +113,50 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         account = self.calls.futures_account()
         needed = self.needed['account']
 
-        # initialize all currency to zero
-        accounts = utils.AttributeDict({
-            curr: utils.AttributeDict({'available': 0})
-            for curr in self.available_currencies
-        })
-
-        # write in data from binance
         for asset in account['assets']:
-            symbol = utils.to_blankly_symbol(asset['asset'], 'binance')
-            accounts[symbol] = utils.AttributeDict(
-                utils.isolate_specific(
-                    needed, {
-                        **asset,
-                        'available': asset['availableBalance'],
-                    }))
+            symbol = asset['asset']
+            account[symbol] = utils.AttributeDict(
+                utils.isolate_specific(needed, {
+                    **asset,
+                    'available': asset['availableBalance'],
+                }))
 
         if filter:
-            return accounts[filter]
-        return accounts
+            return account[filter]
+        return account
+
+    def get_positions(self,
+                      filter: str = None) -> Optional[utils.AttributeDict]:
+        account = self.calls.futures_account()
+        needed = self.needed['position']
+
+        positions = utils.AttributeDict()
+
+        # write in data from binance
+        for position in account['positions']:
+            # binance sometimes does this: BTCUSDT_2342
+            fixed_symbol = position['symbol'].split('_')[0]
+            symbol = utils.to_blankly_symbol(fixed_symbol, 'binance')
+            margin = MarginType.ISOLATED \
+                if position['isolated'] else MarginType.CROSSED
+            needed_data = {
+                'size': position['positionAmt'],
+                'side': PositionMode(position['positionSide'].lower()),
+                'entry_price': float(position['entryPrice']),
+                'max_buying_power': float(position['maxNotional']),
+                'leverage': float(position['leverage']),
+                'margin_type': margin,
+                'unrealized_profit': float(position['unrealizedProfit'])
+            }
+            positions[symbol] = utils.AttributeDict(
+                utils.isolate_specific(needed, {
+                    **position,
+                    **needed_data
+                }))
+
+        if filter:
+            return positions[filter]
+        return positions
 
     def parse_order_response(self, response: dict):
         response = utils.AttributeDict(response)
@@ -124,21 +179,17 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
     @utils.order_protection
     def market_order(self,
                      symbol: str,
-                     side: str,
+                     side: Side,
                      size: float,
-                     position: str = 'BOTH') -> FuturesMarketOrder:
-        """
-        Places a market order.
-        In hedge mode, specify either 'short' or 'long' `position`.
-        For one way mode, just `buy` or `sell`.
-        """
+                     position: PositionMode = PositionMode.BOTH,
+                     reduce_only: bool = False) -> FuturesMarketOrder:
         symbol = utils.to_exchange_symbol(symbol, "binance")
         params = {
             'type': 'MARKET',
             'symbol': symbol,
             'side': side.upper(),
             'quantity': size,
-            'positionSide': position
+            'positionSide': position.upper()
         }
         response = self.calls.futures_create_order(**params)
 
@@ -146,18 +197,15 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                                   self)
 
     @utils.order_protection
-    def limit_order(self,
-                    symbol: str,
-                    side: str,
-                    price: float,
-                    size: float,
-                    position: str = 'BOTH',
-                    time_in_force: str = 'GTC') -> FuturesLimitOrder:
-        """
-        Places a limit order.
-        In hedge mode, specify either 'short' or 'long' `position`.
-        For one way mode, just `buy` or `sell`.
-        """
+    def limit_order(
+            self,
+            symbol: str,
+            side: Side,
+            price: float,
+            size: float,
+            position: PositionMode = PositionMode.BOTH,
+            reduce_only: bool = False,
+            time_in_force: TimeInForce = TimeInForce.GTC) -> FuturesLimitOrder:
         symbol = utils.to_exchange_symbol(symbol, "binance")
         params = {
             'type': 'LIMIT',
@@ -165,13 +213,54 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             'side': side.upper(),
             'price': price,
             'quantity': size,
-            'positionSide': position,
-            'timeInForce': time_in_force,
+            'positionSide': position.upper(),
+            'reduceOnly': reduce_only,
+            'timeInForce': TimeInForce.GTC
         }
         response = self.calls.futures_create_order(**params)
 
         return FuturesLimitOrder(self.parse_order_response(response), params,
                                  self)
+
+    def take_profit(
+            self,
+            symbol: str,
+            side: Side,
+            price: float,
+            size: float,
+            position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
+        symbol = utils.to_exchange_symbol(symbol, "binance")
+        params = {
+            'type': 'TAKE_PROFIT_MARKET',
+            'symbol': symbol,
+            'side': side.upper(),
+            'price': price,
+            'quantity': size,
+            'positionSide': position.upper(),
+        }
+        response = self.calls.futures_create_order(**params)
+
+        return FuturesOrder(self.parse_order_response(response), params, self)
+
+    @utils.order_protection
+    def stop_loss(self,
+                  symbol: str,
+                  side: Side,
+                  price: float,
+                  size: float,
+                  position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
+        symbol = utils.to_exchange_symbol(symbol, "binance")
+        params = {
+            'type': 'STOP_MARKET',
+            'symbol': symbol,
+            'side': side.upper(),
+            'price': price,
+            'quantity': size,
+            'positionSide': position.upper()
+        }
+        response = self.calls.futures_create_order(**params)
+
+        return FuturesOrder(self.parse_order_response(response), params, self)
 
     @utils.order_protection
     def cancel_order(self, symbol: str, order_id: int) -> utils.AttributeDict:
@@ -179,14 +268,6 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         # this library method is broken for some reason 2021-02-25
         res = self.calls.futures_cancel_order(symbol=symbol, orderId=order_id)
         return self.parse_order_response(res)
-
-    @utils.order_protection
-    def set_margin_type(self, symbol: str, margin_type: str):
-        """
-        Set margin type for this symbol. `margin_type` must be one of 'ISOLATED' or 'CROSSED'.
-        """
-        symbol = utils.to_exchange_symbol(symbol, "binance")
-        self.calls.futures_change_margin_type(symbol=symbol, marginType=margin_type)
 
     def get_open_orders(self, symbol: str = None) -> list:
         if symbol:
@@ -204,6 +285,12 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
     def get_price(self, symbol: str) -> float:
         symbol = utils.to_exchange_symbol(symbol, "binance")
         return float(self.calls.futures_mark_price(symbol=symbol)['markPrice'])
+
+    def get_fees(self) -> utils.AttributeDict:
+        # https://www.binance.com/en/blog/futures/trade-crypto-futures-how-much-does-it-cost-421499824684902239
+        tier = int(self.calls.futures_account()['feeTier'])
+        maker, taker = BINANCE_FUTURES_FEES[tier]
+        return utils.AttributeDict({'maker': maker, 'taker': taker})
 
     @property
     def account(self) -> utils.AttributeDict:
@@ -258,11 +345,12 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         while need > 1000:
             # Close is always 300 points ahead
             window_close = int(window_open + 1000 * resolution)
-            history = history + self.calls.futures_klines(symbol=symbol,
-                                                  startTime=window_open * 1000,
-                                                  endTime=window_close * 1000,
-                                                  interval=gran_string,
-                                                  limit=1000)
+            history = history + self.calls.futures_klines(
+                symbol=symbol,
+                startTime=window_open * 1000,
+                endTime=window_close * 1000,
+                interval=gran_string,
+                limit=1000)
 
             window_open = window_close
             need -= 1000
@@ -311,3 +399,40 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         # Convert time to seconds
         return data_frame.reindex(
             columns=['time', 'low', 'high', 'open', 'close', 'volume'])
+
+    def get_funding_rate_history(self, symbol: str, epoch_start: int,
+                                 epoch_stop: int):
+        symbol = utils.to_exchange_symbol(symbol, 'binance')
+        LIMIT = 1000
+        history = []
+        window_start = epoch_start
+        window_end = epoch_stop
+
+        # UNCOMMENT FOR WALRUS
+        # while response := self.calls.futures_funding_rate(
+        #         symbol=symbol,
+        #         startTime=window_start * 1000,
+        #         endTime=window_end * 1000,
+        #         limit=LIMIT):
+
+        # WARNING! non-walrus code ahead:
+        response_len = LIMIT
+        while response_len:
+            response = self.calls.futures_funding_rate(
+                symbol=symbol,
+                startTime=window_start * 1000,
+                endTime=window_end * 1000,
+                limit=LIMIT)
+            response_len = len(response)
+            # very stinky ^^
+
+            history.extend({
+                'rate': e['fundingRate'],
+                'time': e['fundingTime'] // 1000
+            } for e in response)
+
+            if history:
+                window_start = history[-1]['time'] + 1
+                window_end = min(dt.now().timestamp(), epoch_stop)
+
+        return history

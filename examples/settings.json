@@ -9,10 +9,11 @@
     },
     "binance": {
       "cash": "USDT",
-      "binance_tld": "us",
-      "futures": {
-        "margin_type": "USDT-M"
-      }
+      "binance_tld": "us"
+    },
+    "binance_futures": {
+      "cash": "USDT",
+      "margin_type": "USDT-M"
     },
     "alpaca": {
       "websocket_stream": "iex",

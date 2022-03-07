@@ -15,17 +15,18 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from blankly.enums import TimeInForce
 from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 
 
 class FuturesLimitOrder(FuturesOrder):
-    needed = [*FuturesOrder.needed, ['time_in_force', str]]
+    needed = [*FuturesOrder.needed, ['time_in_force', TimeInForce]]
 
     def __init__(self, response, order, interface):
         super().__init__(response, order, interface)
 
-    def get_time_in_force(self) -> str:
-        return self.response['time_in_force']
+    def get_time_in_force(self) -> TimeInForce:
+        return TimeInForce(self.response['time_in_force'])
 
     def __str__(self):
         return super().__str__() + f"""Limit Order Parameters:

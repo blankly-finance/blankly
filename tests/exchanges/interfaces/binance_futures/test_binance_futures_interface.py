@@ -16,13 +16,10 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import time
-import unittest
-from pathlib import Path
 
 import pytest
 
-import blankly
-from blankly import BinanceFutures
+from blankly import BinanceFutures, Side, OrderStatus, OrderType
 from blankly.exchanges.interfaces.binance_futures.binance_futures_interface import BinanceFuturesInterface
 
 
@@ -47,35 +44,36 @@ def test_account(interface: BinanceFuturesInterface):
     res = interface.get_account()
     assert 0 <= res.BTC.available
 
+
 def test_order(interface: BinanceFuturesInterface) -> None:
     symbol = 'BTC-USDT'
-    sell_order = interface.market_order(symbol, 'sell', .01)
+    sell_order = interface.market_order(symbol, Side.SELL, .01)
 
     retries = 0
     res = interface.get_order(symbol, sell_order.get_id())
-    while res.status != "FILLED":
+    while res.status != OrderStatus.FILLED:
         if retries > 2:
             raise TimeoutError("order was not filled")
         time.sleep(1 << retries)
         retries += 1
         res = interface.get_order(symbol, sell_order.get_id())
 
-    assert res.side == 'SELL'
-    assert res.type == 'MARKET'
+    assert res.side == Side.SELL
+    assert res.type == OrderType.MARKET
 
-    buy_order = interface.market_order(symbol, 'buy', .01)
+    buy_order = interface.market_order(symbol, Side.BUY, .01)
 
     retries = 0
     res = interface.get_order(symbol, buy_order.get_id())
-    while res.status != "FILLED":
+    while res.status != OrderStatus.FILLED:
         if retries > 2:
             raise TimeoutError("order was not filled")
         time.sleep(1 << retries)
         retries += 1
         res = interface.get_order(buy_order.get_id())
 
-    assert res.side == 'BUY'
-    assert res.type == 'MARKET'
+    assert res.side == Side.BUY
+    assert res.type == OrderType.MARKET
 
 
 def test_get_price(interface: BinanceFuturesInterface):
@@ -86,13 +84,13 @@ def test_get_price(interface: BinanceFuturesInterface):
 def test_cancel_order(interface: BinanceFuturesInterface):
     symbol = 'BTC-USDT'
     price = int(interface.get_price(symbol) * 0.8)
-    buy_order = interface.limit_order(symbol, 'buy', price, .01)
+    buy_order = interface.limit_order(symbol, Side.BUY, price, .01)
 
-    assert buy_order.get_status() == 'NEW'
+    assert buy_order.get_status() == OrderStatus.NEW
 
     retries = 0
     res = interface.cancel_order(symbol, buy_order.get_id())
-    while res.status != "CANCELED":
+    while res.status != OrderStatus.CANCELED:
         if retries > 4:
             raise TimeoutError("order was not cancelled")
         time.sleep(1 << retries)

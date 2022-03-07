@@ -17,12 +17,17 @@
 """
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.utils.utils import AttributeDict, get_base_asset, get_quote_asset, pretty_print_json
+from blankly.frameworks.strategy.futures_strategy import FuturesStrategy
 
 
 class FuturesStrategyState:
+    strategy: FuturesStrategy
     interface: FuturesExchangeInterface
     variables: AttributeDict
     resolution: int
+    symbol: str
+    base_asset: str
+    quote_asset: str
 
     def __init__(self,
                  strategy,
