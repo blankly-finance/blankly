@@ -28,6 +28,8 @@ from blankly.exchanges.interfaces.ftx.ftx_interface import FTXInterface
 from blankly.exchanges.interfaces.alpaca.alpaca_interface import AlpacaInterface
 from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
 from blankly.exchanges.interfaces.kucoin.kucoin_interface import KucoinInterface
+from blankly.exchanges.interfaces.okex.okex_interface import OkexInterface
+
 
 
 class Exchange(ABCExchange, abc.ABC):
@@ -65,6 +67,8 @@ class Exchange(ABCExchange, abc.ABC):
             self.interface = OandaInterface(self.__type, calls)
         elif self.__type == "kucoin":
             self.interface = KucoinInterface(self.__type, calls)
+        elif self.__type == "okex":
+            self.interface = OkexInterface(self.__type, calls)
 
         blankly.reporter.export_used_exchange(self.__type)
 

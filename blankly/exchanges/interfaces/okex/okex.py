@@ -11,18 +11,9 @@ class Kucoin(Exchange):
         auth = AuthConstructor(keys_path, portfolio_name, 'okex', ['API_KEY', 'API_SECRET', 'API_PASS'])
         keys = auth.keys
 
-        # try:
-        #     from okex import client as OkexAPI
-        # except ImportError:
-        #     raise ImportError("Please \"pip install okex-api\" to use kucoin with blankly.")
-
         calls = OkexAPI(api_key=keys['API_KEY'],
                         api_secret=keys['API_SECRET'],
                         api_pass=keys['API_PASS'])
-
-        # OkexAPI(api_key=auth.keys['API_KEY'],
-        #             api_secret=auth.keys['API_SECRET'],
-        #             api_pass=auth.keys['API_PASS'])
 
         # Always finish the method with this function
         super().construct_interface_and_cache(calls)
