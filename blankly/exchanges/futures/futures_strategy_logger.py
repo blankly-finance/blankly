@@ -17,44 +17,29 @@
 """
 from abc import ABC
 
-from blankly.enums import PositionMode, Side
+from blankly.enums import Side
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
-from blankly.exchanges.orders.futures.futures_limit_order import FuturesLimitOrder
-from blankly.exchanges.orders.futures.futures_market_order import FuturesMarketOrder
-
 
 # TODO
+from blankly.exchanges.orders.futures.futures_order import FuturesOrder
+
+
 class FuturesStrategyLogger:
     interface: FuturesExchangeInterface
-    strategy: 'FuturesStrategy'
 
     def __init__(self, interface=None, strategy=None):
         self.interface = interface
         self.strategy = strategy
 
     def __getattribute__(self, item):
-        # run the overidden function in this class if it exists, or default to the method in self.interface
+        # run the overridden function in this class if it exists, or default to the method in self.interface
         try:
             # this is NOT recursive, it will get the *actual* attribute
             return object.__getattribute__(self, item)
         except AttributeError:
             return self.interface.__getattribute__(item)
 
-    def market_order(
-            self,
-            symbol: str,
-            side: Side,
-            size: float,
-            position: PositionMode = PositionMode.BOTH) -> FuturesMarketOrder:
-        # TODO log order
-        return self.interface.market_order(symbol, side, size, position)
-
-    def limit_order(
-            self,
-            symbol: str,
-            side: Side,
-            price: float,
-            size: float,
-            position: PositionMode = PositionMode.BOTH) -> FuturesLimitOrder:
-        # TODO log order
-        return self.interface.limit_order(symbol, side, price, size, position)
+    # TODO log order (and other order types)
+    def market_order(self, symbol: str, side: Side, size: float, *args,
+                     **kwargs) -> FuturesOrder:
+        return self.interface.market_order(symbol, side, size, *args, **kwargs)

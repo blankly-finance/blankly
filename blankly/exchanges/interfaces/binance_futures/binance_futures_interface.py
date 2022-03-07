@@ -27,10 +27,8 @@ from binance.exceptions import BinanceAPIException
 import blankly
 import blankly.utils.exceptions as exceptions
 import blankly.utils.utils as utils
-from blankly.enums import MarginType, PositionMode, Side, TimeInForce, HedgeMode
+from blankly.enums import MarginType, PositionMode, Side, TimeInForce, HedgeMode, OrderType, ContractType, OrderStatus
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
-from blankly.exchanges.orders.futures.futures_limit_order import FuturesLimitOrder
-from blankly.exchanges.orders.futures.futures_market_order import FuturesMarketOrder
 from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 
 BINANCE_FUTURES_FEES = [
@@ -113,17 +111,18 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         account = self.calls.futures_account()
         needed = self.needed['account']
 
+        accounts = utils.AttributeDict()
         for asset in account['assets']:
             symbol = asset['asset']
-            account[symbol] = utils.AttributeDict(
+            accounts[symbol] = utils.AttributeDict(
                 utils.isolate_specific(needed, {
                     **asset,
                     'available': asset['availableBalance'],
                 }))
 
         if filter:
-            return account[filter]
-        return account
+            return accounts[filter]
+        return accounts
 
     def get_positions(self,
                       filter: str = None) -> Optional[utils.AttributeDict]:
@@ -158,23 +157,21 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             return positions[filter]
         return positions
 
-    def parse_order_response(self, response: dict):
-        response = utils.AttributeDict(response)
-        return utils.AttributeDict({
-            'status': response.status,
-            'symbol': response.symbol,
-            'id': int(response.orderId),
-            'created_at': None,  # TODO
-            'funds': None,  # TODO
-            'type': response.type,
-            'contract_type': 'PERPETUAL',
-            'side': response.side,
-            'position': response.positionSide,
-            'price': response.price,
-            'time_in_force': response.timeInForce,
-            'stop_price': response.stopPrice,
-            'exchange_specific': response
-        })
+    def parse_order_response(self, response: dict) -> FuturesOrder:
+        return FuturesOrder(
+            symbol=response['symbol'],
+            id=int(response['orderId']),
+            status=OrderStatus(response['status'].lower()),
+            size=float(response['executedQty']),
+            created_at=float(response['updateTime']) / 1000,
+            type=OrderType(response['type'].lower()),
+            contract_type=ContractType.PERPETUAL,  # TODO
+            side=Side(response['side'].lower()),
+            position=PositionMode(response['positionSide'].lower()),
+            price=float(response['price']),
+            time_in_force=TimeInForce(response['timeInForce']),
+            response=response,
+            interface=self)
 
     @utils.order_protection
     def market_order(self,
@@ -182,7 +179,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                      side: Side,
                      size: float,
                      position: PositionMode = PositionMode.BOTH,
-                     reduce_only: bool = False) -> FuturesMarketOrder:
+                     reduce_only: bool = False) -> FuturesOrder:
         symbol = utils.to_exchange_symbol(symbol, "binance")
         params = {
             'type': 'MARKET',
@@ -193,8 +190,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         }
         response = self.calls.futures_create_order(**params)
 
-        return FuturesMarketOrder(self.parse_order_response(response), params,
-                                  self)
+        return self.parse_order_response(response)
 
     @utils.order_protection
     def limit_order(
@@ -205,7 +201,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             size: float,
             position: PositionMode = PositionMode.BOTH,
             reduce_only: bool = False,
-            time_in_force: TimeInForce = TimeInForce.GTC) -> FuturesLimitOrder:
+            time_in_force: TimeInForce = TimeInForce.GTC) -> FuturesOrder:
         symbol = utils.to_exchange_symbol(symbol, "binance")
         params = {
             'type': 'LIMIT',
@@ -215,12 +211,11 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             'quantity': size,
             'positionSide': position.upper(),
             'reduceOnly': reduce_only,
-            'timeInForce': TimeInForce.GTC
+            'timeInForce': time_in_force.value
         }
         response = self.calls.futures_create_order(**params)
 
-        return FuturesLimitOrder(self.parse_order_response(response), params,
-                                 self)
+        return self.parse_order_response(response)
 
     def take_profit(
             self,
@@ -240,7 +235,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         }
         response = self.calls.futures_create_order(**params)
 
-        return FuturesOrder(self.parse_order_response(response), params, self)
+        return self.parse_order_response(response)
 
     @utils.order_protection
     def stop_loss(self,
@@ -263,7 +258,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         return FuturesOrder(self.parse_order_response(response), params, self)
 
     @utils.order_protection
-    def cancel_order(self, symbol: str, order_id: int) -> utils.AttributeDict:
+    def cancel_order(self, symbol: str, order_id: int) -> FuturesOrder:
         symbol = utils.to_exchange_symbol(symbol, "binance")
         # this library method is broken for some reason 2021-02-25
         res = self.calls.futures_cancel_order(symbol=symbol, orderId=order_id)
@@ -277,7 +272,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             orders = self.calls.futures_get_open_orders()
         return [self.parse_order_response(order) for order in orders]
 
-    def get_order(self, symbol: str, order_id: int) -> utils.AttributeDict:
+    def get_order(self, symbol: str, order_id: int) -> FuturesOrder:
         symbol = utils.to_exchange_symbol(symbol, 'binance')
         res = self.calls.futures_get_order(symbol=symbol, orderId=order_id)
         return self.parse_order_response(res)

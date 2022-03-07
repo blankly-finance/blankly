@@ -15,7 +15,9 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import datetime
 import time
+from operator import itemgetter
 
 import pytest
 
@@ -42,7 +44,7 @@ def test_exchange_type(exchange: BinanceFutures):
 
 def test_account(interface: BinanceFuturesInterface):
     res = interface.get_account()
-    assert 0 <= res.BTC.available
+    assert 0 <= res.USDT.available
 
 
 def test_order(interface: BinanceFuturesInterface) -> None:
@@ -50,13 +52,13 @@ def test_order(interface: BinanceFuturesInterface) -> None:
     sell_order = interface.market_order(symbol, Side.SELL, .01)
 
     retries = 0
-    res = interface.get_order(symbol, sell_order.get_id())
+    res = interface.get_order(symbol, sell_order.id)
     while res.status != OrderStatus.FILLED:
         if retries > 2:
-            raise TimeoutError("order was not filled")
+            raise TimeoutError(f"order was not filled. status: {res.status}")
         time.sleep(1 << retries)
         retries += 1
-        res = interface.get_order(symbol, sell_order.get_id())
+        res = interface.get_order(symbol, sell_order.id)
 
     assert res.side == Side.SELL
     assert res.type == OrderType.MARKET
@@ -64,13 +66,13 @@ def test_order(interface: BinanceFuturesInterface) -> None:
     buy_order = interface.market_order(symbol, Side.BUY, .01)
 
     retries = 0
-    res = interface.get_order(symbol, buy_order.get_id())
+    res = interface.get_order(symbol, buy_order.id)
     while res.status != OrderStatus.FILLED:
         if retries > 2:
             raise TimeoutError("order was not filled")
         time.sleep(1 << retries)
         retries += 1
-        res = interface.get_order(buy_order.get_id())
+        res = interface.get_order(buy_order.id)
 
     assert res.side == Side.BUY
     assert res.type == OrderType.MARKET
@@ -86,13 +88,30 @@ def test_cancel_order(interface: BinanceFuturesInterface):
     price = int(interface.get_price(symbol) * 0.8)
     buy_order = interface.limit_order(symbol, Side.BUY, price, .01)
 
-    assert buy_order.get_status() == OrderStatus.NEW
+    assert buy_order.status == OrderStatus.NEW
 
     retries = 0
-    res = interface.cancel_order(symbol, buy_order.get_id())
+    res = interface.cancel_order(symbol, buy_order.id)
     while res.status != OrderStatus.CANCELED:
-        if retries > 4:
+        if retries > 2:
             raise TimeoutError("order was not cancelled")
         time.sleep(1 << retries)
         retries += 1
-        res = interface.get_order(symbol, buy_order.get_id())
+        res = interface.get_order(symbol, buy_order.id)
+
+
+def test_funding_rate_history(interface: BinanceFuturesInterface):
+    day = 60 * 60 * 24
+    now = int(datetime.datetime.now().timestamp())
+    start = now - day * 365
+    end = now - day * 7
+    history = interface.get_funding_rate_history(symbol='BTC-USDT',
+                                                 epoch_start=start,
+                                                 epoch_stop=end)
+
+    # test start and end times
+    assert start <= history[0]['time'] < start + day
+    assert end - day < history[-1]['time'] <= end
+
+    # test ascending order
+    assert sorted(history, key=itemgetter('time')) == history

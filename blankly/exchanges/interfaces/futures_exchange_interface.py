@@ -30,9 +30,7 @@ from dateutil.parser import parser
 import blankly.utils.utils as utils
 from blankly.enums import MarginType, HedgeMode, PositionMode, OrderType, Side, TimeInForce, ContractType
 from blankly.exchanges.interfaces.abc_base_exchange_interface import ABCBaseExchangeInterface
-from blankly.exchanges.orders.futures.futures_limit_order import FuturesLimitOrder
-from blankly.exchanges.orders.futures.futures_market_order import FuturesMarketOrder
-from blankly.utils import time_interval_to_seconds
+from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 
 
 class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
@@ -49,11 +47,6 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
                      ["entry_price", float], ["max_buying_power", float],
                      ["leverage", float], ["margin_type", MarginType],
                      ["unrealized_profit", float]],
-        'order': [["status", str], ["symbol", str], ["id", int],
-                  ["created_at", float], ["funds", float], ["type", OrderType],
-                  ["contract_type", ContractType], ["side", Side],
-                  ["position", PositionMode], ["price", float],
-                  ["time_in_force", TimeInForce], ["stop_price", float]],
     }
 
     def __init__(self,
@@ -102,7 +95,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
                      side: Side,
                      size: float,
                      position: PositionMode = None,
-                     reduce_only: bool = None) -> FuturesMarketOrder:
+                     reduce_only: bool = None) -> FuturesOrder:
         """Places a market order"""
         pass
 
@@ -114,7 +107,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
                     size: float,
                     position: PositionMode = None,
                     reduce_only: bool = None,
-                    time_in_force: TimeInForce = None) -> FuturesLimitOrder:
+                    time_in_force: TimeInForce = None) -> FuturesOrder:
         """Places a limit order"""
         pass
 
@@ -125,7 +118,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
                     side: Side,
                     price: float,
                     size: float,
-                    position: PositionMode = None):
+                    position: PositionMode = None) -> FuturesOrder:
         """Place a take-profit order for a position"""
         pass
 
@@ -136,7 +129,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
                   side: Side,
                   price: float,
                   size: float,
-                  position: PositionMode = None):
+                  position: PositionMode = None) -> FuturesOrder:
         """Place a take-profit order for a position"""
         pass
 
@@ -159,7 +152,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def cancel_order(self, symbol: str, order_id: int) -> utils.AttributeDict:
+    def cancel_order(self, symbol: str, order_id: int) -> FuturesOrder:
         """Cancels an order"""
         pass
 
@@ -169,7 +162,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_order(self, symbol: str, order_id: int) -> utils.AttributeDict:
+    def get_order(self, symbol: str, order_id: int) -> FuturesOrder:
         """Returns information for the order corresponding to `order_id`"""
         pass
 

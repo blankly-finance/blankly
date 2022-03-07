@@ -15,64 +15,54 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from blankly.enums import OrderStatus, OrderType, Side, PositionMode, ContractType
+from blankly.enums import OrderStatus, OrderType, Side, PositionMode, ContractType, TimeInForce
 
 
 class FuturesOrder:
-    needed = [["symbol", str], ["id", str], ["created_at", float],
-              ["funds", float], ["status", OrderStatus], ["type", OrderType],
-              ["contract_type", ContractType], ["side", Side],
-              ["position", PositionMode], ["price", float]]
+    response: dict
 
-    def __init__(self, response, order, interface):
+    symbol: str
+    id: int
+    created_at: float
+    size: float
+    status: OrderStatus
+    type: OrderType
+    contract_type: ContractType
+    side: Side
+    position: PositionMode
+    price: float
+    time_in_force: TimeInForce
+
+    def __init__(self, symbol: str, id: int, created_at: float, size: float,
+                 status: OrderStatus, type: OrderType,
+                 contract_type: ContractType, side: Side,
+                 position: PositionMode, price: float,
+                 time_in_force: TimeInForce, response, interface):
         self.response = response
-        self.order = order
         self.interface = interface
 
+        self.symbol = symbol
+        self.id = id
+        self.created_at = created_at
+        self.size = size
+        self.status = status
+        self.type = type
+        self.contract_type = contract_type
+        self.side = side
+        self.position = position
+        self.price = price
+        self.time_in_force = time_in_force
+
     def __str__(self):
-        return f"""General Order Parameters:
-Status: {self.get_status()}
-ID: {self.get_id()}
-Symbol: {self.get_asset_id()}
-Purchase Time: {self.get_purchase_time()}
-Type: {self.get_type()}
-Contract Type: {self.get_contract_type()}
-Side: {self.get_side()}
-Size: {self.get_size()}
-Position: {self.get_position()}
-Price: {self.get_price()}"""
-
-    def get_response(self) -> dict:
-        return self.response
-
-    def get_id(self) -> int:
-        return int(self.response['id'])
-
-    def get_asset_id(self) -> str:
-        return self.response['symbol']
-
-    def get_purchase_time(self) -> float:
-        return self.response['created_at']
-
-    def get_status(self) -> OrderStatus:
-        status = self.interface.get_order(self.order['symbol'],
-                                          self.get_id())['status']
-        return OrderStatus(status.lower())
-
-    def get_type(self) -> OrderType:
-        return OrderType(self.response['type'].lower())
-
-    def get_side(self) -> Side:
-        return Side(self.response['side'].lower())
-
-    def get_size(self) -> float:
-        return self.response['size']
-
-    def get_contract_type(self) -> ContractType:
-        return ContractType(self.response['contract_type'].lower())
-
-    def get_position(self) -> PositionMode:
-        return PositionMode(self.response['position'].lower())
-
-    def get_price(self) -> float:
-        return self.response['price']
+        return f"""Order Parameters:
+Status: {self.status}
+ID: {self.id}
+Symbol: {self.symbol}
+Purchase Time: {self.created_at}
+Type: {self.type}
+Contract Type: {self.contract_type}
+Side: {self.side}
+Size: {self.size}
+Position: {self.position}
+Price: {self.price}
+Time In Force: {self.time_in_force}"""
