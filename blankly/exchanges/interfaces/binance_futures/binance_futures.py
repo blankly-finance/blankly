@@ -33,13 +33,12 @@ class BinanceFutures(FuturesExchange):
 
         # Load auth from keys file
         auth = AuthConstructor(keys_path, portfolio_name, 'binance_futures',
-                               ['API_KEY', 'API_SECRET'])
+                               ['API_KEY', 'API_SECRET', 'sandbox'])
 
-        self.__calls = Client(
-            api_key=auth.keys['API_KEY'],
-            api_secret=auth.keys['API_SECRET'],
-            testnet=auth.keys['sandbox'])
-        # TODO does futures even have a tld switch?
+        # TODO does futures have a tld switch?
+        self.__calls = Client(api_key=auth.keys['API_KEY'],
+                              api_secret=auth.keys['API_SECRET'],
+                              testnet=auth.keys['sandbox'])
 
         self.__interface = BinanceFuturesInterface(self.exchange_type,
                                                    self.calls)

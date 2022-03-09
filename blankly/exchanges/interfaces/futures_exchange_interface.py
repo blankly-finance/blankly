@@ -80,12 +80,12 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_account(self, symbol: str) -> utils.AttributeDict:
+    def get_account(self, symbol: str = None) -> utils.AttributeDict:
         """Returns account information, or information for only one `symbol` if one is given."""
         pass
 
     @abc.abstractmethod
-    def get_positions(self, symbol: str) -> utils.AttributeDict:
+    def get_positions(self, symbol: str = None) -> utils.AttributeDict:
         """Returns position information, or information for only one `symbol` if one is given"""
         pass
 
