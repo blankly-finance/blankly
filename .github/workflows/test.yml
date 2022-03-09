@@ -4,6 +4,9 @@ name: blankly Module Tests
 
 on: [push, workflow_dispatch]
 
+permissions:
+  contents: read
+
 jobs:
   build:
 
