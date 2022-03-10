@@ -50,7 +50,8 @@ default_general_settings = {
             "cash": "USDT"
         },
         "ftx": {
-            "cash": "USD"
+            "cash": "USD",
+            "ftx_tld": "us"
         },
         "alpaca": {
             "websocket_stream": "iex",
