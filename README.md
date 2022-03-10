@@ -46,7 +46,7 @@
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
 
 [YouTube - Under 25 Lines Build an Alpaca RSI Trading Bot](https://youtu.be/pcm0h63rhUU)
-<a target="_blank" href="https://youtu.be/pcm0h63rhUU"><img src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/github%2Fbuild_a_bot_readme_thumbnail.png?alt=media&token=5193b40b-c949-46df-b385-8214474dc26a" style="border-radius:10px"></a>
+<a target="_blank" href="https://youtu.be/pcm0h63rhUU"><img src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/github%2Fbuild_a_bot_readme_thumbnail.jpg?alt=media&token=a9dd030a-805c-447f-a970-2bc8e1815662" style="border-radius:10px"></a>
 
 
 ### Trade Stocks, Crypto, and Forex Seamlessly
@@ -89,7 +89,7 @@ strategy.backtest(to='1y')
 #### Accurate Backtest Holdings
 
 <div align="center">
-    <a><img src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/screely-1631725027541.png?alt=media&token=1446fcf0-680b-4ee9-afcf-fbaea044eba7" style="border-radius:10px"></a>
+    <a><img src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/github%2Fscreely-1631725027541.jpg?alt=media&token=fa8daa96-9d7f-44f9-b8fd-2a6dcdab2877" style="border-radius:10px"></a>
 </div>
 
 #### Useful Metrics
