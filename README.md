@@ -168,18 +168,18 @@ For more info, and ways to do more advanced things, check out our [getting start
 ## Supported Exchanges
 
 | Exchange            | Live Trading | Websockets | Paper Trading | Backtesting |
-| ------------------- | ------------ | ---------- | ------------- | ----------- |
-| Coinbase Pro        | 🟢            | 🟢          | 🟢             | 🟢           |
-| Binance             | 🟢            | 🟢          | 🟢             | 🟢           |
-| Alpaca              | 🟢            | 🟢          | 🟢             | 🟢           |
-| OANDA               | 🟢            | 🟡          | 🟢             | 🟢           |
-| FTX                 | 🟢            | 🟢          | 🟢             | 🟢           |
-| KuCoin              | 🟢            | 🟡          | 🟢             | 🟢           |
-| Kraken              | 🟡            | 🟡          | 🟡             | 🟡           |
-| Keyless Backtesting |              |            |               | 🟢           |
-| TD Ameritrade       | 🔴            | 🔴          | 🔴             | 🔴           |
-| Webull              | 🔴            | 🔴          | 🔴             | 🔴           |
-| Robinhood           | 🔴            | 🔴          | 🔴             | 🔴           |
+| ------------------- |--------------| ---------- |--------------| ----------- |
+| Coinbase Pro        | 🟢           | 🟢          | 🟢           | 🟢           |
+| Binance             | 🟢           | 🟢          | 🟢           | 🟢           |
+| Alpaca              | 🟢           | 🟢          | 🟢           | 🟢           |
+| OANDA               | 🟢           | 🟡          | 🟢           | 🟢           |
+| FTX                 | 🟢           | 🟢          | 🟢           | 🟢           |
+| KuCoin              | 🟢           | 🟡          | 🟢           | 🟢           |
+| Kraken              | 🟡           | 🟡          | 🟡           | 🟡           |
+| Keyless Backtesting |              |            |              | 🟢           |
+| TD Ameritrade       | 🔴           | 🔴          | 🔴           | 🔴           |
+| Webull              | 🔴           | 🔴          | 🔴           | 🔴           |
+| Robinhood           | 🔴           | 🔴          | 🔴           | 🔴           |
 
 
 🟢  = working
