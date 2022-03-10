@@ -34,7 +34,10 @@ class API:
         self.token = None
         self.auth_data = self.exchange_token(token)
 
-        self.token = self.auth_data['idToken']
+        try:
+            self.token = self.auth_data['idToken']
+        except KeyError:
+            raise KeyError("Failed to authenticate.")
         self.user_id = self.auth_data['data']['user_id']
 
     def __request(self, type_: str, route: str, json_: dict = None, params: dict = None, file=None, data: dict = None):

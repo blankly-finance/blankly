@@ -48,7 +48,8 @@ class Order:
         """
         self.__response = response
         self.__order = order
-        self.Interface = interface
+        self.interface = interface
+        self.exchange = interface.get_exchange_type()
 
     @staticmethod
     def add_new_line(input_string, *components, newline=True):
@@ -71,7 +72,7 @@ class Order:
 
         return_string = self.add_new_line(return_string, "ID: ", self.get_id())
 
-        return_string = self.add_new_line(return_string, "Symbol: ", self.get_asset_id())
+        return_string = self.add_new_line(return_string, "Symbol: ", self.get_symbol())
 
         return_string = self.add_new_line(return_string, "Purchase Time: ", self.get_purchase_time())
 
@@ -96,7 +97,7 @@ class Order:
         """
         return self.__response["id"]
 
-    def get_asset_id(self) -> str:
+    def get_symbol(self) -> str:
         """
         Get the asset id of the exchange
         """
@@ -117,9 +118,9 @@ class Order:
             field as (example) {"status:" "NEW"}
         """
         if full:
-            return self.Interface.get_order(self.__order["symbol"], self.get_id())
+            return self.interface.get_order(self.__order["symbol"], self.get_id())
         else:
-            return {"status": self.Interface.get_order(self.__order["symbol"], self.get_id())["status"]}
+            return {"status": self.interface.get_order(self.__order["symbol"], self.get_id())["status"]}
 
     def get_type(self) -> str:
         """

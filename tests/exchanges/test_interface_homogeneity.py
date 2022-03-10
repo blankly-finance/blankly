@@ -27,8 +27,9 @@ import blankly
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.utils.time_builder import build_day
-from blankly.utils.utils import compare_dictionaries
+from blankly.utils.utils import compare_dictionaries, get_base_asset, get_quote_asset
 from tests.testing_utils import get_valid_symbol
+from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 
 
 def compare_responses(response_list, force_exchange_specific=True):
@@ -185,19 +186,28 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
-    def check_market_order(self, order1: MarketOrder, side, size):
+    def check_market_order(self, order: MarketOrder, side, size):
         """
         Test if a market order passes these checks.
         Args:
-            order1 (dict): The market order to test - has to be type MarketOrder
+            order (dict): The market order to test - has to be type MarketOrder
             side (str): Market side (buy/sell)
             size (float): Amount of base currency used in purchase (pre-fees)
         """
-        self.assertEqual(order1.get_side(), side)
-        self.assertEqual(order1.get_size(), size)
-        self.assertEqual(order1.get_type(), 'market')
+        self.assertEqual(order.get_side(), side)
+        self.assertEqual(order.get_size(), size)
+        self.assertEqual(order.get_type(), 'market')
 
     def test_market_order(self):
+        def check_account_delta(before: dict, after: dict, order: MarketOrder) -> None:
+            # A market order should not have changed the funds on hold
+            self.assertEqual(before['hold'], after['hold'])
+
+            # The symbol should have gained less than the size on the buy if there were fees
+            # Before + requested size >= the filled size
+            self.assertGreaterEqual(blankly.trunc(before['available'], 2) + order.get_size(),
+                                    blankly.trunc(after['available'], 2))
+
         # Make sure to buy back the funds we're loosing from fees - minimum balance of .1 bitcoin
         btc_account = self.Binance_Interface.get_account(symbol="BTC")['available']
         if btc_account < .1:
@@ -209,22 +219,32 @@ class InterfaceHomogeneity(unittest.TestCase):
         status_responses = []
         # These are the immediate exchange responses that we aggregate & check
         exchange_responses = []
-        for i in self.interfaces:
 
+        for i in self.interfaces:
             type_ = i.get_exchange_type()
             if type_ == "ftx":
                 continue
-            if not (type_ == 'alpaca' or type_ == 'oanda'):
-                size = .01
-            else:
+            if type_ == 'oanda':
                 # Non fractional exchanges have to be sent here
                 size = 1
+            else:
+                size = .01
+
+            # Grab the account values before
+            initial_value = i.get_account(get_base_asset(get_valid_symbol(type_)))
 
             order_responses.append({
                 'order': i.market_order(get_valid_symbol(type_), 'buy', size),
                 'side': 'buy',
                 'size': size
             })
+
+            # Give it half a second to execute and settle
+            time.sleep(.5)
+
+            # Grab them after
+            after_value = i.get_account(get_base_asset(get_valid_symbol(type_)))
+            check_account_delta(initial_value, after_value, order_responses[-1]['order'])
 
             order_responses.append({
                 'order': i.market_order(get_valid_symbol(type_), 'sell', size),
@@ -259,7 +279,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         # TODO fix status homogeneity
         # self.assertEqual(limit_order.get_status(), {'status': 'new'})
         self.assertEqual(limit_order.get_size(), size)
-        self.assertEqual(limit_order.get_asset_id(), product_id)
+        self.assertEqual(limit_order.get_symbol(), product_id)
 
     def test_limit_order(self):
         """
@@ -269,43 +289,57 @@ class InterfaceHomogeneity(unittest.TestCase):
         - Comparing with open orders
         - Canceling orders
         """
+        limits = []
+        sorted_orders = {}
+
+        def evaluate_limit_order(interface: ABCExchangeInterface, symbol: str, buy_price: [float, int],
+                                 sell_price: [float, int], size: [float, int]):
+            def check_account_delta(before: dict, after: dict, order: LimitOrder) -> None:
+                # On a buy the quote asset should get moved to hold
+                self.assertAlmostEqual(before['available'], after['available'] + (order.get_price() * order.get_size()),
+                                       places=2)
+
+                # The symbol should have gained less than the size on the buy if there were fees
+                # Before + requested size >= the filled size
+                self.assertAlmostEqual(before['hold'], after['hold'] - (order.get_price() * order.get_size()),
+                                       places=2)
+
+            initial_account = interface.get_account(get_quote_asset(symbol))
+            buy = interface.limit_order(symbol, 'buy', buy_price, size)
+            after_buy_account = interface.get_account(get_quote_asset(symbol))
+            # Buying power is always moving on alpaca, so it can't really be compared in this way
+            # need a larger range
+            if buy.exchange != 'alpaca':
+                check_account_delta(initial_account, after_buy_account, buy)
+
+            sell = interface.limit_order(symbol, 'sell', sell_price, size)
+            self.check_limit_order(sell, 'sell', size, symbol)
+            self.check_limit_order(buy,  'buy', size, symbol)
+
+            if buy.exchange not in sorted_orders:
+                sorted_orders[buy.exchange] = {}
+
+            sorted_orders[buy.exchange] = {
+                'buy': buy,
+                'sell': sell
+            }
+
+            return [buy, sell]
+
+        limits += evaluate_limit_order(self.Alpaca_Interface, 'AAPL', 10, 100000, 1)
+
         binance_limits = self.Binance_Interface.get_order_filter('BTC-USDT')["limit_order"]
+        limits += evaluate_limit_order(self.Binance_Interface, 'BTC-USDT', int(binance_limits['min_price']+100),
+                                       int(binance_limits['max_price']-100), .01)
 
-        binance_buy = self.Binance_Interface.limit_order('BTC-USDT', 'buy', int(binance_limits['min_price']+100), .01)
-        binance_sell = self.Binance_Interface.limit_order('BTC-USDT', 'sell', int(binance_limits['max_price']-100), .01)
-        self.check_limit_order(binance_sell, 'sell', .01, 'BTC-USDT')
-        self.check_limit_order(binance_buy, 'buy', .01, 'BTC-USDT')
-        time.sleep(3)
+        limits += evaluate_limit_order(self.Coinbase_Pro_Interface, 'BTC-USD', .01, 100000, 1)
 
-        coinbase_buy = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'buy', .01, 1)
-        self.check_limit_order(coinbase_buy, 'buy', 1, 'BTC-USD')
+        limits += evaluate_limit_order(self.Kucoin_Interface, 'ETH-USDT', .01, 100000, 1)
 
-        coinbase_sell = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'sell', 100000, 1)
-        self.check_limit_order(coinbase_sell, 'sell', 1, 'BTC-USD')
+        limits += evaluate_limit_order(self.Oanda_Interface, 'EUR-USD', .01, 100000, 1)
 
-        kucoin_buy = self.Kucoin_Interface.limit_order('ETH-USDT', 'buy', .01, 1)
-        self.check_limit_order(kucoin_buy, 'buy', 1, 'ETH-USDT')
-
-        kucoin_sell = self.Kucoin_Interface.limit_order('ETH-USDT', 'sell', 100000, 1)
-        self.check_limit_order(kucoin_sell, 'sell', 1, 'ETH-USDT')
-
-        alpaca_buy = self.Alpaca_Interface.limit_order('AAPL', 'buy', 10, 1)
-        self.check_limit_order(alpaca_buy, 'buy', 1, 'AAPL')
-
-        alpaca_sell = self.Alpaca_Interface.limit_order('AAPL', 'sell', 100000, 1)
-        self.check_limit_order(alpaca_sell, 'sell', 1, 'AAPL')
-
-        oanda_buy = self.Oanda_Interface.limit_order('EUR-USD', 'buy', .01, 1)
-        self.check_limit_order(oanda_buy, 'buy', 1, 'EUR-USD')
-
-        oanda_sell = self.Oanda_Interface.limit_order('EUR-USD', 'sell', 100000, 1)
-        self.check_limit_order(oanda_sell, 'sell', 1, 'EUR-USD')
-
-        limits = [binance_buy, binance_sell, coinbase_buy, coinbase_sell, kucoin_buy, kucoin_sell,
-                  alpaca_sell, alpaca_buy, oanda_buy, oanda_sell]
         responses = []
         status = []
-
         cancels = []
 
         open_orders = {
@@ -350,20 +384,22 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertTrue(compare_responses(responses))
         self.assertTrue(compare_responses(status))
 
-        cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_buy.get_id()))
-        cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_sell.get_id()))
+        cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', sorted_orders['binance']['buy'].get_id()))
+        cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', sorted_orders['binance']['sell'].get_id()))
 
-        cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', kucoin_buy.get_id()))
-        cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', kucoin_sell.get_id()))
+        cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', sorted_orders['kucoin']['buy'].get_id()))
+        cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', sorted_orders['kucoin']['sell'].get_id()))
 
-        cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_sell.get_id()))
-        cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD', coinbase_buy.get_id()))
+        cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD',
+                                                                sorted_orders['coinbase_pro']['buy'].get_id()))
+        cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD',
+                                                                sorted_orders['coinbase_pro']['sell'].get_id()))
 
-        cancels.append(self.Alpaca_Interface.cancel_order('AAPL', alpaca_buy.get_id()))
-        cancels.append(self.Alpaca_Interface.cancel_order('AAPL', alpaca_sell.get_id()))
+        cancels.append(self.Alpaca_Interface.cancel_order('AAPL', sorted_orders['alpaca']['buy'].get_id()))
+        cancels.append(self.Alpaca_Interface.cancel_order('AAPL', sorted_orders['alpaca']['sell'].get_id()))
 
-        cancels.append(self.Oanda_Interface.cancel_order('EUR-USD', oanda_buy.get_id()))
-        cancels.append(self.Oanda_Interface.cancel_order('EUR-USD', oanda_sell.get_id()))
+        cancels.append(self.Oanda_Interface.cancel_order('EUR-USD', sorted_orders['oanda']['buy'].get_id()))
+        cancels.append(self.Oanda_Interface.cancel_order('EUR-USD', sorted_orders['oanda']['sell'].get_id()))
 
         self.assertTrue(compare_responses(cancels, force_exchange_specific=False))
 
