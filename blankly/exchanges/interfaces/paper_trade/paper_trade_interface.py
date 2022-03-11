@@ -326,6 +326,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         return order, funds, executed_value, fill_fees, fill_size
 
+    @utils.enforce_base_asset
     def get_account(self, symbol=None) -> utils.AttributeDict:
         if symbol is None:
             return self.local_account.get_accounts()
@@ -578,6 +579,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             # Gain size on hold when selling
             hold = self.local_account.get_account(base)['hold']
             self.local_account.update_hold(base, hold + size)
+        else:
+            raise APIException(f"Invalid side {side}")
         return LimitOrder(order, response, self)
 
     def cancel_order(self, symbol, order_id) -> dict:
@@ -592,7 +595,34 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 break
 
         if order_index is not None:
-            order_id = self.paper_trade_orders[order_index]['id']
+            # Now that we found it make sure that we move the funds back on available
+            order = self.paper_trade_orders[order_index]
+            side = order['side']
+            size = order['size']
+            symbol = order['symbol']
+            price = order['price']
+            base_asset = utils.get_base_asset(symbol)
+            quote_asset = utils.get_quote_asset(symbol)
+
+            if side == 'buy':
+                # When you cancel on the buy side you get those funds back in available
+                available = self.local_account.get_account(quote_asset)['available']
+                self.local_account.update_available(quote_asset, available + (size * price))
+
+                # And loose them on hold
+                hold = self.local_account.get_account(quote_asset)['hold']
+                self.local_account.update_hold(quote_asset, hold - (size * price))
+            elif side == 'sell':
+                # Canceling a sell you gain the size back into available
+                available = self.local_account.get_account(base_asset)['available']
+                self.local_account.update_available(base_asset, available + size)
+
+                # And you loose it in the hold
+                hold = self.local_account.get_account(base_asset)['hold']
+                self.local_account.update_hold(base_asset, hold - size)
+
+            # This saves the order
+            order_id = order['id']
             # Make sure to save this as a canceled order just before closing it
             # Make sure to write in the time also
             self.canceled_orders.append({
@@ -602,6 +632,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
             del self.paper_trade_orders[order_index]
             return {"order_id": order_id}
+        else:
+            raise APIException("Order ID not found.")
 
     def get_open_orders(self, symbol=None):
         open_orders = []
@@ -638,6 +670,10 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         # Don't re-query order filter if its cached
         if symbol not in self.get_order_filter_cache:
             self.get_order_filter_cache[symbol] = self.calls.get_order_filter(symbol)
+
+        if self.get_exchange_type() == 'binance':
+            self.get_order_filter_cache[symbol] = self.__evaluate_binance_limits(self.get_price(symbol),
+                                                                                 self.get_order_filter_cache[symbol])
         return self.get_order_filter_cache[symbol]
 
     def get_price(self, symbol) -> float:
@@ -645,3 +681,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             return self.get_backtesting_price(symbol)
         else:
             return self.calls.get_price(symbol)
+
+    @staticmethod
+    def __evaluate_binance_limits(price: (int, float), order_filter):
+        order_filter['limit_order']['min_price'] = order_filter['exchange_specific']['limit_multiplier_down'] * price
+        order_filter['limit_order']['max_price'] = order_filter['exchange_specific']['limit_multiplier_up'] * price
+        return order_filter

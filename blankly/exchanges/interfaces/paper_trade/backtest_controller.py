@@ -35,7 +35,7 @@ from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import load_backtest_preferences, update_progress, write_backtest_preferences, \
-    get_base_asset, get_quote_asset, info_print
+    get_base_asset, get_quote_asset, info_print, trunc
 
 
 def to_string_key(separated_list):
@@ -216,10 +216,14 @@ class BackTestController:
             # Remove the .csv from each of the files: BTC-USD.1622400000.1622510793.60
             identifier = files[i][:-4].split(",")
             # Cast to float first before
-            identifier[1] = int(float(identifier[1]))
-            identifier[2] = int(float(identifier[2]))
-            identifier[3] = int(float(identifier[3]))
-            available_files.append(identifier)
+            try:
+                identifier[1] = int(float(identifier[1]))
+                identifier[2] = int(float(identifier[2]))
+                identifier[3] = int(float(identifier[3]))
+                available_files.append(identifier)
+            except IndexError:
+                raise IndexError(f"Please remove file {files[i]} in your price caches or "
+                                 f"match the blankly cache format.")
 
         # This is only the downloaded data
         local_history_blocks = {}
@@ -782,6 +786,10 @@ class BackTestController:
 
                     no_trade.append(no_trade_dict)
 
+            # Finish filling the progress bar
+            if show_progress:
+                update_progress(1)
+
             # Finally, run the teardown functions
             for i in self.price_events:
                 # Pull the teardown and pass the state object
@@ -794,12 +802,13 @@ class BackTestController:
         self.time = None
 
         # Push the accounts to the dataframe
-        cycle_status = cycle_status.append(price_data, ignore_index=True).sort_values(by=['time'])
+        cycle_status = pd.concat([cycle_status, pd.DataFrame(price_data)], ignore_index=True).sort_values(by=['time'])
 
         if len(cycle_status) == 0:
             raise RuntimeError("Empty result - no valid backtesting events occurred. Was there an error?.")
 
-        no_trade_cycle_status = no_trade_cycle_status.append(no_trade, ignore_index=True).sort_values(by=['time'])
+        no_trade_cycle_status = pd.concat([no_trade_cycle_status, pd.DataFrame(no_trade)], ignore_index=True)\
+            .sort_values(by=['time'])
 
         figures = []
         # for i in self.prices:
@@ -904,7 +913,7 @@ class BackTestController:
             'limits_executed': self.interface.executed_orders,
             'limits_canceled': self.interface.canceled_orders,
             'executed_market_orders': self.interface.market_order_execution_details
-        }, self.pd_prices, self.initial_time, self.interface.time(), self.quote_currency, self.price_events)
+        }, self.pd_prices, self.initial_time, self.interface.time(), self.quote_currency, self.price_events, figures)
 
         # If they set resampling we use resampling for everything
         resample_setting = self.preferences['settings']['resample_account_value_for_metrics']
@@ -934,9 +943,8 @@ class BackTestController:
         metrics_indicators['Compound Annual Growth Rate (%)'] = metrics.cagr(history_and_returns)
         try:
             metrics_indicators['Cumulative Returns (%)'] = metrics.cum_returns(history_and_returns)
-        except ZeroDivisionError:
-            raise ZeroDivisionError("Division by zero when calculating cumulative returns. "
-                                    "Are there valid account datapoints?")
+        except ZeroDivisionError as e_:
+            metrics_indicators['Cumulative Returns (%)'] = f'failed: {e_}'
 
         def attempt(math_callable: typing.Callable, dict_of_dataframes: dict, kwargs: dict = None):
             try:
@@ -946,8 +954,8 @@ class BackTestController:
                 if result == np.NAN:
                     result = None
                 return result
-            except (ZeroDivisionError, Exception) as e_:
-                return f'failed: {e_}'
+            except (ZeroDivisionError, Exception) as e__:
+                return f'failed: {e__}'
 
         risk_free_return_rate = self.preferences['settings']["risk_free_return_rate"]
         metrics_indicators['Max Drawdown (%)'] = attempt(metrics.max_drawdown, history_and_returns)
@@ -959,7 +967,7 @@ class BackTestController:
         metrics_indicators['Sharpe Ratio'] = attempt(metrics.sharpe, history_and_returns,
                                                      {'risk_free_rate': risk_free_return_rate,
                                                       'trading_period': interval_value})
-        metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, history_and_returns, 
+        metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, history_and_returns,
                                                      {'trading_period': interval_value})
         metrics_indicators['Volatility'] = attempt(metrics.volatility, history_and_returns,
                                                    {'trading_period': interval_value})

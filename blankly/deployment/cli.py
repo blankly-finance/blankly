@@ -18,7 +18,6 @@
 
 import argparse
 import sys
-import uuid
 import warnings
 import os
 import platform
@@ -31,7 +30,7 @@ import tempfile
 import webbrowser
 
 from blankly.deployment.api import API
-from blankly.utils.utils import load_json_file, info_print
+from blankly.utils.utils import load_json_file, info_print, load_deployment_settings
 
 very_important_string = """
 ██████╗ ██╗      █████╗ ███╗   ██╗██╗  ██╗██╗  ██╗   ██╗    ███████╗██╗███╗   ██╗ █████╗ ███╗   ██╗ ██████╗███████╗
@@ -57,6 +56,10 @@ class TermColors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+
+supported_exchanges = ['binance.com', 'binance.us',
+                       'coinbase_pro', 'alpaca', 'ftx', 'oanda']
 
 
 def choose_option(choice: str, options: list, descriptions: list):
@@ -165,7 +168,8 @@ def choose_option(choice: str, options: list, descriptions: list):
         print(TermColors.BOLD + TermColors.WARNING + f"Choose a {choice}: " + TermColors.ENDC +
               TermColors.UNDERLINE + "(Input the index of your selection)" + TermColors.ENDC)
 
-        index = int(input(TermColors.UNDERLINE + TermColors.OKCYAN + "You have chosen:" + TermColors.ENDC + " "))
+        index = int(input(TermColors.UNDERLINE + TermColors.OKCYAN +
+                    "You have chosen:" + TermColors.ENDC + " "))
 
         print('\n' + TermColors.BOLD + TermColors.WARNING + f"Chose {choice}:" + TermColors.ENDC + " " +
               TermColors.BOLD + TermColors.OKBLUE + options[index] + TermColors.ENDC)
@@ -173,15 +177,12 @@ def choose_option(choice: str, options: list, descriptions: list):
         return options[index]
 
 
-def get_project_model_and_name(args, projects):
+def get_project_model_and_name(args, projects, api: API):
     if args['path'] is None:
         print(TermColors.WARNING + "Warning - No filepath specified. Assuming the current directory (./)\n" +
               TermColors.ENDC)
 
         args['path'] = './'
-
-    create_new = False
-    general_description = None
 
     try:
         f = open(os.path.join(args['path'], deployment_script_name))
@@ -190,12 +191,14 @@ def get_project_model_and_name(args, projects):
         f.close()
         if 'model_id' not in deployment_options or \
                 'project_id' not in deployment_options or \
+                'type' not in deployment_options or \
                 'model_name' not in deployment_options:
             # This performs all the querying necessary to send the data up
             ids = []
             for i in projects:
                 ids.append(i['projectId'])
             descriptions = []
+
             for i in projects:
                 descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
                                     TermColors.ENDC + TermColors.OKCYAN + i['name'])
@@ -204,29 +207,37 @@ def get_project_model_and_name(args, projects):
             model_name = input(TermColors.BOLD + TermColors.WARNING +
                                "Enter a name for your model: " + TermColors.ENDC)
 
-            deployment_options['project_id'] = project_id
-            deployment_options['model_id'] = str(uuid.uuid4())
-            deployment_options['model_name'] = model_name
-
-            create_new = True
-
+            # Now we know to go ahead and create a new model on the server
             general_description = input(TermColors.BOLD + TermColors.WARNING +
                                         "Enter a general description for this model model: " + TermColors.ENDC)
 
-            info_print(f"Generating new model id for this blankly.json: {deployment_options['model_id']}")
+            type_ = choose_option('model type', ['strategy', 'screener'],
+                                  ["\t" + TermColors.BOLD + TermColors.WARNING +
+                                   'A strategy is a model that uses blankly.Strategy' + TermColors.ENDC,
+                                   "\t" + TermColors.BOLD + TermColors.WARNING +
+                                   'A screener is a model uses blankly.Screener' + TermColors.ENDC])
+
+            model_id = api.create_model(project_id, type_, model_name, general_description)['modelId']
+
+            info_print(f"Created a new model in blankly.json with ID: {model_id}")
+
+            deployment_options['type'] = type_
+            deployment_options['model_id'] = model_id
+            deployment_options['project_id'] = project_id
+            deployment_options['model_name'] = model_name
+
             # Write the modified version with the ID back into the json file
             f = open(os.path.join(args['path'], deployment_script_name), 'w+')
             f.write(json.dumps(deployment_options, indent=2))
             f.close()
         model_name = deployment_options['model_name']
         project_id = deployment_options['project_id']
-        model_id = deployment_options['model_id']
     except FileNotFoundError:
         raise FileNotFoundError(f"A {deployment_script_name} file must be present at the top level of the "
                                 f"directory specified.")
 
     python_version = deployment_options['python_version']
-    return model_name, project_id, model_id, create_new, general_description, deployment_options, python_version
+    return model_name, project_id, deployment_options, python_version
 
 
 temporary_zip_file = None
@@ -292,8 +303,19 @@ parser = argparse.ArgumentParser(description='Blankly CLI & deployment tool.')
 
 subparsers = parser.add_subparsers(help='Different blankly commands.')
 
-init_parser = subparsers.add_parser('init', help='Sub command to create a blankly-enabled development environment.')
+supported_exchanges_str = ''
+for i in supported_exchanges:
+    supported_exchanges_str += i + "\n"
+
+init_parser = subparsers.add_parser('init', help=f'Sub command to create a blankly-enabled development environment.'
+                                                 f' Supports blankly init on these exchanges: '
+                                                 f'\n{supported_exchanges_str}- Ex: \'blankly init coinbase_pro\'')
 init_parser.set_defaults(which='init')
+# Generate a help message specific to this command
+init_help_message = 'One of the following supported exchanges: \n'
+for i in supported_exchanges:
+    init_help_message += i + "\n"
+init_parser.add_argument('exchange', nargs='?', default='none', type=str, help=init_help_message)
 
 login_parser = subparsers.add_parser('login', help='Log in to your blankly account.')
 login_parser.set_defaults(which='login')
@@ -341,7 +363,7 @@ def login(remove_cache: bool = False):
                 # If it's different from the one that was just created, remove the one just created
                 os.close(fd)
                 os.remove(os.path.join(temp_folder, file_name))
-                # Reassign file name just in case its needed below to write into the file
+                # Reassign file name just in case its needed below to write into the file 
                 # Note that we protect against corrupted files below by overwriting any contents in case
                 #  'token' not in token_file
                 file_name = i
@@ -475,12 +497,13 @@ def main():
         projects = api.list_projects()
 
         if len(projects) == 0:
-            print(TermColors.FAIL + "Please create a project with 'blankly create' first." + TermColors.ENDC)
+            print(TermColors.FAIL +
+                  "Please create a project with 'blankly create' first." + TermColors.ENDC)
             return
 
         # Read and write to the deployment options if necessary
-        model_name, project_id, model_id, create_new, general_description, deployment_options, python_version = \
-            get_project_model_and_name(args, projects)
+        model_name, project_id, deployment_options, python_version = \
+            get_project_model_and_name(args, projects, api)
 
         info_print("Zipping...")
 
@@ -492,15 +515,19 @@ def main():
                                     "Enter a description for this version of the model: " + TermColors.ENDC)
 
         info_print("Uploading...")
-        response = api.deploy(model_path,
-                              project_id=project_id,
-                              model_id=model_id,
-                              plan=chosen_plan,
-                              version_description=version_description,
-                              general_description=general_description,
-                              name=model_name,
-                              create_new=create_new,
-                              python_version=python_version)
+        kwargs = {
+            'file_path': model_path,
+            'project_id': project_id,
+            'model_id': deployment_options['model_id'],
+            'version_description': version_description,
+            'python_version': python_version,
+            'type_': deployment_options['type'],
+            'plan': chosen_plan
+        }
+        if kwargs['type_'] == 'screener':
+            kwargs['schedule'] = deployment_options['screener']['schedule']
+
+        response = api.deploy(**kwargs)
         if 'error' in response:
             info_print('Error: ' + response['error'])
         elif 'status' in response and response['status'] == 'success':
@@ -511,28 +538,67 @@ def main():
             info_print(f"\tProject:\t{response['projectId']}")
 
     elif which == 'init':
+        exchange = args['exchange']
+        if exchange != 'none':
+            user_defined_exchange = exchange.lower()
+        else:
+            user_defined_exchange = 'coinbase_pro'  # default to cbpro
+
         print("Initializing...")
-        print(very_important_string)
+        try:
+            print(very_important_string)
+        except UnicodeEncodeError:
+            print("Welcome to blankly!")
+
+        if user_defined_exchange not in supported_exchanges:
+            base_str = 'Error: Please use one of our supported exchanges'
+            exchanges = ', '.join(supported_exchanges)
+            info_print(
+                f'{base_str}: {TermColors.BOLD}{exchanges}{TermColors.ENDC}. '
+                f'\nYour input: {TermColors.BOLD}{user_defined_exchange}{TermColors.ENDC}')
+            return
+
+        tld = 'com'
+        if user_defined_exchange[0:7] == 'binance':
+            # Find if it's .us if needed
+            tld = user_defined_exchange[8:]
+            user_defined_exchange = 'binance'
+
+        exchange_config = {
+            'settings.json': 'https://raw.githubusercontent.com/blankly-finance/examples/main/configs/settings.json',
+            'keys.json': 'https://raw.githubusercontent.com/blankly-finance/examples/main/keys_example.json',
+            'backtest_usd.json': 'https://raw.githubusercontent.com/blankly-finance/examples/main/configs/'
+                                 'backtest_usd.json',
+            'exchange': user_defined_exchange,
+            'bot_url': f'https://raw.githubusercontent.com/blankly-finance/examples/main/init/rsi_'
+                       f'{user_defined_exchange}.py',
+            'tld': tld,
+        }
 
         # Directly download keys.json
         print("Downloading keys template...")
-        keys_example = requests.get('https://raw.githubusercontent.com/Blankly-Finance/'
-                                    'Blankly/main/examples/keys_example.json')
-        create_and_write_file('keys.json', keys_example.text)
+        keys_example = requests.get(exchange_config['keys.json']).json()
+        # No modification necessary
+        create_and_write_file('keys.json', json.dumps(keys_example, indent=2))
 
         # Directly download settings.json
         print("Downloading settings defaults...")
-        settings = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/settings.json')
-        create_and_write_file('settings.json', settings.text)
+        settings = requests.get(exchange_config['settings.json']).json()
+        # Make sure we write the tld into the settings
+        settings['settings']['binance']['binance_tld'] = exchange_config['tld']
+        create_and_write_file('settings.json', json.dumps(settings, indent=2))
 
         # Directly download backtest.json
         print("Downloading backtest defaults...")
-        backtest = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/backtest.json')
-        create_and_write_file('backtest.json', backtest.text)
+        backtest = requests.get(exchange_config['backtest_usd.json']).json()
+        if user_defined_exchange == 'kucoin' or user_defined_exchange == 'binance':
+            # USDT exchanges
+            backtest['settings']['quote_account_value_in'] = 'USDT'
+        create_and_write_file('backtest.json', json.dumps(backtest, indent=2))
 
         # Directly download a rsi bot
         print("Downloading RSI bot example...")
-        bot = requests.get('https://raw.githubusercontent.com/Blankly-Finance/Blankly/main/examples/rsi.py')
+        bot = requests.get(exchange_config['bot_url'])
         create_and_write_file('bot.py', bot.text)
 
         print("Writing deployment defaults...")
@@ -541,16 +607,10 @@ def main():
         py_version = platform.python_version_tuple()
         print(f"{TermColors.OKCYAN}{TermColors.BOLD}Found python version: "
               f"{py_version[0]}.{py_version[1]}{TermColors.ENDC}")
-        deploy = {
-            "main_script": "./bot.py",
-            "python_version": py_version[0] + "." + py_version[1],
-            "requirements": "./requirements.txt",
-            "working_directory": ".",
-            "ignore_files": ['price_caches'],
-            "backtest_args": {
-                'to': '1y'
-            }
-        }
+
+        deploy = load_deployment_settings()
+
+        deploy['python_version'] = py_version[0] + "." + py_version[1]
         create_and_write_file(deployment_script_name, json.dumps(deploy, indent=2))
 
         # Write in a blank requirements file
@@ -580,8 +640,11 @@ def main():
         projects = api.list_projects()
 
         # Read and write to the deployment options if necessary
-        model_name, project_id, model_id, create_new, general_description, deployment_options, python_version = \
-            get_project_model_and_name(args, projects)
+        model_name, project_id, deployment_options, python_version = \
+            get_project_model_and_name(args, projects, api)
+
+        if deployment_options['type'] == 'screener':
+            raise AttributeError("Screeners are not backtestable.")
 
         info_print("Zipping...")
 
@@ -591,23 +654,26 @@ def main():
 
         backtest_description = input(TermColors.BOLD + TermColors.WARNING +
                                      "Enter a backtest description for this version of the model: " + TermColors.ENDC)
+        info_print("Uploading...")
 
-        response = api.backtest(project_id=project_id,
-                                model_id=model_id,
+        response = api.backtest(file_path=model_path,
+                                project_id=project_id,
+                                model_id=deployment_options['model_id'],
                                 args=deployment_options['backtest_args'],
-                                backtest_description=backtest_description,
                                 plan=chosen_plan,
-                                file_path=model_path,
-                                create_new=create_new,
                                 python_version=python_version,
-                                name=model_name)
+                                backtest_description=backtest_description,
+                                type_=deployment_options['type'])
 
         info_print("Uploading...")
-        info_print(f"Backtest upload completed at {response['timestamp']}:")
-        info_print(f"\tModel ID:\t{response['modelId']}")
-        info_print(f"\tVersion:\t{response['versionId']}")
-        info_print(f"\tStatus:  \t{response['status']}")
-        info_print(f"\tProject:\t{response['projectId']}")
+        if 'error' in response:
+            info_print(response['error'])
+        else:
+            info_print(f"Backtest upload completed at {response['timestamp']}:")
+            info_print(f"\tModel ID:\t{response['modelId']}")
+            info_print(f"\tVersion:\t{response['versionId']}")
+            info_print(f"\tStatus:  \t{response['status']}")
+            info_print(f"\tProject:\t{response['projectId']}")
 
     elif which == 'create':
         api = API(login())
@@ -633,7 +699,8 @@ def main():
         else:
             current_directory = os.getcwd()
             blankly_folder = os.path.join(current_directory, args['path'])
-            deployment_location = os.path.join(blankly_folder, deployment_script_name)
+            deployment_location = os.path.join(
+                blankly_folder, deployment_script_name)
             try:
                 # Find where the user specified their working directory and migrate to that
                 deployment_dict = load_json_file(deployment_location)

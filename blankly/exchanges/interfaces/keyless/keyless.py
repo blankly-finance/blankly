@@ -1,6 +1,6 @@
 """
-    Kucoin interface definition
-    Copyright (C) 2021  Emerson Dove
+    Keyless exchange definition & setup
+    Copyright (C) 2022 Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -16,33 +16,23 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
+import blankly
 from blankly.exchanges.exchange import Exchange
-from blankly.exchanges.auth.auth_constructor import AuthConstructor
+from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
+from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
+from blankly.exchanges.interfaces.keyless.keyless_api import KeylessAPI
 
 
-class Kucoin(Exchange):
-    def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
-        Exchange.__init__(self, "kucoin", portfolio_name, settings_path)
+class KeylessExchange(Exchange):
+    def __init__(self, dataset_path: str, initial_account_values: dict, portfolio_name=None, settings_path=None):
+        Exchange.__init__(self, "keyless", portfolio_name, settings_path)
 
-        # Load the auth from the keys file
-        auth = AuthConstructor(keys_path, portfolio_name, 'kucoin', ['API_KEY', 'API_SECRET', 'API_PASS', 'sandbox'])
+        self.calls = KeylessAPI(dataset_path)
 
-        sandbox = super().evaluate_sandbox(auth)
+        self.interface = PaperTradeInterface(self.calls, initial_account_values=initial_account_values)
 
-        try:
-            from kucoin import client as KucoinAPI
-        except ImportError:
-            raise ImportError("Please \"pip install kucoin-python\" to use kucoin with blankly.")
-        # Kucoin has a bunch of calls types, so we will index them in a single calls dictionary
-        calls = {
-            'market': KucoinAPI.Market(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], sandbox),
-            'user': KucoinAPI.User(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], sandbox),
-            'trade': KucoinAPI.Trade(auth.keys['API_KEY'], auth.keys['API_SECRET'], auth.keys['API_PASS'], sandbox)
-        }
-
-        # Always finish the method with this function
-        super().construct_interface_and_cache(calls)
+        # This one must be exported manually
+        blankly.reporter.export_used_exchange("keyless")
 
     """
     Builds information about the asset on this exchange by making particular API calls
@@ -63,6 +53,5 @@ class Kucoin(Exchange):
         # TODO Populate this with useful information
         return self.interface.get_fees()
 
-    def get_direct_calls(self) -> dict:
+    def get_direct_calls(self) -> ABCExchangeInterface:
         return self.calls
-

@@ -1,10 +1,8 @@
 {
   "settings": {
-    "use_sandbox": false,
     "use_sandbox_websockets": false,
     "websocket_buffer_size": 10000,
     "test_connectivity_on_auth": true,
-
     "coinbase_pro": {
       "cash": "USD"
     },
@@ -20,6 +18,16 @@
     },
     "oanda": {
       "cash": "USD"
+    },
+    "keyless": {
+      "cash": "USD"
+    },
+    "kucoin": {
+      "cash": "USDT"
+    },
+    "ftx": {
+      "cash": "USD",
+      "ftx_tld": "us"
     }
   }
 }

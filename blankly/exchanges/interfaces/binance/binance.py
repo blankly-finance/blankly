@@ -28,9 +28,11 @@ class Binance(Exchange):
         Exchange.__init__(self, "binance", portfolio_name, settings_path)
 
         # Load the auth from the keys file
-        auth = AuthConstructor(keys_path, portfolio_name, 'binance', ['API_KEY', 'API_SECRET'])
+        auth = AuthConstructor(keys_path, portfolio_name, 'binance', ['API_KEY', 'API_SECRET', 'sandbox'])
 
-        if self.preferences["settings"]["use_sandbox"]:
+        sandbox = super().evaluate_sandbox(auth)
+
+        if sandbox:
             calls = Client(api_key=auth.keys['API_KEY'], api_secret=auth.keys['API_SECRET'],
                            tld=self.preferences["settings"]['binance']["binance_tld"],
                            testnet=True)
