@@ -74,12 +74,12 @@ class GeneralManager(WebsocketManager):
             return websocket
         elif exchange_cache == "kucoin":
             if use_sandbox:
-                response = requests.post('https://trade-sandbox.kucoin.com/_api/bullet-usercenter/v1/bullet-public').json()
+                response = requests.post('https://trade-sandbox.kucoin.com/_api/bullet-usercenter/v1/bullet-public'
+                                         ).json()
 
                 base_endpoint = response['data']['instanceServers'][0]['endpoint']
                 token = response['data']['token']
-                websocket = Kucoin_Websocket(asset_id_cache, channel, log,
-                                                   websocket_url=f"{base_endpoint}/socket.io/?token={token}")
+                websocket = Kucoin_Websocket(asset_id_cache, channel, f"{base_endpoint}/socket.io/?token={token}", log)
                 # wss://push-socketio-sandbox.kucoin.com
             else:
                 response = requests.post('https://api.kucoin.com/api/v1/bullet-public').json()
@@ -87,8 +87,9 @@ class GeneralManager(WebsocketManager):
                 base_endpoint = response['data']['instanceServers'][0]['endpoint']
                 token = response['data']['token']
 
-                websocket = Kucoin_Websocket(asset_id_cache, channel, log,
-                                             websocket_url=f"{base_endpoint}/api/v1/?token={token}&[connectId={random.randint(1, 100000000) * 100000000}]")
+                websocket = Kucoin_Websocket(asset_id_cache, channel,
+                                             f"{base_endpoint}/api/v1/?token={token}&[connectId="
+                                             f"{random.randint(1, 100000000) * 100000000}]", log)
             websocket.append_callback(callback)
 
             self.__websockets[channel][exchange_cache][asset_id_cache] = websocket

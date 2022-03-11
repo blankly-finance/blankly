@@ -130,7 +130,8 @@ class TickerManager(WebsocketManager):
                 token = request_data['data']['token']
                 ticker = Kucoin_Ticker(override_symbol, "ticker",
                                        log=log,
-                                       websocket_url=f"{base_endpoint}?token={token}&[connectId={random.randint(1, 100000000) * 100000000}]")
+                                       websocket_url=f"{base_endpoint}?token={token}&[connectId="
+                                                     f"{random.randint(1, 100000000) * 100000000}]")
             ticker.append_callback(callback)
             self.__tickers['kucoin'][override_symbol] = ticker
             return ticker

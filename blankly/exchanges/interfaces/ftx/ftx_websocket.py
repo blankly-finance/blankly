@@ -21,30 +21,7 @@ import traceback
 import blankly
 import blankly.exchanges.interfaces.ftx.ftx_websocket_utils as websocket_utils
 from blankly.exchanges.interfaces.websocket import Websocket
-# from blankly.utils import time
 from blankly.utils.utils import info_print
-
-
-# def create_ticker_connection(id_, url, channel):
-#     ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
-#     request = json.dumps({
-#         "op": "subscribe",
-#         "channel": channel,
-#         "market": id_
-#     })
-#     ws.send(request)
-#     return ws
-
-
-# This could be needed:
-# "channels": [
-#     {
-#         "name": "ticker",
-#         "product_ids": [
-#             \"""" + id + """\"
-#         ]
-#     }
-# ]
 
 
 class Tickers(Websocket):
@@ -62,7 +39,6 @@ class Tickers(Websocket):
         super().__init__(symbol, stream, log, log_message, WEBSOCKET_URL, pre_event_callback)
 
         self.__pre_event_callback_filled = False
-
 
         # Start the websocket
         if not initially_stopped:
@@ -84,13 +60,10 @@ class Tickers(Websocket):
         """
         Behavior for this exchange
         """
-        #received_string = message
         received = json.loads(message)
         if received['type'] == 'subscribed':
             info_print(f"Subscribed to {received['channel']}")
             return
-
-        # self.pre_event_callback(received_dict)
 
         if (self.pre_event_callback is not None) and (not self.__pre_event_callback_filled) and \
                 (self.stream == "orderbook"):
@@ -103,9 +76,7 @@ class Tickers(Websocket):
             self.__pre_event_callback_filled = True
             return
 
-        # parsed_received_trades = websocket_utils.process_trades(received_dict)
-        # for received in parsed_received_trades:
-            # ISO8601 is converted to epoch in process_trades
+        # ISO8601 is converted to epoch in process_trades
         self.most_recent_time = blankly.utils.convert_epochs(received['data']['time'])
         received["data"]["time"] = self.most_recent_time
         self.time_feed.append(self.most_recent_time)
@@ -149,9 +120,3 @@ class Tickers(Websocket):
             self.on_close,
             self.read_websocket
         )
-
-# if __name__ == "__main__":
-#     a = Tickers('a', 'b')
-#
-#     while True:
-#         time.sleep(1)

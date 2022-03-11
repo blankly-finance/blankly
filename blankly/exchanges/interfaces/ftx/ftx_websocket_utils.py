@@ -69,26 +69,6 @@ def process_trades(response: dict) -> List[dict]:
 
     return list_trades
 
-# def process_trades(response: dict) -> List[dict]:
-#     list_trades: List = []
-#     trades_data: dict = response
-#
-#     needed = [
-#         ["symbol", str],
-#         ["price", float],
-#         ["time", float],
-#         ["trade_id", int],
-#         ["size", float]
-#     ]
-#
-#     trades_data['symbol'] = trades_data['market']
-#     trades_data['trade_id'] = trades_data.pop('id') #not there
-#     trades_data['time'] = utils.epoch_from_iso8601(trades_data['data']['time'])
-#     trades_data['symbol'] = trades_data['symbol'].replace('/', '-')
-#
-#     list_trades.append(utils.isolate_specific(needed, response))
-#     return list_trades
-
 
 def trade(received):
     line = str(received["time"]) + "," + str(time.time()) + "," + received["price"] + "," + received[

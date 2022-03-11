@@ -163,9 +163,9 @@ class OrderbookManager(WebsocketManager):
                 raise ValueError("Error: FTX does not have a sandbox mode")
             else:
                 websocket = Ftx_Orderbook(override_symbol, "orderbook",
-                                                   pre_event_callback=self.ftx_snapshot_update,
-                                                   initially_stopped=initially_stopped,
-                                                   )
+                                          pre_event_callback=self.ftx_snapshot_update,
+                                          initially_stopped=initially_stopped,
+                                          )
 
             websocket.append_callback(self.ftx_update)
 
@@ -197,7 +197,8 @@ class OrderbookManager(WebsocketManager):
                 websocket = Kucoin_Orderbook(override_symbol, "level2",
                                              pre_event_callback=self.kucoin_snapshot_update,
                                              initially_stopped=initially_stopped,
-                                             websocket_url=f"{base_endpoint}?token={token}&[connectId={random.randint(1, 200000000) * 100000000}]"
+                                             websocket_url=f"{base_endpoint}?token={token}&[connectId="
+                                                           f"{random.randint(1, 200000000) * 100000000}]"
                                              )
             # This is where the sorting magic happens
             websocket.append_callback(self.kucoin_update)
@@ -381,14 +382,14 @@ class OrderbookManager(WebsocketManager):
             "asks": []
         }
         # Get all bids
-        buys = update['data']['changes']['bids'] # [0][:-1]
+        buys = update['data']['changes']['bids']  # [0][:-1]
         buys[0] = buys[0][:-1]
         # Convert these to float and write to our order dictionaries
         for i in range(len(buys)):
             buy = buys[i]
             book['bids'].append((float(buy[0]), float(buy[1])))
 
-        sells = update['data']['changes']['asks'] # [0][:-1]
+        sells = update['data']['changes']['asks']  # [0][:-1]
         sells[0] = sells[0][:-1]
         for i in range(len(sells)):
             sell = sells[i]
@@ -398,6 +399,7 @@ class OrderbookManager(WebsocketManager):
         book["asks"] = sort_list_tuples(book["asks"])
 
         self.__orderbooks['kucoin'][update['data']['symbol']] = book
+
     def ftx_update(self, update):
         symbol = update['market']
 
@@ -434,6 +436,7 @@ class OrderbookManager(WebsocketManager):
         for i in callbacks:
             i(self.__orderbooks['ftx'][symbol],
               **self.__websockets_kwargs['ftx'][symbol])
+
     def ftx_snapshot_update(self, update):
         market = update['market'].replace('/', '-')
         print("Orderbook snapshot acquired for: " + market)

@@ -2,8 +2,6 @@ import json
 import time
 import traceback
 
-import requests
-
 import blankly.exchanges.interfaces.kucoin.kucoin_websocket_utils as websocket_utils
 from blankly.exchanges.interfaces.websocket import Websocket
 from blankly.utils.utils import info_print
@@ -12,7 +10,7 @@ from blankly.utils.utils import info_print
 class Tickers(Websocket):
     def __init__(self, symbol, stream, websocket_url, log=None,
                  pre_event_callback=None, initially_stopped=False,
-                 id=None):
+                 id_=None):
         """
         Create and initialize the ticker
         Args:
@@ -20,7 +18,7 @@ class Tickers(Websocket):
             log: Fill this with a path to a log file that should be created
             websocket_url: Default websocket URL feed.
         """
-        self.id = id
+        self.id = id_
         self.__logging_callback, self.__interface_callback, log_message = websocket_utils.switch_type(stream)
 
         super().__init__(symbol, stream, log, log_message, websocket_url, pre_event_callback)
@@ -101,10 +99,3 @@ class Tickers(Websocket):
             self.on_close,
             self.read_websocket
         )
-
-
-# if __name__ == "__main__":
-#     a = Tickers('a', 'b')
-#
-#     while True:
-#         time.sleep(1)
