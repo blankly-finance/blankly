@@ -326,6 +326,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         return order, funds, executed_value, fill_fees, fill_size
 
+    @utils.enforce_base_asset
     def get_account(self, symbol=None) -> utils.AttributeDict:
         if symbol is None:
             return self.local_account.get_accounts()

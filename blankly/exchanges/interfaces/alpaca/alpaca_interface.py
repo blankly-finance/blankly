@@ -111,6 +111,7 @@ class AlpacaInterface(ExchangeInterface):
         account_dict = self.calls.get_account()
         return float(account_dict['buying_power'])
 
+    @utils.enforce_base_asset
     def get_account(self, symbol=None):
         assert isinstance(self.calls, alpaca_trade_api.REST)
 

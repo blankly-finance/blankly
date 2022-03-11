@@ -778,6 +778,19 @@ def check_backtesting() -> bool:
         return False
 
 
+def enforce_base_asset(func):
+    """
+    Used for get_account functions, this enforces that the user is always getting the base asset which is probably
+    what the user meant
+    """
+    def wrapper(self, symbol=None):
+        # Get the base asset if it was defined
+        if symbol is not None:
+            symbol = get_base_asset(symbol)
+        return func(self, symbol=symbol)
+    return wrapper
+
+
 def order_protection(func):
     """
     Decorator to provide protection against live orders inside backtest environment
