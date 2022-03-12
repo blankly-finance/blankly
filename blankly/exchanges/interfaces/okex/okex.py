@@ -1,9 +1,9 @@
 from blankly.exchanges.exchange import Exchange
 from blankly.exchanges.auth.auth_constructor import AuthConstructor
-from blankly.exchanges.interfaces.okex.okex_api import API as OkexAPI
+from blankly.exchanges.interfaces.okex.okex_api import SpotAPI as OkexAPI
 
 
-class Kucoin(Exchange):
+class Okex(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
         Exchange.__init__(self, "okex", portfolio_name, settings_path)
 
@@ -12,8 +12,8 @@ class Kucoin(Exchange):
         keys = auth.keys
 
         calls = OkexAPI(api_key=keys['API_KEY'],
-                        api_secret=keys['API_SECRET'],
-                        api_pass=keys['API_PASS'])
+                        api_secret_key=keys['API_SECRET'],
+                        passphrase=keys['API_PASS'])
 
         # Always finish the method with this function
         super().construct_interface_and_cache(calls)

@@ -22,6 +22,7 @@ from blankly.exchanges.interfaces.alpaca.alpaca import Alpaca
 from blankly.exchanges.interfaces.oanda.oanda import Oanda
 from blankly.exchanges.interfaces.kucoin.kucoin import Kucoin
 from blankly.exchanges.interfaces.ftx.ftx import FTX
+from blankly.exchanges.interfaces.okex.okex import Okex
 from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.interfaces.keyless.keyless import KeylessExchange
 from blankly.frameworks.strategy import Strategy as Strategy

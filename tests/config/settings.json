@@ -11,6 +11,9 @@
     "kucoin": {
       "cash": "USDT"
     },
+    "okex": {
+      "cash": "USDT"
+    },
     "binance": {
       "cash": "USDT",
       "binance_tld": "us"

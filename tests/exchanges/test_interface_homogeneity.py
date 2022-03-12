@@ -56,6 +56,14 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.Coinbase_Pro_Interface = cls.Coinbase_Pro.get_interface()
         cls.interfaces.append(cls.Coinbase_Pro_Interface)
         cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
+        
+        #Okex definition and appending
+        cls.Okex = blankly.Okex(portfolio_name="okex test portfolio",
+                                keys_path='./tests/config/keys.json',
+                                settings_path="./tests/config/settings.json")
+        cls.Okex_Interface = cls.Okex.get_interface()
+        cls.interfaces.append(cls.Okex_Interface)
+        cls.data_interfaces.append(cls.Okex_Interface)
 
         # Kucoin definition and appending
         cls.Kucoin = blankly.Kucoin(portfolio_name="KC Sandbox Portfolio",
@@ -193,7 +201,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             if not (type_ == 'alpaca' or type_ == 'oanda'):
                 size = .01
             else:
-                # Non fractional exchanges have to be sent here
+                # Non-fractional exchanges have to be sent here
                 size = 1
 
             order_responses.append({
@@ -265,6 +273,12 @@ class InterfaceHomogeneity(unittest.TestCase):
         kucoin_sell = self.Kucoin_Interface.limit_order('ETH-USDT', 'sell', 100000, 1)
         self.check_limit_order(kucoin_sell, 'sell', 1, 'ETH-USDT')
 
+        okex_buy = self.Okex_Interface.limit_order('BTC-USDT', 'buy', .01, 1)
+        self.check_limit_order(okex_buy, 'buy', 1, 'BTC-USDT')
+
+        okex_sell = self.Okex_Interface.limit_order('BTC-USDT', 'sell', 100000, 1)
+        self.check_limit_order(okex_sell, 'sell', 1, 'BTC-USDT')
+
         alpaca_buy = self.Alpaca_Interface.limit_order('AAPL', 'buy', 10, 1)
         self.check_limit_order(alpaca_buy, 'buy', 1, 'AAPL')
 
@@ -287,6 +301,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         open_orders = {
             'coinbase_pro': self.Coinbase_Pro_Interface.get_open_orders('BTC-USD'),
             'binance': self.Binance_Interface.get_open_orders('BTC-USDT'),
+            'okex': self.Okex_Interface.get_open_orders('BTC-USDT'),
             'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
             'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
             'oanda': self.Oanda_Interface.get_open_orders('EUR-USD')
@@ -299,6 +314,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         # Just scan through both simultaneously to reduce code copying
         all_orders = open_orders['coinbase_pro']
         all_orders = all_orders + open_orders['binance']
+        all_orders = all_orders + open_orders['okex']
         all_orders = all_orders + open_orders['kucoin']
         all_orders = all_orders + open_orders['alpaca']
         all_orders = all_orders + open_orders['oanda']
@@ -329,6 +345,9 @@ class InterfaceHomogeneity(unittest.TestCase):
         cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_buy.get_id()))
         cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_sell.get_id()))
 
+        cancels.append(self.Okex_Interface.cancel_order('BTC-USDT', okex_buy.get_id()))
+        cancels.append(self.Okex_Interface.cancel_order('BTC-USDT', okex_sell.get_id()))
+
         cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', kucoin_buy.get_id()))
         cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', kucoin_sell.get_id()))
 
@@ -351,7 +370,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
     def check_product_history_types(self, df: pd.DataFrame):
-        # This is caused by casting on windows in pandas - I believe it is a bug
+        # This is caused by casting on Windows in pandas - I believe it is a bug
         self.assertTrue(isinstance(df['time'][0], int) or
                         isinstance(df['time'][0], numpy.int64) or
                         isinstance(df['time'][0], numpy.int32))
