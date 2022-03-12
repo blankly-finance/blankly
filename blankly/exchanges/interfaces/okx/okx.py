@@ -1,14 +1,14 @@
 from blankly.exchanges.exchange import Exchange
 from blankly.exchanges.auth.auth_constructor import AuthConstructor
-from blankly.exchanges.interfaces.okex.okex_api import SpotAPI as OkexAPI
+from blankly.exchanges.interfaces.okx.okx_api import SpotAPI as OkexAPI
 
 
 class Okex(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
-        Exchange.__init__(self, "okex", portfolio_name, settings_path)
+        Exchange.__init__(self, "okx", portfolio_name, settings_path)
 
         # Load the auth from the keys file
-        auth = AuthConstructor(keys_path, portfolio_name, 'okex', ['API_KEY', 'API_SECRET', 'API_PASS'])
+        auth = AuthConstructor(keys_path, portfolio_name, 'okx', ['API_KEY', 'API_SECRET', 'API_PASS'])
         keys = auth.keys
 
         calls = OkexAPI(api_key=keys['API_KEY'],
