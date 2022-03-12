@@ -60,42 +60,55 @@ class Tickers(Websocket):
         """
         Behavior for this exchange
         """
-        received = json.loads(message)
-        if received['type'] == 'subscribed':
-            info_print(f"Subscribed to {received['channel']}")
+        received_dict = json.loads(message)
+        if received_dict['type'] == 'subscribed':
+            info_print(f"Subscribed to {received_dict['channel']}")
             return
+
+        #self.pre_event_callback(received_dict)
 
         if (self.pre_event_callback is not None) and (not self.__pre_event_callback_filled) and \
                 (self.stream == "orderbook"):
-            if received['type'] == 'partial':
+            if received_dict['type'] == 'partial':
                 try:
-                    self.pre_event_callback(received)
+                    self.pre_event_callback(received_dict)
                 except Exception:
                     traceback.print_exc()
 
             self.__pre_event_callback_filled = True
             return
 
-        # ISO8601 is converted to epoch in process_trades
-        self.most_recent_time = blankly.utils.convert_epochs(received['data']['time'])
-        received["data"]["time"] = self.most_recent_time
-        self.time_feed.append(self.most_recent_time)
+        # if received_dict['type'] == 'update':
+        #     # try:
+        #     #     #parsed_received_trades = websocket_utils.process_trades(received_dict) #problem is utils wont process_trades for when type=update since tradeid doesnt exist on that
+        #     #     self.pre_event_callback(received_dict)
+        #     # except Exception:
+        #     #     traceback.print_exc()
+        #     return
 
-        self.log_response(self.__logging_callback, received)
+        parsed_received_trades = websocket_utils.process_trades(received_dict)
+        for received in parsed_received_trades:
+            # ISO8601 is converted to epoch in process_trades
+            #self.most_recent_time = blankly.utils.convert_epochs(received['data'][0]['time'])
+            self.most_recent_time = received["time"]
+            #received["data"]["time"] = self.most_recent_time
+            self.time_feed.append(self.most_recent_time)
+
+            self.log_response(self.__logging_callback, received)
 
         # Manage price events and fire for each manager attached
-        interface_message = self.__interface_callback(received)
-        self.ticker_feed.append(interface_message)
-        self.most_recent_tick = interface_message
+            interface_message = self.__interface_callback(received)
+            self.ticker_feed.append(interface_message)
+            self.most_recent_tick = interface_message
 
-        try:
-            for i in self.callbacks:
-                i(interface_message)
-        except Exception as e:
-            info_print(e)
-            traceback.print_exc()
+            try:
+                for i in self.callbacks:
+                    i(interface_message)
+            except Exception as e:
+                info_print(e)
+                traceback.print_exc()
 
-        self.message_count += 1
+            self.message_count += 1
 
     def on_error(self, ws, error):
         info_print(error)
