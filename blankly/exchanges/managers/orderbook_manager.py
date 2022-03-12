@@ -401,12 +401,12 @@ class OrderbookManager(WebsocketManager):
         self.__orderbooks['kucoin'][update['data']['symbol']] = book
 
     def ftx_update(self, update):
-        symbol = update['market']
+        symbol = update['symbol']
 
         book_buys = self.__orderbooks['ftx'][symbol]['bids']
         book_sells = self.__orderbooks['ftx'][symbol]['asks']  # type: list
 
-        new_buys = update['data']['bids'][::-1]  # type: list
+        new_buys = update['bids'][::-1]  # type: list
         for i in new_buys:
             i[0] = float(i[0])
             i[1] = float(i[1])

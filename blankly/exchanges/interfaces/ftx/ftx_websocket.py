@@ -19,6 +19,7 @@
 import json
 import traceback
 import blankly
+from blankly.utils.utils import epoch_from_iso8601, to_blankly_symbol
 import blankly.exchanges.interfaces.ftx.ftx_websocket_utils as websocket_utils
 from blankly.exchanges.interfaces.websocket import Websocket
 from blankly.utils.utils import info_print
@@ -86,29 +87,43 @@ class Tickers(Websocket):
         #     #     traceback.print_exc()
         #     return
 
-        parsed_received_trades = websocket_utils.process_trades(received_dict)
-        for received in parsed_received_trades:
-            # ISO8601 is converted to epoch in process_trades
-            #self.most_recent_time = blankly.utils.convert_epochs(received['data'][0]['time'])
-            self.most_recent_time = received["time"]
-            #received["data"]["time"] = self.most_recent_time
+        if self.stream == "orderbook":
+            interface_response = self.__interface_callback(received_dict['data'])
+            self.most_recent_time = interface_response["time"]
             self.time_feed.append(self.most_recent_time)
-
-            self.log_response(self.__logging_callback, received)
-
-        # Manage price events and fire for each manager attached
-            interface_message = self.__interface_callback(received)
-            self.ticker_feed.append(interface_message)
-            self.most_recent_tick = interface_message
+            self.most_recent_tick = interface_response
 
             try:
+                interface_response['symbol'] = received_dict['market']
                 for i in self.callbacks:
-                    i(interface_message)
+                    i(interface_response)
             except Exception as e:
                 info_print(e)
                 traceback.print_exc()
+        elif self.stream == "trades":
+            for received in received_dict['data']:
+                interface_response = self.__interface_callback(received)
+                # This could be passed into the received var above which could be cleaner
+                interface_response['symbol'] = to_blankly_symbol(received_dict['market'], 'ftx')
+                self.ticker_feed.append(interface_response)
 
-            self.message_count += 1
+                # ISO8601 is converted to epoch in process_trades
+                # self.most_recent_time = blankly.utils.convert_epochs(received['data'][0]['time'])
+                # received["data"]["time"] = self.most_recent_time
+                self.most_recent_time = epoch_from_iso8601(received["time"])
+                self.time_feed.append(self.most_recent_time)
+                self.most_recent_tick = received
+
+                self.log_response(self.__logging_callback, received)
+
+                try:
+                    for i in self.callbacks:
+                        i(interface_response)
+                except Exception as e:
+                    info_print(e)
+                    traceback.print_exc()
+
+        self.message_count += 1
 
     def on_error(self, ws, error):
         info_print(error)
