@@ -415,7 +415,7 @@ class OrderbookManager(WebsocketManager):
             else:
                 book_buys.append((i[0], i[1]))
 
-        new_sells = update['data']['asks']  # type: list
+        new_sells = update['asks']  # type: list
         for i in new_sells:
             i[0] = float(i[0])
             i[1] = float(i[1])

@@ -66,8 +66,6 @@ class Tickers(Websocket):
             info_print(f"Subscribed to {received_dict['channel']}")
             return
 
-        #self.pre_event_callback(received_dict)
-
         if (self.pre_event_callback is not None) and (not self.__pre_event_callback_filled) and \
                 (self.stream == "orderbook"):
             if received_dict['type'] == 'partial':
@@ -78,14 +76,6 @@ class Tickers(Websocket):
 
             self.__pre_event_callback_filled = True
             return
-
-        # if received_dict['type'] == 'update':
-        #     # try:
-        #     #     #parsed_received_trades = websocket_utils.process_trades(received_dict) #problem is utils wont process_trades for when type=update since tradeid doesnt exist on that
-        #     #     self.pre_event_callback(received_dict)
-        #     # except Exception:
-        #     #     traceback.print_exc()
-        #     return
 
         if self.stream == "orderbook":
             interface_response = self.__interface_callback(received_dict['data'])
@@ -107,9 +97,6 @@ class Tickers(Websocket):
                 interface_response['symbol'] = to_blankly_symbol(received_dict['market'], 'ftx')
                 self.ticker_feed.append(interface_response)
 
-                # ISO8601 is converted to epoch in process_trades
-                # self.most_recent_time = blankly.utils.convert_epochs(received['data'][0]['time'])
-                # received["data"]["time"] = self.most_recent_time
                 self.most_recent_time = epoch_from_iso8601(received["time"])
                 self.time_feed.append(self.most_recent_time)
                 self.most_recent_tick = received
