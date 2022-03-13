@@ -5,8 +5,6 @@ import datetime
 # import time
 import json
 
-API_URL = 'https://www.okx.com'
-
 CONTENT_TYPE = 'Content-Type'
 OK_ACCESS_KEY = 'OK-ACCESS-KEY'
 OK_ACCESS_SIGN = 'OK-ACCESS-SIGN'
@@ -268,12 +266,14 @@ class Client(object):
         self.use_server_time = use_server_time
         self.flag = flag
 
+        self.api_url = 'https://www.okx.com'
+
     def _request(self, method, request_path, params):
 
         if method == GET:
             request_path = request_path + parse_params_to_str(params)
         # url
-        url = API_URL + request_path
+        url = self.api_url + request_path
 
         timestamp = get_timestamp()
 
@@ -313,7 +313,7 @@ class Client(object):
         return self._request(method, request_path, params)
 
     def _get_timestamp(self):
-        url = API_URL + SERVER_TIMESTAMP_URL
+        url = self.api_url + SERVER_TIMESTAMP_URL
         response = requests.get(url)
         if response.status_code == 200:
             return response.json()['ts']

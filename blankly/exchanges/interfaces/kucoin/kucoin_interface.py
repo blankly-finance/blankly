@@ -45,6 +45,7 @@ class KucoinInterface(ExchangeInterface):
         self._trade: KucoinAPI.Trade = self.calls['trade']
         self._user: KucoinAPI.User = self.calls['user']
 
+
     def init_exchange(self):
         fees = self.calls['user'].get_base_fee()
         try:

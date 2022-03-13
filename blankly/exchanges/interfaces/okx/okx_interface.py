@@ -15,7 +15,7 @@ class OkexInterface(ExchangeInterface):
         super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 180, 300, 1800, 3600, 7200, 14400])
 
         self._market: MarketAPI = self.calls['market']
-        self._account: AccountAPI = self.calls['user']
+        self._account: AccountAPI = self.calls['account']
         self._trade: TradeAPI = self.calls['trade']
         self._convert: ConvertAPI = self.calls['convert']
         self._funding: FundingAPI = self.calls['funding']
@@ -47,105 +47,67 @@ class OkexInterface(ExchangeInterface):
 
 
     def get_account(self, symbol=None) -> utils.AttributeDict:
-        pass
-        # """
-        #    Get all currencies in an account, or sort by symbol
-        #    Args:
-        #        symbol (Optional): Filter by particular symbol
-        #        These arguments are mutually exclusive
-        # """
-        # symbol = super().get_account(symbol=symbol)
-        # needed = self.needed['get_account']
-        # """
-        # {
-        #     "code": "0",
-        #     "data":
-        #     [
-        #         {
-        #             "adjEq": "10679688.0460531643092577",
-        #             "details": [
-        #                 {
-        #                     "availBal": "",
-        #                     "availEq": "9930359.9998",
-        #                     "cashBal": "9930359.9998",
-        #                     "ccy": "USDT",
-        #                     "crossLiab": "0",
-        #                     "disEq": "9439737.0772999514",
-        #                     "eq": "9930359.9998",
-        #                     "eqUsd": "9933041.196999946",
-        #                     "frozenBal": "0",
-        #                     "interest": "0",
-        #                     "isoEq": "0",
-        #                     "isoLiab": "0",
-        #                     "isoUpl":"0",
-        #                     "liab": "0",
-        #                     "maxLoan": "10000",
-        #                     "mgnRatio": "",
-        #                     "notionalLever": "",
-        #                     "ordFrozen": "0",
-        #                     "twap": "0",
-        #                     "uTime": "1620722938250",
-        #                     "upl": "0",
-        #                     "uplLiab": "0",
-        #                     "stgyEq":"0"
-        #                 },
-        #             ],
-        #             "imr": "3372.2942371050594217",
-        #             "isoEq": "0",
-        #             "mgnRatio": "70375.35408747017",
-        #             "mmr": "134.8917694842024",
-        #             "notionalUsd": "33722.9423710505978888",
-        #             "ordFroz": "0",
-        #             "totalEq": "11172992.1657531589092577",
-        #             "uTime": "1623392334718"
-        #         }
-        #     ],
-        #     "msg": ""
-        # }
-        # """
+        #pass
+        """
+           Get all currencies in an account, or sort by symbol
+           Args:
+               symbol (Optional): Filter by particular symbol
+               These arguments are mutually exclusive
+        """
+        symbol = super().get_account(symbol=symbol)
+        needed = self.needed['get_account']
+
+        # if side == "buy":
+        #     available = self.local_account.get_account(quote)['available']
+        #     # Loose the funds when buying
+        #     self.local_account.update_available(quote, available - (size * price))
         #
-        # # if side == "buy":
-        # #     available = self.local_account.get_account(quote)['available']
-        # #     # Loose the funds when buying
-        # #     self.local_account.update_available(quote, available - (size * price))
-        # #
-        # #     # Gain the funds on hold when buying
-        # #     hold = self.local_account.get_account(quote)['hold']
-        # #     self.local_account.update_hold(quote, hold + (size * price))
-        # # elif side == "sell":
-        # #     available = self.local_account.get_account(base)['available']
-        # #     # Loose the size when selling
-        # #     self.local_account.update_available(base, available - size)
-        # #
-        # #     # Gain size on hold when selling
-        # #     hold = self.local_account.get_account(base)['hold']
-        # #     self.local_account.update_hold(base, hold + size)
+        #     # Gain the funds on hold when buying
+        #     hold = self.local_account.get_account(quote)['hold']
+        #     self.local_account.update_hold(quote, hold + (size * price))
+        # elif side == "sell":
+        #     available = self.local_account.get_account(base)['available']
+        #     # Loose the size when selling
+        #     self.local_account.update_available(base, available - size)
         #
-        #
-        # accounts = self._funding.get_balances()
-        # parsed_dictionary = utils.AttributeDict({})
-        # # We have to sort through it if the accounts are none
-        # if symbol is not None:
-        #     for i in accounts:
-        #         if i["ccy"] == symbol:
-        #             total_hold = 0
-        #             order_info = self.calls.get_order_list()
-        #             hold_value = order_info['data']['px']
-        #             total_hold = total_hold + hold_value
-        #             parsed_value = utils.isolate_specific(needed, i)
-        #             dictionary = utils.AttributeDict({
-        #                 'available': parsed_value['availBal'],
-        #                 'hold': total_hold # check if being bought or sold and perform hold calculation accordingly
-        #             })
-        #             return dictionary
-        #     raise ValueError("Symbol not found")
-        # for i in range(len(accounts)):
-        #     parsed_dictionary[accounts[i]['currency']] = utils.AttributeDict({
-        #         'available': float(accounts[i]['available']),
-        #         'hold': float(accounts[i]['holds'])
-        #     })
-        #
-        # return parsed_dictionary
+        #     # Gain size on hold when selling
+        #     hold = self.local_account.get_account(base)['hold']
+        #     self.local_account.update_hold(base, hold + size)
+
+        accounts = self._funding.get_balances()
+        parsed_dictionary = utils.AttributeDict({})
+        # We have to sort through it if the accounts are none
+        if symbol is not None:
+            for i in accounts:
+                if i["ccy"] == symbol:
+                    total_hold = 0
+                    order_info = self._trade.get_order_list()
+                    side_value = order_info['side']
+                    hold_value = order_info['data']['px']
+
+                    #total_hold = total_hold + hold_value
+                    parsed_value = utils.isolate_specific(needed, i)
+
+                    if side_value == "buy":
+                        # available - (order_info['size'] * order_info['px'])
+                        total_hold = hold_value + (order_info['size'] * order_info['px'])
+                    elif side_value == "sell":
+                        # available - order_info['size']
+                        total_hold = hold_value + order_info['size']
+
+                    dictionary = utils.AttributeDict({
+                        'available': parsed_value['availBal'],
+                        'hold': total_hold
+                    })
+                    return dictionary
+            raise ValueError("Symbol not found")
+        for i in range(len(accounts)):
+            parsed_dictionary[accounts[i]['currency']] = utils.AttributeDict({
+                'available': float(accounts[i]['available']),
+                'hold': float(accounts[i]['holds'])
+            })
+
+        return parsed_dictionary
 
     @utils.order_protection
     def market_order(self, symbol, side, size) -> MarketOrder:
@@ -349,9 +311,9 @@ class OkexInterface(ExchangeInterface):
             # Close is always 300 points ahead
             window_close = int(window_open + 300 * resolution)
             response = self._market.get_history_candlesticks(symbol, before=epoch_start, bar=gran_string, limit=300)
-            if isinstance(response, dict):
-                raise APIException(response['message'])
-            history = history + response
+            # if response['code'] != 0:
+            #     raise APIException(response['msg'])
+            history = history + response['data']
 
             window_open = window_close
             epoch_start += (300 * resolution)
@@ -362,16 +324,15 @@ class OkexInterface(ExchangeInterface):
         # open_iso = utils.iso8601_from_epoch(window_open)
         # close_iso = utils.iso8601_from_epoch(epoch_stop)
         response = self._market.get_history_candlesticks(symbol, before=epoch_start, bar=gran_string, limit=300)
-        if isinstance(response, dict):
-            raise APIException(response['message'])
-        history_block = history + response
+        # if isinstance(response, dict):
+        #     raise APIException(response['message'])
+        history_block = history + response['data']
         history_block.sort(key=lambda x: x[0])
 
-        df = pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume', 'volume_currency'])
-        # Have to cast this for some reason
+        df = pd.DataFrame(history_block, columns=['time', 'open', 'high', 'low', 'close', 'volume', 'volume_currency'])
         df = df.drop(columns=['volume_currency'])
         df[['time']] = df[['time']].astype(int)
-        df[['low', 'high', 'open', 'close', 'volume']] = df[['low', 'high', 'open', 'close', 'volume']].astype(float)
+        df[['open', 'high', 'low', 'close', 'volume']] = df[['open', 'high', 'low', 'close', 'volume']].astype(float)
 
         return df
 
