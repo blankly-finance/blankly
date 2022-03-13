@@ -924,7 +924,7 @@ class BackTestController:
                         source.data['side'].append(details['side'])
                         source.data['time'].append(dt.fromtimestamp(order['executed_time']))
                     #chart.circle_x(dt.fromtimestamp(order['executed_time']), 'price', source=details, size=7, fill_color = color, line_color=color, fill_alpha = 0.2, line_width = 1)                
-                chart.circle_x( 'time', 
+                chart.circle_x('time',
                                 'price', 
                                 source=source, 
                                 size=7, 
