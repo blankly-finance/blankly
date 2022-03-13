@@ -1,9 +1,10 @@
 from blankly.exchanges.exchange import Exchange
 from blankly.exchanges.auth.auth_constructor import AuthConstructor
-from blankly.exchanges.interfaces.okx.okx_api import SpotAPI as OkexAPI
+from blankly.exchanges.interfaces.okx.okx_api import Client as OkxAPI, MarketAPI, AccountAPI, TradeAPI, ConvertAPI, \
+    FundingAPI, PublicAPI
 
 
-class Okex(Exchange):
+class Okx(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
         Exchange.__init__(self, "okx", portfolio_name, settings_path)
 
@@ -11,9 +12,18 @@ class Okex(Exchange):
         auth = AuthConstructor(keys_path, portfolio_name, 'okx', ['API_KEY', 'API_SECRET', 'API_PASS'])
         keys = auth.keys
 
-        calls = OkexAPI(api_key=keys['API_KEY'],
-                        api_secret_key=keys['API_SECRET'],
-                        passphrase=keys['API_PASS'])
+        calls_auth = OkxAPI(api_key=keys['API_KEY'],
+                            api_secret_key=keys['API_SECRET'],
+                            passphrase=keys['API_PASS'])
+
+        calls = {
+            'market': MarketAPI(calls_auth),
+            'account': AccountAPI(calls_auth),
+            'trade': TradeAPI(calls_auth),
+            'convert': ConvertAPI(calls_auth),
+            'funding': FundingAPI(calls_auth),
+            'public': PublicAPI(calls_auth)
+        }
 
         # Always finish the method with this function
         super().construct_interface_and_cache(calls)

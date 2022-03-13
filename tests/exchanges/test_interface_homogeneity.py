@@ -58,7 +58,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
         
         #Okex definition and appending
-        cls.Okex = blankly.Okx(portfolio_name="okx test portfolio",
+        cls.Okx = blankly.Okx(portfolio_name="okx test portfolio",
                                 keys_path='./tests/config/keys.json',
                                 settings_path="./tests/config/settings.json")
         cls.Okx_Interface = cls.Okx.get_interface()
@@ -273,11 +273,11 @@ class InterfaceHomogeneity(unittest.TestCase):
         kucoin_sell = self.Kucoin_Interface.limit_order('ETH-USDT', 'sell', 100000, 1)
         self.check_limit_order(kucoin_sell, 'sell', 1, 'ETH-USDT')
 
-        okex_buy = self.Okex_Interface.limit_order('BTC-USDT', 'buy', .01, 1)
-        self.check_limit_order(okex_buy, 'buy', 1, 'BTC-USDT')
+        okx_buy = self.Okx_Interface.limit_order('BTC-USDT', 'buy', .01, 1)
+        self.check_limit_order(okx_buy, 'buy', 1, 'BTC-USDT')
 
-        okex_sell = self.Okex_Interface.limit_order('BTC-USDT', 'sell', 100000, 1)
-        self.check_limit_order(okex_sell, 'sell', 1, 'BTC-USDT')
+        okx_sell = self.Okx_Interface.limit_order('BTC-USDT', 'sell', 100000, 1)
+        self.check_limit_order(okx_sell, 'sell', 1, 'BTC-USDT')
 
         alpaca_buy = self.Alpaca_Interface.limit_order('AAPL', 'buy', 10, 1)
         self.check_limit_order(alpaca_buy, 'buy', 1, 'AAPL')
@@ -292,7 +292,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.check_limit_order(oanda_sell, 'sell', 1, 'EUR-USD')
 
         limits = [binance_buy, binance_sell, coinbase_buy, coinbase_sell, kucoin_buy, kucoin_sell,
-                  alpaca_sell, alpaca_buy, oanda_buy, oanda_sell]
+                  alpaca_sell, alpaca_buy, oanda_buy, oanda_sell, okx_buy, okx_sell]
         responses = []
         status = []
 
@@ -301,7 +301,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         open_orders = {
             'coinbase_pro': self.Coinbase_Pro_Interface.get_open_orders('BTC-USD'),
             'binance': self.Binance_Interface.get_open_orders('BTC-USDT'),
-            'okx': self.Okex_Interface.get_open_orders('BTC-USDT'),
+            'okx': self.Okx_Interface.get_open_orders('BTC-USDT'),
             'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
             'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
             'oanda': self.Oanda_Interface.get_open_orders('EUR-USD')
@@ -345,8 +345,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_buy.get_id()))
         cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', binance_sell.get_id()))
 
-        cancels.append(self.Okex_Interface.cancel_order('BTC-USDT', okex_buy.get_id()))
-        cancels.append(self.Okex_Interface.cancel_order('BTC-USDT', okex_sell.get_id()))
+        cancels.append(self.Okx_Interface.cancel_order('BTC-USDT', okx_buy.get_id()))
+        cancels.append(self.Okx_Interface.cancel_order('BTC-USDT', okx_sell.get_id()))
 
         cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', kucoin_buy.get_id()))
         cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', kucoin_sell.get_id()))

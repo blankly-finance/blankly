@@ -3,6 +3,7 @@ import pandas as pd
 import blankly.utils.time_builder
 import blankly.utils.utils as utils
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
+from blankly.exchanges.interfaces.okx.okx_api import Client as OkxAPI, MarketAPI, AccountAPI, TradeAPI, ConvertAPI, FundingAPI, PublicAPI
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.exchanges.orders.stop_limit import StopLimit
@@ -13,9 +14,16 @@ class OkexInterface(ExchangeInterface):
     def __init__(self, exchange_name, authenticated_api):
         super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 180, 300, 1800, 3600, 7200, 14400])
 
+        self._market: MarketAPI = self.calls['market']
+        self._account: AccountAPI = self.calls['user']
+        self._trade: TradeAPI = self.calls['trade']
+        self._convert: ConvertAPI = self.calls['convert']
+        self._funding: FundingAPI = self.calls['funding']
+        self._public: PublicAPI = self.calls['public']
+
     def init_exchange(self):
         # This is purely an authentication check which can be disabled in settings
-        fees = self.calls.get_trade_fee()
+        fees = self._account.get_fee_rates('SPOT')
         try:
             if fees['message'] == "Invalid API Key":
                 raise LookupError("Invalid API Key. Please check if the keys were input correctly into your "
@@ -26,7 +34,7 @@ class OkexInterface(ExchangeInterface):
     def get_products(self): #get-ticker under market
         instrument_type = "SPOT"
         needed = self.needed['get_products']
-        products = self.calls.get_instruments(instrument_type)
+        products = self._public.get_instruments(instrument_type)
 
         for i in range(len(products)):
             products[i]["base_asset"] = products[i].pop("baseCcy")
@@ -114,7 +122,7 @@ class OkexInterface(ExchangeInterface):
         # #     self.local_account.update_hold(base, hold + size)
         #
         #
-        # accounts = self.calls.get_balances()
+        # accounts = self._funding.get_balances()
         # parsed_dictionary = utils.AttributeDict({})
         # # We have to sort through it if the accounts are none
         # if symbol is not None:
@@ -166,7 +174,7 @@ class OkexInterface(ExchangeInterface):
             'type': 'market'
         }
 
-        response = self.calls.place_order(symbol, 'cash', side, 'market', size)
+        response = self._trade.place_order(symbol, 'cash', side, 'market', size)
         if "sMsg" in response:
             raise InvalidOrder("Invalid Order: " + response["sMsg"])
         response["created_at"] = time.time()
@@ -196,11 +204,11 @@ class OkexInterface(ExchangeInterface):
             'type': 'limit',
         }
 
-        response = self.calls.place_order(symbol, 'cash', side, 'limit', size, px=price)
+        response = self._trade.place_order(symbol, 'cash', side, 'limit', size, px=price)
         if "sMsg" in response:
             raise InvalidOrder("Invalid Order: " + response["sMsg"])
 
-        response_details = self.calls.get_orders(symbol, ordId=response['ordId'])
+        response_details = self._trade.get_orders(symbol, ordId=response['ordId'])
 
         response_details["created_at"] = response_details.pop('cTime')
         response_details["id"] = response_details.pop('ordId')
@@ -214,7 +222,7 @@ class OkexInterface(ExchangeInterface):
             dict: Containing the order_id of cancelled order. Example::
             { "client_oid": "order123", }
         """
-        return {"order_id": self.calls.cancel_order(symbol, ordId=order_id)}
+        return {"order_id": self._trade.cancel_order(symbol, ordId=order_id)}
 
     def get_open_orders(self, symbol: str):
         """
@@ -251,7 +259,7 @@ class OkexInterface(ExchangeInterface):
         if symbol is None:
             raise ValueError("There was no symbol inputted, please try again.")
         else:
-            orders = list(self.calls.get_order_list(instType=symbol))
+            orders = list(self._trade.get_order_list(instType=symbol))
 
         if len(orders) == 0:
             return []
@@ -271,7 +279,7 @@ class OkexInterface(ExchangeInterface):
         return orders
 
     def get_order(self, symbol, order_id) -> dict:
-        response = self.calls.get_orders(symbol, ordId=order_id)
+        response = self._trade.get_orders(symbol, ordId=order_id)
 
         if 'message' in response:
             raise APIException("Invalid: " + str(response['message']) + ", was the order canceled?")
@@ -299,7 +307,7 @@ class OkexInterface(ExchangeInterface):
             "timestamp": "2019-12-11T11:02:31.360Z"
         }
         """
-        fees = self.calls.get_fee_rates()
+        fees = self._account.get_fee_rates("SPOT")
         fees['taker_fee_rate'] = fees['data'].pop('taker')
         fees['maker_fee_rate'] = fees['data'].pop('maker')
         return utils.isolate_specific(needed, fees)
@@ -340,7 +348,7 @@ class OkexInterface(ExchangeInterface):
         while epoch_start <= need:
             # Close is always 300 points ahead
             window_close = int(window_open + 300 * resolution)
-            response = self.calls.get_history_candlesticks(symbol, before=epoch_start, bar=gran_string, limit=300)
+            response = self._market.get_history_candlesticks(symbol, before=epoch_start, bar=gran_string, limit=300)
             if isinstance(response, dict):
                 raise APIException(response['message'])
             history = history + response
@@ -353,7 +361,7 @@ class OkexInterface(ExchangeInterface):
         # Fill the remainder
         # open_iso = utils.iso8601_from_epoch(window_open)
         # close_iso = utils.iso8601_from_epoch(epoch_stop)
-        response = self.calls.get_history_candlesticks(symbol, before=epoch_start, bar=gran_string, limit=300)
+        response = self._market.get_history_candlesticks(symbol, before=epoch_start, bar=gran_string, limit=300)
         if isinstance(response, dict):
             raise APIException(response['message'])
         history_block = history + response
@@ -369,7 +377,7 @@ class OkexInterface(ExchangeInterface):
 
     def get_order_filter(self, symbol: str) -> dict:
         instrument_type = "SPOT"
-        response = self.calls.get_instruments(instrument_type)
+        response = self._public.get_instruments(instrument_type)
         products = None
         for i in response:
             if i["uly"] == symbol:
@@ -420,7 +428,7 @@ class OkexInterface(ExchangeInterface):
         """
         Returns just the price of a currency pair.
         """
-        response = self.get_index_ticker(instId=symbol)
+        response = self._market.get_index_ticker(instId=symbol)
         if 'message' in response:
             raise APIException("Error: " + response['message'])
         return float(response['idxPx'])
