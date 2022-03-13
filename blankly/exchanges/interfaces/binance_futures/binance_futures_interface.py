@@ -63,16 +63,27 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
     def set_hedge_mode(self, hedge_mode: HedgeMode):
         is_hedge = True if hedge_mode == HedgeMode.HEDGE else False
 
-        if self.calls.futures_get_position_mode(
-        )['dualSidePosition'] != is_hedge:
+        # yapf: disable
+        if self.calls.futures_get_position_mode()['dualSidePosition'] != is_hedge:
             self.calls.futures_change_position_mode(dualSidePosition=is_hedge)
+            # yapf: enable
+
+    def get_leverage(self, symbol: str = None) -> float:
+        if not symbol:
+            raise Exception(
+                'Binance Futures does not support account wide leverage. Use interface.get_leverage(leverage, '
+                'symbol) to get leverage for a symbol. '
+            )
+        symbol = utils.to_exchange_symbol(symbol, 'binance')
+        return float(self.calls.futures_position_information(symbol=symbol)[0]['leverage'])
 
     @utils.order_protection
-    def set_leverage(self, symbol: str, leverage: int) -> float:
-        """
-        Change the leverage for a symbol.
-        Returns buying power at this leverage, or -1 if there was an error.
-        """
+    def set_leverage(self, leverage: int, symbol: str = None):
+        if not symbol:
+            raise Exception(
+                'Binance Futures does not support account wide leverage. Use interface.set_leverage(leverage, '
+                'symbol) to set leverage for each symbol you wish to trade. '
+            )
         symbol = utils.to_exchange_symbol(symbol, 'binance')
         return self.calls.futures_change_leverage(
             symbol=symbol, leverage=leverage)['maxNotionalValue']
@@ -91,34 +102,29 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                 raise e
 
     def get_products(self) -> list:
-        needed = self.needed['products']
         # https://binance-docs.github.io/apidocs/futures/en/#exchange-information
         symbols = self.calls.futures_exchange_info()["symbols"]
         return [
-            utils.isolate_specific(
-                needed,
-                {
-                    **symbol,
-                    # binance asset ids are weird so just recreate it in the "normal" BASE-QUOTE form
-                    'symbol': symbol['baseAsset'] + '-' + symbol['quoteAsset'],
-                    'base_asset': symbol['baseAsset'],
-                    'quote_asset': symbol['quoteAsset'],
-                    'contract_type': symbol['contractType']
-                }) for symbol in symbols
+            utils.AttributeDict({
+                # binance asset ids are weird so just recreate it in the "normal" BASE-QUOTE form
+                'symbol': symbol['baseAsset'] + '-' + symbol['quoteAsset'],
+                'base_asset': symbol['baseAsset'],
+                'quote_asset': symbol['quoteAsset'],
+                'contract_type': symbol['contractType'],
+                'exchange_specific': symbol
+            }) for symbol in symbols
         ]
 
     def get_account(self, filter=None) -> utils.AttributeDict:
-        account = self.calls.futures_account()
-        needed = self.needed['account']
+        res = self.calls.futures_account()
 
         accounts = utils.AttributeDict()
-        for asset in account['assets']:
+        for asset in res['assets']:
             symbol = asset['asset']
-            accounts[symbol] = utils.AttributeDict(
-                utils.isolate_specific(needed, {
-                    **asset,
-                    'available': asset['availableBalance'],
-                }))
+            accounts[symbol] = utils.AttributeDict({
+                'available': float(asset['availableBalance']),
+                'exchange_specific': asset,
+            })
 
         if filter:
             return accounts[filter]
@@ -127,7 +133,6 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
     def get_positions(self,
                       filter: str = None) -> Optional[utils.AttributeDict]:
         account = self.calls.futures_account()
-        needed = self.needed['position']
 
         positions = utils.AttributeDict()
 
@@ -138,20 +143,16 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             symbol = utils.to_blankly_symbol(fixed_symbol, 'binance')
             margin = MarginType.ISOLATED \
                 if position['isolated'] else MarginType.CROSSED
-            needed_data = {
+            positions[symbol] = utils.AttributeDict({
                 'size': position['positionAmt'],
                 'side': PositionMode(position['positionSide'].lower()),
                 'entry_price': float(position['entryPrice']),
-                'max_buying_power': float(position['maxNotional']),
+                'contract_type': ContractType.PERPETUAL,
                 'leverage': float(position['leverage']),
                 'margin_type': margin,
-                'unrealized_profit': float(position['unrealizedProfit'])
-            }
-            positions[symbol] = utils.AttributeDict(
-                utils.isolate_specific(needed, {
-                    **position,
-                    **needed_data
-                }))
+                'unrealized_pnl': float(position['unrealizedProfit']),
+                'exchange_specific': position
+            })
 
         if filter:
             return positions[filter]

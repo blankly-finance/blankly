@@ -6,6 +6,7 @@ from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExcha
 
 
 class FTXFutures(FuturesExchange):
+
     def __init__(self,
                  portfolio_name=None,
                  keys_path="keys.json",
@@ -13,13 +14,21 @@ class FTXFutures(FuturesExchange):
         super().__init__("ftx_futures", portfolio_name, preferences_path)
 
         # Load auth from keys file
-        auth = AuthConstructor(keys_path, portfolio_name, 'ftx', ['API_KEY', 'API_SECRET', 'sandbox'])
+        auth = AuthConstructor(keys_path, portfolio_name, 'ftx',
+                               ['API_KEY', 'API_SECRET', 'sandbox'])
 
         if auth.keys['sandbox']:
-            raise NotImplementedError('FTX Futures exchange does not support sandbox mode')
+            raise Exception(
+                'FTX Futures exchange does not support sandbox mode')
 
-        # TODO when FTX tld-fix pull request is merged, this needs to be updated too
-        self.__calls = FTXAPI(auth.keys['API_KEY'], auth.keys['API_SECRET'])
+        tld = self.preferences["settings"]["ftx_futures"]["ftx_tld"]
+        if tld != 'com':
+            raise Exception(
+                f'FTX Futures exchange does not support .{tld} tld.')
+
+        self.__calls = FTXAPI(auth.keys['API_KEY'],
+                              auth.keys['API_SECRET'],
+                              tld=tld)
 
         self.__interface = FTXFuturesInterface(self.exchange_type, self.calls)
 
@@ -32,4 +41,3 @@ class FTXFutures(FuturesExchange):
     @property
     def interface(self) -> FuturesExchangeInterface:
         return self.__interface
-

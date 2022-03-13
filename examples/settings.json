@@ -32,6 +32,10 @@
     "ftx": {
       "cash": "USD",
       "ftx_tld": "us"
+    },
+    "ftx_futures": {
+      "cash": "USD",
+      "ftx_tld": "com"
     }
   }
 }

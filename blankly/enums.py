@@ -46,3 +46,5 @@ class OrderType(str, enum.Enum):
 
 class ContractType(str, enum.Enum):
     PERPETUAL = 'perpetual'
+    EXPIRING = 'expiring'
+    MOVE = 'move'

@@ -36,19 +36,6 @@ from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
     exchange_name: str
 
-    needed = {
-        'product': [["symbol", str], ["base_asset", str], ["quote_asset", str],
-                    ["base_min_size", float], ["base_max_size", float],
-                    ["base_increment", float]],
-        'account': [
-            ["available", float],
-        ],
-        'position': [["size", float], ["side", PositionMode],
-                     ["entry_price", float], ["max_buying_power", float],
-                     ["leverage", float], ["margin_type", MarginType],
-                     ["unrealized_profit", float]],
-    }
-
     def __init__(self,
                  exchange_name,
                  authenticated_api,
@@ -144,7 +131,11 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def set_leverage(self, symbol: str, leverage: int) -> float:
+    def set_leverage(self, leverage: int, symbol: str = None):
+        pass
+
+    @abc.abstractmethod
+    def get_leverage(self, symbol: str = None) -> float:
         pass
 
     @abc.abstractmethod

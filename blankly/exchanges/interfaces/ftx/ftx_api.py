@@ -92,6 +92,9 @@ class FTXAPI:
 
         return self._signed_get('markets')
 
+    def change_account_leverage(self, leverage: int) -> dict:
+        return self._signed_post('account/leverage', {'leverage': leverage})
+
     def get_market(self, symbol: str) -> dict:
 
         # symbol format must be BTC/USD instead of BTC-USD
@@ -127,6 +130,9 @@ class FTXAPI:
 
     def get_balances(self) -> List[dict]:
         return self._signed_get('wallet/balances')
+
+    def get_coins(self) -> List[dict]:
+        return self._signed_get('wallet/coins')
 
     def get_deposit_addresses(self, ticker: str) -> dict:
         return self._signed_get(f'wallet/deposit_addresses/{ticker}')
