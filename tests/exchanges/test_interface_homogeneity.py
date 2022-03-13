@@ -58,12 +58,12 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
         
         #Okex definition and appending
-        cls.Okex = blankly.Okex(portfolio_name="okex test portfolio",
+        cls.Okex = blankly.Okx(portfolio_name="okx test portfolio",
                                 keys_path='./tests/config/keys.json',
                                 settings_path="./tests/config/settings.json")
-        cls.Okex_Interface = cls.Okex.get_interface()
-        cls.interfaces.append(cls.Okex_Interface)
-        cls.data_interfaces.append(cls.Okex_Interface)
+        cls.Okx_Interface = cls.Okx.get_interface()
+        cls.interfaces.append(cls.Okx_Interface)
+        cls.data_interfaces.append(cls.Okx_Interface)
 
         # Kucoin definition and appending
         cls.Kucoin = blankly.Kucoin(portfolio_name="KC Sandbox Portfolio",
@@ -301,7 +301,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         open_orders = {
             'coinbase_pro': self.Coinbase_Pro_Interface.get_open_orders('BTC-USD'),
             'binance': self.Binance_Interface.get_open_orders('BTC-USDT'),
-            'okex': self.Okex_Interface.get_open_orders('BTC-USDT'),
+            'okx': self.Okex_Interface.get_open_orders('BTC-USDT'),
             'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
             'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
             'oanda': self.Oanda_Interface.get_open_orders('EUR-USD')
@@ -314,7 +314,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         # Just scan through both simultaneously to reduce code copying
         all_orders = open_orders['coinbase_pro']
         all_orders = all_orders + open_orders['binance']
-        all_orders = all_orders + open_orders['okex']
+        all_orders = all_orders + open_orders['okx']
         all_orders = all_orders + open_orders['kucoin']
         all_orders = all_orders + open_orders['alpaca']
         all_orders = all_orders + open_orders['oanda']

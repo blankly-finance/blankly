@@ -677,3 +677,193 @@ class AccountAPI(Client):
     def get_greeks(self, ccy=''):
         params = {'ccy': ccy, }
         return self._request_with_params(GET, GREEKS, params)
+
+class FundingAPI(Client):
+
+    def __init__(self, api_key, api_secret_key, passphrase, use_server_time=False, flag='1'):
+        Client.__init__(self, api_key, api_secret_key, passphrase, use_server_time, flag)
+
+    # Get Deposit Address
+    def get_deposit_address(self, ccy):
+        params = {'ccy': ccy}
+        return self._request_with_params(GET, DEPOSIT_ADDRESS, params)
+
+    # Get Balance
+    def get_balances(self, ccy=''):
+        params = {'ccy': ccy}
+        return self._request_with_params(GET, GET_BALANCES, params)
+
+    # POST Account Configuration
+    def funds_transfer(self, ccy, amt, froms, to, type='0', subAcct='', instId='', toInstId='',loanTrans=''):
+        params = {'ccy': ccy, 'amt': amt, 'from': froms, 'to': to, 'type': type, 'subAcct': subAcct, 'instId': instId,
+                  'toInstId': toInstId,'loanTrans':loanTrans}
+        return self._request_with_params(POST, FUNDS_TRANSFER, params)
+
+    # Get Transfer State
+    def transfer_state(self, transId,type=''):
+        params = {'transId': transId, 'type': type}
+        return self._request_with_params(POST, TRANSFER_STATE, params)
+
+    # Withdrawal
+    def coin_withdraw(self, ccy, amt, dest, toAddr, pwd, fee,chain=''):
+        params = {'ccy': ccy, 'amt': amt, 'dest': dest, 'toAddr': toAddr, 'pwd': pwd, 'fee': fee,'chain': chain}
+        return self._request_with_params(POST, WITHDRAWAL_COIN, params)
+
+    # Get Deposit History
+    def get_deposit_history(self, ccy='', state='', after='', before='', limit='',txId=''):
+        params = {'ccy': ccy, 'state': state, 'after': after, 'before': before, 'limit': limit,'txId':txId}
+        return self._request_with_params(GET, DEPOSIT_HISTORIY, params)
+
+    # Get Withdrawal History
+    def get_withdrawal_history(self, ccy='', state='', after='', before='', limit='',txId=''):
+        params = {'ccy': ccy, 'state': state, 'after': after, 'before': before, 'limit': limit,'txId':txId}
+        return self._request_with_params(GET, WITHDRAWAL_HISTORIY, params)
+
+    # Get Currencies
+    def get_currency(self):
+        return self._request_without_params(GET, CURRENCY_INFO)
+
+    # PiggyBank Purchase/Redemption
+    def purchase_redempt(self, ccy, amt, side,rate):
+        params = {'ccy': ccy, 'amt': amt, 'side': side,'rate': rate}
+        return self._request_with_params(POST, PURCHASE_REDEMPT, params)
+
+    # Get Withdrawal History
+    def get_bills(self, ccy='', type='', after='', before='', limit=''):
+        params = {'ccy': ccy, 'type': type, 'after': after, 'before': before, 'limit': limit}
+        return self._request_with_params(GET, BILLS_INFO, params)
+
+
+    #Get Piggy Balance
+    def get_piggy_balance(self, ccy=''):
+        params = {}
+        if ccy:
+            params = {'ccy':ccy}
+        return self._request_with_params(GET, PIGGY_BALANCE, params)
+
+
+    #Get Deposit Lightning
+    def get_deposit_lightning(self, ccy,amt,to=""):
+        params = {'ccy':ccy,'amt':amt}
+        if to:
+            params = {'to':to}
+        return self._request_with_params(GET, DEPOSIT_LIGHTNING, params)
+
+    # Withdrawal Lightning
+    def withdrawal_lightning(self, ccy,invoice,pwd):
+        params = {'ccy':ccy, 'invoice':invoice, 'pwd':pwd}
+        return self._request_with_params(POST, WITHDRAWAL_LIGHTNING, params)
+
+
+    # GET Obtain account asset valuation
+    def get_asset_valuation(self, ccy):
+        params = {'ccy':ccy}
+        return self._request_with_params(GET, ASSET_VALUATION, params)
+
+    # POST SET LENDING RATE
+    def set_lending_rate(self, ccy,rate):
+        params = {'ccy':ccy,'rate':rate}
+        return self._request_with_params(POST, SET_LENDING_RATE, params)
+
+
+    # GET LENDING HISTORY
+    def get_lending_rate(self, ccy='',before='',after='',limit='',):
+        params = {'ccy': ccy, 'after': after, 'before': before, 'limit': limit,}
+        return self._request_with_params(GET, LENDING_HISTORY, params)
+
+
+    # GET LENDING RATE HISTORY
+    def get_lending_rate_history(self, ccy='',):
+        params = {'ccy': ccy,}
+        return self._request_with_params(GET, LENDING_RATE_HISTORY, params)
+
+    # GET LENDING RATE SUMMARY
+    def get_lending_rate_summary(self, ccy='',before='',after='',limit='',):
+        params = {'ccy': ccy, 'after': after, 'before': before, 'limit': limit,}
+        return self._request_with_params(GET,LENDING_RATE_SUMMARY, params)
+
+class PublicAPI(Client):
+
+    def __init__(self, api_key, api_secret_key, passphrase, use_server_time=False, flag='1'):
+        Client.__init__(self, api_key, api_secret_key, passphrase, use_server_time, flag)
+
+    # Get Instruments
+    def get_instruments(self, instType, uly='', instId=''):
+        params = {'instType': instType, 'uly': uly, 'instId': instId}
+        return self._request_with_params(GET, INSTRUMENT_INFO, params)
+
+    # Get Delivery/Exercise History
+    def get_deliver_history(self, instType, uly, after='', before='', limit=''):
+        params = {'instType': instType, 'uly': uly, 'after': after, 'before': before, 'limit': limit}
+        return self._request_with_params(GET, DELIVERY_EXERCISE, params)
+
+    # Get Open Interest
+    def get_open_interest(self, instType, uly='', instId=''):
+        params = {'instType': instType, 'uly': uly, 'instId': instId}
+        return self._request_with_params(GET, OPEN_INTEREST, params)
+
+    # Get Funding Rate
+    def get_funding_rate(self, instId):
+        params = {'instId': instId}
+        return self._request_with_params(GET, FUNDING_RATE, params)
+
+    # Get Funding Rate History
+    def funding_rate_history(self, instId, after='', before='', limit=''):
+        params = {'instId': instId, 'after': after, 'before': before, 'limit': limit}
+        return self._request_with_params(GET, FUNDING_RATE_HISTORY, params)
+
+    # Get Limit Price
+    def get_price_limit(self, instId):
+        params = {'instId': instId}
+        return self._request_with_params(GET, PRICE_LIMIT, params)
+
+    # Get Option Market Data
+    def get_opt_summary(self, uly, expTime=''):
+        params = {'uly': uly, 'expTime': expTime}
+        return self._request_with_params(GET, OPT_SUMMARY, params)
+
+    # Get Estimated Delivery/Excercise Price
+    def get_estimated_price(self, instId):
+        params = {'instId': instId}
+        return self._request_with_params(GET, ESTIMATED_PRICE, params)
+
+    # Get Discount Rate And Interest-Free Quota
+    def discount_interest_free_quota(self, ccy=''):
+        params = {'ccy': ccy}
+        return self._request_with_params(GET, DICCOUNT_INTETEST_INFO, params)
+
+    # Get System Time
+    def get_system_time(self):
+        return self._request_without_params(GET, SYSTEM_TIME)
+
+    # Get Liquidation Orders
+    def get_liquidation_orders(self, instType, mgnMode='', instId='', ccy='', uly='', alias='', state='', before='',
+                               after='', limit=''):
+        params = {'instType': instType, 'mgnMode': mgnMode, 'instId': instId, 'ccy': ccy, 'uly': uly,
+                  'alias': alias, 'state': state, 'before': before, 'after': after, 'limit': limit}
+        return self._request_with_params(GET, LIQUIDATION_ORDERS, params)
+
+    # Get Mark Price
+    def get_mark_price(self, instType, uly='', instId=''):
+        params = {'instType': instType, 'uly': uly, 'instId': instId}
+        return self._request_with_params(GET, MARK_PRICE, params)
+
+    # Get Tier
+    def get_tier(self, instType, tdMode, uly='', instId='', ccy='', tier=''):
+        params = {'instType': instType, 'tdMode': tdMode, 'uly': uly, 'instId': instId, 'ccy': ccy, 'tier': tier}
+        return self._request_with_params(GET, TIER, params)
+
+    # Get Interest Rate and Loan Quota
+    def get_interest_loan(self):
+        return self._request_without_params(GET, INTEREST_LOAN)
+
+    # Get underlying
+
+    def get_underlying(self, instType):
+        params = {'instType': instType}
+        return self._request_with_params(GET, UNDERLYING, params)
+
+    # GET Obtain the privileged currency borrowing leverage rate and currency borrowing limit
+    def get_vip_interest_rate_loan_quota(self):
+        params = {}
+        return self._request_with_params(GET, VIP_INTEREST_RATE_LOAN_QUOTA, params)
