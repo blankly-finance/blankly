@@ -187,8 +187,13 @@ def get_project_model_and_name(args, projects, api: API):
     try:
         f = open(os.path.join(args['path'], deployment_script_name))
         deployment_options = json.load(f)
-
         f.close()
+
+        # Use this variable to always write if something has changed
+        queue_write = False
+        """
+        This handles identifying the project on login
+        """
         if 'model_id' not in deployment_options or \
                 'project_id' not in deployment_options or \
                 'type' not in deployment_options or \
@@ -225,13 +230,22 @@ def get_project_model_and_name(args, projects, api: API):
             deployment_options['model_id'] = model_id
             deployment_options['project_id'] = project_id
             deployment_options['model_name'] = model_name
+        model_name = deployment_options['model_name']
+        project_id = deployment_options['project_id']
 
+        """
+        This part generates API keys if they aren't found
+        """
+        if 'api_key' not in deployment_options or 'api_pass' not in deployment_options:
+            response = api.generate_keys(deployment_options['project_id'])
+            deployment_options['api_key'] = response['apiKey']
+            deployment_options['api_pass'] = response['apiPass']
+
+        if queue_write:
             # Write the modified version with the ID back into the json file
             f = open(os.path.join(args['path'], deployment_script_name), 'w+')
             f.write(json.dumps(deployment_options, indent=2))
             f.close()
-        model_name = deployment_options['model_name']
-        project_id = deployment_options['project_id']
     except FileNotFoundError:
         raise FileNotFoundError(f"A {deployment_script_name} file must be present at the top level of the "
                                 f"directory specified.")
@@ -344,52 +358,102 @@ add_path_arg(run_parser)
 
 # Create a global token value for use in the double nested function below
 token = None
+tokenfile_path = None
+
+
+def __generate_tempfile():
+    """
+    Generate a temporary file with the blankly auth prefix and then get the directory / file name from it
+    """
+    fd, path = tempfile.mkstemp(prefix='blankly_auth_')
+    temp_folder = os.path.dirname(path)
+    file_name = os.path.basename(path)
+
+    return fd, temp_folder, file_name
+
+
+def is_logged_in():
+    """
+    This function will return if the user is logged in
+
+    logged_in = __is_logged_in(temp_folder) is not None
+    """
+    global tokenfile_path
+    fd, temp_folder, file_name = __generate_tempfile()
+    for i_ in os.listdir(temp_folder):
+        # Check to see if one exists at this location
+        if i_[0:13] == 'blankly_auth_' and i_ != file_name:
+            # Kill the file we created
+            os.close(fd)
+            os.remove(os.path.join(temp_folder, file_name))
+
+            # Cache the filepath globally
+            tokenfile_path = os.path.join(temp_folder, file_name)
+            return True
+
+    # Kill the file we created
+    os.close(fd)
+    os.remove(os.path.join(temp_folder, file_name))
+    return False
 
 
 def login(remove_cache: bool = False):
     # Set the token as global here
     global token
+    # Also get the global path
+    global tokenfile_path
+
+    def load_token(token_path_: str) -> str:
+        """
+        If the file has the token then this function is a success
+        """
+        global tokenfile_path
+        global token
+        f_ = open(token_path_)
+        token_file_ = json.load(f_)
+
+        if 'token' in token_file_:
+            # Globally cache the path
+            tokenfile_path = token_path_
+            # Globally cache the token
+            token = token_file_['token']
+
+            # Exit cleanly here finding the old refresh token
+            return token_file_['token']
+
+    # This can be skipped if is_logged_in is run which will find the temp folder and file name if necessary
+    if tokenfile_path is None:
+        fd, temp_folder, file_name = __generate_tempfile()
+        for i_ in os.listdir(temp_folder):
+            # Check to see if one exists at this location
+            if i_[0:13] == 'blankly_auth_' and i_ != file_name:
+                # If we're not removing cache this will use the old files to look for the token
+                if not remove_cache:
+                    # If it's different from the one that was just created, remove the one just created
+                    os.close(fd)
+                    os.remove(os.path.join(temp_folder, file_name))
+                    # Reassign file name just in case its needed below to write into the file
+                    # Note that we protect against corrupted files below by overwriting any contents in case
+                    #  'token' not in token_file
+                    file_name = i_
+                    # Now just read the token from it
+                    token_path = os.path.join(temp_folder, file_name)
+                    try:
+                        return load_token(token_path)
+                    except json.decoder.JSONDecodeError:
+                        # If it fails then don't return anything
+                        #  just continue with re-logging in
+                        pass
+                # If we are removing cache then these files should just be deleted
+                else:
+                    os.remove(os.path.join(temp_folder, i_))
+                # Be sure to leave the loop
+                break
+    elif isinstance(tokenfile_path, str):
+        return load_token(tokenfile_path)
+
     from http.server import BaseHTTPRequestHandler, HTTPServer
     import urllib.parse
-
-    fd, path = tempfile.mkstemp(prefix='blankly_auth_')
-    temp_folder = os.path.dirname(path)
-    file_name = os.path.basename(path)
-    for i in os.listdir(temp_folder):
-        # Check to see if one exists at this location
-        if i[0:13] == 'blankly_auth_' and i != file_name:
-            # If we're not removing cache this will use the old files to look for the token
-            if not remove_cache:
-                # If it's different from the one that was just created, remove the one just created
-                os.close(fd)
-                os.remove(os.path.join(temp_folder, file_name))
-                # Reassign file name just in case its needed below to write into the file 
-                # Note that we protect against corrupted files below by overwriting any contents in case
-                #  'token' not in token_file
-                file_name = i
-                # Now just read the token from it
-                f = open(os.path.join(temp_folder, file_name))
-                try:
-                    token_file = json.load(f)
-
-                    if 'token' in token_file:
-                        # Exit cleanly here finding the old refresh token
-                        return token_file['token']
-                except json.decoder.JSONDecodeError:
-                    # If it fails then don't return anything
-                    #  just continue with re-logging in
-                    pass
-            # If we are removing cache then these files should just be deleted
-            else:
-                print(os.path.join(temp_folder, i))
-                os.remove(os.path.join(temp_folder, i))
-            # Be sure to leave the loop
-            break
-
-    def set_token(new_value):
-        # Set the token as global here as well
-        global token
-        token = new_value
 
     class Handler(BaseHTTPRequestHandler):
         token: str
@@ -405,6 +469,7 @@ def login(remove_cache: bool = False):
             self.end_headers()
 
         def do_GET(self):
+            global token
             # Parse the URL
             args = urllib.parse.parse_qs(self.path[2:])
             self.send_response(200)
@@ -416,7 +481,7 @@ def login(remove_cache: bool = False):
                 # Perform a GET request to pull down a successful response
                 file = requests.get('https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/'
                                     'login_success.html?alt=media&token=41d734e2-0a88-44c4-b1dd-7e081fd019e7')
-                set_token(args['token'][0])
+                token = args['token'][0]
 
                 info_print("Login success - You can close your browser.")
             else:
@@ -616,6 +681,16 @@ def main():
         # Write in a blank requirements file
         print("Writing requirements.txt defaults...")
         create_and_write_file('requirements.txt', 'blankly')
+
+        if is_logged_in():
+            # We know we're logged in so make sure that we also get a project id and a model id
+            print(f'{TermColors.WARNING}Automatically logged in!')
+            api = API(login())
+            projects = api.list_projects()
+            get_project_model_and_name(args, projects, api)
+        else:
+            print(f'{TermColors.WARNING}Run \"blankly login\" and then \"blankly init\" again to get better backtest '
+                  f'viewing.')
 
         print(f"{TermColors.OKGREEN}{TermColors.UNDERLINE}Success!{TermColors.ENDC}")
 

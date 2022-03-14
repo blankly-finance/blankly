@@ -164,3 +164,7 @@ class API:
                                   'description': description
                               })
 
+    def generate_keys(self, project_id: str):
+        return self.__request('post', 'project/generate-model-keys', data={
+            'projectId': project_id
+        })
