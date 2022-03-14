@@ -144,7 +144,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             margin = MarginType.ISOLATED \
                 if position['isolated'] else MarginType.CROSSED
             positions[symbol] = utils.AttributeDict({
-                'size': position['positionAmt'],
+                'size': float(position['positionAmt']),
                 'side': PositionMode(position['positionSide'].lower()),
                 'entry_price': float(position['entryPrice']),
                 'contract_type': ContractType.PERPETUAL,
@@ -397,7 +397,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 
     def get_funding_rate_history(self, symbol: str, epoch_start: int,
-                                 epoch_stop: int):
+                                 epoch_stop: int) -> list:
         symbol = utils.to_exchange_symbol(symbol, 'binance')
         LIMIT = 1000
         history = []

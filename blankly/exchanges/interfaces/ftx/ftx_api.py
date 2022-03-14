@@ -140,6 +140,13 @@ class FTXAPI:
     def get_positions(self, display_price_avg: bool = False) -> List[dict]:
         return self._signed_get('positions', {'showAvgPrice': display_price_avg})
 
+    def get_funding_rates(self, start_time: int, end_time: int, symbol: str):
+        return self._signed_get('funding_rates', {
+            'start_time': start_time,
+            'end_time': end_time,
+            'future': symbol
+        })
+
     def get_specific_position(self, pos_name: str, display_price_avg: bool = False) -> dict:
         filtered = filter(lambda pos: pos['future'] == pos_name, self.get_positions(display_price_avg))
         return next(filtered, None)

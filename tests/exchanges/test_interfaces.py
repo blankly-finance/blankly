@@ -11,6 +11,7 @@ from blankly.exchanges.interfaces.ftx_futures.ftx_futures import FTXFutures
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from datetime import datetime
 
+from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 from blankly.utils import utils
 
 FUTURES_EXCHANGES = [
@@ -22,8 +23,8 @@ FUTURES_EXCHANGES = [
                portfolio_name="Dotcom Test Account"),
 ]
 SYMBOLS = {
-    'ftx_futures': ['BTC-PERP', 'ETH-PERP', 'BTC-0626', 'BTC-MOVE-1005'],
-    'binance_futures': ['BTC-USDT', 'ETH-USDT']
+    'ftx_futures': ['LUNA-PERP', 'SOL-PERP', 'SOL-0325'],
+    'binance_futures': ['LTC-USDT', 'BCH-USDT']
 }
 
 
@@ -47,13 +48,13 @@ def pytest_generate_tests(metafunc: Metafunc):
 
 
 def test_account(futures_interface: FuturesExchangeInterface):
-    res = futures_interface.get_account()
-    assert 0 <= res.USDT.available
+    assert 0 <= futures_interface.get_account('USDT').available
 
 
 def test_account_leverage(futures_interface: FuturesExchangeInterface):
     if futures_interface.get_exchange_type() == 'binance_futures':
-        pytest.xfail('Binance Futures does not support setting account leverage')
+        pytest.xfail(
+            'Binance Futures does not support setting account leverage')
     futures_interface.set_leverage(3)
     assert futures_interface.get_leverage() == 3
 
@@ -66,54 +67,56 @@ def test_symbol_leverage(futures_interface: FuturesExchangeInterface,
     assert futures_interface.get_leverage(symbol) == 3
 
 
-def test_order(futures_interface: FuturesExchangeInterface,
-               symbol: str) -> None:
-    sell_order = futures_interface.market_order(symbol, Side.SELL, .01)
-
+def wait_till_filled(interface: FuturesExchangeInterface, order: FuturesOrder):
     retries = 0
-    res = futures_interface.get_order(symbol, sell_order.id)
+    res = interface.get_order(order.symbol, order.id)
     while res.status != OrderStatus.FILLED:
         if retries > 2:
             raise TimeoutError(f"order was not filled. status: {res.status}")
         time.sleep(1 << retries)
         retries += 1
-        res = futures_interface.get_order(symbol, sell_order.id)
+        res = interface.get_order(res.symbol, order.id)
+    return res
+
+
+def test_order(futures_interface: FuturesExchangeInterface,
+               symbol: str) -> None:
+    init_position = futures_interface.get_positions(symbol).size
+    price = futures_interface.get_price(symbol)
+    size = utils.trunc(100 / price, 3)
+
+    sell_order = futures_interface.market_order(symbol, Side.SELL, size)
+    res = wait_till_filled(futures_interface, sell_order)
 
     assert res.side == Side.SELL
     assert res.type == OrderType.MARKET
+    assert futures_interface.get_positions(symbol).size == init_position - size
 
-    buy_order = futures_interface.market_order(symbol, Side.BUY, .01)
-
-    retries = 0
-    res = futures_interface.get_order(symbol, buy_order.id)
-    while res.status != OrderStatus.FILLED:
-        if retries > 2:
-            raise TimeoutError("order was not filled")
-        time.sleep(1 << retries)
-        retries += 1
-        res = futures_interface.get_order(buy_order.id)
+    buy_order = futures_interface.market_order(symbol,
+                                               Side.BUY,
+                                               size,
+                                               reduce_only=True)
+    res = wait_till_filled(futures_interface, buy_order)
 
     assert res.side == Side.BUY
     assert res.type == OrderType.MARKET
+    assert futures_interface.get_positions(symbol).size == init_position
 
 
 def test_cancel_order(futures_interface: FuturesExchangeInterface,
                       symbol: str):
+    init_position = futures_interface.get_positions(symbol).size
     price = futures_interface.get_price(symbol)
+    size = utils.trunc(100 / price, 3)  # TODO get precision from api
     buy_order = futures_interface.limit_order(symbol, Side.BUY,
                                               utils.trunc(price * 0.95, 1),
-                                              utils.trunc(100 / price, 3))
+                                              size)
 
     assert buy_order.status == OrderStatus.NEW
 
-    retries = 0
     res = futures_interface.cancel_order(symbol, buy_order.id)
-    while res.status != OrderStatus.CANCELED:
-        if retries > 2:
-            raise TimeoutError("order was not cancelled")
-        time.sleep(1 << retries)
-        retries += 1
-        res = futures_interface.get_order(symbol, buy_order.id)
+    assert res.status == OrderStatus.CANCELED
+    assert init_position == futures_interface.get_positions(symbol).size
 
 
 def test_funding_rate_history(futures_interface: FuturesExchangeInterface,

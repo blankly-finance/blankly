@@ -1,8 +1,9 @@
-from blankly import MarginType, HedgeMode, Side, PositionMode, TimeInForce, ContractType
+from blankly.enums import MarginType, HedgeMode, Side, PositionMode, TimeInForce, ContractType
 from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 from blankly.utils import utils as utils, exceptions
+import datetime
 
 
 class FTXFuturesInterface(FuturesExchangeInterface):
@@ -74,7 +75,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
                      size: float,
                      position: PositionMode = None,
                      reduce_only: bool = None) -> FuturesOrder:
-        raise NotImplementedError
+        pass
 
     def limit_order(self,
                     symbol: str,
@@ -139,7 +140,13 @@ class FTXFuturesInterface(FuturesExchangeInterface):
 
     def get_funding_rate_history(self, symbol: str, epoch_start: int,
                                  epoch_stop: int) -> list:
-        raise NotImplementedError
+        rates = self.calls.get_funding_rates(epoch_start, epoch_stop, symbol)
+        # TODO limit 500
+        # TODO timestamp issue
+        return [{
+            'rate': float(e['rate']),
+            'time': datetime.datetime.fromisoformat(e['time']).timestamp()
+        } for e in rates]
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
         raise NotImplementedError
