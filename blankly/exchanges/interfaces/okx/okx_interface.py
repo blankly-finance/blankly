@@ -31,7 +31,7 @@ class OkexInterface(ExchangeInterface):
         except KeyError:
             pass
 
-    def get_products(self): #get-ticker under market
+    def get_products(self):
         instrument_type = "SPOT"
         needed = self.needed['get_products']
         products = self._public.get_instruments(instrument_type)
@@ -57,23 +57,6 @@ class OkexInterface(ExchangeInterface):
         symbol = super().get_account(symbol=symbol)
         needed = self.needed['get_account']
 
-        # if side == "buy":
-        #     available = self.local_account.get_account(quote)['available']
-        #     # Loose the funds when buying
-        #     self.local_account.update_available(quote, available - (size * price))
-        #
-        #     # Gain the funds on hold when buying
-        #     hold = self.local_account.get_account(quote)['hold']
-        #     self.local_account.update_hold(quote, hold + (size * price))
-        # elif side == "sell":
-        #     available = self.local_account.get_account(base)['available']
-        #     # Loose the size when selling
-        #     self.local_account.update_available(base, available - size)
-        #
-        #     # Gain size on hold when selling
-        #     hold = self.local_account.get_account(base)['hold']
-        #     self.local_account.update_hold(base, hold + size)
-
         accounts = self._funding.get_balances()
         parsed_dictionary = utils.AttributeDict({})
         # We have to sort through it if the accounts are none
@@ -89,11 +72,11 @@ class OkexInterface(ExchangeInterface):
                     parsed_value = utils.isolate_specific(needed, i)
 
                     if side_value == "buy":
-                        # available - (order_info['size'] * order_info['px'])
-                        total_hold = hold_value + (order_info['size'] * order_info['px'])
+                        #subtract from avail and add to hold
+                        total_hold = parsed_value['availBal'] - (order_info['size'] * order_info['px'])
+
                     elif side_value == "sell":
-                        # available - order_info['size']
-                        total_hold = hold_value + order_info['size']
+                        total_hold = parsed_value['availBal'] - order_info['size']
 
                     dictionary = utils.AttributeDict({
                         'available': parsed_value['availBal'],
@@ -331,8 +314,11 @@ class OkexInterface(ExchangeInterface):
 
         df = pd.DataFrame(history_block, columns=['time', 'open', 'high', 'low', 'close', 'volume', 'volume_currency'])
         df = df.drop(columns=['volume_currency'])
-        df[['time']] = df[['time']].astype(int)
+        df[['time']] = df[['time']].astype('int64')
+        df[['time']] = df[['time']].div(1000).astype(int)
         df[['open', 'high', 'low', 'close', 'volume']] = df[['open', 'high', 'low', 'close', 'volume']].astype(float)
+
+        df['time'] = df['time'][df['time'] <= epoch_stop]
 
         return df
 
@@ -393,3 +379,5 @@ class OkexInterface(ExchangeInterface):
         if 'message' in response:
             raise APIException("Error: " + response['message'])
         return float(response['idxPx'])
+
+
