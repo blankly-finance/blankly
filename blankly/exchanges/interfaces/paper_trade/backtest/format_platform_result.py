@@ -252,6 +252,6 @@ def format_platform_result(backtest_result):
         'user_callbacks': backtest_result.user_callbacks,
         'initial_account_value': first_account_value,
         'final_account_value': last_account_value,
-        'backtest_id': uuid.uuid4()
+        'backtest_id': str(uuid.uuid4())
         # Everything above here is put into the firebase root
     }

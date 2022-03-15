@@ -1042,12 +1042,10 @@ class BackTestController:
                         format_platform_result
 
                     platform_result = format_platform_result(result_object)
-                    requests.post(f'https://events.blankly.finance/v1/backtest/result', {
-                        platform_result
-                    }, headers={
-                        'apiKey': api_key,
-                        'apiPass': api_pass,
-                        'modelId': model_id
+                    requests.post(f'https://events.blankly.finance/v1/backtest/result', json=platform_result, headers={
+                        'api_key': api_key,
+                        'api_pass': api_pass,
+                        'model_id': model_id
                     })
 
                     import webbrowser

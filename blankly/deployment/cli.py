@@ -178,7 +178,7 @@ def choose_option(choice: str, options: list, descriptions: list):
 
 
 def get_project_model_and_name(args, projects, api: API):
-    if args['path'] is None:
+    if 'path' not in args or args['path'] is None:
         print(TermColors.WARNING + "Warning - No filepath specified. Assuming the current directory (./)\n" +
               TermColors.ENDC)
 
@@ -240,6 +240,7 @@ def get_project_model_and_name(args, projects, api: API):
             response = api.generate_keys(deployment_options['project_id'])
             deployment_options['api_key'] = response['apiKey']
             deployment_options['api_pass'] = response['apiPass']
+            queue_write = True
 
         if queue_write:
             # Write the modified version with the ID back into the json file
@@ -388,7 +389,7 @@ def is_logged_in():
             os.remove(os.path.join(temp_folder, file_name))
 
             # Cache the filepath globally
-            tokenfile_path = os.path.join(temp_folder, file_name)
+            tokenfile_path = os.path.join(temp_folder, i_)
             return True
 
     # Kill the file we created
@@ -673,24 +674,25 @@ def main():
         print(f"{TermColors.OKCYAN}{TermColors.BOLD}Found python version: "
               f"{py_version[0]}.{py_version[1]}{TermColors.ENDC}")
 
+        # Write in a blank requirements file
+        print("Writing requirements.txt defaults...")
+        create_and_write_file('requirements.txt', 'blankly')
+
         deploy = load_deployment_settings()
 
         deploy['python_version'] = py_version[0] + "." + py_version[1]
         create_and_write_file(deployment_script_name, json.dumps(deploy, indent=2))
 
-        # Write in a blank requirements file
-        print("Writing requirements.txt defaults...")
-        create_and_write_file('requirements.txt', 'blankly')
-
         if is_logged_in():
             # We know we're logged in so make sure that we also get a project id and a model id
-            print(f'{TermColors.WARNING}Automatically logged in!')
+            print(f'{TermColors.WARNING}Automatically logged in!{TermColors.ENDC}')
             api = API(login())
+            print(f'{TermColors.WARNING}Attaching this to a platform project...{TermColors.ENDC}')
             projects = api.list_projects()
             get_project_model_and_name(args, projects, api)
         else:
             print(f'{TermColors.WARNING}Run \"blankly login\" and then \"blankly init\" again to get better backtest '
-                  f'viewing.')
+                  f'viewing.{TermColors.ENDC}')
 
         print(f"{TermColors.OKGREEN}{TermColors.UNDERLINE}Success!{TermColors.ENDC}")
 

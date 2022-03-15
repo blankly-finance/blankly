@@ -165,6 +165,6 @@ class API:
                               })
 
     def generate_keys(self, project_id: str):
-        return self.__request('post', 'project/generate-model-keys', data={
+        return self.__request('post', 'project/generate-project-token', data={
             'projectId': project_id
         })
