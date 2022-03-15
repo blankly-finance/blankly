@@ -171,6 +171,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             return OrderStatus.CANCELED
         elif status in 'EXPIRED':
             return OrderStatus.EXPIRED
+        raise ValueError(f'invalid order status: {status}')
 
     def parse_order_response(self, response: dict) -> FuturesOrder:
         return FuturesOrder(

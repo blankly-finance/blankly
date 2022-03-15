@@ -143,6 +143,6 @@ def test_funding_rate_history(futures_interface: FuturesExchangeInterface,
     assert sorted(history, key=itemgetter('time')) == history
 
 
-def test_price(future_interface: FuturesExchangeInterface, symbol: str):
-    price = future_interface.get_price(symbol)
+def test_price(futures_interface: FuturesExchangeInterface, symbol: str):
+    price = futures_interface.get_price(symbol)
     assert 0 < price

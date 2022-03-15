@@ -32,20 +32,36 @@ class FTXFuturesInterface(FuturesExchangeInterface):
                 return OrderStatus.CANCELED
             else:
                 return OrderStatus.FILLED
+        raise ValueError(f'invalid order status: {status}')
 
-    def parse_order_response(self, response: dict, cancel: bool = False) -> FuturesOrder:
+    @staticmethod
+    def to_order_type(type: str) -> OrderType:
+        if type == 'market':
+            return OrderType.MARKET
+        elif type == 'limit':
+            return OrderType.LIMIT
+        elif type == 'takeProfit':
+            return OrderType.TAKE_PROFIT
+        elif type == 'stop':
+            return OrderType.STOP
+        raise ValueError(f'invalid order type: {type}')
+
+    def parse_order_response(self,
+                             response: dict,
+                             cancel: bool = False) -> FuturesOrder:
         return FuturesOrder(
             symbol=response['future'],
             id=int(response['id']),
             status=self.to_order_status(response['status'], cancel),
             size=float(response['size']),
             created_at=self.parse_timestamp(response['createdAt']),
-            type=OrderType(response['type']),
+            type=self.to_order_type(response['type']),
             contract_type=self.get_contract_type(response['future']),
             side=Side(response['side']),
             position=PositionMode.BOTH,
             price=float(response['price']),
-            time_in_force=TimeInForce.IOC if response['ioc'] else TimeInForce.GTC,
+            time_in_force=TimeInForce.IOC
+            if response['ioc'] else TimeInForce.GTC,
             response=response,
             interface=self)
 
@@ -83,11 +99,17 @@ class FTXFuturesInterface(FuturesExchangeInterface):
             return accounts[filter]
         return accounts
 
-    def get_positions(self, symbol: str = None) -> utils.AttributeDict:
-        res = self.calls.get_positions()
+    def get_positions(self, filter: str = None) -> utils.AttributeDict:
         leverage = self.get_leverage()
-        return utils.AttributeDict({
-            position['future']: utils.AttributeDict({
+
+        positions = {
+            future['name']: utils.AttributeDict({'size': 0})
+            for future in self.calls.list_futures()
+        }
+
+        res = self.calls.get_positions()
+        for position in res:
+            positions[position['future']] = utils.AttributeDict({
                 'size': position['netSize'],
                 'side': PositionMode(position['side'].lower()),
                 'entry_price': float(position['entryPrice']),
@@ -98,42 +120,86 @@ class FTXFuturesInterface(FuturesExchangeInterface):
                     position['unrealizedPnl']),  # TODO not sure on this one
                 'exchange_specific': position
             })
-            for position in res
-        })
+
+        if filter:
+            return positions[filter]
+        return positions
+
 
     def market_order(self,
                      symbol: str,
                      side: Side,
                      size: float,
-                     position: PositionMode = None,
-                     reduce_only: bool = None) -> FuturesOrder:
-        pass
+                     position: PositionMode = PositionMode.BOTH,
+                     reduce_only: bool = False) -> FuturesOrder:
+        # TODO these checks could be moved out of the order methods?
+        if position != PositionMode.BOTH:
+            raise ValueError(
+                f'position mode {position} not supported on FTX Futures')
+        res = self.calls.place_order(symbol, side, None, size, 'market',
+                                     reduce_only)
+        return self.parse_order_response(res)
 
-    def limit_order(self,
-                    symbol: str,
-                    side: Side,
-                    price: float,
-                    size: float,
-                    position: PositionMode = None,
-                    reduce_only: bool = None,
-                    time_in_force: TimeInForce = None) -> FuturesOrder:
-        raise NotImplementedError
+    def limit_order(
+            self,
+            symbol: str,
+            side: Side,
+            price: float,
+            size: float,
+            position: PositionMode = PositionMode.BOTH,
+            reduce_only: bool = False,
+            time_in_force: TimeInForce = TimeInForce.GTC) -> FuturesOrder:
+        if time_in_force == TimeInForce.GTC:
+            ioc = False
+        elif time_in_force == TimeInForce.IOC:
+            ioc = True
+        else:
+            raise ValueError(
+                f'time in force {time_in_force} not supported on FTX Futures')
+        if position != PositionMode.BOTH:
+            raise ValueError(
+                f'position mode {position} not supported on FTX Futures')
+        res = self.calls.place_order(symbol,
+                                     side,
+                                     price,
+                                     size,
+                                     'limit',
+                                     reduce_only,
+                                     ioc=ioc)
+        return self.parse_order_response(res)
 
-    def take_profit(self,
-                    symbol: str,
-                    side: Side,
-                    price: float,
-                    size: float,
-                    position: PositionMode = None) -> FuturesOrder:
-        raise NotImplementedError
+    def take_profit(
+            self,
+            symbol: str,
+            side: Side,
+            price: float,
+            size: float,
+            position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
+        if position != PositionMode.BOTH:
+            raise ValueError(
+                f'position mode {position} not supported on FTX Futures')
+        res = self.calls.place_conditional_order(symbol,
+                                                 side,
+                                                 size,
+                                                 'takeProfit',
+                                                 trigger_price=price)
+        return self.parse_order_response(res)
 
     def stop_loss(self,
                   symbol: str,
                   side: Side,
                   price: float,
                   size: float,
-                  position: PositionMode = None) -> FuturesOrder:
-        raise NotImplementedError
+                  position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
+        if position != PositionMode.BOTH:
+            raise ValueError(
+                f'position mode {position} not supported on FTX Futures')
+        res = self.calls.place_conditional_order(symbol,
+                                                 side,
+                                                 size,
+                                                 'stop',
+                                                 trigger_price=price)
+        return self.parse_order_response(res)
 
     @utils.order_protection
     def set_hedge_mode(self, hedge_mode: HedgeMode):
@@ -159,15 +225,22 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         pass
 
     def cancel_order(self, symbol: str, order_id: int) -> FuturesOrder:
-        raise NotImplementedError
+        res = self.get_order(symbol, order_id)
+        res.status = OrderStatus.CANCELED
+        self.calls.cancel_order(str(order_id))
+        return res
 
     def get_open_orders(self, symbol: str) -> list:
-        raise NotImplementedError
+        return [
+            self.parse_order_response(o) for o in self.calls.get_open_orders()
+        ]
 
     def get_order(self, symbol: str, order_id: int) -> FuturesOrder:
         response = self.calls.get_order_by_id(str(order_id))
         if response['symbol'] != symbol:
-            raise Exception('response symbol did not match parameter -- this should never happen')
+            raise Exception(
+                'response symbol did not match parameter -- this should never happen'
+            )
         return self.parse_order_response(response)
 
     def get_price(self, symbol: str) -> float:
@@ -191,9 +264,9 @@ class FTXFuturesInterface(FuturesExchangeInterface):
                                                     symbol)
 
             history.extend({
-                               'rate': float(e['rate']),
-                               'time': self.parse_timestamp(e['time'])
-                           } for e in response)
+                'rate': float(e['rate']),
+                'time': self.parse_timestamp(e['time'])
+            } for e in response)
 
             if response:
                 window_start = window_end
