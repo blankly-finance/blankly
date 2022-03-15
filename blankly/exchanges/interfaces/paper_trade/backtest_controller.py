@@ -17,9 +17,9 @@
 """
 import json
 import os
+import time
 import traceback
 import typing
-import warnings
 from datetime import datetime as dt
 import copy
 
@@ -37,7 +37,7 @@ from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import load_backtest_preferences, update_progress, write_backtest_preferences, \
-    get_base_asset, get_quote_asset, info_print, trunc
+    get_base_asset, get_quote_asset, info_print
 
 
 def to_string_key(separated_list):
@@ -571,6 +571,8 @@ class BackTestController:
         """
         Setup
         """
+        # This is where we begin logging the backtest time
+        start_clock = time.time()
 
         # Create this initial so that we can compare how our strategy performs
         self.initial_account = self.interface.get_account()
@@ -1027,6 +1029,9 @@ class BackTestController:
 
                 show(bokeh_columns(figures))
 
+            # This is where we end the backtesting time
+            stop_clock = time.time()
+
             from blankly.deployment.cli import is_logged_in
             if is_logged_in():
                 try:
@@ -1048,10 +1053,22 @@ class BackTestController:
                         'model_id': model_id
                     })
 
+                    requests.post(f'https://events.blankly.finance/v1/backtest/status', json={
+                        'successful': True,
+                        'status_summary': 'Completed',
+                        'status_details': '',
+                        'time_elapsed': stop_clock-start_clock,
+                        'backtest_id': platform_result['backtest_id']
+                    }, headers={
+                        'api_key': api_key,
+                        'api_pass': api_pass,
+                        'model_id': model_id
+                    })
+
                     import webbrowser
 
                     webbrowser.open(
-                        f'https://app.blankly.finance/{project_id}/{model_id}/{platform_result["backtest_id"]}/backtest'
+                        f'http://localhost:3000/{project_id}/{model_id}/{platform_result["backtest_id"]}/backtest'
                     )
                 except (FileNotFoundError, KeyError):
                     internal_backtest_viewer()

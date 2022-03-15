@@ -94,6 +94,9 @@ def choose_option(choice: str, options: list, descriptions: list):
             if len(i) > largest_option_name:
                 largest_option_name = len(i)
 
+        oldterm = termios.tcgetattr(fd)
+        newattr = termios.tcgetattr(fd)
+
         def print_selection_index(index_):
             # We pass none when they haven't selected yet
             if index_ is None:
@@ -125,9 +128,6 @@ def choose_option(choice: str, options: list, descriptions: list):
         # Print everything out with no index
         print_descriptions(descriptions, False)
 
-        # TODO Add a very simple version that can take simple input() if this fails
-        oldterm = termios.tcgetattr(fd)
-        newattr = termios.tcgetattr(fd)
         newattr[3] = newattr[3] & ~termios.ICANON & ~termios.ECHO
         termios.tcsetattr(fd, termios.TCSANOW, newattr)
 
