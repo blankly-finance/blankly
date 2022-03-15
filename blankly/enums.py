@@ -29,7 +29,7 @@ class HedgeMode(str, enum.Enum):
 
 
 class OrderStatus(str, enum.Enum):
-    NEW = 'new'
+    OPEN = 'open'
     PARTIALLY_FILLED = 'partially_filled'
     FILLED = 'filled'
     CANCELED = 'canceled'

@@ -21,7 +21,6 @@ import time
 import blankly
 from blankly.exchanges.abc_base_exchange import ABCBaseExchange
 from blankly.exchanges.auth.utils import write_auth_cache
-from blankly.exchanges.interfaces.binance_futures.binance_futures_interface import BinanceFuturesInterface
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 
 

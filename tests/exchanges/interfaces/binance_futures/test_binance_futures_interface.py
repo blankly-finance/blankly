@@ -88,7 +88,7 @@ def test_cancel_order(interface: BinanceFuturesInterface):
     price = int(interface.get_price(symbol) * 0.8)
     buy_order = interface.limit_order(symbol, Side.BUY, price, .01)
 
-    assert buy_order.status == OrderStatus.NEW
+    assert buy_order.status == OrderStatus.OPEN
 
     retries = 0
     res = interface.cancel_order(symbol, buy_order.id)

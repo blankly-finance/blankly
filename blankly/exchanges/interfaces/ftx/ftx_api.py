@@ -134,6 +134,9 @@ class FTXAPI:
     def get_coins(self) -> List[dict]:
         return self._signed_get('wallet/coins')
 
+    def get_future(self, future) -> dict:
+        return self._signed_get(f'futures/{future}')
+
     def get_deposit_addresses(self, ticker: str) -> dict:
         return self._signed_get(f'wallet/deposit_addresses/{ticker}')
 

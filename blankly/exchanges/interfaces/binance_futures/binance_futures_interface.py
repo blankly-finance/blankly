@@ -72,18 +72,18 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         if not symbol:
             raise Exception(
                 'Binance Futures does not support account wide leverage. Use interface.get_leverage(leverage, '
-                'symbol) to get leverage for a symbol. '
-            )
+                'symbol) to get leverage for a symbol. ')
         symbol = utils.to_exchange_symbol(symbol, 'binance')
-        return float(self.calls.futures_position_information(symbol=symbol)[0]['leverage'])
+        return float(
+            self.calls.futures_position_information(
+                symbol=symbol)[0]['leverage'])
 
     @utils.order_protection
     def set_leverage(self, leverage: int, symbol: str = None):
         if not symbol:
             raise Exception(
                 'Binance Futures does not support account wide leverage. Use interface.set_leverage(leverage, '
-                'symbol) to set leverage for each symbol you wish to trade. '
-            )
+                'symbol) to set leverage for each symbol you wish to trade. ')
         symbol = utils.to_exchange_symbol(symbol, 'binance')
         return self.calls.futures_change_leverage(
             symbol=symbol, leverage=leverage)['maxNotionalValue']
@@ -101,19 +101,20 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             if e.code != -4046:  # -4046 NO_NEED_TO_CHANGE_MARGIN_TYPE (margin type is already set)
                 raise e
 
-    def get_products(self) -> list:
+    def get_products(self) -> dict:
         # https://binance-docs.github.io/apidocs/futures/en/#exchange-information
         symbols = self.calls.futures_exchange_info()["symbols"]
-        return [
+        return {
+            # binance asset ids are weird so just recreate it in the "normal" BASE-QUOTE form
+            symbol['baseAsset'] + '-' + symbol['quoteAsset']:
             utils.AttributeDict({
-                # binance asset ids are weird so just recreate it in the "normal" BASE-QUOTE form
-                'symbol': symbol['baseAsset'] + '-' + symbol['quoteAsset'],
                 'base_asset': symbol['baseAsset'],
                 'quote_asset': symbol['quoteAsset'],
-                'contract_type': symbol['contractType'],
+                'contract_type': ContractType.PERPETUAL,  # TODO
                 'exchange_specific': symbol
-            }) for symbol in symbols
-        ]
+            })
+            for symbol in symbols
+        }
 
     def get_account(self, filter=None) -> utils.AttributeDict:
         res = self.calls.futures_account()
@@ -147,7 +148,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                 'size': float(position['positionAmt']),
                 'side': PositionMode(position['positionSide'].lower()),
                 'entry_price': float(position['entryPrice']),
-                'contract_type': ContractType.PERPETUAL,
+                'contract_type': ContractType.PERPETUAL,  # TODO
                 'leverage': float(position['leverage']),
                 'margin_type': margin,
                 'unrealized_pnl': float(position['unrealizedProfit']),
@@ -158,11 +159,24 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             return positions[filter]
         return positions
 
+    @staticmethod
+    def to_order_status(status: str):
+        if status == 'NEW':
+            return OrderStatus.OPEN
+        elif status == 'PARTIALLY_FILLED':
+            return OrderStatus.PARTIALLY_FILLED
+        elif status == 'FILLED':
+            return OrderStatus.FILLED
+        elif status in ('CANCELED', 'REJECTED'):
+            return OrderStatus.CANCELED
+        elif status in 'EXPIRED':
+            return OrderStatus.EXPIRED
+
     def parse_order_response(self, response: dict) -> FuturesOrder:
         return FuturesOrder(
             symbol=response['symbol'],
             id=int(response['orderId']),
-            status=OrderStatus(response['status'].lower()),
+            status=self.to_order_status(response['status']),
             size=float(response['executedQty']),
             created_at=float(response['updateTime']) / 1000,
             type=OrderType(response['type'].lower()),
@@ -412,14 +426,13 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         #         limit=LIMIT):
 
         # WARNING! non-walrus code ahead:
-        response_len = LIMIT
-        while response_len:
+        response = True
+        while response:
             response = self.calls.futures_funding_rate(
                 symbol=symbol,
                 startTime=window_start * 1000,
                 endTime=window_end * 1000,
                 limit=LIMIT)
-            response_len = len(response)
             # very stinky ^^
 
             history.extend({
@@ -432,3 +445,6 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                 window_end = min(dt.now().timestamp(), epoch_stop)
 
         return history
+
+    def get_funding_rate_resolution(self) -> int:
+        return 60 * 60 * 8  # 8 hours

@@ -5,7 +5,8 @@ from operator import itemgetter
 import pytest
 from _pytest.python import Metafunc
 
-from blankly import BinanceFutures, Side, OrderStatus, OrderType
+from blankly.enums import Side, OrderStatus, OrderType, ContractType
+from blankly.exchanges.interfaces.binance_futures.binance_futures import BinanceFutures
 from blankly.exchanges.futures.futures_exchange import FuturesExchange
 from blankly.exchanges.interfaces.ftx_futures.ftx_futures import FTXFutures
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
@@ -112,7 +113,7 @@ def test_cancel_order(futures_interface: FuturesExchangeInterface,
                                               utils.trunc(price * 0.95, 1),
                                               size)
 
-    assert buy_order.status == OrderStatus.NEW
+    assert buy_order.status == OrderStatus.OPEN
 
     res = futures_interface.cancel_order(symbol, buy_order.id)
     assert res.status == OrderStatus.CANCELED
@@ -129,9 +130,19 @@ def test_funding_rate_history(futures_interface: FuturesExchangeInterface,
                                                          epoch_start=start,
                                                          epoch_stop=end)
 
+    # non-perp contracts don't have funding rates
+    if futures_interface.get_products()[symbol].contract_type != ContractType.PERPETUAL:
+        assert len(history) == 0
+        return
+
     # test start and end times
     assert start <= history[0]['time'] < start + day
     assert end - day < history[-1]['time'] <= end
 
     # test ascending order
     assert sorted(history, key=itemgetter('time')) == history
+
+
+def test_price(future_interface: FuturesExchangeInterface, symbol: str):
+    price = future_interface.get_price(symbol)
+    assert 0 < price

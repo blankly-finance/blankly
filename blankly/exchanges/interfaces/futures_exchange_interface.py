@@ -62,7 +62,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_products(self) -> list:
+    def get_products(self) -> utils.AttributeDict:
         """Returns a list of all products traded on this exchange"""
         pass
 
@@ -191,4 +191,8 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         Get the funding rate history between `epoch_start` and `epoch_end`.
         Returns a list of {'rate': int, 'time': int}
         """
+        pass
+
+    @abc.abstractmethod
+    def get_funding_rate_resolution(self) -> int:
         pass

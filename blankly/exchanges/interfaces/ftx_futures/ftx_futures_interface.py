@@ -1,4 +1,6 @@
-from blankly.enums import MarginType, HedgeMode, Side, PositionMode, TimeInForce, ContractType
+import operator
+
+from blankly.enums import MarginType, HedgeMode, Side, PositionMode, TimeInForce, ContractType, OrderStatus, OrderType
 from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.exchanges.orders.futures.futures_order import FuturesOrder
@@ -17,21 +19,51 @@ class FTXFuturesInterface(FuturesExchangeInterface):
             return ContractType.MOVE
         return ContractType.EXPIRING
 
+    @staticmethod
+    def parse_timestamp(time: str) -> int:
+        return int(datetime.datetime.fromisoformat(time).timestamp())
+
+    @staticmethod
+    def to_order_status(status: str, cancel: bool = False) -> OrderStatus:
+        if status in ('new', 'open'):
+            return OrderStatus.OPEN
+        elif status == 'closed':
+            if cancel:
+                return OrderStatus.CANCELED
+            else:
+                return OrderStatus.FILLED
+
+    def parse_order_response(self, response: dict, cancel: bool = False) -> FuturesOrder:
+        return FuturesOrder(
+            symbol=response['future'],
+            id=int(response['id']),
+            status=self.to_order_status(response['status'], cancel),
+            size=float(response['size']),
+            created_at=self.parse_timestamp(response['createdAt']),
+            type=OrderType(response['type']),
+            contract_type=self.get_contract_type(response['future']),
+            side=Side(response['side']),
+            position=PositionMode.BOTH,
+            price=float(response['price']),
+            time_in_force=TimeInForce.IOC if response['ioc'] else TimeInForce.GTC,
+            response=response,
+            interface=self)
+
     def init_exchange(self):
         # will throw exception if our api key is stinky
         self.calls.get_account_info()
 
-    def get_products(self) -> list:
+    def get_products(self) -> dict:
         res = self.calls.list_futures()
-        return [
-            utils.AttributeDict({
-                'symbol': symbol['name'],
+        return {
+            symbol['name']: utils.AttributeDict({
                 'base': symbol['underlying'],
                 'quote': 'USD',
                 'contract_type': self.get_contract_type(symbol['name']),
                 'exchange_specific': symbol
-            }) for symbol in res
-        ]
+            })
+            for symbol in res
+        }
 
     def get_account(self, filter: str = None) -> utils.AttributeDict:
         balances = self.calls.get_balances()
@@ -133,20 +165,44 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         raise NotImplementedError
 
     def get_order(self, symbol: str, order_id: int) -> FuturesOrder:
-        raise NotImplementedError
+        response = self.calls.get_order_by_id(str(order_id))
+        if response['symbol'] != symbol:
+            raise Exception('response symbol did not match parameter -- this should never happen')
+        return self.parse_order_response(response)
 
     def get_price(self, symbol: str) -> float:
-        raise NotImplementedError
+        return float(self.calls.get_future(symbol)['mark'])
 
     def get_funding_rate_history(self, symbol: str, epoch_start: int,
                                  epoch_stop: int) -> list:
-        rates = self.calls.get_funding_rates(epoch_start, epoch_stop, symbol)
-        # TODO limit 500
-        # TODO timestamp issue
-        return [{
-            'rate': float(e['rate']),
-            'time': datetime.datetime.fromisoformat(e['time']).timestamp()
-        } for e in rates]
+        if self.get_contract_type(symbol) != ContractType.PERPETUAL:
+            return []
+
+        # TODO dedup binance_futures_exchange maybe?
+        history = []
+        resolution = self.get_funding_rate_resolution()
+        LIMIT = 500
+        window_start = epoch_start
+        window_end = epoch_start + LIMIT * resolution
+
+        response = True
+        while response:
+            response = self.calls.get_funding_rates(window_start, window_end,
+                                                    symbol)
+
+            history.extend({
+                               'rate': float(e['rate']),
+                               'time': self.parse_timestamp(e['time'])
+                           } for e in response)
+
+            if response:
+                window_start = window_end
+                window_end = min(epoch_stop, window_start + LIMIT * resolution)
+
+        return sorted(history, key=operator.itemgetter('time'))
+
+    def get_funding_rate_resolution(self) -> int:
+        return 60 * 60  # hour
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
         raise NotImplementedError
