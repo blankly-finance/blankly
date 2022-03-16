@@ -12,24 +12,22 @@ class Okx(Exchange):
         auth = AuthConstructor(keys_path, portfolio_name, 'okx', ['API_KEY', 'API_SECRET', 'API_PASS'])
         keys = auth.keys
 
-        if self.preferences["settings"]["use_sandbox"]:
-            calls = {
-                'market': MarketAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'],passphrase=keys['API_PASS']),
-                'account': AccountAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']),
-                'trade': TradeAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']),
-                'convert': ConvertAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']),
-                'funding': FundingAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']),
-                'public': PublicAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS'])
-            }
-        else:
-            calls = {
-                'market': MarketAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']),
-                'account': AccountAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']),
-                'trade': TradeAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']),
-                'convert': ConvertAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']),
-                'funding': FundingAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']),
-                'public': PublicAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS'])
-            }
+        # if self.preferences["settings"]["use_sandbox"]:
+        calls = {
+            'market': MarketAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'],passphrase=keys['API_PASS']),
+            'account': AccountAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']),
+            'trade': TradeAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']),
+            'convert': ConvertAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']),
+            'funding': FundingAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']),
+            'public': PublicAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS'])
+        }
+        # else: calls = { 'market': MarketAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'],
+        # passphrase=keys['API_PASS']), 'account': AccountAPI(api_key=keys['API_KEY'], api_secret_key=keys[
+        # 'API_SECRET'], passphrase=keys['API_PASS']), 'trade': TradeAPI(api_key=keys['API_KEY'],
+        # api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']), 'convert': ConvertAPI(api_key=keys[
+        # 'API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']), 'funding': FundingAPI(
+        # api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']), 'public':
+        # PublicAPI(api_key=keys['API_KEY'], api_secret_key=keys['API_SECRET'], passphrase=keys['API_PASS']) }
 
         # Always finish the method with this function
         super().construct_interface_and_cache(calls)

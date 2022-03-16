@@ -279,7 +279,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         kucoin_sell = self.Kucoin_Interface.limit_order('ETH-USDT', 'sell', 100000, 1)
         self.check_limit_order(kucoin_sell, 'sell', 1, 'ETH-USDT')
 
-        okx_buy = self.Okx_Interface.limit_order('BTC-USDT', 'buy', .01, 1)
+        okx_buy = self.Okx_Interface.limit_order('BTC-USDT', 'buy', 1, 0.01)
         self.check_limit_order(okx_buy, 'buy', 1, 'BTC-USDT')
 
         okx_sell = self.Okx_Interface.limit_order('BTC-USDT', 'sell', 100000, 1)
@@ -503,7 +503,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         for i in responses:
             self.check_product_history_columns(i)
 
-            self.assertEqual(len(i), test_intervals)
+            self.assertEqual(test_intervals, len(i))
             start_time = i['time'][0]
             end_time = i['time'].iloc[-1]
 

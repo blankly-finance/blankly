@@ -258,7 +258,12 @@ class OkexInterface(ExchangeInterface):
         return utils.isolate_specific(needed, fees)
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
+        # epoch_start = 1638761626
+        # epoch stop = 1647401626
         resolution = blankly.time_builder.time_interval_to_seconds(resolution)
+
+        initial_epoch_start = int(epoch_start)
+        initial_epoch_stop = int(epoch_stop)
 
         epoch_start = int(utils.convert_epochs(epoch_start))
         epoch_stop = int(utils.convert_epochs(epoch_stop))
@@ -318,9 +323,14 @@ class OkexInterface(ExchangeInterface):
         df[['time']] = df[['time']].div(1000).astype(int)
         df[['open', 'high', 'low', 'close', 'volume']] = df[['open', 'high', 'low', 'close', 'volume']].astype(float)
 
-        df['time'] = df['time'][df['time'] <= epoch_stop]
+        df['time'] = df['time'][df['time'] >= initial_epoch_start]
+        #df['time'] = df['time'][df['time'] <= initial_epoch_stop]
 
-        return df
+        df = df.drop_duplicates(subset=['time'])
+        df_new = pd.DataFrame(df)
+        df_new = df_new.reset_index()
+
+        return df_new
 
     def get_order_filter(self, symbol: str) -> dict:
         instrument_type = "SPOT"
