@@ -424,6 +424,11 @@ def is_logged_in():
             # Kill the file we created
             os.close(fd)
             os.remove(os.path.join(temp_folder, file_name))
+            
+            try:
+                json.loads(open(temp_folder + '/' + i_).read())['token']
+            except (KeyError, json.decoder.JSONDecodeError):
+                return False
 
             # Cache the filepath globally
             tokenfile_path = os.path.join(temp_folder, i_)
