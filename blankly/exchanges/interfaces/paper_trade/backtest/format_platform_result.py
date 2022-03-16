@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import json
 import uuid
 
 
@@ -123,11 +122,6 @@ def format_platform_result(backtest_result):
     Args:
         backtest_result: A BacktestResult object to export
     """
-    # TODO add backtest symbol exports here
-    # Do not return anything if we are not in a backtesting configuration
-    # if not self.connection.backtesting:
-    #     print("Skipping backtest export")
-    #     return
     # We're given a dictionary of dataframes and that has to be transformed to a dictionary of dictionaries
     history_and_returns = __dict_from_df_dict(backtest_result.history_and_returns)
 
@@ -188,16 +182,6 @@ def format_platform_result(backtest_result):
                                      backtest_result.trades['limits_canceled'],
                                      backtest_result.trades['executed_market_orders'])
 
-    # This is the symbol values export, but I expect that we will need it in the near future
-    # This compresses the extracted symbols
-    # compressed_symbols = {}
-    # for i in traded_assets:
-    #     compressed_symbols[i] = self.__compress_dict_series(account_values[i], account_values['time'])
-
-    # We can easily compress the history and returns dictionary into only the deltas
-    # history_and_returns['history'] = self.__compress_dict_series(history_and_returns['history'])
-    # history_and_returns['resampled_account_value'] = self.__compress_dict_series(history_and_returns['history'])
-
     # Now change the metrics keys to be nicer
     metrics = backtest_result.metrics
     refined_metrics = {
@@ -217,24 +201,6 @@ def format_platform_result(backtest_result):
         'variance': format_metric(metrics, 'Variance (%)', 'number'),
         'volatility': format_metric(metrics, 'Volatility', 'number')
     }
-
-    try:
-        quantstats = backtest_result.get_quantstats_metrics()
-
-        quantstats_metrics = json.loads(quantstats.to_json())['Strategy']
-
-        # If something bad happens this will definitely catch it
-        assert isinstance(quantstats_metrics, dict)
-
-        # Loop through and place each metric in the dictionary
-        for i in list(quantstats_metrics.keys()):
-            if isinstance(quantstats_metrics[i], int) or isinstance(quantstats_metrics[i], float):
-                type_ = 'number'
-            else:
-                type_ = 'string'
-            refined_metrics[i.replace(' ', '_').lower()] = format_metric(quantstats_metrics, i, type_)
-    except Exception:
-        pass
 
     backtest_result.metrics = refined_metrics
 

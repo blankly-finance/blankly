@@ -1068,7 +1068,7 @@ class BackTestController:
                     import webbrowser
 
                     webbrowser.open(
-                        f'http://localhost:3000/{project_id}/{model_id}/{platform_result["backtest_id"]}/backtest'
+                        f'https://app.blankly.finance/{project_id}/{model_id}/{platform_result["backtest_id"]}/backtest'
                     )
                 except (FileNotFoundError, KeyError):
                     internal_backtest_viewer()
