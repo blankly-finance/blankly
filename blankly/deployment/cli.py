@@ -18,6 +18,7 @@
 
 import argparse
 import sys
+import traceback
 import warnings
 import os
 import platform
@@ -171,6 +172,10 @@ def choose_option(choice: str, options: list, descriptions: list):
         index = int(input(TermColors.UNDERLINE + TermColors.OKCYAN +
                     "You have chosen:" + TermColors.ENDC + " "))
 
+        if index < 0 or index > len(options) - 1:
+            raise LookupError(f"The index you chose is out of bounds, choose an index between {0} and "
+                              f"{len(options) -1}")
+
         print('\n' + TermColors.BOLD + TermColors.WARNING + f"Chose {choice}:" + TermColors.ENDC + " " +
               TermColors.BOLD + TermColors.OKBLUE + options[index] + TermColors.ENDC)
 
@@ -199,6 +204,7 @@ def get_project_model_and_name(args, projects, api: API):
                 'type' not in deployment_options or \
                 'model_name' not in deployment_options:
             # This performs all the querying necessary to send the data up
+            # This the logic that selects the project
             ids = []
             for i in projects:
                 ids.append(i['projectId'])
@@ -209,20 +215,51 @@ def get_project_model_and_name(args, projects, api: API):
                                     TermColors.ENDC + TermColors.OKCYAN + i['name'])
             project_id = choose_option('project', ids, descriptions)
 
-            model_name = input(TermColors.BOLD + TermColors.WARNING +
-                               "Enter a name for your model: " + TermColors.ENDC)
+            choice = choose_option('way to connect to a model', ['Create New', 'Choose from Existing'],
+                                   ['Generate a new model in this project',
+                                    'Attach to an existing model in this project'])
 
-            # Now we know to go ahead and create a new model on the server
-            general_description = input(TermColors.BOLD + TermColors.WARNING +
-                                        "Enter a general description for this model model: " + TermColors.ENDC)
+            if choice == 'Create New':
+                model_name = input(TermColors.BOLD + TermColors.WARNING +
+                                   "Enter a name for your model: " + TermColors.ENDC)
 
-            type_ = choose_option('model type', ['strategy', 'screener'],
-                                  ["\t" + TermColors.BOLD + TermColors.WARNING +
-                                   'A strategy is a model that uses blankly.Strategy' + TermColors.ENDC,
-                                   "\t" + TermColors.BOLD + TermColors.WARNING +
-                                   'A screener is a model uses blankly.Screener' + TermColors.ENDC])
+                # Now we know to go ahead and create a new model on the server
+                general_description = input(TermColors.BOLD + TermColors.WARNING +
+                                            "Enter a general description for this model model: " + TermColors.ENDC)
 
-            model_id = api.create_model(project_id, type_, model_name, general_description)['modelId']
+                type_ = choose_option('model type', ['strategy', 'screener'],
+                                      ["\t" + TermColors.BOLD + TermColors.WARNING +
+                                       'A strategy is a model that uses blankly.Strategy' + TermColors.ENDC,
+                                       "\t" + TermColors.BOLD + TermColors.WARNING +
+                                       'A screener is a model uses blankly.Screener' + TermColors.ENDC])
+
+                model_id = api.create_model(project_id, type_, model_name, general_description)['modelId']
+            else:
+                models = api.list_models(project_id)
+                ids = []
+                descriptions = []
+                for i in models:
+                    try:
+                        id_ = i['id']
+                        name_ = i['name']
+                        ids.append(id_)
+                        descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + id_ + ": " +
+                                            TermColors.ENDC + TermColors.OKCYAN + name_)
+                    except KeyError:
+                        pass
+                model_id = choose_option('model', ids, descriptions)
+
+                # Because we have the ID, we now need to get the index directly
+                index = None
+                for i in models:
+                    if i['id'] == model_id:
+                        index = i
+
+                if index is None:
+                    raise LookupError("An issue occurred please try again.")
+
+                type_ = index['type']
+                model_name = index['name']
 
             info_print(f"Created a new model in blankly.json with ID: {model_id}")
 
@@ -683,16 +720,22 @@ def main():
         deploy['python_version'] = py_version[0] + "." + py_version[1]
         create_and_write_file(deployment_script_name, json.dumps(deploy, indent=2))
 
-        if is_logged_in():
-            # We know we're logged in so make sure that we also get a project id and a model id
-            print(f'{TermColors.WARNING}Automatically logged in!{TermColors.ENDC}')
-            api = API(login())
-            print(f'{TermColors.WARNING}Attaching this to a platform project...{TermColors.ENDC}')
-            projects = api.list_projects()
-            get_project_model_and_name(args, projects, api)
-        else:
-            print(f'{TermColors.WARNING}Run \"blankly login\" and then \"blankly init\" again to get better backtest '
-                  f'viewing.{TermColors.ENDC}')
+        try:
+            if is_logged_in():
+                # We know we're logged in so make sure that we also get a project id and a model id
+                print(f'{TermColors.WARNING}Automatically logged in!{TermColors.ENDC}')
+                api = API(login())
+                print(f'{TermColors.WARNING}Attaching this to a platform project...{TermColors.ENDC}')
+                projects = api.list_projects()
+                get_project_model_and_name(args, projects, api)
+            else:
+                print(f'{TermColors.WARNING}Run \"blankly login\" and then \"blankly init\" again to get better '
+                      f'backtest '
+                      f'viewing.{TermColors.ENDC}')
+        except Exception:
+            traceback.print_exc()
+            # Wipe the blankly.json to avoid confusion
+            os.remove('./' + deployment_script_name)
 
         print(f"{TermColors.OKGREEN}{TermColors.UNDERLINE}Success!{TermColors.ENDC}")
 

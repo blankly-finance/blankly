@@ -21,7 +21,7 @@ import json
 import requests
 from blankly.utils.utils import info_print
 
-blankly_deployment_url = 'https://deploy.blankly.finance'
+blankly_deployment_url = 'http://localhost'  # 'https://deploy.blankly.finance'
 
 
 class API:
@@ -162,6 +162,12 @@ class API:
                                   'type': type_,
                                   'name': name,
                                   'description': description
+                              })
+
+    def list_models(self, project_id: str):
+        return self.__request('post', 'model/list',
+                              data={
+                                  'projectId': project_id
                               })
 
     def generate_keys(self, project_id: str):
