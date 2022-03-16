@@ -144,9 +144,11 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
 
         # write in data from binance
         for position in account['positions']:
-            # binance sometimes does this: BTCUSDT_2342
-            fixed_symbol = position['symbol'].split('_')[0]
-            symbol = utils.to_blankly_symbol(fixed_symbol, 'binance')
+            symbol = position['symbol']
+            if '_' in symbol:
+                # we don't support expiring contracts just yet
+                break
+            symbol = utils.to_blankly_symbol(symbol, 'binance')
             margin = MarginType.ISOLATED \
                 if position['isolated'] else MarginType.CROSSED
             positions[symbol] = utils.AttributeDict({
