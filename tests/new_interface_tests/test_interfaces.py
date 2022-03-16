@@ -4,25 +4,53 @@ from operator import itemgetter
 
 import pytest
 
-from blankly.enums import Side, OrderType, ContractType, OrderStatus
+from blankly.enums import Side, OrderType, ContractType, OrderStatus, HedgeMode, MarginType
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.utils import utils
 from conftest import wait_till_filled, order_guard, homogenity_testing
 
-def test_account_leverage(futures_interface: FuturesExchangeInterface):
-    if futures_interface.get_exchange_type() == 'binance_futures':
-        pytest.xfail(
-            'Binance Futures does not support setting account leverage')
-    futures_interface.set_leverage(3)
-    assert futures_interface.get_leverage() == 3
+def test_valid_symbols(futures_interface: FuturesExchangeInterface):
+    # collect product names
+    products = []
+    products.extend(futures_interface.get_products().values())
+    # TODO place order here
+    # TODO contextmanager for order/cancel
+    products.extend(futures_interface.get_positions().values())
+    for product in products:
+        base = product['base_asset']
+        quote = product['quote_asset']
+        symbol = product['symbol']
+        assert symbol == base + '-' + quote
+        exc = futures_interface.to_exchange_symbol(symbol)
+        assert futures_interface.to_blankly_symbol(exc) == symbol
 
 
-def test_symbol_leverage(futures_interface: FuturesExchangeInterface,
-                         symbol: str):
-    if futures_interface.get_exchange_type() == 'ftx_futures':
-        pytest.xfail('FTX Futures does not support setting account leverage')
-    futures_interface.set_leverage(3, symbol)
-    assert futures_interface.get_leverage(symbol) == 3
+
+
+@homogenity_testing
+def test_get_products(futures_interface: FuturesExchangeInterface):
+    return list(futures_interface.get_products().values())
+
+
+@homogenity_testing
+def test_get_products_symbol(futures_interface: FuturesExchangeInterface,
+                             symbol: str):
+    return futures_interface.get_products(symbol)
+
+
+@homogenity_testing
+def test_get_account(futures_interface: FuturesExchangeInterface):
+    return list(futures_interface.get_account().values())
+
+
+@homogenity_testing
+def test_get_positions(futures_interface: FuturesExchangeInterface):
+    return list(futures_interface.get_positions().values())
+
+@homogenity_testing
+def test_get_positions_symbol(futures_interface: FuturesExchangeInterface,
+                             symbol: str):
+    return futures_interface.get_positions(symbol)
 
 
 @order_guard
@@ -51,6 +79,58 @@ def test_order(futures_interface: FuturesExchangeInterface,
     assert futures_interface.get_positions(symbol).size == init_position
 
 
+@homogenity_testing
+def test_market_order(futures_interface: FuturesExchangeInterface, symbol: str):
+    pass  # TODO
+
+@homogenity_testing
+def test_limit_order(futures_interface: FuturesExchangeInterface, symbol: str):
+    pass  # TODO
+
+@homogenity_testing
+def test_take_profit(futures_interface: FuturesExchangeInterface, symbol: str):
+    pass  # TODO
+
+@homogenity_testing
+def test_stop_loss(futures_interface: FuturesExchangeInterface, symbol: str):
+    pass  # TODO
+
+def test_set_hedge_mode(futures_interface: FuturesExchangeInterface):
+    if futures_interface.get_exchange_type() == 'ftx_futures':
+        pytest.xfail('FTX Futures does not support hedge mode')
+    futures_interface.set_hedge_mode(HedgeMode.HEDGE)
+    assert futures_interface.get_hedge_mode() == HedgeMode.HEDGE
+
+def test_set_oneway_mode(futures_interface: FuturesExchangeInterface):
+    futures_interface.set_hedge_mode(HedgeMode.ONEWAY)
+    assert futures_interface.get_hedge_mode() == HedgeMode.ONEWAY
+
+def test_account_leverage(futures_interface: FuturesExchangeInterface):
+    if futures_interface.get_exchange_type() == 'binance_futures':
+        pytest.xfail(
+            'Binance Futures does not support setting account leverage')
+    futures_interface.set_leverage(3)
+    assert futures_interface.get_leverage() == 3
+
+
+def test_symbol_leverage(futures_interface: FuturesExchangeInterface,
+                         symbol: str):
+    if futures_interface.get_exchange_type() == 'ftx_futures':
+        pytest.xfail('FTX Futures does not support setting account leverage')
+    futures_interface.set_leverage(3, symbol)
+    assert futures_interface.get_leverage(symbol) == 3
+
+
+def test_set_cross_margin(futures_interface: FuturesExchangeInterface, symbol: str):
+    futures_interface.set_margin_type(symbol, MarginType.CROSSED)
+    assert futures_interface.get_margin_type(symbol) == MarginType.CROSSED
+
+def test_set_isolated_margin(futures_interface: FuturesExchangeInterface, symbol: str):
+    if futures_interface.get_exchange_type() == 'ftx_futures':
+        pytest.xfail('FTX Futures does not support isolated margin')
+    futures_interface.set_margin_type(symbol, MarginType.ISOLATED)
+    assert futures_interface.get_margin_type(symbol) == MarginType.ISOLATED
+
 @order_guard
 def test_cancel_order(futures_interface: FuturesExchangeInterface,
                       symbol: str):
@@ -69,6 +149,19 @@ def test_cancel_order(futures_interface: FuturesExchangeInterface,
     assert res.status == OrderStatus.CANCELED
     assert init_position == futures_interface.get_positions(symbol).size
 
+@homogenity_testing
+def test_get_open_orders(futures_interface: FuturesExchangeInterface, symbol: str):
+    pass  # TODO
+
+@homogenity_testing
+def test_get_order(futures_interface: FuturesExchangeInterface, symbol: str):
+    pass  # TODO
+
+@homogenity_testing
+def test_price(futures_interface: FuturesExchangeInterface, symbol: str):
+    price = futures_interface.get_price(symbol)
+    assert 0 < price
+    return price
 
 @homogenity_testing
 def test_funding_rate_history(futures_interface: FuturesExchangeInterface,
@@ -94,38 +187,10 @@ def test_funding_rate_history(futures_interface: FuturesExchangeInterface,
     # test ascending order
     assert sorted(history, key=itemgetter('time')) == history
 
+    # test resolution
+    resolution = futures_interface.get_funding_rate_resolution()
+    for i, current in enumerate(history)[1:]:
+        prev = history[i-1]
+        assert current['time'] - prev['time'] == resolution
+
     return history
-
-
-@homogenity_testing
-def test_price(futures_interface: FuturesExchangeInterface, symbol: str):
-    price = futures_interface.get_price(symbol)
-    assert 0 < price
-    return price
-
-
-@homogenity_testing
-def test_get_products(futures_interface: FuturesExchangeInterface):
-    products = futures_interface.get_products()
-    # check correct name scheme
-    for key, val in products.items():
-        assert key == val['base_asset'] + '-' + val['quote_asset']
-    return list(products.values())
-
-
-@homogenity_testing
-def test_get_products_symbol(futures_interface: FuturesExchangeInterface,
-                             symbol: str):
-    product = futures_interface.get_products(symbol)
-    return product
-
-
-@homogenity_testing
-def test_get_account(futures_interface: FuturesExchangeInterface):
-    account = futures_interface.get_account()
-    return list(account.values())
-
-
-@homogenity_testing
-def test_get_positions(futures_interface: FuturesExchangeInterface):
-    pass

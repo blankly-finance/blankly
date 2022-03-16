@@ -51,6 +51,16 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         if self.user_preferences['settings']['test_connectivity_on_auth']:
             self.init_exchange()
 
+    @staticmethod
+    @abc.abstractmethod
+    def to_blankly_symbol(symbol: str):
+        pass
+
+    @staticmethod
+    @abc.abstractmethod
+    def to_exchange_symbol(symbol: str):
+        pass
+
     def get_exchange_type(self) -> str:
         """Returns the exchange type (ex. 'binance', 'coinbase', 'alpaca')"""
         return self.exchange_name

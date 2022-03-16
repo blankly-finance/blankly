@@ -13,14 +13,14 @@ class FTXFuturesInterface(FuturesExchangeInterface):
     calls: FTXAPI
 
     @staticmethod
-    def as_exchange_symbol(symbol: str):
+    def to_exchange_symbol(symbol: str):
         base_asset, quote_asset = symbol.split('-')
         if quote_asset != 'USD':
             raise ValueError('invalid symbol')
         return base_asset + '-PERP'  # only perpetual contracts right now
 
     @staticmethod
-    def as_blankly_symbol(symbol: str):
+    def to_blankly_symbol(symbol: str):
         base_asset, contract_type = symbol.split('-', 1)
         if contract_type != 'PERP':
             raise ValueError(
@@ -87,20 +87,22 @@ class FTXFuturesInterface(FuturesExchangeInterface):
 
     def get_products(self, filter: str = None) -> dict:
         res = self.calls.list_futures()
-        products = {
-            symbol['underlying'] + '-USD': utils.AttributeDict({
-                'base_asset': symbol['underlying'],
+        products = {}
+        for prod in res:
+            if '-PERP' not in prod['name']:
+                continue  # only perpetual contracts for now
+            symbol = prod['underlying'] + '-USD'
+            products[symbol] = utils.AttributeDict({
+                'symbol': symbol,
+                'base_asset': prod['underlying'],
                 'quote_asset': 'USD',
                 'contract_type': ContractType.PERPETUAL,
                 'price_precision': self.increment_to_precision(
-                    symbol['priceIncrement']),
+                    prod['priceIncrement']),
                 'size_precision': self.increment_to_precision(
-                    symbol['sizeIncrement']),
-                'exchange_specific': symbol
+                    prod['sizeIncrement']),
+                'exchange_specific': prod
             })
-            for symbol in res
-            if '-PERP' in symbol['name']  # only perpetual contracts for now
-        }
         if filter:
             return products[filter]
         return products
@@ -133,21 +135,24 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         leverage = self.get_leverage()
 
         positions = {
-            product.symbol: utils.AttributeDict({
+            symbol: utils.AttributeDict({
+                'symbol': symbol,
+                'base_asset': product.base_asset,
+                'quote_asset': product.quote_asset,
                 'size': 0.0,
                 'side': PositionMode.BOTH,
                 'entry_price': 0.0,
                 'contract_type': ContractType.PERPETUAL,
-                'leverage': 1,
+                'leverage': 1.0,
                 'margin_type': MarginType.CROSSED,
                 'unrealized_pnl': 0.0
             })
-            for product in self.get_products()
+            for symbol, product in self.get_products().items()
         }
 
         res = self.calls.get_positions()
         for position in res:
-            symbol = self.as_blankly_symbol(position['future'])
+            symbol = self.to_exchange_symbol(position['future'])
             positions[symbol] = utils.AttributeDict({
                 'size': float(position['netSize']),
                 'side': PositionMode(position['side'].lower()),
@@ -171,7 +176,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
                      position: PositionMode = PositionMode.BOTH,
                      reduce_only: bool = False) -> FuturesOrder:
         # TODO these checks could be moved out of the order methods?
-        symbol = self.as_exchange_symbol(symbol)
+        symbol = self.to_exchange_symbol(symbol)
         if position != PositionMode.BOTH:
             raise ValueError(
                 f'position mode {position} not supported on FTX Futures')
@@ -188,7 +193,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
             position: PositionMode = PositionMode.BOTH,
             reduce_only: bool = False,
             time_in_force: TimeInForce = TimeInForce.GTC) -> FuturesOrder:
-        symbol = self.as_exchange_symbol(symbol)
+        symbol = self.to_exchange_symbol(symbol)
         if time_in_force == TimeInForce.GTC:
             ioc = False
         elif time_in_force == TimeInForce.IOC:
@@ -215,7 +220,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
             price: float,
             size: float,
             position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
-        symbol = self.as_exchange_symbol(symbol)
+        symbol = self.to_exchange_symbol(symbol)
         if position != PositionMode.BOTH:
             raise ValueError(
                 f'position mode {position} not supported on FTX Futures')
@@ -232,7 +237,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
                   price: float,
                   size: float,
                   position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
-        symbol = self.as_exchange_symbol(symbol)
+        symbol = self.to_exchange_symbol(symbol)
         if position != PositionMode.BOTH:
             raise ValueError(
                 f'position mode {position} not supported on FTX Futures')
@@ -283,7 +288,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
 
     def get_order(self, symbol: str, order_id: int) -> FuturesOrder:
         response = self.calls.get_order_by_id(str(order_id))
-        symbol = self.as_exchange_symbol(symbol)
+        symbol = self.to_exchange_symbol(symbol)
         if response['symbol'] != symbol:
             raise Exception(
                 'response symbol did not match parameter -- this should never happen'
@@ -291,12 +296,12 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         return self.parse_order_response(response)
 
     def get_price(self, symbol: str) -> float:
-        symbol = self.as_exchange_symbol(symbol)
+        symbol = self.to_exchange_symbol(symbol)
         return float(self.calls.get_future(symbol)['mark'])
 
     def get_funding_rate_history(self, symbol: str, epoch_start: int,
                                  epoch_stop: int) -> list:
-        symbol = self.as_exchange_symbol(symbol)
+        symbol = self.to_exchange_symbol(symbol)
         # TODO dedup binance_futures_exchange maybe?
         history = []
         resolution = self.get_funding_rate_resolution()

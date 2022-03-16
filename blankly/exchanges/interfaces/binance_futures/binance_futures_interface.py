@@ -48,6 +48,14 @@ BINANCE_FUTURES_FEES = [
 class BinanceFuturesInterface(FuturesExchangeInterface):
     calls: Client
 
+    @staticmethod
+    def to_exchange_symbol(symbol: str):
+        return symbol.replace('-', '')
+
+    @staticmethod
+    def to_blankly_symbol(symbol: str):
+        return utils.to_blankly_symbol(symbol, 'binance')
+
     def __init__(self, exchange_name, authenticated_api):
         super().__init__(exchange_name, authenticated_api)
 
@@ -73,7 +81,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             raise Exception(
                 'Binance Futures does not support account wide leverage. Use interface.get_leverage(leverage, '
                 'symbol) to get leverage for a symbol. ')
-        symbol = utils.to_exchange_symbol(symbol, 'binance')
+        symbol = self.to_exchange_symbol(symbol)
         return float(
             self.calls.futures_position_information(
                 symbol=symbol)[0]['leverage'])
@@ -84,7 +92,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             raise Exception(
                 'Binance Futures does not support account wide leverage. Use interface.set_leverage(leverage, '
                 'symbol) to set leverage for each symbol you wish to trade. ')
-        symbol = utils.to_exchange_symbol(symbol, 'binance')
+        symbol = self.to_exchange_symbol(symbol)
         return self.calls.futures_change_leverage(
             symbol=symbol, leverage=leverage)['maxNotionalValue']
 
@@ -93,7 +101,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         """
         Set margin type for a symbol.
         """
-        symbol = utils.to_exchange_symbol(symbol, 'binance')
+        symbol = self.to_exchange_symbol(symbol)
         try:
             self.calls.futures_change_margin_type(symbol=symbol,
                                                   marginType=type.upper())
@@ -103,20 +111,20 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
 
     def get_products(self, filter: str = None) -> dict:
         # https://binance-docs.github.io/apidocs/futures/en/#exchange-information
-        symbols = self.calls.futures_exchange_info()["symbols"]
-        products = {
-            # binance asset ids are weird so just recreate it in the "normal" BASE-QUOTE form
-            symbol['baseAsset'] + '-' + symbol['quoteAsset']:
-            utils.AttributeDict({
-                'base_asset': symbol['baseAsset'],
-                'quote_asset': symbol['quoteAsset'],
+        res = self.calls.futures_exchange_info()["symbols"]
+        products = {}
+        for prod in res:
+            symbol = prod['baseAsset'] + '-' + prod['quoteAsset']
+            products[symbol] = utils.AttributeDict({
+                'symbol': symbol,
+                'base_asset': prod['baseAsset'],
+                'quote_asset': prod['quoteAsset'],
                 'contract_type': ContractType.PERPETUAL,
-                'price_precision': int(symbol['pricePrecision']),
-                'size_precision': int(symbol['quantityPrecision']),
-                'exchange_specific': symbol
+                'price_precision': int(prod['pricePrecision']),
+                'size_precision': int(prod['quantityPrecision']),
+                'exchange_specific': prod
             })
-            for symbol in symbols
-        }
+
         if filter:
             return products[filter]
         return products
@@ -152,6 +160,9 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             margin = MarginType.ISOLATED \
                 if position['isolated'] else MarginType.CROSSED
             positions[symbol] = utils.AttributeDict({
+                'symbol': symbol,
+                'base_asset': utils.get_base_asset(symbol),
+                'quote_asset': utils.get_quote_asset(symbol),
                 'size': float(position['positionAmt']),
                 'side': PositionMode(position['positionSide'].lower()),
                 'entry_price': float(position['entryPrice']),
@@ -203,7 +214,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                      size: float,
                      position: PositionMode = PositionMode.BOTH,
                      reduce_only: bool = False) -> FuturesOrder:
-        symbol = utils.to_exchange_symbol(symbol, "binance")
+        symbol = self.to_exchange_symbol(symbol)
         params = {
             'type': 'MARKET',
             'symbol': symbol,
@@ -225,7 +236,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             position: PositionMode = PositionMode.BOTH,
             reduce_only: bool = False,
             time_in_force: TimeInForce = TimeInForce.GTC) -> FuturesOrder:
-        symbol = utils.to_exchange_symbol(symbol, "binance")
+        symbol = self.to_exchange_symbol(symbol)
         params = {
             'type': 'LIMIT',
             'symbol': symbol,
@@ -247,7 +258,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             price: float,
             size: float,
             position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
-        symbol = utils.to_exchange_symbol(symbol, "binance")
+        symbol = self.to_exchange_symbol(symbol)
         params = {
             'type': 'TAKE_PROFIT_MARKET',
             'symbol': symbol,
@@ -267,7 +278,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                   price: float,
                   size: float,
                   position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
-        symbol = utils.to_exchange_symbol(symbol, "binance")
+        symbol = self.to_exchange_symbol(symbol)
         params = {
             'type': 'STOP_MARKET',
             'symbol': symbol,
@@ -282,26 +293,26 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
 
     @utils.order_protection
     def cancel_order(self, symbol: str, order_id: int) -> FuturesOrder:
-        symbol = utils.to_exchange_symbol(symbol, "binance")
+        symbol = self.to_exchange_symbol(symbol)
         # this library method is broken for some reason 2021-02-25
         res = self.calls.futures_cancel_order(symbol=symbol, orderId=order_id)
         return self.parse_order_response(res)
 
     def get_open_orders(self, symbol: str = None) -> list:
         if symbol:
-            symbol = utils.to_exchange_symbol(symbol, 'binance')
+            symbol = self.to_exchange_symbol(symbol)
             orders = self.calls.futures_get_open_orders(symbol=symbol)
         else:
             orders = self.calls.futures_get_open_orders()
         return [self.parse_order_response(order) for order in orders]
 
     def get_order(self, symbol: str, order_id: int) -> FuturesOrder:
-        symbol = utils.to_exchange_symbol(symbol, 'binance')
+        symbol = self.to_exchange_symbol(symbol)
         res = self.calls.futures_get_order(symbol=symbol, orderId=order_id)
         return self.parse_order_response(res)
 
     def get_price(self, symbol: str) -> float:
-        symbol = utils.to_exchange_symbol(symbol, "binance")
+        symbol = self.to_exchange_symbol(symbol)
         return float(self.calls.futures_mark_price(symbol=symbol)['markPrice'])
 
     def get_fees(self) -> utils.AttributeDict:
@@ -359,7 +370,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         history = []
 
         # Convert coin id to binance coin
-        symbol = utils.to_exchange_symbol(symbol, 'binance')
+        symbol = self.to_exchange_symbol(symbol)
         while need > 1000:
             # Close is always 300 points ahead
             window_close = int(window_open + 1000 * resolution)
@@ -420,7 +431,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
 
     def get_funding_rate_history(self, symbol: str, epoch_start: int,
                                  epoch_stop: int) -> list:
-        symbol = utils.to_exchange_symbol(symbol, 'binance')
+        symbol = self.to_exchange_symbol(symbol)
         limit = 1000
         history = []
         window_start = epoch_start
@@ -444,7 +455,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             # very stinky ^^
 
             history.extend({
-                'rate': e['fundingRate'],
+                'rate': float(e['fundingRate']),
                 'time': e['fundingTime'] // 1000
             } for e in response)
 

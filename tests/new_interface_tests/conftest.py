@@ -1,6 +1,7 @@
 import functools
-import sys
 from datetime import time
+import os
+from collections import OrderedDict
 
 import pytest
 from _pytest.python import Metafunc
@@ -21,8 +22,8 @@ FUTURES_EXCHANGES = [
                portfolio_name="Dotcom Test Account"),
 ]
 SYMBOLS = {
-    'ftx_futures': ['SOL-USD', 'BTC-USD', 'ETH-USD'],
-    'binance_futures': ['LTC-USDT', 'BTC-USDT', 'ETH-USDT']
+    'ftx_futures': ['SOL-USD', 'BTC-USD'],
+    'binance_futures': ['BCH-USDT', 'BTC-USDT']
 }
 
 
@@ -46,9 +47,10 @@ def pytest_generate_tests(metafunc: Metafunc):
 
 
 def pytest_addoption(parser):
-    parser.addoption(
-        "--run-orders", action="store_true", default=False, help="run order tests"
-    )
+    parser.addoption("--run-orders",
+                     action="store_true",
+                     default=False,
+                     help="run order tests")
 
 
 def pytest_configure(config):
@@ -64,47 +66,57 @@ def pytest_collection_modifyitems(config, items):
         if "order" in item.keywords:
             item.add_marker(skip_order)
 
+
 order_guard = pytest.mark.order
 
-def homogenity_testing(func=None, values: bool = False):
+
+def homogenity_testing(func=None, check_values: bool = False):
     # allow using without arguments
     # this trick brought to you by Python Cookbook
     if func is None:
-        return functools.partial(homogenity_testing, values=values)
+        return functools.partial(homogenity_testing, values=check_values)
 
-    previous_outputs = []
+    results = {}
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        output = func(*args, **kwargs)
-        compare_to_previous(previous_outputs, output, values)
-        previous_outputs.append(output)
-        last_output = output
-        return output
+        __tracebackhide__ = True
+        test_name = os.environ.get('PYTEST_CURRENT_TEST')
+        test_name = test_name[test_name.find('[') + 1:test_name.find(']')]
+        result = func(*args, **kwargs)
+        compare_results(results, result, check_values)
+        results[test_name] = result
+        return result
 
     return wrapper
 
 
-# TODO https://docs.pytest.org/en/6.2.x/example/simple.html#writing-well-integrated-assertion-helpers
-def compare_to_previous(previous_outputs: list, current, values: bool):
-    for prev in previous_outputs:
-        compare_values(prev, current, values)
+def compare_results(previous_outputs: dict, result, check_values: bool):
+    __tracebackhide__ = True
+    for prev_name, prev_results in previous_outputs.items():
+        compare_values(prev_name, prev_results, result, check_values)
 
 
-def compare_values(a, b, values: bool):
-    assert type(a) == type(b)
-    if isinstance(a, list):
-        if a and b:
-            for val in a[1:] + b:
-                compare_values(a[0], val, values)
-    if isinstance(a, dict):
-        a.pop('exchange_specific', None)
-        b.pop('exchange_specific', None)
-        assert a.keys() == b.keys()
-        for key in a:
-            compare_values(a[key], b[key], values)
-    elif values:
-        assert a == b
+def compare_values(other_name, other, this, check_values: bool):
+    assert type(this) == type(
+        other
+    ), f'comparing to {other_name}: types do not match. {this=} {other=}'
+    if isinstance(this, list):
+        if this and other:
+            for val in this[1:]:  # check for self-homogenity
+                compare_values('self', val, this[0], check_values)
+            for val in other:
+                compare_values(other_name, val, this[0], check_values)
+    if isinstance(other, dict):
+        other.pop('exchange_specific', None)
+        this.pop('exchange_specific', None)
+        assert this.keys() == other.keys(
+        ), f'comparing to {other_name}: dict keys do not match. '\
+           f'symmetric difference: {set(this.keys()).symmetric_difference(other.keys())}'
+        for key in other:
+            compare_values(other_name, other[key], this[key], check_values)
+    elif check_values:
+        assert this == other, f'comparing to {other_name}: values are not equal.'
 
 
 def wait_till_filled(interface: FuturesExchangeInterface, order: FuturesOrder):
