@@ -6,10 +6,19 @@ from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExcha
 from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 from blankly.utils import utils as utils, exceptions
 import datetime
+import math
 
 
 class FTXFuturesInterface(FuturesExchangeInterface):
     calls: FTXAPI
+
+    @staticmethod
+    def increment_to_precision(increment: float) -> int:
+        # quick maths
+        # 0.0001 -> 4
+        # 0.025 -> 1
+        # 0.25 -> 0
+        return math.floor(-math.log10(increment))
 
     @staticmethod
     def get_contract_type(symbol: str) -> ContractType:
@@ -69,17 +78,24 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         # will throw exception if our api key is stinky
         self.calls.get_account_info()
 
-    def get_products(self) -> dict:
+    def get_products(self, filter: str = None) -> dict:
         res = self.calls.list_futures()
-        return {
+        products = {
             symbol['name']: utils.AttributeDict({
                 'base': symbol['underlying'],
                 'quote': 'USD',
                 'contract_type': self.get_contract_type(symbol['name']),
+                'price_precision': self.increment_to_precision(
+                    symbol['priceIncrement']),
+                'size_precision': self.increment_to_precision(
+                    symbol['sizeIncrement']),
                 'exchange_specific': symbol
             })
             for symbol in res
         }
+        if filter:
+            return products[filter]
+        return products
 
     def get_account(self, filter: str = None) -> utils.AttributeDict:
         balances = self.calls.get_balances()
@@ -124,7 +140,6 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         if filter:
             return positions[filter]
         return positions
-
 
     def market_order(self,
                      symbol: str,

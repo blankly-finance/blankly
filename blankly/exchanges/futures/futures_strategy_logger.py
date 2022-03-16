@@ -40,6 +40,8 @@ class FuturesStrategyLogger:
             return self.interface.__getattribute__(item)
 
     # TODO log order (and other order types)
+    # example:
     def market_order(self, symbol: str, side: Side, size: float, *args,
                      **kwargs) -> FuturesOrder:
+        # log here
         return self.interface.market_order(symbol, side, size, *args, **kwargs)

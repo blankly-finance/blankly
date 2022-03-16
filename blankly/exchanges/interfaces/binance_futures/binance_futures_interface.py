@@ -101,20 +101,25 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             if e.code != -4046:  # -4046 NO_NEED_TO_CHANGE_MARGIN_TYPE (margin type is already set)
                 raise e
 
-    def get_products(self) -> dict:
+    def get_products(self, filter: str = None) -> dict:
         # https://binance-docs.github.io/apidocs/futures/en/#exchange-information
         symbols = self.calls.futures_exchange_info()["symbols"]
-        return {
+        products = {
             # binance asset ids are weird so just recreate it in the "normal" BASE-QUOTE form
             symbol['baseAsset'] + '-' + symbol['quoteAsset']:
             utils.AttributeDict({
                 'base_asset': symbol['baseAsset'],
                 'quote_asset': symbol['quoteAsset'],
-                'contract_type': ContractType.PERPETUAL,  # TODO
+                'contract_type': ContractType.PERPETUAL,
+                'price_precision': int(symbol['pricePrecision']),
+                'size_precision': int(symbol['quantityPrecision']),
                 'exchange_specific': symbol
             })
             for symbol in symbols
         }
+        if filter:
+            return products[filter]
+        return products
 
     def get_account(self, filter=None) -> utils.AttributeDict:
         res = self.calls.futures_account()
@@ -148,7 +153,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                 'size': float(position['positionAmt']),
                 'side': PositionMode(position['positionSide'].lower()),
                 'entry_price': float(position['entryPrice']),
-                'contract_type': ContractType.PERPETUAL,  # TODO
+                'contract_type': ContractType.PERPETUAL,
                 'leverage': float(position['leverage']),
                 'margin_type': margin,
                 'unrealized_pnl': float(position['unrealizedProfit']),
@@ -181,7 +186,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             size=float(response['executedQty']),
             created_at=float(response['updateTime']) / 1000,
             type=OrderType(response['type'].lower()),
-            contract_type=ContractType.PERPETUAL,  # TODO
+            contract_type=ContractType.PERPETUAL,
             side=Side(response['side'].lower()),
             position=PositionMode(response['positionSide'].lower()),
             price=float(response['price']),
@@ -414,7 +419,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
     def get_funding_rate_history(self, symbol: str, epoch_start: int,
                                  epoch_stop: int) -> list:
         symbol = utils.to_exchange_symbol(symbol, 'binance')
-        LIMIT = 1000
+        limit = 1000
         history = []
         window_start = epoch_start
         window_end = epoch_stop
@@ -424,7 +429,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         #         symbol=symbol,
         #         startTime=window_start * 1000,
         #         endTime=window_end * 1000,
-        #         limit=LIMIT):
+        #         limit=limit):
 
         # WARNING! non-walrus code ahead:
         response = True
@@ -433,7 +438,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                 symbol=symbol,
                 startTime=window_start * 1000,
                 endTime=window_end * 1000,
-                limit=LIMIT)
+                limit=limit)
             # very stinky ^^
 
             history.extend({

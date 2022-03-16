@@ -83,8 +83,9 @@ def wait_till_filled(interface: FuturesExchangeInterface, order: FuturesOrder):
 def test_order(futures_interface: FuturesExchangeInterface,
                symbol: str) -> None:
     init_position = futures_interface.get_positions(symbol).size
+    product = futures_interface.get_products(symbol)
     price = futures_interface.get_price(symbol)
-    size = utils.trunc(100 / price, 3)
+    size = utils.trunc(1 / price, product.price_precision)
 
     sell_order = futures_interface.market_order(symbol, Side.SELL, size)
     res = wait_till_filled(futures_interface, sell_order)
@@ -107,10 +108,12 @@ def test_order(futures_interface: FuturesExchangeInterface,
 def test_cancel_order(futures_interface: FuturesExchangeInterface,
                       symbol: str):
     init_position = futures_interface.get_positions(symbol).size
+    product = futures_interface.get_products(symbol)
+
     price = futures_interface.get_price(symbol)
-    size = utils.trunc(100 / price, 3)  # TODO get precision from api
+    size = utils.trunc(1 / price, product.size_precision)
     buy_order = futures_interface.limit_order(symbol, Side.BUY,
-                                              utils.trunc(price * 0.95, 1),
+                                              utils.trunc(price * 0.95, product.price_precision),
                                               size)
 
     assert buy_order.status == OrderStatus.OPEN

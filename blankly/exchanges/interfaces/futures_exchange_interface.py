@@ -62,7 +62,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_products(self) -> utils.AttributeDict:
+    def get_products(self, symbol: str = None) -> dict:
         """Returns a list of all products traded on this exchange"""
         pass
 
@@ -98,7 +98,6 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         """Places a limit order"""
         pass
 
-    # TODO allow setting a separate limit price for order
     @abc.abstractmethod
     def take_profit(self,
                     symbol: str,
@@ -109,7 +108,6 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         """Place a take-profit order for a position"""
         pass
 
-    # TODO allow setting a separate limit price for order
     @abc.abstractmethod
     def stop_loss(self,
                   symbol: str,
