@@ -487,12 +487,12 @@ class AlpacaInterface(ExchangeInterface):
                     # Create an end time by moving after the start time by 1000 datapoints
                     epoch_stop -= resolution_seconds * 1000
 
-                    frames.append(self.calls.get_barset(symbol, time_interval, limit=1000,
-                                                        end=utils.iso8601_from_epoch(epoch_stop))[symbol])
+                    frames.append(self.calls.get_bars(symbol, time_interval, limit=1000,
+                                                      end=utils.iso8601_from_epoch(epoch_stop))[symbol])
                     to -= 1000
 
-                frames.append(self.calls.get_barset(symbol, time_interval, limit=to,
-                                                    end=utils.iso8601_from_epoch(epoch_stop))[symbol])
+                frames.append(self.calls.get_bars(symbol, time_interval, limit=to,
+                                                  end=utils.iso8601_from_epoch(epoch_stop))[symbol])
 
                 for i in range(len(frames)):
                     frames[i] = pd.DataFrame(frames[i])
@@ -633,8 +633,8 @@ class AlpacaInterface(ExchangeInterface):
 
     def get_price(self, symbol) -> float:
         assert isinstance(self.calls, alpaca_trade_api.REST)
-        response = self.calls.get_last_trade(symbol=symbol)
-        return float(response['price'])
+        response = self.calls.get_latest_trade(symbol=symbol)
+        return float(response['p'])
 
     @staticmethod
     def parse_yfinance(symbol: str, epoch_start: [int, float], epoch_stop: [int, float], resolution: int):

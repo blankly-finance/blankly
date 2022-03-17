@@ -372,6 +372,9 @@ init_parser.add_argument('exchange', nargs='?', default='none', type=str, help=i
 login_parser = subparsers.add_parser('login', help='Log in to your blankly account.')
 login_parser.set_defaults(which='login')
 
+login_parser = subparsers.add_parser('logout', help='Log out of your blankly account.')
+login_parser.set_defaults(which='logout')
+
 deploy_parser = subparsers.add_parser('deploy', help='Command to upload & start the model.')
 deploy_parser.set_defaults(which='deploy')
 add_path_arg(deploy_parser, required=False)
@@ -408,6 +411,21 @@ def __generate_tempfile():
     file_name = os.path.basename(path)
 
     return fd, temp_folder, file_name
+
+
+def logout():
+    """
+    This function will log out if not logged in
+    """
+    global tokenfile_path
+    fd, temp_folder, file_name = __generate_tempfile()
+    os.close(fd)
+    os.remove(os.path.join(temp_folder, file_name))
+    for i_ in os.listdir(temp_folder):
+        # Check to see if one exists at this location
+        if i_[0:13] == 'blankly_auth_' and i_ != file_name:
+            # Kill the file we created
+            os.remove(os.path.join(temp_folder, i_))
 
 
 def is_logged_in():
@@ -746,6 +764,10 @@ def main():
 
     elif which == 'login':
         login(remove_cache=True)
+
+    elif which == 'logout':
+        logout()
+        info_print("Cleared all blankly credentials.")
 
     elif which == 'list':
         api = API(login())
