@@ -56,13 +56,13 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.Coinbase_Pro_Interface = cls.Coinbase_Pro.get_interface()
         cls.interfaces.append(cls.Coinbase_Pro_Interface)
         cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
-        
-        #Okex definition and appending
-        # cls.Okx = blankly.Okx(portfolio_name="okx sandbox portfolio",
-        #                       keys_path='./tests/config/keys.json',
-        #                       settings_path="./tests/config/settings.json")
-        # cls.Okx_Interface = cls.Okx.get_interface()
-        # cls.interfaces.append(cls.Okx_Interface)
+
+        # Okex definition and appending
+        cls.Okx = blankly.Okx(portfolio_name="okx sandbox portfolio",
+                              keys_path='./tests/config/keys.json',
+                              settings_path="./tests/config/settings.json")
+        cls.Okx_Interface = cls.Okx.get_interface()
+        cls.interfaces.append(cls.Okx_Interface)
 
         cls.Okx_data = blankly.Okx(portfolio_name="okx data portfolio",
                                    keys_path='./tests/config/keys.json',
@@ -112,7 +112,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.Oanda_Interface = cls.Oanda.get_interface()
         cls.interfaces.append(cls.Oanda_Interface)
         cls.data_interfaces.append(cls.Oanda_Interface)
-        
+
         cls.FTX = blankly.FTX(portfolio_name="Main Account",
                               keys_path='./tests/config/keys.json',
                               settings_path="./tests/config/settings.json")
@@ -261,8 +261,9 @@ class InterfaceHomogeneity(unittest.TestCase):
         """
         binance_limits = self.Binance_Interface.get_order_filter('BTC-USDT')["limit_order"]
 
-        binance_buy = self.Binance_Interface.limit_order('BTC-USDT', 'buy', int(binance_limits['min_price']+100), .01)
-        binance_sell = self.Binance_Interface.limit_order('BTC-USDT', 'sell', int(binance_limits['max_price']-100), .01)
+        binance_buy = self.Binance_Interface.limit_order('BTC-USDT', 'buy', int(binance_limits['min_price'] + 100), .01)
+        binance_sell = self.Binance_Interface.limit_order('BTC-USDT', 'sell', int(binance_limits['max_price'] - 100),
+                                                          .01)
         self.check_limit_order(binance_sell, 'sell', .01, 'BTC-USDT')
         self.check_limit_order(binance_buy, 'buy', .01, 'BTC-USDT')
         time.sleep(3)
@@ -279,7 +280,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         kucoin_sell = self.Kucoin_Interface.limit_order('ETH-USDT', 'sell', 100000, 1)
         self.check_limit_order(kucoin_sell, 'sell', 1, 'ETH-USDT')
 
-        okx_buy = self.Okx_Interface.limit_order('BTC-USDT', 'buy', 0.1, 1)
+        okx_buy = self.Okx_Interface.limit_order('BTC-USDT', 'buy', 1, 0.1)
         self.check_limit_order(okx_buy, 'buy', 1, 'BTC-USDT')
 
         okx_sell = self.Okx_Interface.limit_order('BTC-USDT', 'sell', 100000, 1)
@@ -393,7 +394,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertTrue(isinstance(df['open'], pd.Series))
         self.assertTrue(isinstance(df['close'], pd.Series))
         self.assertTrue(isinstance(df['volume'], pd.Series))
-    
+
     def test_single_point_history(self):
         responses = []
         for i in self.data_interfaces:
@@ -425,10 +426,10 @@ class InterfaceHomogeneity(unittest.TestCase):
         arbitrary_date: dt = dateparser.parse("8/23/21")
 
         # This won't work at the start of the
-        end_date = arbitrary_date.replace(day=arbitrary_date.day-1)
-        close_stop = str(arbitrary_date.replace(day=arbitrary_date.day-2).date())
+        end_date = arbitrary_date.replace(day=arbitrary_date.day - 1)
+        close_stop = str(arbitrary_date.replace(day=arbitrary_date.day - 2).date())
 
-        expected_hours = end_date.day * 24 - (24*2)
+        expected_hours = end_date.day * 24 - (24 * 2)
 
         end_date_str = str(end_date.date())
 
@@ -458,7 +459,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         stop = str(stop_dt.date())
 
         # The dates are offset by one because the time is the open time
-        close_stop = str(stop_dt.replace(day=stop_dt.day-1).date())
+        close_stop = str(stop_dt.replace(day=stop_dt.day - 1).date())
 
         for i in self.data_interfaces:
             valid_symbol = get_valid_symbol(i.get_exchange_type())
@@ -508,13 +509,13 @@ class InterfaceHomogeneity(unittest.TestCase):
             end_time = i['time'].iloc[-1]
 
             # Make sure that the final time we have is within the resolution window. Notice this is shifted backwards
-            self.assertTrue(current_time-(build_day()) < end_time < current_time,
-                            f"\ncurrent_time-(build_day()): {current_time-(build_day())}\nend_time: "
+            self.assertTrue(current_time - (build_day()) < end_time < current_time,
+                            f"\ncurrent_time-(build_day()): {current_time - (build_day())}\nend_time: "
                             f"{end_time}\ncurrent_time: {current_time}\n")
 
             # Do the same, the start time has to be within a resolution interval of the actual time
             # This is shifted forward
-            self.assertTrue(intervals_ago < start_time < intervals_ago+(build_day()))
+            self.assertTrue(intervals_ago < start_time < intervals_ago + (build_day()))
 
             self.check_product_history_types(i)
 

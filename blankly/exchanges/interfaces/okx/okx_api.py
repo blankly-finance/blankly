@@ -285,6 +285,11 @@ class Client(object):
 
         sign_ = sign(pre_hash(timestamp, method, request_path, str(body)), self.API_SECRET_KEY)
         header = get_header(self.API_KEY, sign_, timestamp, self.PASSPHRASE, self.flag)
+        # header["content-type"] = 'application/json'
+        # header["OK_ACCESS_SIGN"] = 'TLWvAznkX8GUequwuvAb/weIFpV5ZXKlcSGvcwGPbl8='
+        # header["OK_ACCESS_KEY"] = '141b8c40-bad4-4f6a-98f0-fd5944a529b1'
+        # header["OK_ACCESS_TIMESTAMP"] = '2022-03-17T05:36:39.355Z'
+        # header["OK_ACCESS_PASSPHRASE"] = '123456'
 
         # send request
         response = None
