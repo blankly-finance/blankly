@@ -259,14 +259,27 @@ class OkexInterface(ExchangeInterface):
         fees['maker_fee_rate'] = fees['data'].pop('maker')
         return utils.isolate_specific(needed, fees)
 
+    def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
+        """
+        Okx is strange
+        """
+        to = kwargs['to']
+
+        if isinstance(to, str):
+            epoch_start -= resolution
+        elif isinstance(to, int):
+            epoch_start = epoch_stop - (to * resolution)
+
+        return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
         if epoch_stop > time.time():
             epoch_stop = int(time.time())
 
         resolution = blankly.time_builder.time_interval_to_seconds(resolution)
 
-        init_epoch_start = int(epoch_start)
-        init_epoch_stop = int(epoch_stop)
+        init_epoch_start = int((epoch_start) * 1000)
+        init_epoch_stop = int((epoch_stop) * 1000)
 
         accepted_grans = [60, 180, 300, 1800, 3600, 7200, 14400, 21600, 43200, 86400, 604800, 2629746, 7889238, 15778476, 31556952]
 
@@ -307,17 +320,17 @@ class OkexInterface(ExchangeInterface):
             response = self._market.get_history_candlesticks('BTC-USDT', before=init_epoch_start, bar=gran_string, limit=100)
 
             history = history + response['data']
-            new_start_time = int(int(response['data'][0][0]) / 1000)  # latest value of epoch
+            new_start_time = int(response['data'][0][0])  # latest value of epoch
             init_epoch_start = new_start_time
 
-            if init_epoch_start >= init_epoch_stop - (2 * resolution):
+            if init_epoch_start >= init_epoch_stop - (2 * resolution * 1000):
                 break
         history.sort(key=lambda x: x[0])
 
         df = pd.DataFrame(history, columns=['time', 'open', 'high', 'low', 'close', 'volume', 'volume_currency'])
         df = df.drop(columns=['volume_currency'])
-        df[['time']] = df[['time']].astype('int64')
-        df[['time']] = df[['time']].div(1000).astype(int)
+        #df[['time']] = df[['time']]
+        df[['time']] = df[['time']].astype('int64').div(1000).astype(int)
         df[['open', 'high', 'low', 'close', 'volume']] = df[['open', 'high', 'low', 'close', 'volume']].astype(float)
 
         return df
