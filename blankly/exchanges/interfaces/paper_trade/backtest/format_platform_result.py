@@ -202,8 +202,6 @@ def format_platform_result(backtest_result):
         'volatility': format_metric(metrics, 'Volatility', 'number')
     }
 
-    backtest_result.metrics = refined_metrics
-
     return {
         'symbols': traded_symbols,
         'quote_asset': backtest_result.quote_currency,
@@ -211,7 +209,7 @@ def format_platform_result(backtest_result):
         'stop_time': backtest_result.stop_time,
         'account_values': compressed_array_conversion,
         'trades': trades,
-        'metrics': backtest_result.metrics,
+        'metrics': refined_metrics,
         'indicators': {},  # Add to this array when we support
         # strategy indicators
         'price_events': price_events,
