@@ -18,6 +18,7 @@
 import time
 from typing import Optional
 
+from functools import cached_property
 from datetime import datetime as dt
 import binance.error
 import pandas as pd
@@ -52,9 +53,17 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
     def to_exchange_symbol(symbol: str):
         return symbol.replace('-', '')
 
-    @staticmethod
-    def to_blankly_symbol(symbol: str):
-        return utils.to_blankly_symbol(symbol, 'binance')
+    # TODO binance SPOT should prob be refactored to do this at some point
+    def to_blankly_symbol(self, symbol: str):
+        return self.symbol_map[symbol]
+
+    @cached_property
+    def symbol_map(self):
+        symbols = self.calls.futures_exchange_info()['symbols']
+        return {
+            symbol['symbol']: symbol['baseAsset'] + '-' + symbol['quoteAsset']
+            for symbol in symbols
+        }
 
     def __init__(self, exchange_name, authenticated_api):
         super().__init__(exchange_name, authenticated_api)
@@ -156,7 +165,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             if '_' in symbol:
                 # we don't support expiring contracts just yet
                 break
-            symbol = utils.to_blankly_symbol(symbol, 'binance')
+            symbol = self.to_blankly_symbol(symbol)
             margin = MarginType.ISOLATED \
                 if position['isolated'] else MarginType.CROSSED
             positions[symbol] = utils.AttributeDict({
@@ -192,20 +201,20 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         raise ValueError(f'invalid order status: {status}')
 
     def parse_order_response(self, response: dict) -> FuturesOrder:
-        return FuturesOrder(
-            symbol=response['symbol'],
-            id=int(response['orderId']),
-            status=self.to_order_status(response['status']),
-            size=float(response['executedQty']),
-            created_at=float(response['updateTime']) / 1000,
-            type=OrderType(response['type'].lower()),
-            contract_type=ContractType.PERPETUAL,
-            side=Side(response['side'].lower()),
-            position=PositionMode(response['positionSide'].lower()),
-            price=float(response['price']),
-            time_in_force=TimeInForce(response['timeInForce']),
-            response=response,
-            interface=self)
+        return FuturesOrder(symbol=self.to_blankly_symbol(response['symbol']),
+                            id=int(response['orderId']),
+                            status=self.to_order_status(response['status']),
+                            size=float(response['origQty']),
+                            type=OrderType(response['type'].lower()),
+                            contract_type=ContractType.PERPETUAL,
+                            side=Side(response['side'].lower()),
+                            position=PositionMode(
+                                response['positionSide'].lower()),
+                            time_in_force=TimeInForce(response['timeInForce']),
+                            price=float(response['avgPrice']),
+                            limit_price=float(response['price']),
+                            response=response,
+                            interface=self)
 
     @utils.order_protection
     def market_order(self,
