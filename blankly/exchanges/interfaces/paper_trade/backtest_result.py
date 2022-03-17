@@ -152,9 +152,11 @@ class BacktestResult:
 
         return_string += "Blankly Metrics: \n"
         for i in self.metrics.keys():
-            spaces_needed = 33 - len(i)
-            user_metrics_line = i + ": " + (' ' * spaces_needed) + str(self.metrics[i])
-            if i[-3:] == "(%)":
+            display_name = self.metrics[i]['display_name']
+            value = self.metrics[i]['value']
+            spaces_needed = 33 - len(display_name)
+            user_metrics_line = display_name + ": " + (' ' * spaces_needed) + str(value)
+            if display_name[-3:] == "(%)":
                 user_metrics_line += "%"
             user_metrics_line += "\n"
             return_string += user_metrics_line

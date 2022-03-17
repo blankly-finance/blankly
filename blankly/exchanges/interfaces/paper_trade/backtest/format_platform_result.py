@@ -202,6 +202,7 @@ def format_platform_result(backtest_result):
         'volatility': format_metric(metrics, 'Volatility', 'number')
     }
 
+    backtest_result.metrics = refined_metrics
     return {
         'symbols': traded_symbols,
         'quote_asset': backtest_result.quote_currency,

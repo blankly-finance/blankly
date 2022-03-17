@@ -38,6 +38,8 @@ from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import Paper
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import load_backtest_preferences, update_progress, write_backtest_preferences, \
     get_base_asset, get_quote_asset, info_print
+from blankly.exchanges.interfaces.paper_trade.backtest.format_platform_result import \
+    format_platform_result
 
 
 def to_string_key(separated_list):
@@ -944,6 +946,8 @@ class BackTestController:
         result_object.user_callbacks = user_callbacks
 
         figures = []
+        # This modifies the platform result in place
+        platform_result = format_platform_result(result_object)
         if self.preferences['settings']['GUI_output']:
             def internal_backtest_viewer():
                 # for i in self.prices:
@@ -1043,10 +1047,6 @@ class BackTestController:
                     # Need this to know where to post to
                     model_id = json_file['model_id']
 
-                    from blankly.exchanges.interfaces.paper_trade.backtest.format_platform_result import \
-                        format_platform_result
-
-                    platform_result = format_platform_result(result_object)
                     requests.post(f'https://events.blankly.finance/v1/backtest/result', json=platform_result, headers={
                         'api_key': api_key,
                         'api_pass': api_pass,
