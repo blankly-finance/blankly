@@ -12,7 +12,9 @@ from blankly.utils.exceptions import APIException, InvalidOrder
 
 class OkexInterface(ExchangeInterface):
     def __init__(self, exchange_name, authenticated_api):
-        super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 180, 300, 1800, 3600, 7200, 14400])
+        super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 180, 300, 1800, 3600, 7200,
+                                                                              14400, 21600, 43200, 86400, 604800,
+                                                                              2629746, 7889238, 15778476, 31556952])
 
         self._market: MarketAPI = self.calls['market']
         self._account: AccountAPI = self.calls['account']
@@ -258,17 +260,15 @@ class OkexInterface(ExchangeInterface):
         return utils.isolate_specific(needed, fees)
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
-        # epoch_start = 1638761626
-        # epoch stop = 1647401626
+        if epoch_stop > time.time():
+            epoch_stop = int(time.time())
+
         resolution = blankly.time_builder.time_interval_to_seconds(resolution)
 
-        initial_epoch_start = int(epoch_start)
-        initial_epoch_stop = int(epoch_stop)
+        init_epoch_start = int(epoch_start)
+        init_epoch_stop = int(epoch_stop)
 
-        epoch_start = int(utils.convert_epochs(epoch_start))
-        epoch_stop = int(utils.convert_epochs(epoch_stop))
-
-        accepted_grans = [60, 180, 300, 1800, 3600, 7200, 14400]
+        accepted_grans = [60, 180, 300, 1800, 3600, 7200, 14400, 21600, 43200, 86400, 604800, 2629746, 7889238, 15778476, 31556952]
 
         if resolution not in accepted_grans:
             utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
@@ -286,51 +286,41 @@ class OkexInterface(ExchangeInterface):
             3600: '1H',
             7200: '2H',
             14400: '4H',
+            21600: '6H',
+            43200: '12H',
+            86400: '1D',
+            604800: '1W',
+            2629746: '1M',
+            7889238: '3M',
+            15778476: '6M',
+            31556952: '1Y'
         }
 
         gran_string = lookup_dict[resolution]
 
-        need = int(epoch_stop + 300 * resolution)
-        initial_need = need
-        window_open = epoch_start
+        # need = int(epoch_stop + 300 * resolution)
+        # initial_need = need
+        # window_open = epoch_start
         history = []
-        # Iterate while its more than max
-        while epoch_start <= need:
-            # Close is always 300 points ahead
-            window_close = int(window_open + 300 * resolution)
-            response = self._market.get_history_candlesticks(symbol, before=epoch_start, bar=gran_string, limit=300)
-            # if response['code'] != 0:
-            #     raise APIException(response['msg'])
+
+        while init_epoch_start:
+            response = self._market.get_history_candlesticks('BTC-USDT', before=init_epoch_start, bar=gran_string, limit=100)
+
             history = history + response['data']
+            new_start_time = int(int(response['data'][0][0]) / 1000)  # latest value of epoch
+            init_epoch_start = new_start_time
 
-            window_open = window_close
-            epoch_start += (300 * resolution)
-            time.sleep(.2)
-            utils.update_progress((initial_need - need) / initial_need)
+            if init_epoch_start >= init_epoch_stop - (2 * resolution):
+                break
+        history.sort(key=lambda x: x[0])
 
-        # Fill the remainder
-        # open_iso = utils.iso8601_from_epoch(window_open)
-        # close_iso = utils.iso8601_from_epoch(epoch_stop)
-        response = self._market.get_history_candlesticks(symbol, before=epoch_start, bar=gran_string, limit=300)
-        # if isinstance(response, dict):
-        #     raise APIException(response['message'])
-        history_block = history + response['data']
-        history_block.sort(key=lambda x: x[0])
-
-        df = pd.DataFrame(history_block, columns=['time', 'open', 'high', 'low', 'close', 'volume', 'volume_currency'])
+        df = pd.DataFrame(history, columns=['time', 'open', 'high', 'low', 'close', 'volume', 'volume_currency'])
         df = df.drop(columns=['volume_currency'])
         df[['time']] = df[['time']].astype('int64')
         df[['time']] = df[['time']].div(1000).astype(int)
         df[['open', 'high', 'low', 'close', 'volume']] = df[['open', 'high', 'low', 'close', 'volume']].astype(float)
 
-        df['time'] = df['time'][df['time'] >= initial_epoch_start]
-        #df['time'] = df['time'][df['time'] <= initial_epoch_stop]
-
-        df = df.drop_duplicates(subset=['time'])
-        df_new = pd.DataFrame(df)
-        df_new = df_new.reset_index()
-
-        return df_new
+        return df
 
     def get_order_filter(self, symbol: str) -> dict:
         instrument_type = "SPOT"

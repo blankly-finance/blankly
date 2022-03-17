@@ -279,7 +279,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         kucoin_sell = self.Kucoin_Interface.limit_order('ETH-USDT', 'sell', 100000, 1)
         self.check_limit_order(kucoin_sell, 'sell', 1, 'ETH-USDT')
 
-        okx_buy = self.Okx_Interface.limit_order('BTC-USDT', 'buy', 1, 0.01)
+        okx_buy = self.Okx_Interface.limit_order('BTC-USDT', 'buy', 0.1, 1)
         self.check_limit_order(okx_buy, 'buy', 1, 'BTC-USDT')
 
         okx_sell = self.Okx_Interface.limit_order('BTC-USDT', 'sell', 100000, 1)
