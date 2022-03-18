@@ -1,4 +1,5 @@
 import operator
+from typing import Optional
 
 from blankly.enums import MarginType, HedgeMode, Side, PositionMode, TimeInForce, ContractType, OrderStatus, OrderType
 from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
@@ -131,31 +132,19 @@ class FTXFuturesInterface(FuturesExchangeInterface):
             return accounts[filter]
         return accounts
 
-    def get_positions(self, filter: str = None) -> utils.AttributeDict:
+    def get_positions(self, filter: str = None) -> Optional[dict]:
         leverage = self.get_leverage()
 
-        positions = {
-            symbol: utils.AttributeDict({
-                'symbol': symbol,
-                'base_asset': product.base_asset,
-                'quote_asset': product.quote_asset,
-                'size': 0.0,
-                'side': PositionMode.BOTH,
-                'entry_price': 0.0,
-                'contract_type': ContractType.PERPETUAL,
-                'leverage': 1.0,
-                'margin_type': MarginType.CROSSED,
-                'unrealized_pnl': 0.0
-            })
-            for symbol, product in self.get_products().items()
-        }
-
         res = self.calls.get_positions()
+        positions = {}
         for position in res:
             symbol = self.to_exchange_symbol(position['future'])
+            size = float(position['netSize'])
+            if size == 0:
+                continue
             positions[symbol] = utils.AttributeDict({
-                'size': float(position['netSize']),
-                'side': PositionMode(position['side'].lower()),
+                'size': size,
+                'position': PositionMode.BOTH,
                 'entry_price': float(position['entryPrice']),
                 'contract_type': ContractType.PERPETUAL,
                 'leverage': leverage,
@@ -166,7 +155,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
             })
 
         if filter:
-            return positions[filter]
+            return positions.get(filter, None)
         return positions
 
     def market_order(self,
@@ -248,11 +237,14 @@ class FTXFuturesInterface(FuturesExchangeInterface):
                                                  trigger_price=price)
         return self.parse_order_response(res)
 
-    @utils.order_protection
-    def set_hedge_mode(self, hedge_mode: HedgeMode):
-        if hedge_mode == HedgeMode.HEDGE:
-            raise Exception('HEDGE mode not supported on FTX Futures')
-        pass  # FTX only has ONEWAY mode
+    # @utils.order_protection
+    # def set_hedge_mode(self, hedge_mode: HedgeMode):
+    #     if hedge_mode == HedgeMode.HEDGE:
+    #         raise Exception('HEDGE mode not supported on FTX Futures')
+    #     pass  # FTX only has ONEWAY mode
+    #
+    # def get_hedge_mode(self):
+    #     return HedgeMode.ONEWAY
 
     @utils.order_protection
     def set_leverage(self, leverage: int, symbol: str = None):
@@ -263,17 +255,17 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         self.calls.change_account_leverage(leverage)
 
     def get_leverage(self, symbol: str = None) -> float:
-        if symbol:
-            raise Exception(
-                'FTX Futures does not allow getting leverage per symbol. Use interface.get_leverage() to get '
-                'account-wide leverage instead.')
+        # doesn't matter if symbol passed or not, ftx leverage is same for all
         return self.calls.get_account_info()['leverage']
 
-    @utils.order_protection
-    def set_margin_type(self, symbol: str, type: MarginType):
-        if type == MarginType.ISOLATED:
-            raise Exception('ISOLATED margin not supported on FTX Futures')
-        pass
+    # @utils.order_protection
+    # def set_margin_type(self, symbol: str, type: MarginType):
+    #     if type == MarginType.ISOLATED:
+    #         raise Exception('isolated margin not supported on FTX Futures')
+    #     pass
+    #
+    # def get_margin_type(self, symbol: str):
+    #     return MarginType.CROSSED
 
     def cancel_order(self, symbol: str, order_id: int) -> FuturesOrder:
         res = self.get_order(symbol, order_id)

@@ -133,15 +133,7 @@ def wait_till_filled(interface: FuturesExchangeInterface, order: FuturesOrder):
     return res
 
 
-def place_order(interface: FuturesExchangeInterface, symbol: str, side: Side, funds: int = 11, reduce_only: bool = False):
-    """
-    Helper function to place a market order
-    Args:
-        interface: the interface to order on
-        symbol: the symbol to sell
-
-    Returns: the order object from the interface
-    """
+def place_order(interface: FuturesExchangeInterface, symbol: str, side: Side, funds: int, reduce_only: bool = False):
     if interface.get_exchange_type() == 'ftx_futures':
         pytest.xfail("the current ftx api key doesn't support trading")
     product = interface.get_products(symbol)
@@ -181,12 +173,18 @@ def place_order(interface: FuturesExchangeInterface, symbol: str, side: Side, fu
     return order
 
 
-def sell(interface: FuturesExchangeInterface, symbol: str, funds: int = 11, reduce_only: bool = False):
+def sell(interface: FuturesExchangeInterface, symbol: str, funds: int = 13, reduce_only: bool = False):
     return place_order(interface, symbol, Side.SELL, funds, reduce_only)
 
 
-def buy(interface: FuturesExchangeInterface, symbol: str, funds: int = 11, reduce_only: bool = False):
+def buy(interface: FuturesExchangeInterface, symbol: str, funds: int = 13, reduce_only: bool = False):
     return place_order(interface, symbol, Side.BUY, funds, reduce_only)
+
+
+def close_all_position(futures_interface: FuturesExchangeInterface):
+    for position in futures_interface.get_positions():
+        close_position(futures_interface, position.symbol)
+    assert len(futures_interface.get_positions()) == 0
 
 
 def close_position(interface: FuturesExchangeInterface, symbol: str):
@@ -196,20 +194,23 @@ def close_position(interface: FuturesExchangeInterface, symbol: str):
         interface: the interface to sell on
         symbol: the symbol to sell
     """
-    if interface.get_exchange_type() == 'ftx_futures':
-        pytest.xfail("the current ftx api key doesn't support trading")
-    position = interface.get_positions(symbol).size
-    if position < 0:
-        interface.market_order(symbol,
-                               Side.BUY,
-                               -position * 2,
-                               reduce_only=True)
-    elif position > 0:
-        interface.market_order(symbol,
-                               Side.SELL,
-                               position * 2,
-                               reduce_only=True)
-    assert interface.get_positions(symbol).size == 0
+    position = interface.get_positions(symbol)
+    if not position:
+        return
+    if position.size < 0:
+        order = interface.market_order(symbol,
+                                       Side.BUY,
+                                       position.size * -2,
+                                       reduce_only=True)
+    elif position.size > 0:
+        order = interface.market_order(symbol,
+                                       Side.SELL,
+                                       position.size * 2,
+                                       reduce_only=True)
+    else:
+        pytest.fail('position size is zero')
+    wait_till_filled(interface, order)
+    assert interface.get_positions(symbol) is None
 
 
 @contextmanager

@@ -76,15 +76,25 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                 f"{e.error_message}. Are you trying to use your normal exchange keys while in sandbox mode? \nTry "
                 "toggling the 'use_sandbox' setting in your settings.json or check if the keys were input "
                 "correctly into your keys.json.")
+        try:
+            # force oneway mode
+            self.calls.futures_change_position_mode(dualSidePosition=False)
+        except binance.error.ClientError as e:
+            if e.error_code != -4059:  # re raise anything other than "already set"
+                raise e
 
-    def set_hedge_mode(self, hedge_mode: HedgeMode):
-        is_hedge = True if hedge_mode == HedgeMode.HEDGE else False
 
-        # yapf: disable
-        if self.calls.futures_get_position_mode()['dualSidePosition'] != is_hedge:
-            self.calls.futures_change_position_mode(dualSidePosition=is_hedge)
-            # yapf: enable
-
+    # def set_hedge_mode(self, hedge_mode: HedgeMode):
+    #     is_hedge = True if hedge_mode == HedgeMode.HEDGE else False
+    #
+    #     if self.calls.futures_get_position_mode(
+    #     )['dualSidePosition'] != is_hedge:
+    #         self.calls.futures_change_position_mode(dualSidePosition=is_hedge)
+    #
+    # def get_hedge_mode(self):
+    #     is_hedge = self.calls.futures_get_position_mode()['dualSidePosition']
+    #     return HedgeMode.HEDGE if is_hedge else HedgeMode.ONEWAY
+    #
     def get_leverage(self, symbol: str = None) -> float:
         if not symbol:
             raise Exception(
@@ -105,24 +115,30 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         return self.calls.futures_change_leverage(
             symbol=symbol, leverage=leverage)['maxNotionalValue']
 
-    @utils.order_protection
-    def set_margin_type(self, symbol: str, type: MarginType):
-        """
-        Set margin type for a symbol.
-        """
-        symbol = self.to_exchange_symbol(symbol)
-        try:
-            self.calls.futures_change_margin_type(symbol=symbol,
-                                                  marginType=type.upper())
-        except BinanceAPIException as e:
-            if e.code != -4046:  # -4046 NO_NEED_TO_CHANGE_MARGIN_TYPE (margin type is already set)
-                raise e
+    # @utils.order_protection
+    # def set_margin_type(self, symbol: str, type: MarginType):
+    #     """
+    #     Set margin type for a symbol.
+    #     """
+    #     symbol = self.to_exchange_symbol(symbol)
+    #     try:
+    #         self.calls.futures_change_margin_type(symbol=symbol,
+    #                                               marginType=type.upper())
+    #     except BinanceAPIException as e:
+    #         if e.code != -4046:  # -4046 NO_NEED_TO_CHANGE_MARGIN_TYPE (margin type is already set)
+    #             raise e
+    #
+    # def get_margin_type(self, symbol: str):
+    #     # self.calls.futures_margin_
+    #     pass
 
     def get_products(self, filter: str = None) -> dict:
         # https://binance-docs.github.io/apidocs/futures/en/#exchange-information
         res = self.calls.futures_exchange_info()["symbols"]
         products = {}
         for prod in res:
+            if '_' in prod['symbol']:
+                continue  # don't support expiring contracts
             symbol = prod['baseAsset'] + '-' + prod['quoteAsset']
             products[symbol] = utils.AttributeDict({
                 'symbol': symbol,
@@ -153,18 +169,17 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             return accounts[filter]
         return accounts
 
-    def get_positions(self,
-                      filter: str = None) -> Optional[utils.AttributeDict]:
+    def get_positions(self, filter: str = None) -> Optional[dict]:
         account = self.calls.futures_account()
 
-        positions = utils.AttributeDict()
+        positions = {}
 
         # write in data from binance
         for position in account['positions']:
             symbol = position['symbol']
-            if '_' in symbol:
-                # we don't support expiring contracts just yet
-                break
+            size = float(position['positionAmt'])
+            if size == 0:
+                continue  # don't show empty positions
             symbol = self.to_blankly_symbol(symbol)
             margin = MarginType.ISOLATED \
                 if position['isolated'] else MarginType.CROSSED
@@ -172,8 +187,8 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                 'symbol': symbol,
                 'base_asset': utils.get_base_asset(symbol),
                 'quote_asset': utils.get_quote_asset(symbol),
-                'size': float(position['positionAmt']),
-                'side': PositionMode(position['positionSide'].lower()),
+                'size': size,
+                'position': PositionMode(position['positionSide'].lower()),
                 'entry_price': float(position['entryPrice']),
                 'contract_type': ContractType.PERPETUAL,
                 'leverage': float(position['leverage']),
@@ -183,7 +198,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             })
 
         if filter:
-            return positions[filter]
+            return positions.get(filter, None)
         return positions
 
     @staticmethod
@@ -229,7 +244,8 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             'symbol': symbol,
             'side': side.upper(),
             'quantity': size,
-            'positionSide': position.upper()
+            'positionSide': position.upper(),
+            'reduceOnly': reduce_only
         }
         response = self.calls.futures_create_order(**params)
 

@@ -18,7 +18,7 @@
 """
 
 import abc
-from typing import Union
+from typing import Union, Optional
 
 import numpy
 import pandas
@@ -81,8 +81,9 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         """Returns account information, or information for only one `symbol` if one is given."""
         pass
 
+    # TODO this metohd name might need to change to get_position ?
     @abc.abstractmethod
-    def get_positions(self, symbol: str = None) -> utils.AttributeDict:
+    def get_positions(self, symbol: str = None) -> Optional[dict]:
         """Returns position information, or information for only one `symbol` if one is given"""
         pass
 
@@ -134,9 +135,13 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
     #                      position: PositionMode) -> FuturesLimitOrder:
     #     pass
 
-    @abc.abstractmethod
-    def set_hedge_mode(self, hedge_mode: HedgeMode):
-        pass
+    # @abc.abstractmethod
+    # def set_hedge_mode(self, hedge_mode: HedgeMode):
+    #     pass
+    #
+    # @abc.abstractmethod
+    # def get_hedge_mode(self):
+    #     pass
 
     @abc.abstractmethod
     def set_leverage(self, leverage: int, symbol: str = None):
@@ -146,9 +151,13 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
     def get_leverage(self, symbol: str = None) -> float:
         pass
 
-    @abc.abstractmethod
-    def set_margin_type(self, symbol: str, type: MarginType):
-        pass
+    # @abc.abstractmethod
+    # def set_margin_type(self, symbol: str, type: MarginType):
+    #     pass
+    #
+    # @abc.abstractmethod
+    # def get_margin_type(self, symbol: str):
+    #     pass
 
     @abc.abstractmethod
     def cancel_order(self, symbol: str, order_id: int) -> FuturesOrder:
