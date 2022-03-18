@@ -89,6 +89,7 @@ class KucoinInterface(ExchangeInterface):
             products[i] = utils.isolate_specific(needed, products[i])
         return products
 
+    @utils.enforce_base_asset
     def get_account(self, symbol=None) -> utils.AttributeDict:
         """
             Get all currencies in an account, or sort by symbol

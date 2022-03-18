@@ -15,8 +15,9 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import json
 import os
+import time
 import traceback
 import typing
 from datetime import datetime as dt
@@ -24,6 +25,7 @@ import copy
 
 import numpy as np
 import pandas as pd
+import requests
 from bokeh.layouts import column as bokeh_columns
 from bokeh.models import HoverTool
 from bokeh.palettes import Category10_10
@@ -35,7 +37,9 @@ from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import load_backtest_preferences, update_progress, write_backtest_preferences, \
-    get_base_asset, get_quote_asset, info_print, trunc
+    get_base_asset, get_quote_asset, info_print
+from blankly.exchanges.interfaces.paper_trade.backtest.format_platform_result import \
+    format_platform_result
 
 
 def to_string_key(separated_list):
@@ -569,6 +573,8 @@ class BackTestController:
         """
         Setup
         """
+        # This is where we begin logging the backtest time
+        start_clock = time.time()
 
         # Create this initial so that we can compare how our strategy performs
         self.initial_account = self.interface.get_account()
@@ -810,90 +816,6 @@ class BackTestController:
         no_trade_cycle_status = pd.concat([no_trade_cycle_status, pd.DataFrame(no_trade)], ignore_index=True)\
             .sort_values(by=['time'])
 
-        figures = []
-        # for i in self.prices:
-        #     result_index = cycle_status['time'].sub(i[0]).abs().idxmin()
-        #     for i in cycle_status.iloc[result_index]:
-
-        hover = HoverTool(
-            tooltips=[
-                ('value', '@value')
-            ],
-
-            # formatters={
-            #     'time': 'datetime',  # use 'datetime' formatter for 'date' field
-            #     '@{value}': 'printf',   # use 'printf' formatter for '@{adj close}' field
-            # },
-
-            # display a tooltip whenever the cursor is vertically in line with a glyph
-            mode='vline'
-        )
-        
-        # Define a helper function to avoid repeating code
-        def add_trace(self_, figure_, time_, data_, label):
-            source = ColumnDataSource(data=dict(
-                        time=time_,
-                        value=data_.values.tolist()
-                    ))
-            figure_.step('time', 'value',
-                         source=source,
-                         line_width=2,
-                         color=self_.__next_color(),
-                         legend_label=label,
-                         mode="after")
-
-        if self.preferences['settings']['GUI_output']:
-            global_x_range = None
-
-            time = [dt.fromtimestamp(ts) for ts in cycle_status['time']]
-
-            for column in cycle_status:
-                if column != 'time' and self.__account_was_used(column):
-                    p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
-                    add_trace(self, p, time, cycle_status[column], column)
-
-                    # Add the no-trade line to the backtest
-                    if column == 'Account Value (' + self.quote_currency + ')':
-                        add_trace(self, p, time, no_trade_cycle_status['Account Value (No Trades)'],
-                                  'Account Value (No Trades)')
-
-                        # Add the benchmark, if requested
-                        if benchmark_symbol is not None:
-                            # This normalizes the benchmark value
-                            initial_account_value = cycle_status['Account Value (' + self.quote_currency + ')'].iloc[0]
-                            initial_benchmark_value = prices[benchmark_symbol][use_price].iloc[0]
-
-                            # This multiplier brings the initial asset price to the initial account value
-                            # initial_account_value = initial_benchmark_value * x
-                            multiplier = initial_account_value / initial_benchmark_value
-
-                            normalized_compare_series = prices[benchmark_symbol][use_price].multiply(multiplier)
-                            normalized_compare_time_series = prices[benchmark_symbol]['time']
-
-                            # We need to also cast the time series that is needed to compare
-                            # because it's only been done for the cycle status time
-                            normalized_compare_time_series = [dt.fromtimestamp(ts) for ts in
-                                                              normalized_compare_time_series]
-                            add_trace(self, p, normalized_compare_time_series,
-                                      normalized_compare_series,
-                                      f'Normalized Benchmark ({benchmark_symbol})')
-                            
-                    p.add_tools(hover)
-
-                    # Format graph
-                    p.legend.location = "top_left"
-                    p.legend.title = column
-                    p.legend.title_text_font_style = "bold"
-                    p.legend.title_text_font_size = "20px"
-                    if global_x_range is None:
-                        global_x_range = p.x_range
-                    else:
-                        p.x_range = global_x_range
-
-                    figures.append(p)
-
-            show(bokeh_columns(figures))
-
         def is_number(s):
             try:
                 float(s)
@@ -913,7 +835,7 @@ class BackTestController:
             'limits_executed': self.interface.executed_orders,
             'limits_canceled': self.interface.canceled_orders,
             'executed_market_orders': self.interface.market_order_execution_details
-        }, self.pd_prices, self.initial_time, self.interface.time(), self.quote_currency, self.price_events, figures)
+        }, self.pd_prices, self.initial_time, self.interface.time(), self.quote_currency, self.price_events, [])
 
         # If they set resampling we use resampling for everything
         resample_setting = self.preferences['settings']['resample_account_value_for_metrics']
@@ -1022,6 +944,139 @@ class BackTestController:
         result_object.history_and_returns = history_and_returns
         result_object.metrics = metrics_indicators
         result_object.user_callbacks = user_callbacks
+
+        figures = []
+        # This modifies the platform result in place
+        platform_result = format_platform_result(result_object)
+        if self.preferences['settings']['GUI_output']:
+            def internal_backtest_viewer():
+                # for i in self.prices:
+                #     result_index = cycle_status['time'].sub(i[0]).abs().idxmin()
+                #     for i in cycle_status.iloc[result_index]:
+
+                hover = HoverTool(
+                    tooltips=[
+                        ('value', '@value')
+                    ],
+
+                    # formatters={
+                    #     'time': 'datetime',  # use 'datetime' formatter for 'date' field
+                    #     '@{value}': 'printf',   # use 'printf' formatter for '@{adj close}' field
+                    # },
+
+                    # display a tooltip whenever the cursor is vertically in line with a glyph
+                    mode='vline'
+                )
+
+                # Define a helper function to avoid repeating code
+                def add_trace(self_, figure_, time_, data_, label):
+                    source = ColumnDataSource(data=dict(
+                        time=time_,
+                        value=data_.values.tolist()
+                    ))
+                    figure_.step('time', 'value',
+                                 source=source,
+                                 line_width=2,
+                                 color=self_.__next_color(),
+                                 legend_label=label,
+                                 mode="after")
+
+                global_x_range = None
+
+                time = [dt.fromtimestamp(ts) for ts in cycle_status['time']]
+
+                for column in cycle_status:
+                    if column != 'time' and self.__account_was_used(column):
+                        p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
+                        add_trace(self, p, time, cycle_status[column], column)
+
+                        # Add the no-trade line to the backtest
+                        if column == 'Account Value (' + self.quote_currency + ')':
+                            add_trace(self, p, time, no_trade_cycle_status['Account Value (No Trades)'],
+                                      'Account Value (No Trades)')
+
+                            # Add the benchmark, if requested
+                            if benchmark_symbol is not None:
+                                # This normalizes the benchmark value
+                                initial_account_value = cycle_status['Account Value (' +
+                                                                     self.quote_currency + ')'].iloc[0]
+                                initial_benchmark_value = prices[benchmark_symbol][use_price].iloc[0]
+
+                                # This multiplier brings the initial asset price to the initial account value
+                                # initial_account_value = initial_benchmark_value * x
+                                multiplier = initial_account_value / initial_benchmark_value
+
+                                normalized_compare_series = prices[benchmark_symbol][use_price].multiply(multiplier)
+                                normalized_compare_time_series = prices[benchmark_symbol]['time']
+
+                                # We need to also cast the time series that is needed to compare
+                                # because it's only been done for the cycle status time
+                                normalized_compare_time_series = [dt.fromtimestamp(ts) for ts in
+                                                                  normalized_compare_time_series]
+                                add_trace(self, p, normalized_compare_time_series,
+                                          normalized_compare_series,
+                                          f'Normalized Benchmark ({benchmark_symbol})')
+
+                        p.add_tools(hover)
+
+                        # Format graph
+                        p.legend.location = "top_left"
+                        p.legend.title = column
+                        p.legend.title_text_font_style = "bold"
+                        p.legend.title_text_font_size = "20px"
+                        if global_x_range is None:
+                            global_x_range = p.x_range
+                        else:
+                            p.x_range = global_x_range
+
+                        figures.append(p)
+
+                show(bokeh_columns(figures))
+
+            # This is where we end the backtesting time
+            stop_clock = time.time()
+
+            from blankly.deployment.cli import is_logged_in
+            if is_logged_in():
+                try:
+                    json_file = json.loads(open('./blankly.json').read())
+                    api_key = json_file['api_key']
+                    api_pass = json_file['api_pass']
+                    # Need this to generate the URL
+                    project_id = json_file['project_id']
+                    # Need this to know where to post to
+                    model_id = json_file['model_id']
+
+                    requests.post(f'https://events.blankly.finance/v1/backtest/result', json=platform_result, headers={
+                        'api_key': api_key,
+                        'api_pass': api_pass,
+                        'model_id': model_id
+                    })
+
+                    requests.post(f'https://events.blankly.finance/v1/backtest/status', json={
+                        'successful': True,
+                        'status_summary': 'Completed',
+                        'status_details': '',
+                        'time_elapsed': stop_clock-start_clock,
+                        'backtest_id': platform_result['backtest_id']
+                    }, headers={
+                        'api_key': api_key,
+                        'api_pass': api_pass,
+                        'model_id': model_id
+                    })
+
+                    import webbrowser
+
+                    webbrowser.open(
+                        f'https://app.blankly.finance/{project_id}/{model_id}/{platform_result["backtest_id"]}/backtest'
+                    )
+                except (FileNotFoundError, KeyError):
+                    internal_backtest_viewer()
+            else:
+                internal_backtest_viewer()
+
+        # Finally, write the figures in
+        result_object.figures = figures
 
         self.interface.set_backtesting(False)
         return result_object

@@ -117,6 +117,7 @@ class FTXInterface(ExchangeInterface):
 
         return end_products
 
+    @utils.enforce_base_asset
     def get_account(self, symbol: str = None) -> utils.AttributeDict:
         """
         Get all assets in an account, or sort by symbol/account_id

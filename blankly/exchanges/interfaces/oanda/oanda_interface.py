@@ -139,6 +139,7 @@ class OandaInterface(ExchangeInterface):
 
         return instruments
 
+    @utils.enforce_base_asset
     def get_account(self, symbol=None) -> utils.AttributeDict:
         if symbol is not None:
             symbol = self.__convert_blankly_to_oanda(symbol)
