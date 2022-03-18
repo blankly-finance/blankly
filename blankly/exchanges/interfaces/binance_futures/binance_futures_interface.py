@@ -83,7 +83,6 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             if e.error_code != -4059:  # re raise anything other than "already set"
                 raise e
 
-
     # def set_hedge_mode(self, hedge_mode: HedgeMode):
     #     is_hedge = True if hedge_mode == HedgeMode.HEDGE else False
     #
@@ -226,7 +225,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                             position=PositionMode(
                                 response['positionSide'].lower()),
                             time_in_force=TimeInForce(response['timeInForce']),
-                            price=float(response['avgPrice']),
+                            price=float(response['cumQuote']),
                             limit_price=float(response['price']),
                             response=response,
                             interface=self)
@@ -282,39 +281,46 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             side: Side,
             price: float,
             size: float,
-            position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
+            position: PositionMode = PositionMode.BOTH,
+            time_in_force: TimeInForce = TimeInForce.GTC) -> FuturesOrder:
         symbol = self.to_exchange_symbol(symbol)
         params = {
-            'type': 'TAKE_PROFIT_MARKET',
+            'type': 'TAKE_PROFIT',
             'symbol': symbol,
             'side': side.upper(),
             'price': price,
+            'stopPrice': price,  # TODO allow set stop price
             'quantity': size,
             'positionSide': position.upper(),
+            'timeInForce': time_in_force.value
         }
         response = self.calls.futures_create_order(**params)
 
         return self.parse_order_response(response)
 
     @utils.order_protection
-    def stop_loss(self,
-                  symbol: str,
-                  side: Side,
-                  price: float,
-                  size: float,
-                  position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
+    def stop_loss(
+            self,
+            symbol: str,
+            side: Side,
+            price: float,
+            size: float,
+            position: PositionMode = PositionMode.BOTH,
+            time_in_force: TimeInForce = TimeInForce.GTC) -> FuturesOrder:
         symbol = self.to_exchange_symbol(symbol)
         params = {
-            'type': 'STOP_MARKET',
+            'type': 'STOP',
             'symbol': symbol,
             'side': side.upper(),
             'price': price,
+            'stopPrice': price,  # TODO allow set stop price
             'quantity': size,
-            'positionSide': position.upper()
+            'positionSide': position.upper(),
+            'timeInForce': time_in_force.value
         }
         response = self.calls.futures_create_order(**params)
 
-        return FuturesOrder(self.parse_order_response(response), params, self)
+        return self.parse_order_response(response)
 
     @utils.order_protection
     def cancel_order(self, symbol: str, order_id: int) -> FuturesOrder:

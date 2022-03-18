@@ -126,7 +126,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
                   price: float,
                   size: float,
                   position: PositionMode = None) -> FuturesOrder:
-        """Place a take-profit order for a position"""
+        """Place a stop-loss order for a position"""
         pass
 
     # TODO

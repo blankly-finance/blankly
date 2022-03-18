@@ -32,7 +32,7 @@ class BinanceFutures(FuturesExchange):
         super().__init__("binance_futures", portfolio_name, preferences_path)
 
         # Load auth from keys file
-        auth = AuthConstructor(keys_path, portfolio_name, 'binance_futures',
+        auth = AuthConstructor(keys_path, portfolio_name, 'binance',
                                ['API_KEY', 'API_SECRET', 'sandbox'])
 
         self.__calls = Client(api_key=auth.keys['API_KEY'],

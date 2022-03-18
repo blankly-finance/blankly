@@ -50,30 +50,6 @@ def pytest_generate_tests(metafunc: Metafunc):
             metafunc.parametrize('futures_interface', interfaces, ids=gen_id)
 
 
-def pytest_addoption(parser):
-    parser.addoption("--run-orders",
-                     action="store_true",
-                     default=False,
-                     help="run order tests")
-
-
-def pytest_configure(config):
-    config.addinivalue_line("markers", "order: mark as order test")
-
-
-def pytest_collection_modifyitems(config, items):
-    if config.getoption("--run-orders"):
-        # --run-orders given in cli: do not skip order tests
-        return
-    skip_order = pytest.mark.skip(reason="need --run-orders option to run")
-    for item in items:
-        if "order" in item.keywords:
-            item.add_marker(skip_order)
-
-
-order_guard = pytest.mark.order
-
-
 def homogenity_testing(func=None, check_values: bool = False):
     # allow using without arguments
     # this trick brought to you by Python Cookbook
@@ -134,8 +110,6 @@ def wait_till_filled(interface: FuturesExchangeInterface, order: FuturesOrder):
 
 
 def place_order(interface: FuturesExchangeInterface, symbol: str, side: Side, funds: int, reduce_only: bool = False):
-    if interface.get_exchange_type() == 'ftx_futures':
-        pytest.xfail("the current ftx api key doesn't support trading")
     product = interface.get_products(symbol)
     price = interface.get_price(symbol)
     order_size = utils.trunc(funds / price, product.size_precision)
@@ -156,13 +130,13 @@ def place_order(interface: FuturesExchangeInterface, symbol: str, side: Side, fu
 
     if reduce_only:
         # 1% tolerance
-        assert res.price <= price * 1.01
+        assert res.price <= price * order_size * 1.01
         assert res.size <= order_size * 1.01
 
         # set size equal so we can compare
         order.size = res.size
     else:
-        assert res.price == approx(price, rel=0.01)
+        assert res.price == approx(price * order_size, rel=0.01)
         assert res.size == approx(order_size)
 
     # set price, status equal so we can compare
@@ -224,9 +198,6 @@ def cancelling_order(interface: FuturesExchangeInterface, symbol: str):
 
     Returns: The order object as returned from the interface
     """
-    if interface.get_exchange_type() == 'ftx_futures':
-        pytest.xfail("the current ftx api key doesn't support trading")
-
     product = interface.get_products(symbol)
     price = interface.get_price(symbol)
 

@@ -6,12 +6,11 @@ from operator import itemgetter
 import pytest
 from _pytest.python_api import approx
 
-from blankly.enums import Side, OrderType, ContractType, OrderStatus, HedgeMode, MarginType
+from blankly.enums import Side, OrderType, ContractType, OrderStatus, HedgeMode, MarginType, PositionMode, TimeInForce
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.utils import utils
-from conftest import wait_till_filled, order_guard, homogenity_testing, sell, buy, cancelling_order, close_position, \
+from conftest import wait_till_filled, homogenity_testing, sell, buy, cancelling_order, close_position, \
     close_all_position
-
 
 # TODO auto truncate
 # TODO min size/min notional api
@@ -62,8 +61,9 @@ def test_get_positions(futures_interface: FuturesExchangeInterface):
 
 
 @homogenity_testing
-@pytest.mark.parametrize('side', [Side.BUY, Side.SELL], ids=['buy', 'sell'])
-def test_get_positions(futures_interface: FuturesExchangeInterface, symbol: str, side: Side):
+@pytest.mark.parametrize('side', [Side.BUY, Side.SELL])
+def test_get_positions(futures_interface: FuturesExchangeInterface,
+                       symbol: str, side: Side):
     if side == Side.BUY:
         func = buy
         m = 1
@@ -72,7 +72,6 @@ def test_get_positions(futures_interface: FuturesExchangeInterface, symbol: str,
         m = -1
 
     close_position(futures_interface, symbol)
-    assert futures_interface.get_positions(symbol) is None
 
     order = func(futures_interface, symbol)
     position = futures_interface.get_positions(symbol)
@@ -83,62 +82,114 @@ def test_get_positions(futures_interface: FuturesExchangeInterface, symbol: str,
     # assert position.margin_type == futures_interface.get_margin_type(symbol)
 
     close_position(futures_interface, symbol)
-    assert futures_interface.get_positions(symbol) == None
 
     return position
 
 
-@order_guard
-def test_sell_buy(futures_interface: FuturesExchangeInterface,
-                  symbol: str) -> None:
-    init_position = futures_interface.get_positions(symbol).size
+def test_simple_open_close(futures_interface: FuturesExchangeInterface,
+                           symbol: str) -> None:
+    close_position(futures_interface, symbol)
 
-    # short position
-    size = sell(futures_interface, symbol).size
-    assert futures_interface.get_positions(symbol).size == approx(
-        init_position - size)
-
-    # buy back
-    buy(futures_interface, symbol)
-    assert futures_interface.get_positions(symbol).size == approx(
-        init_position)
-
-
-@order_guard
-def test_sell_buy(futures_interface: FuturesExchangeInterface,
-                  symbol: str) -> None:
-    init_position = futures_interface.get_positions(symbol).size
-
-    # long position
+    # buy
     size = buy(futures_interface, symbol).size
-    assert futures_interface.get_positions(symbol).size == approx(
-        init_position + size)
+    assert futures_interface.get_positions(symbol).size == approx(size)
 
-    # now sell
-    sell(futures_interface, symbol)
-    assert futures_interface.get_positions(symbol).size == approx(
-        init_position)
+    close_position(futures_interface, symbol)
 
+    # sell
+    size = sell(futures_interface, symbol).size
+    assert futures_interface.get_positions(symbol).size == approx(size)
 
-@homogenity_testing
-def test_market_order(futures_interface: FuturesExchangeInterface,
-                      symbol: str):
-    pass  # TODO
+    close_position(futures_interface, symbol)
 
 
 @homogenity_testing
-def test_limit_order(futures_interface: FuturesExchangeInterface, symbol: str):
-    pass  # TODO
+@pytest.mark.parametrize('side', [Side.BUY, Side.SELL])
+def test_order(futures_interface: FuturesExchangeInterface, symbol: str,
+               side: Side):
+    close_position(futures_interface, symbol)
+
+    price = futures_interface.get_price(symbol)
+    product = futures_interface.get_products(symbol)
+    size = utils.trunc(13 / price, product.size_precision)
+    order = futures_interface.market_order(symbol, side, size)
+
+    assert order.symbol == symbol
+    assert 0 <= order.id
+    assert order.size == approx(size, rel=0.01)
+    assert order.status in (OrderStatus.OPEN, OrderStatus.FILLED)
+    assert order.type == OrderType.MARKET
+    assert order.contract_type == ContractType.PERPETUAL
+    assert order.side == side
+    assert order.limit_price == 0
+    assert order.position == PositionMode.BOTH
+    assert order.time_in_force == TimeInForce.GTC
+
+    res = wait_till_filled(futures_interface,
+                           order)  # for market orders, just wait for fil
+
+    # make sure we paid what we expect
+    assert res.price == approx(size * price, rel=0.01)
+
+    # check our stake is increased/decreased
+    position_size = futures_interface.get_positions(symbol).size
+    if side == Side.BUY:
+        assert order.size == position_size
+    else:
+        assert order.size == -position_size
+
+    # close position
+    close_position(futures_interface, symbol)
+
+    # set price, status and make sure order/res are otherwise equal
+    order.price = res.price
+    order.status = res.status
+    assert order == res
+
+    return order
 
 
 @homogenity_testing
-def test_take_profit(futures_interface: FuturesExchangeInterface, symbol: str):
-    pass  # TODO
+@pytest.mark.parametrize(
+    'type', [OrderType.LIMIT, OrderType.TAKE_PROFIT, OrderType.STOP])
+@pytest.mark.parametrize('side', [Side.BUY, Side.SELL])
+def test_priced_orders(futures_interface: FuturesExchangeInterface,
+                       symbol: str, side: Side, type: OrderType):
+    close_position(futures_interface, symbol)
 
+    price = futures_interface.get_price(symbol)
+    product = futures_interface.get_products(symbol)
+    size = utils.trunc(13 / price, product.size_precision)
+    m = 0.3
+    if side == Side.BUY:
+        m = -m
+    if type == OrderType.STOP:
+        m = -m
+    limit_price = utils.trunc(price * (1 + m), product.price_precision)
+    if type == OrderType.LIMIT:
+        order = futures_interface.limit_order(symbol, side, limit_price, size)
+    elif type == OrderType.TAKE_PROFIT:
+        order = futures_interface.take_profit(symbol, side, limit_price, size)
+    elif type == OrderType.STOP:
+        order = futures_interface.stop_loss(symbol, side, limit_price, size)
 
-@homogenity_testing
-def test_stop_loss(futures_interface: FuturesExchangeInterface, symbol: str):
-    pass  # TODO
+    assert order.symbol == symbol
+    assert 0 <= order.id
+    assert order.size == approx(size, rel=0.01)
+    assert order.status == OrderStatus.OPEN
+    assert order.type == type
+    assert order.contract_type == ContractType.PERPETUAL
+    assert order.side == side
+    assert order.limit_price == limit_price
+    assert order.position == PositionMode.BOTH
+    assert order.time_in_force == TimeInForce.GTC
+
+    res = futures_interface.cancel_order(symbol, order.id)
+
+    order.status = OrderStatus.CANCELED
+    assert order == res
+
+    return order
 
 
 # def test_set_hedge_mode(futures_interface: FuturesExchangeInterface):
@@ -160,7 +211,6 @@ def test_account_leverage(futures_interface: FuturesExchangeInterface):
             'Binance Futures does not support setting account leverage')
     futures_interface.set_leverage(3)
     assert futures_interface.get_leverage() == 3
-
 
 
 def test_symbol_leverage(futures_interface: FuturesExchangeInterface,
@@ -245,7 +295,9 @@ def test_funding_rate_history(futures_interface: FuturesExchangeInterface,
         real_res = current['time'] - prev['time']
         if real_res != resolution:
             errors.append(current)
-            print(f'wrong resolution in funding rate data: {real_res}, should be {resolution}', file=sys.stderr)
+            print(
+                f'wrong resolution in funding rate data: {real_res}, should be {resolution}',
+                file=sys.stderr)
             if len(errors) > 20:
                 pytest.fail(f'too many incorrect resolutions: {errors=}')
 
