@@ -477,29 +477,34 @@ class AlpacaInterface(ExchangeInterface):
                     60: '1Min',
                     300: '5Min',
                     900: '15Min',
-                    86400: '1D'
+                    86400: '1Day'
                 }
                 time_interval = resolution_lookup[resolution_seconds]
 
                 frames = []
 
-                while to > 1000:
+                while to > 10000:
                     # Create an end time by moving after the start time by 1000 datapoints
-                    epoch_stop -= resolution_seconds * 1000
+                    epoch_stop -= resolution_seconds * 10000
 
-                    frames.append(self.calls.get_bars(symbol, time_interval, limit=1000,
-                                                      end=utils.iso8601_from_epoch(epoch_stop))[symbol])
-                    to -= 1000
+                    frames.append(self.calls.get_bars(symbol, time_interval, limit=10000,
+                                                      start=utils.iso8601_from_epoch(epoch_stop -
+                                                                                     (10000 * resolution_seconds)
+                                                                                     )).df)
+                    to -= 10000
 
                 frames.append(self.calls.get_bars(symbol, time_interval, limit=to,
-                                                  end=utils.iso8601_from_epoch(epoch_stop))[symbol])
+                                                  start=utils.iso8601_from_epoch(epoch_stop -
+                                                                                 (to * resolution_seconds))).df)
 
                 for i in range(len(frames)):
-                    frames[i] = pd.DataFrame(frames[i])
+                    series = []
+                    for j in frames[i].index:
+                        series.append(j.timestamp())
+                    frames[i]['time'] = pd.Series(series).values
+                    frames[i] = frames[i].reset_index(drop=True)
 
                 response = pd.concat(frames, ignore_index=True)
-                response.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v":
-                                "volume"}, inplace=True)
 
                 response = response.sort_values(by=['time'], ignore_index=True)
 
