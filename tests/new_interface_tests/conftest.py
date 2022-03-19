@@ -1,4 +1,11 @@
-import datetime
+from blankly.enums import OrderStatus, Side, ContractType, OrderType, PositionMode, TimeInForce
+from blankly.exchanges.interfaces.binance_futures.binance_futures import BinanceFutures
+from blankly.exchanges.interfaces.ftx_futures.ftx_futures import FTXFutures
+from blankly.exchanges.futures.futures_exchange import FuturesExchange
+from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
+from blankly.exchanges.orders.futures.futures_order import FuturesOrder
+from blankly.utils import utils
+
 import time
 import functools
 import os
@@ -7,15 +14,7 @@ import pytest
 from _pytest.python import Metafunc
 from _pytest.python_api import approx
 
-from blankly.enums import OrderStatus, Side, ContractType, OrderType, PositionMode, TimeInForce
-from blankly.exchanges.interfaces.binance_futures.binance_futures import BinanceFutures
-from blankly.exchanges.interfaces.ftx_futures.ftx_futures import FTXFutures
-from blankly.exchanges.futures.futures_exchange import FuturesExchange
-from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
-from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 from contextlib import contextmanager
-
-from blankly.utils import utils
 
 FUTURES_EXCHANGES = [
     BinanceFutures(keys_path="./tests/config/keys.json",
@@ -50,11 +49,11 @@ def pytest_generate_tests(metafunc: Metafunc):
             metafunc.parametrize('futures_interface', interfaces, ids=gen_id)
 
 
-def homogenity_testing(func=None, check_values: bool = False):
+def homogeneity_testing(func=None, check_values: bool = False):
     # allow using without arguments
     # this trick brought to you by Python Cookbook
     if func is None:
-        return functools.partial(homogenity_testing, values=check_values)
+        return functools.partial(homogeneity_testing, values=check_values)
 
     results = {}
 

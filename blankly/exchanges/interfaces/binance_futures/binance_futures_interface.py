@@ -34,7 +34,7 @@ from binance.client import Client
 from binance.exceptions import BinanceAPIException
 
 import blankly
-import blankly.utils.exceptions
+from blankly.utils.exceptions as exceptions
 from blankly.utils import utils, time_builder
 from blankly.enums import MarginType, PositionMode, Side, TimeInForce, HedgeMode, OrderType, ContractType, OrderStatus
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
