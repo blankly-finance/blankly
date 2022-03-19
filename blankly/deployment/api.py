@@ -34,7 +34,10 @@ class API:
         self.token = None
         self.auth_data = self.exchange_token(token)
 
-        self.token = self.auth_data['idToken']
+        try:
+            self.token = self.auth_data['idToken']
+        except (KeyError, TypeError):
+            raise KeyError("Failed to authenticate - run \"blankly login\" again.")
         self.user_id = self.auth_data['data']['user_id']
 
     def __request(self, type_: str, route: str, json_: dict = None, params: dict = None, file=None, data: dict = None):
@@ -161,3 +164,13 @@ class API:
                                   'description': description
                               })
 
+    def list_models(self, project_id: str):
+        return self.__request('post', 'model/list',
+                              data={
+                                  'projectId': project_id
+                              })
+
+    def generate_keys(self, project_id: str):
+        return self.__request('post', 'project/generate-project-token', data={
+            'projectId': project_id
+        })

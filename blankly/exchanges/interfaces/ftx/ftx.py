@@ -30,19 +30,21 @@ class FTX(Exchange):
         Exchange.__init__(self, "ftx", portfolio_name, settings_path)
 
         # Load the auth from the keys file
-        auth = AuthConstructor(keys_path, portfolio_name, 'ftx', ['API_KEY', 'API_SECRET'])
+        auth = AuthConstructor(keys_path, portfolio_name, 'ftx', ['API_KEY', 'API_SECRET', 'sandbox'])
 
         keys = auth.keys
-        sandbox = self.preferences["settings"]["use_sandbox"]
-        calls = FTXAPI(keys['API_KEY'], keys['API_SECRET'])
+        sandbox = super().evaluate_sandbox(auth)
+
+        calls = FTXAPI(keys['API_KEY'], keys['API_SECRET'],
+                       tld=self.preferences["settings"]["ftx"]["ftx_tld"])
 
         # Always finish the method with this function
         super().construct_interface_and_cache(calls)
 
         # FTX is unique because we can continue by wrapping the interface in paper trade
         if sandbox:
-            utils.info_print('The setting use_sandbox is enabled. FTX has been created as a paper trading '
-                             'instance.')
+            utils.info_print('The sandbox setting is enabled for this key. FTX has been created as a '
+                             'paper trading instance.')
             self.interface = PaperTradeInterface(FTXInterface('ftx', calls))
 
     """

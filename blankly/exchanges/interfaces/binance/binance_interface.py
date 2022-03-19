@@ -43,7 +43,7 @@ class BinanceInterface(ExchangeInterface):
         except binance.exceptions.BinanceAPIException:
             raise exceptions.APIException("Invalid API Key, IP, or permissions for action - are you trying "
                                           "to use your normal exchange keys while in sandbox mode? "
-                                          "\nTry toggling the \'use_sandbox\' setting in your settings.json, check "
+                                          "\nTry toggling the \'sandbox\' setting in your keys.json, check "
                                           "if the keys were input correctly into your keys.json or ensure you have set "
                                           "the correct binance_tld in settings.json.")
 
@@ -151,6 +151,7 @@ class BinanceInterface(ExchangeInterface):
             products[i] = utils.isolate_specific(needed, products[i])
         return products
 
+    @utils.enforce_base_asset
     def get_account(self, symbol=None) -> utils.AttributeDict:
         """
         Get all currencies in an account, or sort by asset/account_id

@@ -48,8 +48,8 @@ class AlpacaInterface(ExchangeInterface):
             account_info = self.calls.get_account()
         except alpaca_trade_api.rest.APIError as e:
             raise APIException(e.__str__() + ". Are you trying to use your normal exchange keys "
-                               "while in sandbox mode? \nTry toggling the \'use_sandbox\' setting "
-                               "in your settings.json or check if the keys were input correctly into your "
+                               "while in sandbox mode? \nTry toggling the \'sandbox\' setting "
+                               "in your keys.json or check if the keys were input correctly into your "
                                "keys.json.")
         try:
             if account_info['account_blocked']:
@@ -111,6 +111,7 @@ class AlpacaInterface(ExchangeInterface):
         account_dict = self.calls.get_account()
         return float(account_dict['buying_power'])
 
+    @utils.enforce_base_asset
     def get_account(self, symbol=None):
         assert isinstance(self.calls, alpaca_trade_api.REST)
 

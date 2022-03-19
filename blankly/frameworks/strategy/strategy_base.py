@@ -231,8 +231,11 @@ class Strategy:
                 # Sometimes coinbase doesn't download recent data correctly
                 try:
                     data = self.interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
-                    if data['time'] + resolution == ohlcv_time:
+                    if self.interface.get_exchange_type() == "alpaca":
                         break
+                    else:
+                        if data['time'] + resolution == ohlcv_time:
+                            break
                 except IndexError:
                     pass
                 time.sleep(.5)
