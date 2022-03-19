@@ -339,8 +339,8 @@ class OkexInterface(ExchangeInterface):
         instrument_type = "SPOT"
         response = self._public.get_instruments(instrument_type)
         products = None
-        for i in response:
-            if i["uly"] == symbol:
+        for i in response["data"]:
+            if i["instId"] == symbol:
                 products = i
                 break
 
