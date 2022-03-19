@@ -22,7 +22,6 @@ def valid_product_helper(futures_interface: FuturesExchangeInterface, product):
     symbol = product['symbol']
     assert symbol == base + '-' + quote
     exc = futures_interface.to_exchange_symbol(symbol)
-    print(f'{exc=} {futures_interface.to_blankly_symbol(exc)=} {symbol=}')
     assert futures_interface.to_blankly_symbol(exc) == symbol
 
 
@@ -303,6 +302,7 @@ def test_funding_rate_history(futures_interface: FuturesExchangeInterface,
                 f'wrong resolution in funding rate data: {real_res}, should be {resolution}',
                 file=sys.stderr)
             if len(errors) > 20:
-                pytest.fail(f'too many incorrect resolutions: {errors=}')
+                pytest.fail(f'too many incorrect resolutions: errors={errors}')
+                # pytest.fail(f'too many incorrect resolutions: {errors=}')
 
     return history
