@@ -78,7 +78,9 @@ def compare_results(previous_outputs: dict, result, check_values: bool):
 def compare_values(other_name, other, this, check_values: bool):
     assert type(this) == type(
         other
-    ), f'comparing to {other_name}: types do not match. {this=} {other=}'
+    ), f'comparing to {other_name}: types do not match. this={this} other={other}'
+    # gapped by python 3.7
+    # ), f'comparing to {other_name}: types do not match. {this=} {other=}'
     if isinstance(this, list):
         if this and other:
             for val in this[1:]:  # check for self-homogenity

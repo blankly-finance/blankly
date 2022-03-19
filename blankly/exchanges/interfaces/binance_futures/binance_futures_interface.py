@@ -26,8 +26,8 @@ from binance.client import Client
 from binance.exceptions import BinanceAPIException
 
 import blankly
-import blankly.utils.exceptions as exceptions
-import blankly.utils.utils as utils
+import blankly.utils.exceptions
+from blankly.utils import utils, time_builder
 from blankly.enums import MarginType, PositionMode, Side, TimeInForce, HedgeMode, OrderType, ContractType, OrderStatus
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.exchanges.orders.futures.futures_order import FuturesOrder
@@ -508,4 +508,4 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         return history
 
     def get_funding_rate_resolution(self) -> int:
-        return 60 * 60 * 8  # 8 hours
+        return time_builder.build_hour() * 8  # 8 hours

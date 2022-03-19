@@ -23,7 +23,7 @@ from blankly.enums import MarginType, HedgeMode, Side, PositionMode, TimeInForce
 from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.exchanges.orders.futures.futures_order import FuturesOrder
-from blankly.utils import utils as utils, exceptions
+from blankly.utils import utils, time_builder
 import datetime
 import math
 
@@ -335,7 +335,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         return sorted(history, key=operator.itemgetter('time'))
 
     def get_funding_rate_resolution(self) -> int:
-        return 60 * 60  # hour
+        return time_builder.build_hour()
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
         raise NotImplementedError
