@@ -26,7 +26,7 @@ except ImportError:  # emerson is "too cool" for py3.8
     from functools import lru_cache
 
     def cached_property(func):
-        return property(lru_cache(func))
+        return property(lru_cache(maxsize=None)(func))
 
 
 from datetime import datetime as dt
