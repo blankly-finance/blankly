@@ -18,7 +18,15 @@
 import time
 from typing import Optional
 
-from functools import cached_property
+try:
+    from functools import cached_property
+except ImportError:  # emerson is "too cool" for py3.8
+    from functools import lru_cache
+
+    def cached_property(func):
+        return property(lru_cache(func))
+
+
 from datetime import datetime as dt
 import binance.error
 import pandas as pd
@@ -132,14 +140,15 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
 
         # to get the current margin type, try setting CROSSED and see if an exception is raised.
         try:
-            self.calls.futures_change_margin_type(symbol=symbol,
-                                                  marginType=MarginType.CROSSED.upper())
+            self.calls.futures_change_margin_type(
+                symbol=symbol, marginType=MarginType.CROSSED.upper())
         except BinanceAPIException as e:
             if e.code != -4046:  # -4046 NO_NEED_TO_CHANGE_MARGIN_TYPE (margin type is already set)
                 return MarginType.CROSSED
 
         # if it actually changed, change it back to ISOLATED
-        self.calls.futures_change_margin_type(symbol=symbol, marginType=MarginType.ISOLATED.upper())
+        self.calls.futures_change_margin_type(
+            symbol=symbol, marginType=MarginType.ISOLATED.upper())
         return MarginType.ISOLATED
 
     def get_products(self, filter: str = None) -> dict:
