@@ -67,7 +67,7 @@ def test_marketorder_comprehensive(oanda_interface: OandaInterface) -> None:
     eur_usd = 'EUR-USD'
     market_buy_order = oanda_interface.market_order(eur_usd, 'buy', 200)
 
-    time.sleep(1)
+    time.sleep(2)
     resp = oanda_interface.get_order(eur_usd, market_buy_order.get_id())
 
     # verify resp is correct
@@ -76,7 +76,7 @@ def test_marketorder_comprehensive(oanda_interface: OandaInterface) -> None:
     # Todo: validate market sell order object can query its info correctly
     oanda_interface.market_order(eur_usd, 'sell', 200)
 
-    time.sleep(1)
+    time.sleep(2)
     resp = oanda_interface.get_order(eur_usd, market_buy_order.get_id())
 
     # verify resp is correct
