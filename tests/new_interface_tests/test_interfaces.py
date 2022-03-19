@@ -219,7 +219,8 @@ def test_symbol_leverage(futures_interface: FuturesExchangeInterface,
     if futures_interface.get_exchange_type() == 'ftx_futures':
         close_all_positions(futures_interface)
         futures_interface.set_leverage(3)  # set globally for ftx
-        with pytest.raises(Exception):  # changing for symbol should raise an exception
+        with pytest.raises(
+                Exception):  # changing for symbol should raise an exception
             futures_interface.set_leverage(3, symbol)
     else:
         # for other exchanges we can proceed as normal
