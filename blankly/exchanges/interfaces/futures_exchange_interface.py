@@ -68,7 +68,6 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
     @abc.abstractmethod
     def init_exchange(self):
         """Initializes the exchange"""
-        # this should usually set self.available_currencies
         pass
 
     @abc.abstractmethod
