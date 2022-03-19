@@ -10,7 +10,7 @@ from blankly.enums import Side, OrderType, ContractType, OrderStatus, HedgeMode,
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.utils import utils
 from conftest import wait_till_filled, homogenity_testing, sell, buy, cancelling_order, close_position, \
-    close_all_position
+    close_all_positions
 
 # TODO auto truncate
 # TODO min size/min notional api
@@ -98,7 +98,7 @@ def test_simple_open_close(futures_interface: FuturesExchangeInterface,
 
     # sell
     size = sell(futures_interface, symbol).size
-    assert futures_interface.get_positions(symbol).size == approx(size)
+    assert futures_interface.get_positions(symbol).size == approx(-size)
 
     close_position(futures_interface, symbol)
 
@@ -159,7 +159,7 @@ def test_priced_orders(futures_interface: FuturesExchangeInterface,
 
     price = futures_interface.get_price(symbol)
     product = futures_interface.get_products(symbol)
-    size = utils.trunc(13 / price, product.size_precision)
+    size = utils.trunc(20 / price, product.size_precision)
     m = 0.3
     if side == Side.BUY:
         m = -m
@@ -192,20 +192,22 @@ def test_priced_orders(futures_interface: FuturesExchangeInterface,
     return order
 
 
-# def test_set_hedge_mode(futures_interface: FuturesExchangeInterface):
-#     if futures_interface.get_exchange_type() == 'ftx_futures':
-#         pytest.xfail('FTX Futures does not support hedge mode')
-#     futures_interface.set_hedge_mode(HedgeMode.HEDGE)
-#     assert futures_interface.get_hedge_mode() == HedgeMode.HEDGE
-#
-#
-# def test_set_oneway_mode(futures_interface: FuturesExchangeInterface):
-#     futures_interface.set_hedge_mode(HedgeMode.ONEWAY)
-#     assert futures_interface.get_hedge_mode() == HedgeMode.ONEWAY
+def test_set_hedge_mode(futures_interface: FuturesExchangeInterface):
+    close_all_positions(futures_interface)
+    if futures_interface.get_exchange_type() == 'ftx_futures':
+        pytest.xfail('FTX Futures does not support hedge mode')
+    futures_interface.set_hedge_mode(HedgeMode.HEDGE)
+    assert futures_interface.get_hedge_mode() == HedgeMode.HEDGE
+
+
+def test_set_oneway_mode(futures_interface: FuturesExchangeInterface):
+    close_all_positions(futures_interface)
+    futures_interface.set_hedge_mode(HedgeMode.ONEWAY)
+    assert futures_interface.get_hedge_mode() == HedgeMode.ONEWAY
 
 
 def test_account_leverage(futures_interface: FuturesExchangeInterface):
-    close_all_position(futures_interface)
+    close_all_positions(futures_interface)
     if futures_interface.get_exchange_type() == 'binance_futures':
         pytest.xfail(
             'Binance Futures does not support setting account leverage')
@@ -216,11 +218,12 @@ def test_account_leverage(futures_interface: FuturesExchangeInterface):
 def test_symbol_leverage(futures_interface: FuturesExchangeInterface,
                          symbol: str):
     if futures_interface.get_exchange_type() == 'ftx_futures':
-        close_all_position(futures_interface)
+        close_all_positions(futures_interface)
         futures_interface.set_leverage(3)  # set globally for ftx
-        with pytest.raises(Exception):
+        with pytest.raises(Exception):  # changing for symbol should raise an exception
             futures_interface.set_leverage(3, symbol)
     else:
+        # for other exchanges we can proceed as normal
         close_position(futures_interface, symbol)
         futures_interface.set_leverage(3, symbol)
     assert futures_interface.get_leverage(symbol) == 3
@@ -252,7 +255,8 @@ def test_get_open_orders(futures_interface: FuturesExchangeInterface,
 
 @homogenity_testing
 def test_get_order(futures_interface: FuturesExchangeInterface, symbol: str):
-    pass  # TODO
+    with cancelling_order(futures_interface, symbol) as order:
+        assert futures_interface.get_order(symbol, order.id) == order
 
 
 @homogenity_testing

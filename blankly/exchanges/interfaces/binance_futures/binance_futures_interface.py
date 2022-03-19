@@ -83,17 +83,17 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             if e.error_code != -4059:  # re raise anything other than "already set"
                 raise e
 
-    # def set_hedge_mode(self, hedge_mode: HedgeMode):
-    #     is_hedge = True if hedge_mode == HedgeMode.HEDGE else False
-    #
-    #     if self.calls.futures_get_position_mode(
-    #     )['dualSidePosition'] != is_hedge:
-    #         self.calls.futures_change_position_mode(dualSidePosition=is_hedge)
-    #
-    # def get_hedge_mode(self):
-    #     is_hedge = self.calls.futures_get_position_mode()['dualSidePosition']
-    #     return HedgeMode.HEDGE if is_hedge else HedgeMode.ONEWAY
-    #
+    def set_hedge_mode(self, hedge_mode: HedgeMode):
+        is_hedge = True if hedge_mode == HedgeMode.HEDGE else False
+
+        if self.calls.futures_get_position_mode(
+        )['dualSidePosition'] != is_hedge:
+            self.calls.futures_change_position_mode(dualSidePosition=is_hedge)
+
+    def get_hedge_mode(self):
+        is_hedge = self.calls.futures_get_position_mode()['dualSidePosition']
+        return HedgeMode.HEDGE if is_hedge else HedgeMode.ONEWAY
+
     def get_leverage(self, symbol: str = None) -> float:
         if not symbol:
             raise Exception(
@@ -114,22 +114,33 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         return self.calls.futures_change_leverage(
             symbol=symbol, leverage=leverage)['maxNotionalValue']
 
-    # @utils.order_protection
-    # def set_margin_type(self, symbol: str, type: MarginType):
-    #     """
-    #     Set margin type for a symbol.
-    #     """
-    #     symbol = self.to_exchange_symbol(symbol)
-    #     try:
-    #         self.calls.futures_change_margin_type(symbol=symbol,
-    #                                               marginType=type.upper())
-    #     except BinanceAPIException as e:
-    #         if e.code != -4046:  # -4046 NO_NEED_TO_CHANGE_MARGIN_TYPE (margin type is already set)
-    #             raise e
-    #
-    # def get_margin_type(self, symbol: str):
-    #     # self.calls.futures_margin_
-    #     pass
+    @utils.order_protection
+    def set_margin_type(self, symbol: str, type: MarginType):
+        """
+        Set margin type for a symbol.
+        """
+        symbol = self.to_exchange_symbol(symbol)
+        try:
+            self.calls.futures_change_margin_type(symbol=symbol,
+                                                  marginType=type.upper())
+        except BinanceAPIException as e:
+            if e.code != -4046:  # -4046 NO_NEED_TO_CHANGE_MARGIN_TYPE (margin type is already set)
+                raise e
+
+    def get_margin_type(self, symbol: str):
+        symbol = self.to_exchange_symbol(symbol)
+
+        # to get the current margin type, try setting CROSSED and see if an exception is raised.
+        try:
+            self.calls.futures_change_margin_type(symbol=symbol,
+                                                  marginType=MarginType.CROSSED.upper())
+        except BinanceAPIException as e:
+            if e.code != -4046:  # -4046 NO_NEED_TO_CHANGE_MARGIN_TYPE (margin type is already set)
+                return MarginType.CROSSED
+
+        # if it actually changed, change it back to ISOLATED
+        self.calls.futures_change_margin_type(symbol=symbol, marginType=MarginType.ISOLATED.upper())
+        return MarginType.ISOLATED
 
     def get_products(self, filter: str = None) -> dict:
         # https://binance-docs.github.io/apidocs/futures/en/#exchange-information

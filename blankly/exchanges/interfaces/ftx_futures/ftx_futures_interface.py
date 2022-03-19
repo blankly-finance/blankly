@@ -164,7 +164,6 @@ class FTXFuturesInterface(FuturesExchangeInterface):
                      size: float,
                      position: PositionMode = PositionMode.BOTH,
                      reduce_only: bool = False) -> FuturesOrder:
-        # TODO these checks could be moved out of the order methods?
         symbol = self.to_exchange_symbol(symbol)
         if position != PositionMode.BOTH:
             raise ValueError(
@@ -237,14 +236,14 @@ class FTXFuturesInterface(FuturesExchangeInterface):
                                                  trigger_price=price)
         return self.parse_order_response(res)
 
-    # @utils.order_protection
-    # def set_hedge_mode(self, hedge_mode: HedgeMode):
-    #     if hedge_mode == HedgeMode.HEDGE:
-    #         raise Exception('HEDGE mode not supported on FTX Futures')
-    #     pass  # FTX only has ONEWAY mode
-    #
-    # def get_hedge_mode(self):
-    #     return HedgeMode.ONEWAY
+    @utils.order_protection
+    def set_hedge_mode(self, hedge_mode: HedgeMode):
+        if hedge_mode == HedgeMode.HEDGE:
+            raise Exception('HEDGE mode not supported on FTX Futures')
+        pass  # FTX only has ONEWAY mode
+
+    def get_hedge_mode(self):
+        return HedgeMode.ONEWAY
 
     @utils.order_protection
     def set_leverage(self, leverage: int, symbol: str = None):

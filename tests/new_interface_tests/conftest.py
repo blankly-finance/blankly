@@ -147,15 +147,15 @@ def place_order(interface: FuturesExchangeInterface, symbol: str, side: Side, fu
     return order
 
 
-def sell(interface: FuturesExchangeInterface, symbol: str, funds: int = 13, reduce_only: bool = False):
+def sell(interface: FuturesExchangeInterface, symbol: str, funds: int = 20, reduce_only: bool = False):
     return place_order(interface, symbol, Side.SELL, funds, reduce_only)
 
 
-def buy(interface: FuturesExchangeInterface, symbol: str, funds: int = 13, reduce_only: bool = False):
+def buy(interface: FuturesExchangeInterface, symbol: str, funds: int = 20, reduce_only: bool = False):
     return place_order(interface, symbol, Side.BUY, funds, reduce_only)
 
 
-def close_all_position(futures_interface: FuturesExchangeInterface):
+def close_all_positions(futures_interface: FuturesExchangeInterface):
     for position in futures_interface.get_positions():
         close_position(futures_interface, position.symbol)
     assert len(futures_interface.get_positions()) == 0
