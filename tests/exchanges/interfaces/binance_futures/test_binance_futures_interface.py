@@ -21,8 +21,9 @@ from operator import itemgetter
 
 import pytest
 
-from blankly import BinanceFutures, Side, OrderStatus, OrderType
+from blankly import Side, OrderStatus, OrderType
 from blankly.exchanges.interfaces.binance_futures.binance_futures_interface import BinanceFuturesInterface
+from blankly.exchanges.interfaces.binance_futures.binance_futures import BinanceFutures
 
 
 @pytest.fixture

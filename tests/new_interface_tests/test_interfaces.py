@@ -9,7 +9,7 @@ from _pytest.python_api import approx
 from blankly.enums import Side, OrderType, ContractType, OrderStatus, HedgeMode, MarginType, PositionMode, TimeInForce
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.utils import utils
-from conftest import wait_till_filled, homogenity_testing, sell, buy, cancelling_order, close_position, \
+from tests.new_interface_tests.test_utils import wait_till_filled, homogeneity_testing, sell, buy, cancelling_order, close_position, \
     close_all_positions
 
 # TODO auto truncate
@@ -38,28 +38,28 @@ def test_valid_symbol_from_position(
         valid_product_helper(futures_interface, product)
 
 
-@homogenity_testing
+@homogeneity_testing
 def test_get_products(futures_interface: FuturesExchangeInterface):
     return list(futures_interface.get_products().values())
 
 
-@homogenity_testing
+@homogeneity_testing
 def test_get_products_symbol(futures_interface: FuturesExchangeInterface,
                              symbol: str):
     return futures_interface.get_products(symbol)
 
 
-@homogenity_testing
+@homogeneity_testing
 def test_get_account(futures_interface: FuturesExchangeInterface):
     return list(futures_interface.get_account().values())
 
 
-@homogenity_testing
+@homogeneity_testing
 def test_get_positions(futures_interface: FuturesExchangeInterface):
     return list(futures_interface.get_positions().values())
 
 
-@homogenity_testing
+@homogeneity_testing
 @pytest.mark.parametrize('side', [Side.BUY, Side.SELL])
 def test_get_positions(futures_interface: FuturesExchangeInterface,
                        symbol: str, side: Side):
@@ -102,7 +102,7 @@ def test_simple_open_close(futures_interface: FuturesExchangeInterface,
     close_position(futures_interface, symbol)
 
 
-@homogenity_testing
+@homogeneity_testing
 @pytest.mark.parametrize('side', [Side.BUY, Side.SELL])
 def test_order(futures_interface: FuturesExchangeInterface, symbol: str,
                side: Side):
@@ -148,7 +148,7 @@ def test_order(futures_interface: FuturesExchangeInterface, symbol: str,
     return order
 
 
-@homogenity_testing
+@homogeneity_testing
 @pytest.mark.parametrize(
     'type', [OrderType.LIMIT, OrderType.TAKE_PROFIT, OrderType.STOP])
 @pytest.mark.parametrize('side', [Side.BUY, Side.SELL])
@@ -243,7 +243,7 @@ def test_symbol_leverage(futures_interface: FuturesExchangeInterface,
 #     assert futures_interface.get_margin_type(symbol) == MarginType.ISOLATED
 
 
-@homogenity_testing
+@homogeneity_testing
 def test_get_open_orders(futures_interface: FuturesExchangeInterface,
                          symbol: str):
     with cancelling_order(futures_interface, symbol) as order:
@@ -253,20 +253,20 @@ def test_get_open_orders(futures_interface: FuturesExchangeInterface,
     return open_orders
 
 
-@homogenity_testing
+@homogeneity_testing
 def test_get_order(futures_interface: FuturesExchangeInterface, symbol: str):
     with cancelling_order(futures_interface, symbol) as order:
         assert futures_interface.get_order(symbol, order.id) == order
 
 
-@homogenity_testing
+@homogeneity_testing
 def test_price(futures_interface: FuturesExchangeInterface, symbol: str):
     price = futures_interface.get_price(symbol)
     assert 0 < price
     return price
 
 
-@homogenity_testing
+@homogeneity_testing
 def test_funding_rate_history(futures_interface: FuturesExchangeInterface,
                               symbol: str):
     day = 60 * 60 * 24
