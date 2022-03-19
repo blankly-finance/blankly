@@ -129,19 +129,13 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         """Place a stop-loss order for a position"""
         pass
 
-    # TODO
-    # @abc.abstractmethod
-    # def stop_limit_order(self, symbol: str, side: Side, price: float, stop_price: float, size: float,
-    #                      position: PositionMode) -> FuturesLimitOrder:
-    #     pass
+    @abc.abstractmethod
+    def set_hedge_mode(self, hedge_mode: HedgeMode):
+        pass
 
-    # @abc.abstractmethod
-    # def set_hedge_mode(self, hedge_mode: HedgeMode):
-    #     pass
-    #
-    # @abc.abstractmethod
-    # def get_hedge_mode(self):
-    #     pass
+    @abc.abstractmethod
+    def get_hedge_mode(self):
+        pass
 
     @abc.abstractmethod
     def set_leverage(self, leverage: int, symbol: str = None):
@@ -151,13 +145,13 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
     def get_leverage(self, symbol: str = None) -> float:
         pass
 
-    # @abc.abstractmethod
-    # def set_margin_type(self, symbol: str, type: MarginType):
-    #     pass
-    #
-    # @abc.abstractmethod
-    # def get_margin_type(self, symbol: str):
-    #     pass
+    @abc.abstractmethod
+    def set_margin_type(self, symbol: str, type: MarginType):
+        pass
+
+    @abc.abstractmethod
+    def get_margin_type(self, symbol: str):
+        pass
 
     @abc.abstractmethod
     def cancel_order(self, symbol: str, order_id: int) -> FuturesOrder:

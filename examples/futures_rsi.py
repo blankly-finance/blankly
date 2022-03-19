@@ -1,8 +1,9 @@
 import blankly
-from blankly import HedgeMode, Side, MarginType
+from blankly import Side
+from blankly.futures import FuturesStrategyState, FTXFutures, FuturesStrategy, MarginType
 
 
-def price_event(price, symbol, state: blankly.FuturesStrategyState):
+def price_event(price, symbol, state: FuturesStrategyState):
     state.variables['history'].append(price)
     rsi = blankly.indicators.rsi(state.variables['history'])
 
@@ -22,7 +23,7 @@ def price_event(price, symbol, state: blankly.FuturesStrategyState):
             state.interface.market_order(symbol, side=Side.SELL, size=size)
 
 
-def close_position(symbol, state: blankly.FuturesStrategyState):
+def close_position(symbol, state: FuturesStrategyState):
     size = state.interface.positions[symbol].size
     if size < 0:
         state.interface.market_order(symbol,
@@ -36,7 +37,7 @@ def close_position(symbol, state: blankly.FuturesStrategyState):
                                      reduce_only=True)
 
 
-def init(symbol, state: blankly.FuturesStrategyState):
+def init(symbol, state: FuturesStrategyState):
     close_position(symbol, state)
 
     # Set initial leverage and margin type
@@ -50,9 +51,9 @@ def init(symbol, state: blankly.FuturesStrategyState):
 
 
 if __name__ == "__main__":
-    exchange = blankly.FTXFutures()
+    exchange = FTXFutures()
 
-    strategy = blankly.FuturesStrategy(exchange)
+    strategy = FuturesStrategy(exchange)
     strategy.add_price_event(price_event,
                              init=init,
                              teardown=close_position,
