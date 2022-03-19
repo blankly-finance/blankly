@@ -20,9 +20,9 @@ FUTURES_EXCHANGES = [
     BinanceFutures(keys_path="./tests/config/keys.json",
                    preferences_path="./tests/config/settings.json",
                    portfolio_name="Futures Test Key"),
-    FTXFutures(keys_path="./tests/config/keys.json",
-               preferences_path="./tests/config/settings.json",
-               portfolio_name="Dotcom Test Account"),
+    # FTXFutures(keys_path="./tests/config/keys.json",
+    #            preferences_path="./tests/config/settings.json",
+    #            portfolio_name="Dotcom Test Account"),
 ]
 SYMBOLS = {
     'ftx_futures': ['SOL-USD', 'ETH-USD'],
@@ -135,7 +135,6 @@ def sell(interface: FuturesExchangeInterface, symbol: str, funds: int = 20, redu
 
 def buy(interface: FuturesExchangeInterface, symbol: str, funds: int = 20, reduce_only: bool = False):
     return place_order(interface, symbol, Side.BUY, funds, reduce_only)
-
 
 def close_all_positions(futures_interface: FuturesExchangeInterface):
     for position in futures_interface.get_positions():

@@ -229,18 +229,24 @@ def test_symbol_leverage(futures_interface: FuturesExchangeInterface,
     assert futures_interface.get_leverage(symbol) == 3
 
 
-# def test_set_cross_margin(futures_interface: FuturesExchangeInterface,
-#                           symbol: str):
-#     futures_interface.set_margin_type(symbol, MarginType.CROSSED)
-#     assert futures_interface.get_margin_type(symbol) == MarginType.CROSSED
-#
-#
-# def test_set_isolated_margin(futures_interface: FuturesExchangeInterface,
-#                              symbol: str):
-#     if futures_interface.get_exchange_type() == 'ftx_futures':
-#         pytest.xfail('FTX Futures does not support isolated margin')
-#     futures_interface.set_margin_type(symbol, MarginType.ISOLATED)
-#     assert futures_interface.get_margin_type(symbol) == MarginType.ISOLATED
+def test_set_cross_margin(futures_interface: FuturesExchangeInterface,
+                          symbol: str):
+    futures_interface.set_margin_type(symbol, MarginType.CROSSED)
+
+    if futures_interface.get_exchange_type() == 'binance_futures':
+        pytest.xfail('Binance doesn\'t have an API for this')
+    assert futures_interface.get_margin_type(symbol) == MarginType.CROSSED
+
+
+def test_set_isolated_margin(futures_interface: FuturesExchangeInterface,
+                             symbol: str):
+    if futures_interface.get_exchange_type() == 'ftx_futures':
+        pytest.xfail('FTX Futures does not support isolated margin')
+    futures_interface.set_margin_type(symbol, MarginType.ISOLATED)
+
+    if futures_interface.get_exchange_type() == 'binance_futures':
+        pytest.xfail('Binance doesn\'t have an API for this')
+    assert futures_interface.get_margin_type(symbol) == MarginType.ISOLATED
 
 
 @homogeneity_testing

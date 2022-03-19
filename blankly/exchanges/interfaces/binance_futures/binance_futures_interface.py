@@ -136,20 +136,29 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                 raise e
 
     def get_margin_type(self, symbol: str):
-        symbol = self.to_exchange_symbol(symbol)
-
-        # to get the current margin type, try setting CROSSED and see if an exception is raised.
-        try:
-            self.calls.futures_change_margin_type(
-                symbol=symbol, marginType=MarginType.CROSSED.upper())
-        except BinanceAPIException as e:
-            if e.code != -4046:  # -4046 NO_NEED_TO_CHANGE_MARGIN_TYPE (margin type is already set)
-                return MarginType.CROSSED
-
-        # if it actually changed, change it back to ISOLATED
-        self.calls.futures_change_margin_type(
-            symbol=symbol, marginType=MarginType.ISOLATED.upper())
-        return MarginType.ISOLATED
+        # binance doesn't have an API for this
+        # an attempt to create a workaround is preserved below
+        # proceed at your own risk
+        raise NotImplementedError
+        # symbol = self.to_exchange_symbol(symbol)
+        #
+        # # first check for open position
+        # position = self.get_positions(symbol)
+        # if position:
+        #     return position.margin_type
+        #
+        # # to get the current margin type, try setting CROSSED and see if an exception is raised.
+        # try:
+        #     self.calls.futures_change_margin_type(
+        #         symbol=symbol, marginType=MarginType.CROSSED.upper())
+        # except BinanceAPIException as e:
+        #     if e.code != -4046:  # -4046 NO_NEED_TO_CHANGE_MARGIN_TYPE (margin type is already set)
+        #         return MarginType.CROSSED
+        #
+        # # if it actually changed, change it back to ISOLATED
+        # self.calls.futures_change_margin_type(
+        #     symbol=symbol, marginType=MarginType.ISOLATED.upper())
+        # return MarginType.ISOLATED
 
     def get_products(self, filter: str = None) -> dict:
         # https://binance-docs.github.io/apidocs/futures/en/#exchange-information
