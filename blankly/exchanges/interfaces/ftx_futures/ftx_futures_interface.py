@@ -275,14 +275,14 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         # doesn't matter if symbol passed or not, ftx leverage is same for all
         return self.calls.get_account_info()['leverage']
 
-    # @utils.order_protection
-    # def set_margin_type(self, symbol: str, type: MarginType):
-    #     if type == MarginType.ISOLATED:
-    #         raise Exception('isolated margin not supported on FTX Futures')
-    #     pass
-    #
-    # def get_margin_type(self, symbol: str):
-    #     return MarginType.CROSSED
+    @utils.order_protection
+    def set_margin_type(self, symbol: str, type: MarginType):
+        if type == MarginType.ISOLATED:
+            raise Exception('isolated margin not supported on FTX Futures')
+        pass
+
+    def get_margin_type(self, symbol: str):
+        return MarginType.CROSSED
 
     def cancel_order(self, symbol: str, order_id: int) -> FuturesOrder:
         res = self.get_order(symbol, order_id)
@@ -339,3 +339,5 @@ class FTXFuturesInterface(FuturesExchangeInterface):
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
         raise NotImplementedError
+
+
