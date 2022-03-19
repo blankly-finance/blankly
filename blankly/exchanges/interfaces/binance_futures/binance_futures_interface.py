@@ -18,6 +18,8 @@
 import time
 from typing import Optional
 
+import binance.exceptions
+
 try:
     from functools import cached_property
 except ImportError:  # emerson is "too cool" for py3.8
@@ -28,13 +30,11 @@ except ImportError:  # emerson is "too cool" for py3.8
 
 
 from datetime import datetime as dt
-import binance.error
 import pandas as pd
 from binance.client import Client
 from binance.exceptions import BinanceAPIException
 
 import blankly
-from blankly.utils.exceptions as exceptions
 from blankly.utils import utils, time_builder
 from blankly.enums import MarginType, PositionMode, Side, TimeInForce, HedgeMode, OrderType, ContractType, OrderStatus
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
@@ -79,8 +79,8 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
     def init_exchange(self):
         try:
             self.calls.futures_account()
-        except binance.error.ClientError as e:
-            raise exceptions.APIException(
+        except BinanceAPIException as e:
+            raise Exception(
                 f"{e.error_message}. Are you trying to use your normal exchange keys while in sandbox mode? \nTry "
                 "toggling the 'use_sandbox' setting in your settings.json or check if the keys were input "
                 "correctly into your keys.json.")
