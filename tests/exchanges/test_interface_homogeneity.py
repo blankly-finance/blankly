@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import datetime
 import time
 import unittest
 from datetime import datetime as dt
@@ -41,6 +42,19 @@ def compare_responses(response_list, force_exchange_specific=True):
             print("Failed checking index " + str(i + 1) + " against index " + str(i))
             return False
     return True
+
+
+def forex_market_open():
+    now = datetime.datetime.now()
+    # friday == 4
+    # saturday == 5
+    # TODO Technically it resumes at 5pm sunday but I don't handle that
+    if now.weekday() >= 5:
+        return False
+    elif now.weekday() >= 4 and now.hour >= 17:
+        return False
+    else:
+        return True
 
 
 class InterfaceHomogeneity(unittest.TestCase):
@@ -227,6 +241,9 @@ class InterfaceHomogeneity(unittest.TestCase):
             if type_ == 'oanda':
                 # Non fractional exchanges have to be sent here
                 size = 1
+
+                if not forex_market_open():
+                    continue
             else:
                 size = .01
 
@@ -412,14 +429,14 @@ class InterfaceHomogeneity(unittest.TestCase):
 
     def check_product_history_types(self, df: pd.DataFrame):
         # This is caused by casting on windows in pandas - I believe it is a bug
-        self.assertTrue(isinstance(df['time'][0], int) or
-                        isinstance(df['time'][0], numpy.int64) or
-                        isinstance(df['time'][0], numpy.int32))
-        self.assertTrue(isinstance(df['low'][0], float))
-        self.assertTrue(isinstance(df['high'][0], float))
-        self.assertTrue(isinstance(df['open'][0], float))
-        self.assertTrue(isinstance(df['close'][0], float))
-        self.assertTrue(isinstance(df['volume'][0], float))
+        self.assertTrue(isinstance(df['time'].iloc[0], int) or
+                        isinstance(df['time'].iloc[0], numpy.int64) or
+                        isinstance(df['time'].iloc[0], numpy.int32))
+        self.assertTrue(isinstance(df['low'].iloc[0], float))
+        self.assertTrue(isinstance(df['high'].iloc[0], float))
+        self.assertTrue(isinstance(df['open'].iloc[0], float))
+        self.assertTrue(isinstance(df['close'].iloc[0], float))
+        self.assertTrue(isinstance(df['volume'].iloc[0], float))
 
     def check_product_history_columns(self, df: pd.DataFrame):
         self.assertTrue(isinstance(df['time'], pd.Series))
@@ -430,29 +447,28 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertTrue(isinstance(df['volume'], pd.Series))
     
     def test_single_point_history(self):
-        responses = []
         for i in self.data_interfaces:
+            print(f'Checking {i.get_exchange_type()}')
             valid_symbol = get_valid_symbol(i.get_exchange_type())
-            responses.append(i.history(valid_symbol, 1))
+            response = i.history(valid_symbol, 1)
 
-        for i in responses:
-            self.check_product_history_columns(i)
+            self.check_product_history_columns(response)
 
-            self.assertEqual(len(i), 1)
+            self.assertEqual(len(response), 1)
 
-            self.check_product_history_types(i)
+            self.check_product_history_types(response)
 
     def test_point_based_history(self):
-        responses = []
         for i in self.data_interfaces:
             valid_symbol = get_valid_symbol(i.get_exchange_type())
-            responses.append(i.history(valid_symbol, 150, resolution='1d'))
-        for i in responses:
-            self.check_product_history_columns(i)
+            response = i.history(valid_symbol, 150, resolution='1d')
 
-            self.assertEqual(150, len(i))
+            print(f'Checking {i.get_exchange_type()}')
+            self.check_product_history_columns(response)
 
-            self.check_product_history_types(i)
+            self.assertEqual(150, len(response))
+
+            self.check_product_history_types(response)
 
     def test_point_with_end_history(self):
         responses = []

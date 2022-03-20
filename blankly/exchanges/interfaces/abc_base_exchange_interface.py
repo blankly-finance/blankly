@@ -47,25 +47,11 @@ class ABCBaseExchangeInterface(abc.ABC):
     def history(self,
                 symbol: str,
                 to: Union[str, int] = 200,
-                resolution: Union[str, int] = '1d',
+                resolution: Union[str, float] = '1d',
                 start_date: Union[str, dt, float] = None,
                 end_date: Union[str, dt, float] = None,
-                return_as: str = 'df') -> pandas.DataFrame:
-        """
-        Get product history.
-        Args:
-            symbol: Blankly product ID format (BTC-USD)
-            to (str or int): The number of data points back in time either expressed as a string
-                ("1y" meaning 1 year back") or int of points (300 points at specified resolution)
-            resolution: Resolution as a string (i.e. "1d", "4h", "1y")
-            start_date (str or datetime or float): Start Date for data gathering (in either string, datetime or epoch
-                timestamp)
-            end_date (str or datetime or float): End Date for data gathering (in either string, datetime or epoch
-                timestamp)
-            return_as (str): Return Type (Either list or df (dataframe))
-        Returns:
-            Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
-        """
+                return_as: str = 'df'):
+
         is_backtesting = self.is_backtesting()
         if is_backtesting is not None and end_date is None:
             # is_backtesting can only return a non None value if a function overrides the is_backtesting function
@@ -84,9 +70,8 @@ class ABCBaseExchangeInterface(abc.ABC):
 
         if end_date is None:
             # Figure out the next point and then subtract to the last stamp
-            most_recent_valid_resolution = utils.ceil_date(
-                dt.now(),
-                seconds=resolution_seconds).timestamp() - resolution_seconds
+            most_recent_valid_resolution = utils.ceil_date(dt.now(),
+                                                           seconds=resolution_seconds).timestamp() - resolution_seconds
             # Binance is nice enough to update OHLCV data, so we have to exclude that by subtracting a resolution
             epoch_stop = most_recent_valid_resolution - resolution_seconds
             count_from = most_recent_valid_resolution
@@ -98,9 +83,8 @@ class ABCBaseExchangeInterface(abc.ABC):
                 parsed_date = dt.fromtimestamp(end_date)
             else:
                 parsed_date = end_date
-            valid_time_in_past = utils.ceil_date(
-                parsed_date,
-                seconds=resolution_seconds).timestamp() - resolution_seconds
+            valid_time_in_past = utils.ceil_date(parsed_date,
+                                                 seconds=resolution_seconds).timestamp() - resolution_seconds
             epoch_stop = valid_time_in_past - resolution_seconds
             count_from = valid_time_in_past
 
@@ -118,9 +102,7 @@ class ABCBaseExchangeInterface(abc.ABC):
         else:
             epoch_start = utils.convert_input_to_epoch(start_date)
 
-        # response.index = pd.to_datetime(response['time'], unit='s')
-        response = self.get_product_history(symbol, epoch_start, epoch_stop,
-                                            resolution_seconds)
+        response = self.overridden_history(symbol, epoch_start, epoch_stop, resolution_seconds, to=to,)
 
         # Add a check to make sure that coinbase pro has updated
         if to_present and self.get_exchange_type() == "coinbase_pro":
@@ -138,23 +120,18 @@ class ABCBaseExchangeInterface(abc.ABC):
                 tries += 1
                 if tries > 5:
                     # Admit failure and return
-                    warnings.warn(
-                        "Exchange failed to provide updated data within the timeout."
-                    )
+                    warnings.warn("Exchange failed to provide updated data within the timeout.")
                     return self.cast_type(response, return_as)
                 try:
-                    data_append = [
-                        self.get_product_history(
-                            symbol, epoch_stop - resolution_seconds,
-                            epoch_stop, resolution_seconds).iloc[-1].to_dict()
-                    ]
+                    data_append = [self.get_product_history(symbol,
+                                                            epoch_stop - resolution_seconds,
+                                                            epoch_stop,
+                                                            resolution_seconds).iloc[-1].to_dict()]
                     data_append[0]['time'] = int(data_append[0]['time'])
                 except IndexError:
                     # If there is no recent data on the exchange this will be an empty dataframe.
                     # This happens for low volume
-                    utils.info_print(
-                        "Most recent bar at this resolution does not yet exist - skipping."
-                    )
+                    utils.info_print("Most recent bar at this resolution does not yet exist - skipping.")
                     break
 
             response = response.append(data_append, ignore_index=True)
@@ -163,8 +140,12 @@ class ABCBaseExchangeInterface(abc.ABC):
         if isinstance(to, int):
             point_count = to
         else:
-            point_count = (epoch_stop - epoch_start) / resolution_seconds + 1
+            point_count = (epoch_stop-epoch_start)/resolution_seconds + 1
+        # response.index = pd.to_datetime(response['time'], unit='s')
         return self.cast_type(response, return_as, point_count)
+
+    def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
+        return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
     def is_backtesting(self):
         return None
