@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import datetime
+
 import time
 import unittest
 from datetime import datetime as dt
@@ -29,7 +29,7 @@ from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.utils.time_builder import build_day
 from blankly.utils.utils import compare_dictionaries, get_base_asset, get_quote_asset
-from tests.testing_utils import get_valid_symbol
+from tests.testing_utils import get_valid_symbol, forex_market_open
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 
 
@@ -42,19 +42,6 @@ def compare_responses(response_list, force_exchange_specific=True):
             print("Failed checking index " + str(i + 1) + " against index " + str(i))
             return False
     return True
-
-
-def forex_market_open():
-    now = datetime.datetime.now()
-    # friday == 4
-    # saturday == 5
-    # TODO Technically it resumes at 5pm sunday but I don't handle that
-    if now.weekday() >= 5:
-        return False
-    elif now.weekday() >= 4 and now.hour >= 17:
-        return False
-    else:
-        return True
 
 
 class InterfaceHomogeneity(unittest.TestCase):
