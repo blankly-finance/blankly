@@ -62,9 +62,12 @@ class InterfaceHomogeneity(unittest.TestCase):
     Binance_Interface_data = None
     Kucoin_data = None
     Kucoin_Interface = None
+    Okx_data = None
+    Okx_Interface = None
     Coinbase_Pro_Interface = None
     Kucoin = None
     Coinbase_Pro = None
+    Okx = None
     data_interfaces = None
     interfaces = None
     FTX = None
@@ -82,7 +85,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.interfaces.append(cls.Coinbase_Pro_Interface)
         cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
 
-        # Okex definition and appending
+        #Okex definition and appending
         # cls.Okx = blankly.Okx(portfolio_name="okx sandbox portfolio",
         #                       keys_path='./tests/config/keys.json',
         #                       settings_path="./tests/config/settings.json")
@@ -91,22 +94,22 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         cls.Okx_data = blankly.Okx(portfolio_name="okx data portfolio",
                                    keys_path='./tests/config/keys.json',
-                                   settings_path="./tests/config/settings_live_enabled.json")
+                                   settings_path="./tests/config/settings.json")
         cls.Okx_Interface_data = cls.Okx_data.get_interface()
         cls.data_interfaces.append(cls.Okx_Interface_data)
 
         # Kucoin definition and appending
-        cls.Kucoin = blankly.Kucoin(portfolio_name="KC Sandbox Portfolio",
-                                    keys_path='./tests/config/keys.json',
-                                    settings_path="./tests/config/settings.json")
-        cls.Kucoin_Interface = cls.Kucoin.get_interface()
-        cls.interfaces.append(cls.Kucoin_Interface)
-
-        cls.Kucoin_data = blankly.Kucoin(portfolio_name="KC Data Keys",
-                                         keys_path='./tests/config/keys.json',
-                                         settings_path="./tests/config/settings.json")
-        cls.Kucoin_Interface_data = cls.Kucoin_data.get_interface()
-        cls.data_interfaces.append(cls.Kucoin_Interface_data)
+        # cls.Kucoin = blankly.Kucoin(portfolio_name="KC Sandbox Portfolio",
+        #                             keys_path='./tests/config/keys.json',
+        #                             settings_path="./tests/config/settings.json")
+        # cls.Kucoin_Interface = cls.Kucoin.get_interface()
+        # cls.interfaces.append(cls.Kucoin_Interface)
+        #
+        # cls.Kucoin_data = blankly.Kucoin(portfolio_name="KC Data Keys",
+        #                                  keys_path='./tests/config/keys.json',
+        #                                  settings_path="./tests/config/settings.json")
+        # cls.Kucoin_Interface_data = cls.Kucoin_data.get_interface()
+        # cls.data_interfaces.append(cls.Kucoin_Interface_data)
 
         # Binance definition and appending
         cls.Binance = blankly.Binance(portfolio_name="Spot Test Key",
@@ -123,20 +126,20 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.data_interfaces.append(cls.Binance_Interface_data)
 
         # alpaca definition and appending
-        cls.alpaca = blankly.Alpaca(portfolio_name="alpaca test portfolio",
-                                    keys_path='./tests/config/keys.json',
-                                    settings_path="./tests/config/settings.json")
-        cls.Alpaca_Interface = cls.alpaca.get_interface()
-        cls.interfaces.append(cls.Alpaca_Interface)
-        cls.data_interfaces.append(cls.Alpaca_Interface)
+        # cls.alpaca = blankly.Alpaca(portfolio_name="alpaca test portfolio",
+        #                             keys_path='./tests/config/keys.json',
+        #                             settings_path="./tests/config/settings.json")
+        # cls.Alpaca_Interface = cls.alpaca.get_interface()
+        # cls.interfaces.append(cls.Alpaca_Interface)
+        # cls.data_interfaces.append(cls.Alpaca_Interface)
 
         # Oanda definition and appending
-        cls.Oanda = blankly.Oanda(portfolio_name="oanda test portfolio",
-                                  keys_path='./tests/config/keys.json',
-                                  settings_path="./tests/config/settings.json")
-        cls.Oanda_Interface = cls.Oanda.get_interface()
-        cls.interfaces.append(cls.Oanda_Interface)
-        cls.data_interfaces.append(cls.Oanda_Interface)
+        # cls.Oanda = blankly.Oanda(portfolio_name="oanda test portfolio",
+        #                           keys_path='./tests/config/keys.json',
+        #                           settings_path="./tests/config/settings.json")
+        # cls.Oanda_Interface = cls.Oanda.get_interface()
+        # cls.interfaces.append(cls.Oanda_Interface)
+        # cls.data_interfaces.append(cls.Oanda_Interface)
 
         cls.FTX = blankly.FTX(portfolio_name="Main Account",
                               keys_path='./tests/config/keys.json',
@@ -239,10 +242,6 @@ class InterfaceHomogeneity(unittest.TestCase):
                 continue
             if type_ == 'oanda':
                 # Non fractional exchanges have to be sent here
-            if not (type_ == 'alpaca' or type_ == 'oanda'):
-                size = .01
-            else:
-                # Non-fractional exchanges have to be sent here
                 size = 1
             else:
                 size = .01
@@ -385,8 +384,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         oanda_sell = self.Oanda_Interface.limit_order('EUR-USD', 'sell', 100000, 1)
         self.check_limit_order(oanda_sell, 'sell', 1, 'EUR-USD')
 
-        limits = [binance_buy, binance_sell, coinbase_buy, coinbase_sell, kucoin_buy, kucoin_sell,
-                  alpaca_sell, alpaca_buy, oanda_buy, oanda_sell, okx_buy, okx_sell]
+        limits = [binance_buy, binance_sell, coinbase_buy, coinbase_sell, kucoin_buy,
+                  alpaca_buy, oanda_buy, oanda_sell, okx_buy, okx_sell]
         responses = []
         status = []
         cancels = []
@@ -440,11 +439,8 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', sorted_orders['kucoin']['buy'].get_id()))
         cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', sorted_orders['kucoin']['sell'].get_id()))
-        cancels.append(self.Okx_Interface.cancel_order('BTC-USDT', okx_buy.get_id()))
-        cancels.append(self.Okx_Interface.cancel_order('BTC-USDT', okx_sell.get_id()))
-
-        cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', kucoin_buy.get_id()))
-        cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', kucoin_sell.get_id()))
+        cancels.append(self.Okx_Interface.cancel_order('BTC-USDT', sorted_orders['okx']['buy'].get_id()))
+        cancels.append(self.Okx_Interface.cancel_order('BTC-USDT', sorted_orders['okx']['sell'].get_id()))
 
         cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD',
                                                                 sorted_orders['coinbase_pro']['buy'].get_id()))

@@ -266,9 +266,9 @@ class OkexInterface(ExchangeInterface):
         to = kwargs['to']
 
         if isinstance(to, str):
-            epoch_start -= resolution
+            epoch_start = epoch_start - resolution
         elif isinstance(to, int):
-            epoch_start = epoch_stop - (to * resolution)
+            epoch_start = epoch_start - resolution
 
         return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 

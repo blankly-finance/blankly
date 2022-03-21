@@ -258,13 +258,14 @@ class OkxParamsException(Exception):
 
 class Client(object):
 
-    def __init__(self, api_key, api_secret_key, passphrase, use_server_time=False, flag='1'):
+    def __init__(self, api_key, api_secret_key, passphrase, sandbox, use_server_time=False, flag='1'):
 
         self.API_KEY = api_key
         self.API_SECRET_KEY = api_secret_key
         self.PASSPHRASE = passphrase
         self.use_server_time = use_server_time
         self.flag = flag
+        self._sandbox = sandbox
 
         self.api_url = 'https://www.okx.com'
 
@@ -287,7 +288,8 @@ class Client(object):
         header = get_header(self.API_KEY, sign_, timestamp, self.PASSPHRASE, self.flag)
         # header["Content-Type"] = 'application/json'
         # header["OK_ACCESS_KEY"] = '141b8c40-bad4-4f6a-98f0-fd5944a529b1'
-        #header["x-simulated-trading"] = '1'
+        if self._sandbox:
+            header["x-simulated-trading"] = '1'
         # header["OK_ACCESS_SIGN"] = 'TLWvAznkX8GUequwuvAb/weIFpV5ZXKlcSGvcwGPbl8='
         # header["OK_ACCESS_TIMESTAMP"] = '2022-03-17T05:36:39.355Z'
         # header["OK_ACCESS_PASSPHRASE"] = '123456'
@@ -329,8 +331,8 @@ class Client(object):
 
 class MarketAPI(Client):
 
-    def __init__(self, api_key, api_secret_key, passphrase, use_server_time=False, flag='1'):
-        Client.__init__(self, api_key, api_secret_key, passphrase, use_server_time, flag)
+    def __init__(self, api_key, api_secret_key, passphrase, sandbox, use_server_time=False, flag='1'):
+        Client.__init__(self, api_key, api_secret_key, passphrase, sandbox, use_server_time, flag)
 
     # Get Tickers
     def get_tickers(self, instType, uly=''):
@@ -406,8 +408,8 @@ class MarketAPI(Client):
 
 class TradeAPI(Client):
 
-    def __init__(self, api_key, api_secret_key, passphrase, use_server_time=False, flag='1'):
-        Client.__init__(self, api_key, api_secret_key, passphrase, use_server_time, flag)
+    def __init__(self, api_key, api_secret_key, passphrase, sandbox, use_server_time=False, flag='1'):
+        Client.__init__(self, api_key, api_secret_key, passphrase, sandbox, use_server_time, flag)
 
     # Place Order
     def place_order(self, instId, tdMode, side, ordType, sz, ccy='', clOrdId='', tag='', posSide='', px='',
@@ -521,8 +523,8 @@ class TradeAPI(Client):
 
 
 class ConvertAPI(Client):
-    def __init__(self, api_key, api_secret_key, passphrase, use_server_time=False, flag='1'):
-        Client.__init__(self, api_key, api_secret_key, passphrase, use_server_time, flag)
+    def __init__(self, api_key, api_secret_key, passphrase, sandbox, use_server_time=False, flag='1'):
+        Client.__init__(self, api_key, api_secret_key, passphrase, sandbox, use_server_time, flag)
 
     def get_currencies(self):
         params = {}
@@ -549,8 +551,8 @@ class ConvertAPI(Client):
 
 class AccountAPI(Client):
 
-    def __init__(self, api_key, api_secret_key, passphrase, use_server_time=False, flag='1'):
-        Client.__init__(self, api_key, api_secret_key, passphrase, use_server_time, flag)
+    def __init__(self, api_key, api_secret_key, passphrase, sandbox, use_server_time=False, flag='1'):
+        Client.__init__(self, api_key, api_secret_key, passphrase, sandbox, use_server_time, flag)
 
     # Get Positions
     def get_position_risk(self, instType=''):
@@ -686,8 +688,8 @@ class AccountAPI(Client):
 
 class FundingAPI(Client):
 
-    def __init__(self, api_key, api_secret_key, passphrase, use_server_time=False, flag='1'):
-        Client.__init__(self, api_key, api_secret_key, passphrase, use_server_time, flag)
+    def __init__(self, api_key, api_secret_key, passphrase, sandbox, use_server_time=False, flag='1'):
+        Client.__init__(self, api_key, api_secret_key, passphrase, sandbox, use_server_time, flag)
 
     # Get Deposit Address
     def get_deposit_address(self, ccy):
@@ -790,8 +792,8 @@ class FundingAPI(Client):
 
 class PublicAPI(Client):
 
-    def __init__(self, api_key, api_secret_key, passphrase, use_server_time=False, flag='1'):
-        Client.__init__(self, api_key, api_secret_key, passphrase, use_server_time, flag)
+    def __init__(self, api_key, api_secret_key, passphrase, sandbox, use_server_time=False, flag='1'):
+        Client.__init__(self, api_key, api_secret_key, passphrase, sandbox, use_server_time, flag)
 
     # Get Instruments
     def get_instruments(self, instType, uly='', instId=''):
