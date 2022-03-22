@@ -37,7 +37,31 @@ class Tickers(Websocket):
         self.ws.run_forever()
 
     def on_message(self, ws, message):
-        pass
+        received_dict = json.loads(message)
+        if received_dict['type'] == 'subscribed':
+            info_print(f"Subscribed to {received_dict['channel']}")
+            return
+        parsed_received_trades = websocket_utils.process_trades(received_dict)
+        for received in parsed_received_trades:
+            # ISO8601 is converted to epoch in process_trades
+            self.most_recent_time = received["time"]
+            self.time_feed.append(self.most_recent_time)
+
+            self.log_response(self.__logging_callback, received)
+
+            # Manage price events and fire for each manager attached
+            interface_message = self.__interface_callback(received)
+            self.ticker_feed.append(interface_message)
+            self.most_recent_tick = interface_message
+
+            try:
+                for i in self.callbacks:
+                    i(interface_message)
+            except Exception as e:
+                info_print(e)
+                traceback.print_exc()
+
+            self.message_count += 1
 
     def on_error(self, ws, error):
         info_print(error)
