@@ -24,6 +24,7 @@ import pytest
 import blankly
 from blankly.exchanges.interfaces.oanda.oanda_interface import OandaInterface
 from tests.helpers.comparisons import validate_response
+from tests.testing_utils import forex_market_open
 
 
 @pytest.fixture
@@ -55,6 +56,9 @@ def test_get_cash(oanda_interface: OandaInterface) -> None:
 
 def test_marketorder_comprehensive(oanda_interface: OandaInterface) -> None:
     # query for the unique ID of EUR_USD
+    if not forex_market_open():
+        return
+
     products = oanda_interface.get_products()
 
     found_eur_usd = False
@@ -67,7 +71,7 @@ def test_marketorder_comprehensive(oanda_interface: OandaInterface) -> None:
     eur_usd = 'EUR-USD'
     market_buy_order = oanda_interface.market_order(eur_usd, 'buy', 200)
 
-    time.sleep(1)
+    time.sleep(2)
     resp = oanda_interface.get_order(eur_usd, market_buy_order.get_id())
 
     # verify resp is correct
@@ -76,7 +80,7 @@ def test_marketorder_comprehensive(oanda_interface: OandaInterface) -> None:
     # Todo: validate market sell order object can query its info correctly
     oanda_interface.market_order(eur_usd, 'sell', 200)
 
-    time.sleep(1)
+    time.sleep(2)
     resp = oanda_interface.get_order(eur_usd, market_buy_order.get_id())
 
     # verify resp is correct

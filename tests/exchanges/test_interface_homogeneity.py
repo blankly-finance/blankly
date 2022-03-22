@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import time
 import unittest
 from datetime import datetime as dt
@@ -28,7 +29,7 @@ from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.utils.time_builder import build_day
 from blankly.utils.utils import compare_dictionaries, get_base_asset, get_quote_asset
-from tests.testing_utils import get_valid_symbol
+from tests.testing_utils import get_valid_symbol, forex_market_open
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 
 
@@ -98,18 +99,11 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.Okx_Interface_data = cls.Okx_data.get_interface()
         cls.data_interfaces.append(cls.Okx_Interface_data)
 
-        # Kucoin definition and appending
-        # cls.Kucoin = blankly.Kucoin(portfolio_name="KC Sandbox Portfolio",
-        #                             keys_path='./tests/config/keys.json',
-        #                             settings_path="./tests/config/settings.json")
-        # cls.Kucoin_Interface = cls.Kucoin.get_interface()
-        # cls.interfaces.append(cls.Kucoin_Interface)
-        #
-        # cls.Kucoin_data = blankly.Kucoin(portfolio_name="KC Data Keys",
-        #                                  keys_path='./tests/config/keys.json',
-        #                                  settings_path="./tests/config/settings.json")
-        # cls.Kucoin_Interface_data = cls.Kucoin_data.get_interface()
-        # cls.data_interfaces.append(cls.Kucoin_Interface_data)
+        cls.Kucoin_data = blankly.Kucoin(portfolio_name="KC Data Keys",
+                                         keys_path='./tests/config/keys.json',
+                                         settings_path="./tests/config/settings.json")
+        cls.Kucoin_Interface_data = cls.Kucoin_data.get_interface()
+        cls.data_interfaces.append(cls.Kucoin_Interface_data)
 
         # Binance definition and appending
         cls.Binance = blankly.Binance(portfolio_name="Spot Test Key",
@@ -126,20 +120,20 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.data_interfaces.append(cls.Binance_Interface_data)
 
         # alpaca definition and appending
-        # cls.alpaca = blankly.Alpaca(portfolio_name="alpaca test portfolio",
-        #                             keys_path='./tests/config/keys.json',
-        #                             settings_path="./tests/config/settings.json")
-        # cls.Alpaca_Interface = cls.alpaca.get_interface()
-        # cls.interfaces.append(cls.Alpaca_Interface)
-        # cls.data_interfaces.append(cls.Alpaca_Interface)
+        cls.alpaca = blankly.Alpaca(portfolio_name="alpaca test portfolio",
+                                    keys_path='./tests/config/keys.json',
+                                    settings_path="./tests/config/settings.json")
+        cls.Alpaca_Interface = cls.alpaca.get_interface()
+        cls.interfaces.append(cls.Alpaca_Interface)
+        cls.data_interfaces.append(cls.Alpaca_Interface)
 
         # Oanda definition and appending
-        # cls.Oanda = blankly.Oanda(portfolio_name="oanda test portfolio",
-        #                           keys_path='./tests/config/keys.json',
-        #                           settings_path="./tests/config/settings.json")
-        # cls.Oanda_Interface = cls.Oanda.get_interface()
-        # cls.interfaces.append(cls.Oanda_Interface)
-        # cls.data_interfaces.append(cls.Oanda_Interface)
+        cls.Oanda = blankly.Oanda(portfolio_name="oanda test portfolio",
+                                  keys_path='./tests/config/keys.json',
+                                  settings_path="./tests/config/settings.json")
+        cls.Oanda_Interface = cls.Oanda.get_interface()
+        cls.interfaces.append(cls.Oanda_Interface)
+        cls.data_interfaces.append(cls.Oanda_Interface)
 
         cls.FTX = blankly.FTX(portfolio_name="Main Account",
                               keys_path='./tests/config/keys.json',
@@ -243,6 +237,9 @@ class InterfaceHomogeneity(unittest.TestCase):
             if type_ == 'oanda':
                 # Non fractional exchanges have to be sent here
                 size = 1
+
+                if not forex_market_open():
+                    continue
             else:
                 size = .01
 
@@ -345,47 +342,17 @@ class InterfaceHomogeneity(unittest.TestCase):
         limits += evaluate_limit_order(self.Alpaca_Interface, 'AAPL', 10, 100000, 1)
 
         binance_limits = self.Binance_Interface.get_order_filter('BTC-USDT')["limit_order"]
-
-        binance_buy = self.Binance_Interface.limit_order('BTC-USDT', 'buy', int(binance_limits['min_price'] + 100), .01)
-        binance_sell = self.Binance_Interface.limit_order('BTC-USDT', 'sell', int(binance_limits['max_price'] - 100),
-                                                          .01)
-        self.check_limit_order(binance_sell, 'sell', .01, 'BTC-USDT')
-        self.check_limit_order(binance_buy, 'buy', .01, 'BTC-USDT')
-        time.sleep(3)
-
-        coinbase_buy = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'buy', .01, 1)
-        self.check_limit_order(coinbase_buy, 'buy', 1, 'BTC-USD')
-
-        coinbase_sell = self.Coinbase_Pro_Interface.limit_order('BTC-USD', 'sell', 100000, 1)
-        self.check_limit_order(coinbase_sell, 'sell', 1, 'BTC-USD')
-
-        kucoin_buy = self.Kucoin_Interface.limit_order('ETH-USDT', 'buy', .01, 1)
-        self.check_limit_order(kucoin_buy, 'buy', 1, 'ETH-USDT')
         limits += evaluate_limit_order(self.Binance_Interface, 'BTC-USDT', int(binance_limits['min_price']+100),
                                        int(binance_limits['max_price']-100), .01)
 
         limits += evaluate_limit_order(self.Coinbase_Pro_Interface, 'BTC-USD', .01, 100000, 1)
 
         limits += evaluate_limit_order(self.Kucoin_Interface, 'ETH-USDT', .01, 100000, 1)
-        okx_buy = self.Okx_Interface.limit_order('BTC-USDT', 'buy', 1, 0.1)
-        self.check_limit_order(okx_buy, 'buy', 1, 'BTC-USDT')
 
-        okx_sell = self.Okx_Interface.limit_order('BTC-USDT', 'sell', 100000, 1)
-        self.check_limit_order(okx_sell, 'sell', 1, 'BTC-USDT')
+        limits += evaluate_limit_order(self.Oanda_Interface, 'EUR-USD', .01, 100000, .1)
 
-        alpaca_buy = self.Alpaca_Interface.limit_order('AAPL', 'buy', 10, 1)
-        self.check_limit_order(alpaca_buy, 'buy', 1, 'AAPL')
+        limits += evaluate_limit_order(self.Okx_Interface, 'BTC-USDT', 1, 100000, .1)
 
-        limits += evaluate_limit_order(self.Oanda_Interface, 'EUR-USD', .01, 100000, 1)
-
-        oanda_buy = self.Oanda_Interface.limit_order('EUR-USD', 'buy', .01, 1)
-        self.check_limit_order(oanda_buy, 'buy', 1, 'EUR-USD')
-
-        oanda_sell = self.Oanda_Interface.limit_order('EUR-USD', 'sell', 100000, 1)
-        self.check_limit_order(oanda_sell, 'sell', 1, 'EUR-USD')
-
-        limits = [binance_buy, binance_sell, coinbase_buy, coinbase_sell, kucoin_buy,
-                  alpaca_buy, oanda_buy, oanda_sell, okx_buy, okx_sell]
         responses = []
         status = []
         cancels = []
@@ -393,10 +360,10 @@ class InterfaceHomogeneity(unittest.TestCase):
         open_orders = {
             'coinbase_pro': self.Coinbase_Pro_Interface.get_open_orders('BTC-USD'),
             'binance': self.Binance_Interface.get_open_orders('BTC-USDT'),
-            'okx': self.Okx_Interface.get_open_orders('BTC-USDT'),
             'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
             'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
-            'oanda': self.Oanda_Interface.get_open_orders('EUR-USD')
+            'oanda': self.Oanda_Interface.get_open_orders('EUR-USD'),
+            'okx': self.Okx_Interface_data.get_open_orders('BTC-USDT')
         }
 
         # Simple test to ensure that some degree of orders have been placed
@@ -463,15 +430,15 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
     def check_product_history_types(self, df: pd.DataFrame):
-        # This is caused by casting on Windows in pandas - I believe it is a bug
-        self.assertTrue(isinstance(df['time'][0], int) or
-                        isinstance(df['time'][0], numpy.int64) or
-                        isinstance(df['time'][0], numpy.int32))
-        self.assertTrue(isinstance(df['low'][0], float))
-        self.assertTrue(isinstance(df['high'][0], float))
-        self.assertTrue(isinstance(df['open'][0], float))
-        self.assertTrue(isinstance(df['close'][0], float))
-        self.assertTrue(isinstance(df['volume'][0], float))
+        # This is caused by casting on windows in pandas - I believe it is a bug
+        self.assertTrue(isinstance(df['time'].iloc[0], int) or
+                        isinstance(df['time'].iloc[0], numpy.int64) or
+                        isinstance(df['time'].iloc[0], numpy.int32))
+        self.assertTrue(isinstance(df['low'].iloc[0], float))
+        self.assertTrue(isinstance(df['high'].iloc[0], float))
+        self.assertTrue(isinstance(df['open'].iloc[0], float))
+        self.assertTrue(isinstance(df['close'].iloc[0], float))
+        self.assertTrue(isinstance(df['volume'].iloc[0], float))
 
     def check_product_history_columns(self, df: pd.DataFrame):
         self.assertTrue(isinstance(df['time'], pd.Series))
@@ -482,29 +449,28 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertTrue(isinstance(df['volume'], pd.Series))
 
     def test_single_point_history(self):
-        responses = []
         for i in self.data_interfaces:
+            print(f'Checking {i.get_exchange_type()}')
             valid_symbol = get_valid_symbol(i.get_exchange_type())
-            responses.append(i.history(valid_symbol, 1))
+            response = i.history(valid_symbol, 1)
 
-        for i in responses:
-            self.check_product_history_columns(i)
+            self.check_product_history_columns(response)
 
-            self.assertEqual(len(i), 1)
+            self.assertEqual(len(response), 1)
 
-            self.check_product_history_types(i)
+            self.check_product_history_types(response)
 
     def test_point_based_history(self):
-        responses = []
         for i in self.data_interfaces:
             valid_symbol = get_valid_symbol(i.get_exchange_type())
-            responses.append(i.history(valid_symbol, 150, resolution='1d'))
-        for i in responses:
-            self.check_product_history_columns(i)
+            response = i.history(valid_symbol, 150, resolution='1d')
 
-            self.assertEqual(150, len(i))
+            print(f'Checking {i.get_exchange_type()}')
+            self.check_product_history_columns(response)
 
-            self.check_product_history_types(i)
+            self.assertEqual(150, len(response))
+
+            self.check_product_history_types(response)
 
     def test_point_with_end_history(self):
         responses = []
