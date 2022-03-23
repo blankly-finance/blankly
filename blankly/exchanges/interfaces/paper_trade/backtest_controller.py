@@ -18,7 +18,6 @@
 import json
 import os
 import time
-import traceback
 import typing
 from datetime import datetime as dt
 import copy
@@ -36,8 +35,7 @@ from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestRes
 from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
-from blankly.utils.utils import load_backtest_preferences, update_progress, write_backtest_preferences, \
-    get_base_asset, get_quote_asset, info_print
+from blankly.utils.utils import load_backtest_preferences, write_backtest_preferences, info_print
 from blankly.exchanges.interfaces.paper_trade.backtest.format_platform_result import \
     format_platform_result
 from blankly.frameworks.model.model import Model
@@ -153,11 +151,12 @@ class BackTestController:
         self.initial_time = None
         self.model = model
 
+        self.traded_account_values = []
+        self.no_trade_account_values = []
+
         self.prices = []  # [epoch, "BTC-USD", price]
 
         self.price_dictionary = {}
-
-        self.pd_prices = None
 
         # User added times
         self.__user_added_times = []
@@ -455,7 +454,17 @@ class BackTestController:
             return next(self.__color_generator)
 
     def advance_time(self, time_delta: [int, float]):
-        pass
+        self.time += time_delta
+        self.interface.receive_time(self.time)
+
+    def value_account(self) -> None:
+        """
+        Store the valuation for the account
+        """
+        available_dict, no_trade_dict = self.format_account_data(self.time)
+
+        self.traded_account_values.append(available_dict)
+        self.no_trade_account_values.append(no_trade_dict)
 
     def run(self, args) -> BacktestResult:
         """
@@ -487,8 +496,6 @@ class BackTestController:
         use_price = self.preferences['settings']['use_price']
         self.use_price = use_price
 
-        self.pd_prices = {**prices}
-
         # Organize each price into this structure: [epoch, "BTC-USD", price, open, high, low, close, volume]
         for frame_symbol, price_list in prices.items():
             # This is a list of dictionaries
@@ -512,7 +519,8 @@ class BackTestController:
                                      'in the backtest command. If there should be data downloaded, try deleting your'
                                      ' ./price_caches folder.')
                 else:
-                    raise IndexError(f"Data for symbol {frame_symbol} is empty. Are you using a symbol that is incompatible "
+                    raise IndexError(f"Data for symbol {frame_symbol} is empty. Are you using a symbol that "
+                                     f"is incompatible "
                                      f"with this exchange?")
 
             # Be sure to send in the initial time
@@ -569,17 +577,11 @@ class BackTestController:
 
         no_trade_cycle_status = pd.DataFrame(columns=column_keys)
 
-        # Append dictionaries to this to make the pandas dataframe
-        price_data = []
-
-        # Append dictionaries to this to make the no trade dataframe
-        no_trade = []
-
         # Add an initial account row here
         if self.preferences['settings']['save_initial_account_value']:
             available_dict, no_trade_dict = self.format_account_data(self.initial_time)
-            price_data.append(available_dict)
-            no_trade.append(no_trade_dict)
+            self.traded_account_values.append(available_dict)
+            self.no_trade_account_values.append(no_trade_dict)
 
         show_progress = self.preferences['settings']['show_progress_during_backtest']
 
@@ -668,13 +670,14 @@ class BackTestController:
         # self.time = None
 
         # Push the accounts to the dataframe
-        cycle_status = pd.concat([cycle_status, pd.DataFrame(price_data)], ignore_index=True).sort_values(by=['time'])
+        cycle_status = pd.concat([cycle_status, pd.DataFrame(self.traded_account_values)],
+                                 ignore_index=True).sort_values(by=['time'])
 
         if len(cycle_status) == 0:
             raise RuntimeError("Empty result - no valid backtesting events occurred. Was there an error?.")
 
-        no_trade_cycle_status = pd.concat([no_trade_cycle_status, pd.DataFrame(no_trade)], ignore_index=True)\
-            .sort_values(by=['time'])
+        no_trade_cycle_status = pd.concat([no_trade_cycle_status, pd.DataFrame(self.no_trade_account_values)],
+                                          ignore_index=True).sort_values(by=['time'])
 
         def is_number(s):
             try:
@@ -695,7 +698,7 @@ class BackTestController:
             'limits_executed': self.interface.executed_orders,
             'limits_canceled': self.interface.canceled_orders,
             'executed_market_orders': self.interface.market_order_execution_details
-        }, self.pd_prices, self.initial_time, self.interface.time(), self.quote_currency, [])
+        }, prices, self.initial_time, self.interface.time(), self.quote_currency, [])
 
         # If they set resampling we use resampling for everything
         resample_setting = self.preferences['settings']['resample_account_value_for_metrics']

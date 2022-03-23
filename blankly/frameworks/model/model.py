@@ -17,21 +17,30 @@
 """
 import typing
 
-from blankly.exchanges.abc_base_exchange import ABCBaseExchange
 from blankly.exchanges.interfaces.paper_trade.backtest_controller import BackTestController, BacktestResult
+from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
+from blankly.exchanges.exchange import Exchange
 import time
 
 
 class Model:
-    def __init__(self, exchange: ABCBaseExchange):
+    def __init__(self, exchange: Exchange):
         self.__exchange = exchange
-        self.__backtest_controller = BackTestController
         self.backtesting = False
         # Backtest engine pushes this
         self.backtesting_time = None
 
-    def backtest(self) -> BacktestResult:
-        pass
+        self.exchange = exchange
+        self.interface = exchange.interface
+
+        self.backtester = BackTestController(PaperTrade(self.__exchange), self)
+
+    def backtest(self, args) -> BacktestResult:
+        # Construct the backtest controller
+        if not isinstance(self.__exchange, Exchange):
+            raise NotImplementedError
+
+        return self.backtester.run(args)
 
     def run(self, args: typing.Any = None):
         pass
