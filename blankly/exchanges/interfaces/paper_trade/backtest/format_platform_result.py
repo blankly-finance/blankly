@@ -85,7 +85,10 @@ def __parse_backtest_trades(trades: list, limit_executed: list, limit_canceled: 
 
     # Now just parse if there should be an executed time or a canceled time
     for i in range(len(trades)):
-        trades[i]['time'] = trades[i].pop('created_at')
+        try:
+            trades[i]['time'] = trades[i].pop('created_at')
+        except KeyError:
+            pass
         if trades[i]['type'] == 'limit':
             # TODO this wastes a few CPU cycles at the moment so it could be cleaned up
             for j in limit_executed:
