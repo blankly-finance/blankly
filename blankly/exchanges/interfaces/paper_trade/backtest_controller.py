@@ -1039,46 +1039,42 @@ class BackTestController:
             # This is where we end the backtesting time
             stop_clock = time.time()
 
-            from blankly.deployment.cli import is_logged_in
-            if is_logged_in():
-                try:
-                    json_file = json.loads(open('./blankly.json').read())
-                    api_key = json_file['api_key']
-                    api_pass = json_file['api_pass']
-                    # Need this to generate the URL
-                    project_id = json_file['project_id']
-                    # Need this to know where to post to
-                    model_id = json_file['model_id']
+            try:
+                json_file = json.loads(open('./blankly.json').read())
+                api_key = json_file['api_key']
+                api_pass = json_file['api_pass']
+                # Need this to generate the URL
+                project_id = json_file['project_id']
+                # Need this to know where to post to
+                model_id = json_file['model_id']
 
-                    requests.post(f'https://events.blankly.finance/v1/backtest/result', json=platform_result, headers={
-                        'api_key': api_key,
-                        'api_pass': api_pass,
-                        'model_id': model_id
-                    })
+                requests.post(f'https://events.blankly.finance/v1/backtest/result', json=platform_result, headers={
+                    'api_key': api_key,
+                    'api_pass': api_pass,
+                    'model_id': model_id
+                })
 
-                    requests.post(f'https://events.blankly.finance/v1/backtest/status', json={
-                        'successful': True,
-                        'status_summary': 'Completed',
-                        'status_details': '',
-                        'time_elapsed': stop_clock-start_clock,
-                        'backtest_id': platform_result['backtest_id']
-                    }, headers={
-                        'api_key': api_key,
-                        'api_pass': api_pass,
-                        'model_id': model_id
-                    })
+                requests.post(f'https://events.blankly.finance/v1/backtest/status', json={
+                    'successful': True,
+                    'status_summary': 'Completed',
+                    'status_details': '',
+                    'time_elapsed': stop_clock-start_clock,
+                    'backtest_id': platform_result['backtest_id']
+                }, headers={
+                    'api_key': api_key,
+                    'api_pass': api_pass,
+                    'model_id': model_id
+                })
 
-                    import webbrowser
+                import webbrowser
 
-                    link = f'https://app.blankly.finance/{project_id}/{model_id}/{platform_result["backtest_id"]}' \
-                           f'/backtest'
-                    webbrowser.open(
-                        link
-                    )
-                    info_print(f'View your backtest here: {link}')
-                except (FileNotFoundError, KeyError):
-                    internal_backtest_viewer()
-            else:
+                link = f'https://app.blankly.finance/{project_id}/{model_id}/{platform_result["backtest_id"]}' \
+                       f'/backtest'
+                webbrowser.open(
+                    link
+                )
+                info_print(f'View your backtest here: {link}')
+            except (FileNotFoundError, KeyError):
                 internal_backtest_viewer()
 
         # Finally, write the figures in
