@@ -20,6 +20,7 @@ from blankly.exchanges.interfaces.alpaca.alpaca_websocket import Tickers as Alpa
 from blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Binance_Ticker
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tickers as Coinbase_Pro_Ticker
 from blankly.exchanges.interfaces.ftx.ftx_websocket import Tickers as FTX_Ticker
+from blankly.exchanges.interfaces.okx.okx_websocket import Tickers as Okx_Ticker
 
 from blankly.exchanges.managers.websocket_manager import WebsocketManager
 
@@ -39,6 +40,9 @@ class TickerManager(WebsocketManager):
             default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "alpaca")
         elif default_exchange == "ftx":
             default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "ftx")
+        elif default_exchange == "okx":
+            default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "okx")
+
         self.__default_symbol = default_symbol
 
         self.__tickers = {default_exchange: {}}
@@ -104,6 +108,22 @@ class TickerManager(WebsocketManager):
             override_symbol = override_symbol.upper()
             self.__tickers['binance'][override_symbol] = ticker
             return ticker
+
+        elif exchange_name == "okx":
+            if override_symbol is None:
+                override_symbol = self.__default_symbol
+
+            if sandbox_mode:
+                ticker = Okx_Ticker(override_symbol, "ticker", log=log,
+                                    WEBSOCKET_URL="wss://wspap.okx.com:8443/ws/v5/public?brokerId=9999")
+            else:
+                ticker = Okx_Ticker(override_symbol, "ticker", log=log)
+
+            ticker.append_callback(callback)
+            # Store this object
+            self.__tickers['okx'][override_symbol] = ticker
+            return ticker
+
         elif exchange_name == "alpaca":
             stream = self.preferences['settings']['alpaca']['websocket_stream']
             if override_symbol is None:

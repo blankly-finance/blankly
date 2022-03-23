@@ -19,6 +19,7 @@ import blankly.utils.utils
 from blankly.exchanges.interfaces.alpaca.alpaca_websocket import Tickers as Alpaca_Websocket
 from blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Binance_Websocket
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tickers as Coinbase_Pro_Websocket
+from blankly.exchanges.interfaces.okx.okx_websocket import Tickers as Okx_Websocket
 from blankly.exchanges.managers.websocket_manager import WebsocketManager
 
 
@@ -66,6 +67,15 @@ class GeneralManager(WebsocketManager):
             self.__websockets[channel][exchange_cache][asset_id_cache] = websocket
 
             return websocket
+        elif exchange_cache == "okx":
+            if use_sandbox:
+                websocket = Okx_Websocket(asset_id_cache, channel, log,
+                                          WEBSOCKET_URL="wss://wspap.okx.com:8443/ws/v5/public?brokerId=9999")
+            else:
+                websocket = Okx_Websocket(asset_id_cache, channel, log)
+            websocket.append_callback(callback)
+
+            self.__websockets[channel][exchange_cache][asset_id_cache] = websocket
         elif exchange_cache == "binance":
             # Lower this to subscribe
             asset_id_cache = blankly.utils.to_exchange_symbol(asset_id_cache, "binance").lower()
