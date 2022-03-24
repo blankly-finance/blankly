@@ -56,39 +56,27 @@ class OkexInterface(ExchangeInterface):
                These arguments are mutually exclusive
         """
 
-        # side_value = order_info['data']['side']
-        # hold_value = order_info['data']['px']
-
-        # total_hold = total_hold + hold_value
-
-        # if side_value == "buy":
-        #     #subtract from avail and add to hold
-        #     total_hold = parsed_value['availBal'] - (order_info['size'] * order_info['px'])
-        #
-        # elif side_value == "sell":
-        #     total_hold = parsed_value['availBal'] - order_info['size']
-
         symbol = super().get_account(symbol=symbol)
         needed = self.needed['get_account']
         accounts = self._account.get_account()
 
         parsed_dictionary = utils.AttributeDict({})
-        # We have to sort through it if the accounts are none
-        # if symbol is not None:
-        #     accounts_specific = self._account.get_account(symbol)
-        #     if accounts_specific['code'] == 51000 or accounts_specific['code'] == 51001:
-        #         raise ValueError("Symbol not found")
-        #     for i in accounts_specific['data']:
-        #         parsed_value = utils.isolate_specific(needed, i)
-        #         dictionary = utils.AttributeDict({
-        #             'available': parsed_value['exchange_specific']['details'][0]['availBal'], # accounts_specific['data'][0]['details'][0]['availBal'],
-        #             'hold': parsed_value['exchange_specific']['details'][0]['frozenBal']
-        #         })
-        #         return dictionary
+        #We have to sort through it if the accounts are none
+        if symbol is not None:
+             accounts_specific = self._account.get_account(symbol)
+             if accounts_specific['code'] == 51000 or accounts_specific['code'] == 51001:
+                 raise ValueError("Symbol not found")
+             for i in accounts_specific['data']:
+                 parsed_value = utils.isolate_specific(needed, i)
+                 dictionary = utils.AttributeDict({
+                     'available': parsed_value['exchange_specific']['details'][0]['availBal'], # accounts_specific['data'][0]['details'][0]['availBal'],
+                     'hold': parsed_value['exchange_specific']['details'][0]['frozenBal']
+                 })
+                 return dictionary
         for i in range(len(accounts)):
-            parsed_dictionary[accounts['data'][i]['details'][i]] = utils.AttributeDict({
-                'available': float(accounts['data'][i]['details']['data'][0]['details'][i]['availBal']),
-                'hold': float(accounts['data'][i]['details']['data'][0]['details'][i]['frozenBal'])
+            parsed_dictionary[accounts['data'][0]['details'][i]['ccy']] = utils.AttributeDict({
+                'available': float(accounts['data'][0]['details'][i]['availBal']),
+                'hold': float(accounts['data'][0]['details'][i]['frozenBal'])
             })
 
         return parsed_dictionary
@@ -121,11 +109,11 @@ class OkexInterface(ExchangeInterface):
         }
 
         response = self._trade.place_order(symbol, 'cash', side, 'market', size)
-        if "sMsg" in response:
-            raise InvalidOrder("Invalid Order: " + response["sMsg"])
+        if len(response['data'][0]['sMsg']) != 0:
+            raise InvalidOrder("Invalid Order: " + response['data'][0]["sMsg"])
         response["created_at"] = time.time()
-        response["id"] = response.pop('ordId')
-        response["status"] = response.pop('sCode')
+        response["id"] = response['data'][0]['ordId']
+        response["status"] = response['data'][0]['sCode']
         response["symbol"] = symbol
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
