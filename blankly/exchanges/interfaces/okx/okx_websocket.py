@@ -72,7 +72,9 @@ class Tickers(Websocket):
 
     def on_open(self, ws):
         request = json.dumps({
-
+            'type': 'subscribe',
+            'product_ids': [self.symbol],
+            'channels': [self.stream]
         })
         ws.send(request)
 
