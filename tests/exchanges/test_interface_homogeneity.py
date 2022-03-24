@@ -240,6 +240,8 @@ class InterfaceHomogeneity(unittest.TestCase):
 
                 if not forex_market_open():
                     continue
+            elif type_ == 'okx':
+                size = 1
             else:
                 size = .01
 

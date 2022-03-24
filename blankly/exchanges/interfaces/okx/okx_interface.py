@@ -49,47 +49,46 @@ class OkexInterface(ExchangeInterface):
 
 
     def get_account(self, symbol=None) -> utils.AttributeDict:
-        #pass
         """
            Get all currencies in an account, or sort by symbol
            Args:
                symbol (Optional): Filter by particular symbol
                These arguments are mutually exclusive
         """
+
+        # side_value = order_info['data']['side']
+        # hold_value = order_info['data']['px']
+
+        # total_hold = total_hold + hold_value
+
+        # if side_value == "buy":
+        #     #subtract from avail and add to hold
+        #     total_hold = parsed_value['availBal'] - (order_info['size'] * order_info['px'])
+        #
+        # elif side_value == "sell":
+        #     total_hold = parsed_value['availBal'] - order_info['size']
+
         symbol = super().get_account(symbol=symbol)
         needed = self.needed['get_account']
+        accounts = self._account.get_account()
 
-        accounts = self._funding.get_balances()
         parsed_dictionary = utils.AttributeDict({})
         # We have to sort through it if the accounts are none
-        if symbol is not None:
-            for i in accounts:
-                if i["ccy"] == symbol:
-                    total_hold = 0
-                    order_info = self._trade.get_order_list()
-                    side_value = order_info['side']
-                    hold_value = order_info['data']['px']
-
-                    #total_hold = total_hold + hold_value
-                    parsed_value = utils.isolate_specific(needed, i)
-
-                    if side_value == "buy":
-                        #subtract from avail and add to hold
-                        total_hold = parsed_value['availBal'] - (order_info['size'] * order_info['px'])
-
-                    elif side_value == "sell":
-                        total_hold = parsed_value['availBal'] - order_info['size']
-
-                    dictionary = utils.AttributeDict({
-                        'available': parsed_value['availBal'],
-                        'hold': total_hold
-                    })
-                    return dictionary
-            raise ValueError("Symbol not found")
+        # if symbol is not None:
+        #     accounts_specific = self._account.get_account(symbol)
+        #     if accounts_specific['code'] == 51000 or accounts_specific['code'] == 51001:
+        #         raise ValueError("Symbol not found")
+        #     for i in accounts_specific['data']:
+        #         parsed_value = utils.isolate_specific(needed, i)
+        #         dictionary = utils.AttributeDict({
+        #             'available': parsed_value['exchange_specific']['details'][0]['availBal'], # accounts_specific['data'][0]['details'][0]['availBal'],
+        #             'hold': parsed_value['exchange_specific']['details'][0]['frozenBal']
+        #         })
+        #         return dictionary
         for i in range(len(accounts)):
-            parsed_dictionary[accounts[i]['currency']] = utils.AttributeDict({
-                'available': float(accounts[i]['available']),
-                'hold': float(accounts[i]['holds'])
+            parsed_dictionary[accounts['data'][i]['details'][i]] = utils.AttributeDict({
+                'available': float(accounts['data'][i]['details']['data'][0]['details'][i]['availBal']),
+                'hold': float(accounts['data'][i]['details']['data'][0]['details'][i]['frozenBal'])
             })
 
         return parsed_dictionary
