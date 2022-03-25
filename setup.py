@@ -23,7 +23,8 @@ setup(
         # Extension("blankly.deployment.hello", [path.join("blankly", "deployment", "hello.cpp")])  # Disabled extension
     ],
     author='blankly',
-    entry_points={'console_scripts': ['blankly = blankly.deployment.cli:main']},
+    entry_points={'console_scripts': ['blankly = blankly.deployment.cli:main',
+                                      'blankly_new = blankly.deployment.new_cli:main']},
     author_email='contact@blankly.finance',
     url='https://github.com/Blankly-Finance/Blankly',  # Could be github or website
     # download_url='https://github.com/EmersonDove/Blankly/archive/v0.1.1-alpha.tar.gz',
