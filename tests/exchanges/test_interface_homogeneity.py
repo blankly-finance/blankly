@@ -215,8 +215,8 @@ class InterfaceHomogeneity(unittest.TestCase):
 
             # The symbol should have gained less than the size on the buy if there were fees
             # Before + requested size >= the filled size
-            before['available'] = int(before['available']) #added this and line below
-            after['available'] = int(after['available'])
+            before['available'] = int(float(before['available'])) #added this and line below
+            after['available'] = int(float(after['available']))
 
             self.assertGreaterEqual(blankly.trunc(before['available'], 2) + order.get_size(),
                                     blankly.trunc(after['available'], 2))

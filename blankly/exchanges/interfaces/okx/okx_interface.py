@@ -116,7 +116,9 @@ class OkexInterface(ExchangeInterface):
         response["status"] = response['data'][0]['sCode']
         response["symbol"] = symbol
         response = utils.isolate_specific(needed, response)
-        return MarketOrder(order, response, self)
+        final = MarketOrder(order, response, self)
+
+        return final
 
     @utils.order_protection
     def limit_order(self, symbol, side, price, size) -> LimitOrder:
