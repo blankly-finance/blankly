@@ -18,6 +18,7 @@
 import json
 import os
 import time
+import traceback
 import typing
 from datetime import datetime as dt
 import copy
@@ -35,7 +36,7 @@ from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestRes
 from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
-from blankly.utils.utils import load_backtest_preferences, write_backtest_preferences, info_print
+from blankly.utils.utils import load_backtest_preferences, write_backtest_preferences, info_print, update_progress
 from blankly.exchanges.interfaces.paper_trade.backtest.format_platform_result import \
     format_platform_result
 from blankly.frameworks.model.model import Model
@@ -192,6 +193,12 @@ class BackTestController:
         # Set these when prices are added to find the first price and the last price
         self.user_start = None
         self.user_stop = None
+
+        self.show_progress = self.preferences['settings']['show_progress_during_backtest']
+        self.sleep_count = 0
+
+        # Use this global to retain where we are in the prices dictionary by index
+        self.price_indexes = {}
 
     def sync_prices(self) -> dict:
         """
@@ -453,13 +460,44 @@ class BackTestController:
             self.__color_generator = Category10_10.__iter__()
             return next(self.__color_generator)
 
-    def advance_time(self, time_delta: [int, float]):
-        self.time += time_delta
+    def advance_time_and_price_index(self):
+        # Now update the time to match
         self.interface.receive_time(self.time)
+
+        for symbol in self.prices:
+            # Make sure that each price column is at least at the current time
+
+            # This just incrementing the price indexes until it's less than time and ensuring that
+            #  it's less than the length of the price
+            price_length = len(self.prices[symbol])
+            while self.prices[symbol][self.price_indexes[symbol]]['time'] < self.time and \
+                    price_length > self.price_indexes[symbol]:
+                self.price_indexes[symbol] += 1
+
+            # Write this new price into the interface
+            self.interface.receive_price(symbol, new_price=self.prices[symbol][
+                self.price_indexes[symbol]][self.use_price])
+
+    def advance_time(self, time_delta: [int, float]):
+        # Always evaluate limits
+        self.interface.evaluate_limits()
+        self.sleep_count += 1
+
+        if self.show_progress:
+            if self.sleep_count % 300 == 0:
+                # Update the progress occasionally
+                update_progress((self.user_start + self.time)/(self.user_stop - self.user_start))
+
+        # Advance the time
+        self.time += time_delta
+        # Refresh all the prices and times
+        self.advance_time_and_price_index()
 
     def value_account(self) -> None:
         """
         Store the valuation for the account
+
+        This is accessible by the user
         """
         available_dict, no_trade_dict = self.format_account_data(self.time)
 
@@ -496,7 +534,6 @@ class BackTestController:
         use_price = self.preferences['settings']['use_price']
         self.use_price = use_price
 
-        # Organize each price into this structure: [epoch, "BTC-USD", price, open, high, low, close, volume]
         for frame_symbol, price_list in prices.items():
             # This is a list of dictionaries
             frame = price_list  # type: list
@@ -524,39 +561,29 @@ class BackTestController:
                                      f"with this exchange?")
 
             # Be sure to send in the initial time
-            self.interface.receive_time(price_list['time'].iloc[0])
+            first_time = price_list['time'].iloc[0]
+            self.interface.receive_time(first_time)
+            self.price_indexes[frame_symbol] = 0
 
-            for i in frame:
-                # TODO iterrows() is allegedly pretty slow
-                self.prices.append([i['time'],
-                                    frame_symbol,
-                                    i[use_price],
-                                    i['open'],  # (index) 3
-                                    i['high'],  # 4
-                                    i['low'],  # 5
-                                    i['close'],  # 6
-                                    i['volume']])  # 7
-
-        # pushing these prices together makes the time go weird
-        self.prices = sorted(self.prices)
+            # Find the first time in the list
+            if self.initial_time is None or first_time < self.initial_time:
+                self.initial_time = first_time
 
         if prices == {}:
             raise ValueError("No data given. "
                              "Try setting an argument such as to='1y' in the .backtest() command.\n"
                              "Example: strategy.backtest(to='1y')")
 
-        self.initial_time = self.prices[0][0]
-
         # Initialize this before the callbacks, so it works in the initialization functions
-        # This is
         self.time = self.initial_time
-
-        # Turn on backtesting immediately after setting the time
-        self.interface.set_backtesting(True)
 
         """
         Begin backtesting
         """
+
+        # Turn on backtesting immediately after setting the time
+        self.interface.set_backtesting(True)
+
         # Re-evaluate the traded assets account
         # This is mainly used if the user has an account with some value that gets added in at the backtest point
         # This occurs after initialization so there has to be a function to test & re-evaluate that
@@ -569,10 +596,6 @@ class BackTestController:
         # If they start a price event on something they don't own, this should also be included
         column_keys.append('time')
 
-        # column_keys = ['time']
-        # for i in account.keys():
-        #     column_keys.append(i['currency'])
-
         cycle_status = pd.DataFrame(columns=column_keys)
 
         no_trade_cycle_status = pd.DataFrame(columns=column_keys)
@@ -583,91 +606,19 @@ class BackTestController:
             self.traded_account_values.append(available_dict)
             self.no_trade_account_values.append(no_trade_dict)
 
-        show_progress = self.preferences['settings']['show_progress_during_backtest']
-
-        ignore_exceptions = self.preferences['settings']['ignore_user_exceptions']
-
         print("\nBacktesting...")
 
         # Start the model here
-        self.model.main(args)
-        #
-        # try:
-        #     for i in range(price_number):
-        #         #                 row.time,      k,  use_price, 'open', 'high', 'low','close','volume'
-        #         # Formatted like [1609146000.0, 'AAPL', 132.99, 132.72, 133.0, 132.6, 132.99, 32603.0]
-        #         price_array = self.prices[i]
-        #         if show_progress:
-        #             if i % 100 == 0:
-        #                 update_progress(i / price_number)
-        #         self.interface.receive_price(asset_id=price_array[1], new_price=price_array[2])
-        #         self.current_time = price_array[0]
-        #         self.interface.evaluate_limits()
-        #
-        #         # This will keep the most recent price event data organized by symbol
-        #         ohlcv_tracker[price_array[1]] = price_array
-        #
-        #         while True:
-        #             # Need to go through and establish an order for each of the price events
-        #             self.price_events = sorted(self.price_events, key=lambda sort_key: sort_key['next_run'])
-        #
-        #             # Now the lowest one has to go past the current time to be invalid
-        #             if self.price_events[0]['next_run'] > self.current_time:
-        #                 break
-        #
-        #             local_time = self.price_events[0]['next_run']
-        #
-        #             # Export the time for strategy
-        #             self.time = local_time
-        #
-        #             self.interface.receive_time(local_time)
-        #
-        #             # This is the actual callback to the user space
-        #             try:
-        #                 if self.price_events[0]['ohlc']:
-        #                     # This pulls all the price data out of the price array defined on line 260
-        #                     ohlcv_array = ohlcv_tracker[self.price_events[0]['asset_id']]
-        #                     self.price_events[0]['function']({'open': ohlcv_array[3],
-        #                                                       'high': ohlcv_array[4],
-        #                                                       'low': ohlcv_array[5],
-        #                                                       'close': ohlcv_array[6],
-        #                                                       'volume': ohlcv_array[7]},
-        #
-        #                                                      self.price_events[0]['asset_id'],
-        #                                                      self.price_events[0]['state_object'])
-        #                 else:
-        #                     self.price_events[0]['function'](self.interface.get_price(self.price_events[0]['asset_id']),
-        #                                                      self.price_events[0]['asset_id'], self.price_events[0][
-        #                                                          'state_object'])
-        #             except Exception as e:
-        #                 if ignore_exceptions:
-        #                     traceback.print_exc()
-        #                 else:
-        #                     raise e
-        #
-        #             # Delay the next run until after the interval
-        #             self.price_events[0]['next_run'] += self.price_events[0]['interval']
-        #
-        #             available_dict, no_trade_dict = self.format_account_data(local_time)
-        #
-        #             price_data.append(available_dict)
-        #
-        #             no_trade.append(no_trade_dict)
-        #
-        #     # Finish filling the progress bar
-        #     if show_progress:
-        #         update_progress(1)
-        #
-        #     # Finally, run the teardown functions
-        #     for i in self.price_events:
-        #         # Pull the teardown and pass the state object
-        #         if callable(i['teardown']):
-        #             i['teardown'](i['state_object'])
-        # except Exception:
-        #     traceback.print_exc()
+        try:
+            self.model.main(args)
+            if self.show_progress:
+                # If it finishes give it 100%
+                update_progress(1)
+        except Exception:
+            traceback.print_exc()
 
-        # Reset time to be None to indicate we're no longer in a backtest
-        # self.time = None
+        # Reset time to indicate we are no longer in a backtest
+        self.time = None
 
         # Push the accounts to the dataframe
         cycle_status = pd.concat([cycle_status, pd.DataFrame(self.traded_account_values)],
@@ -758,7 +709,7 @@ class BackTestController:
                                                    {'trading_period': interval_value})
         metrics_indicators['Value-at-Risk'] = attempt(metrics.var, history_and_returns)
         metrics_indicators['Conditional Value-at-Risk'] = attempt(metrics.cvar, history_and_returns)
-        
+
         # Add risk-free-return rate to dictionary
         metrics_indicators['Risk Free Return Rate'] = risk_free_return_rate
         # metrics_indicators['beta'] = attempt(metrics.beta, dataframes)
@@ -773,15 +724,15 @@ class BackTestController:
                                                                        interval_value,
                                                                        use_asset_history=True,
                                                                        use_price=use_price)
-            
+
             # Push data into the dictionary for use by the metrics
             history_and_returns['benchmark_value'] = resampled_benchmark_value
             history_and_returns['benchmark_returns'] = resampled_benchmark_value.copy(deep=True)
             history_and_returns['benchmark_returns']['value'] = \
                 history_and_returns['benchmark_returns']['value'].pct_change()
-            
+
             # Calculate beta
-            metrics_indicators['Beta'] = attempt(metrics.beta, history_and_returns, 
+            metrics_indicators['Beta'] = attempt(metrics.beta, history_and_returns,
                                                  {"trading_period": interval_value})
 
         # Remove NaN values here
