@@ -1,11 +1,11 @@
 import prompt_toolkit
+from functools import lru_cache
 from prompt_toolkit import print_formatted_text, formatted_text
 from prompt_toolkit.formatted_text import to_formatted_text
 
 import questionary.constants
-from yaspin import yaspin
+from yaspin import yaspin, Spinner as YaspinSpinner
 from yaspin.core import Yaspin
-from yaspin.spinners import Spinners
 
 BOLD = '\033[1m'
 
@@ -48,8 +48,23 @@ def print_success(text):
     fprint([('class:success', '✔ '), ('class:question', text)])
 
 
-def show_spinner(text, *args, **kwargs):
-    return Spinner(Spinners.line, *args, text=BOLD + text, **kwargs)
+@lru_cache(None)
+def text_spinner(
+        text='BLANKLY',
+        left='[',
+        right=']',
+        interval=80
+):
+    fullstr = text + ' ' * (len(text)//2) + text[:-1]
+    win_size = len(text)
+    return YaspinSpinner([
+        left + fullstr[i:i + win_size] + right
+        for i in range(len(fullstr) - win_size, 0, -1)
+    ], interval)
+
+
+def show_spinner(text):
+    return Spinner(text_spinner(), text=BOLD + text)
 
 
 class Spinner(Yaspin):
@@ -75,4 +90,3 @@ class Spinner(Yaspin):
             print_success(self.outcome_text)
         else:
             print_failure(self.outcome_text)
-

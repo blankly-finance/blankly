@@ -1,5 +1,7 @@
 import argparse
 import sys
+import time
+import traceback
 import webbrowser
 from pathlib import Path
 from typing import Optional
@@ -11,8 +13,7 @@ from blankly.deployment.login import logout, poll_login, get_token
 from blankly.deployment.ui import text, confirm, print_work, print_failure, print_success, select, show_spinner
 
 # TODO autogen some of these
-EXCHANGES = ['binance.com', 'binance.us',
-             'coinbase_pro', 'alpaca', 'ftx', 'oanda']
+EXCHANGES = ['binance.com', 'binance.us', 'coinbase_pro', 'alpaca', 'ftx', 'oanda']
 
 TEMPLATES = ['none', 'rsi_bot']
 
@@ -118,7 +119,9 @@ def blankly_logout(args):
 
 
 def blankly_deploy(args):
-    print(args)
+    with show_spinner('wheeeeeeeeeeeeeeeeee') as spinner:
+        time.sleep(5)
+        spinner.ok('YEET')
     raise NotImplementedError
 
 
@@ -168,6 +171,9 @@ def main():
         args.func(args)
     except KeyboardInterrupt:
         print_failure('Cancelled by user')
+    except Exception:
+        print_failure('An error occurred. Traceback:')
+        traceback.print_exc()
 
 
 if __name__ == '__main__':
