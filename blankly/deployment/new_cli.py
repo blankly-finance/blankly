@@ -77,8 +77,12 @@ def launch_login_flow() -> API:
         try:
             api = poll_login()
         except Exception:
+            pass  # we just check for api being valid, poll_login can return None
+
+        if not api:
             spinner.fail('Failed to login')
             sys.exit(1)
+
         spinner.ok('Logged in')
     return api
 
