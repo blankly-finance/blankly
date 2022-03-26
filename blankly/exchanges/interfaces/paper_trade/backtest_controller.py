@@ -33,13 +33,14 @@ from bokeh.plotting import ColumnDataSource, figure, show
 
 import blankly.exchanges.interfaces.paper_trade.metrics as metrics
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
-from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import load_backtest_preferences, write_backtest_preferences, info_print, update_progress
 from blankly.exchanges.interfaces.paper_trade.backtest.format_platform_result import \
     format_platform_result
-from blankly.frameworks.model.model import Model
+
+from blankly.exchanges.interfaces.paper_trade.backtest_headers import ABCBacktestController
+from blankly.exchanges.exchange import ABCExchange
 
 
 def to_string_key(separated_list):
@@ -84,6 +85,7 @@ def split(base_range, local_segments) -> typing.Tuple[list, list]:
             os_ = max(as_, bs)
             oe = min(ae, be)
             return [os_, oe]
+
     for i in local_segments:
         intersection_range = intersection(base_range[0], base_range[1], i[0], i[1])
         if intersection_range is None:
@@ -103,7 +105,7 @@ def split(base_range, local_segments) -> typing.Tuple[list, list]:
     aggregate_indexes = []
     for i in range(len(positive_ranges) - 1):
         intersection_range = intersection(positive_ranges[i][0], positive_ranges[i][1],
-                                          positive_ranges[i + 1][0],     positive_ranges[i + 1][1])
+                                          positive_ranges[i + 1][0], positive_ranges[i + 1][1])
         if intersection_range is not None:
             aggregate_indexes.append([i, i + 1])
 
@@ -122,7 +124,7 @@ def split(base_range, local_segments) -> typing.Tuple[list, list]:
 
     # Now just try to find the gaps in the positive ranges and those are our negative ranges
     for i in range(len(positive_ranges) - 1):
-        negative_ranges.append([positive_ranges[i][1], positive_ranges[i+1][0]])
+        negative_ranges.append([positive_ranges[i][1], positive_ranges[i + 1][0]])
 
     try:
         # Now we just have to make sure to check the bounds
@@ -141,13 +143,12 @@ def split(base_range, local_segments) -> typing.Tuple[list, list]:
     return used_ranges, negative_ranges
 
 
-class BackTestController:
-    def __init__(self, paper_trade_exchange: PaperTrade, model: Model, backtest_settings_path: str = None):
+class BackTestController(ABCBacktestController):  # circular import to type model
+    def __init__(self, model, backtest_settings_path: str = None):
         self.preferences = load_backtest_preferences(backtest_settings_path)
         self.backtest_settings_path = backtest_settings_path
-        if not paper_trade_exchange.get_type() == "paper_trade":
-            raise ValueError("Backtest controller was not constructed with a paper trade exchange object.")
-        self.interface: PaperTradeInterface = paper_trade_exchange.get_interface()
+
+        self.interface = None
 
         self.initial_time = None
         self.model = model
@@ -178,9 +179,6 @@ class BackTestController:
         # Some initial account value to store globally
         self.initial_account = None
 
-        # The type of exchange
-        self.__exchange_type = self.interface.get_exchange_type()
-
         # Create our own traded assets' dictionary because we customize it a bit
         self.__traded_assets = []
 
@@ -200,7 +198,7 @@ class BackTestController:
         # Use this global to retain where we are in the prices dictionary by index
         self.price_indexes = {}
 
-    def sync_prices(self) -> dict:
+    def sync_prices(self, interface) -> dict:
         """
         Parse the local file cache for the requested data, if it doesn't exist, request it from the exchange
 
@@ -210,7 +208,7 @@ class BackTestController:
         returns:
             dictionary with keys for each 'symbol'
         """
-        
+
         cache_folder = self.preferences['settings']["cache_location"]
         # Make sure the cache folder exists and read files
         try:
@@ -292,19 +290,19 @@ class BackTestController:
             for j in negative_ranges:
                 print("No cached data found for " + asset + " from: " + str(j[0]) + " to " +
                       str(j[1]) + " at a resolution of " + str(resolution) + " seconds.")
-                download = self.interface.get_product_history(asset,
-                                                              j[0],
-                                                              j[1],
-                                                              resolution)
+                download = interface.get_product_history(asset,
+                                                         j[0],
+                                                         j[1],
+                                                         resolution)
 
                 # Write the file but this time include very accurately the start and end times
                 if self.preferences['settings']['continuous_caching']:
                     if not download.empty:
                         download.to_csv(os.path.join(cache_folder, f'{asset},'
                                                                    f'{j[0]},'
-                                                                   f'{j[1]+resolution},'  # This adds resolution 
-                                                                                          # back to the exported
-                                                                                          # time series
+                                                                   f'{j[1] + resolution},'  # This adds resolution 
+                                                                                            # back to the exported
+                                                                                            # time series
                                                                    f'{resolution}.csv'),
                                         index=False)
 
@@ -325,7 +323,48 @@ class BackTestController:
 
         return final_prices
 
-    def add_prices(self, asset_id, start_time, end_time, resolution, save=False):
+    def add_prices(self,
+                   symbol: str,
+                   resolution: [str, int, float],
+                   to: str = None,
+                   start_date: typing.Union[str, float, int] = None,
+                   stop_date: typing.Union[str, float, int] = None):
+        """
+        This is the user facing function for adding prices to the engine
+        """
+        start = None
+        end = None
+
+        resolution = time_interval_to_seconds(resolution)
+
+        # Even if they specified start/end unevenly it will be overwritten with any to argument
+        if to is not None:
+            start = time.time() - time_interval_to_seconds(to)
+            end = time.time()
+
+        if start_date is not None:
+            if isinstance(stop_date, (int, float)):
+                start = start_date
+            else:
+                start_date = pd.to_datetime(start_date)
+                epoch = dt.utcfromtimestamp(0)
+                start = (start_date - epoch).total_seconds()
+
+        if stop_date is not None:
+            if isinstance(stop_date, (int, float)):
+                end = stop_date
+            else:
+                end_date = pd.to_datetime(stop_date)
+                epoch = dt.utcfromtimestamp(0)
+                end = (end_date - epoch).total_seconds()
+
+        # If start/ends are specified unevenly
+        if (start_date is None and stop_date is not None) or (start_date is not None and stop_date is None):
+            raise ValueError("Both start and end dates must be set or use the 'to' argument.")
+
+        self.__add_prices(symbol, start, end, resolution)
+
+    def __add_prices(self, asset_id, start_time, end_time, resolution, save=False):
         # Create its unique identifier
         identifier = [asset_id, int(start_time), int(end_time), int(resolution)]
 
@@ -356,8 +395,6 @@ class BackTestController:
             else:
                 if resolution < self.min_resolution:
                     self.min_resolution = resolution
-        else:
-            print("already identified")
 
     def write_setting(self, key, value, save=False):
         """
@@ -372,24 +409,30 @@ class BackTestController:
         if save:
             self.queue_backtest_write = True
 
-    def write_initial_price_values(self, account_dictionary):
+    def __write_initial_price_values(self, account_dictionary):
         """
         Write in a new price dictionary for the paper trade exchange.
         """
         self.interface.override_local_account(account_dictionary)
 
-    def format_account_data(self, local_time) -> typing.Tuple[typing.Dict[typing.Union[str, typing.Any],
-                                                                          typing.Union[int, typing.Any]],
-                                                              typing.Dict[typing.Union[str, typing.Any],
-                                                                          typing.Union[int, typing.Any]]]:
+    def format_account_data(self, interface: PaperTradeInterface, local_time) -> \
+            typing.Tuple[typing.Dict[
+                             typing.Union[
+                                 str, typing.Any],
+                             typing.Union[
+                                 int, typing.Any]],
+                         typing.Dict[
+                             typing.Union[str,
+                                          typing.Any],
+                             typing.Union[
+                                 int, typing.Any]]]:
 
         # This is done so that only traded assets are evaluated.
         true_available = {}
-        assets = self.__traded_assets
         true_account = {}
-        for i in assets:
+        for i in interface.traded_assets:
             # Grab the account status
-            true_account[i] = self.interface.get_account(i)
+            true_account[i] = interface.get_account(i)
 
         # Create an account total value
         value_total = 0
@@ -412,13 +455,13 @@ class BackTestController:
             currency_pair = i
 
             # Convert to quote (this could be optimized a bit)
-            if self.__exchange_type != 'alpaca':
+            if interface.get_exchange_type() != 'alpaca':
                 currency_pair += '-'
                 currency_pair += self.quote_currency
 
             # Get price at time
             try:
-                price = self.interface.get_price(currency_pair)
+                price = interface.get_price(currency_pair)
             except KeyError:
                 # Must be a currency we have no data for
                 price = 0
@@ -445,8 +488,7 @@ class BackTestController:
         show_zero_delta = self.preferences['settings']['show_tickers_with_zero_delta']
 
         # Just check if it's in the traded assets or if the zero delta is enabled
-        used = self.__traded_assets
-        is_used = column in used or 'Account Value (' + self.quote_currency + ')' == column
+        is_used = column in self.interface.traded_assets or 'Account Value (' + self.quote_currency + ')' == column
 
         # Return true if they are not the same or the setting is set to true
         output = is_used or show_zero_delta
@@ -478,7 +520,7 @@ class BackTestController:
             self.interface.receive_price(symbol, new_price=self.prices[symbol][
                 self.price_indexes[symbol]][self.use_price])
 
-    def advance_time(self, time_delta: [int, float]):
+    def sleep(self, seconds: [int, float]):
         # Always evaluate limits
         self.interface.evaluate_limits()
         self.sleep_count += 1
@@ -486,10 +528,10 @@ class BackTestController:
         if self.show_progress:
             if self.sleep_count % 300 == 0:
                 # Update the progress occasionally
-                update_progress((self.user_start + self.time)/(self.user_stop - self.user_start))
+                update_progress((self.user_start + self.time) / (self.user_stop - self.user_start))
 
         # Advance the time
-        self.time += time_delta
+        self.time += seconds
         # Refresh all the prices and times
         self.advance_time_and_price_index()
 
@@ -499,20 +541,27 @@ class BackTestController:
 
         This is accessible by the user
         """
-        available_dict, no_trade_dict = self.format_account_data(self.time)
+        available_dict, no_trade_dict = self.format_account_data(self.interface, self.time)
 
         self.traded_account_values.append(available_dict)
         self.no_trade_account_values.append(no_trade_dict)
 
-    def run(self, args) -> BacktestResult:
+    # TODO this class should be constructed with a BacktestConfiguration object
+    def run(self, args, exchange: ABCExchange, initial_account_values) -> BacktestResult:
         """
         Setup
         """
+        if not exchange.get_type() == "paper_trade":
+            raise ValueError("Backtest controller was not constructed with a paper trade exchange object.")
+        # Define the interface on run
+        self.interface: PaperTradeInterface = exchange.get_interface()
         # This is where we begin logging the backtest time
-        start_clock = time.time()
 
-        # Create this initial so that we can compare how our strategy performs
-        self.initial_account = self.interface.get_account()
+        # Write them in
+        if initial_account_values is not None:
+            self.__write_initial_price_values(initial_account_values)
+
+        start_clock = time.time()
 
         # Write our queued edits to the file
         if self.queue_backtest_write:
@@ -529,7 +578,7 @@ class BackTestController:
             # Check locally for the data and add to price_cache if we do not have it
             self.add_prices(benchmark_symbol, self.user_start, self.user_stop, self.min_resolution)
 
-        prices = self.sync_prices()
+        prices = self.sync_prices(self.interface)
 
         use_price = self.preferences['settings']['use_price']
         self.use_price = use_price
@@ -561,7 +610,7 @@ class BackTestController:
                                      f"with this exchange?")
 
             # Be sure to send in the initial time
-            first_time = price_list['time'].iloc[0]
+            first_time = price_list['time'][0]
             self.interface.receive_time(first_time)
             self.price_indexes[frame_symbol] = 0
 
@@ -573,6 +622,9 @@ class BackTestController:
             raise ValueError("No data given. "
                              "Try setting an argument such as to='1y' in the .backtest() command.\n"
                              "Example: strategy.backtest(to='1y')")
+
+        # Create this initial so that we can compare how our strategy performs
+        self.initial_account = self.interface.get_account()
 
         # Initialize this before the callbacks, so it works in the initialization functions
         self.time = self.initial_time
@@ -602,7 +654,7 @@ class BackTestController:
 
         # Add an initial account row here
         if self.preferences['settings']['save_initial_account_value']:
-            available_dict, no_trade_dict = self.format_account_data(self.initial_time)
+            available_dict, no_trade_dict = self.format_account_data(self.interface, self.initial_time)
             self.traded_account_values.append(available_dict)
             self.no_trade_account_values.append(no_trade_dict)
 
@@ -728,15 +780,15 @@ class BackTestController:
             # Push data into the dictionary for use by the metrics
             history_and_returns['benchmark_value'] = resampled_benchmark_value
             history_and_returns['benchmark_returns'] = resampled_benchmark_value.copy(deep=True)
-            history_and_returns['benchmark_returns']['value'] = \
-                history_and_returns['benchmark_returns']['value'].pct_change()
+            history_and_returns['benchmark_returns']['value'] = history_and_returns['benchmark_returns'][
+                'value'].pct_change()
 
             # Calculate beta
             metrics_indicators['Beta'] = attempt(metrics.beta, history_and_returns,
                                                  {"trading_period": interval_value})
 
         # Remove NaN values here
-        history_and_returns['resampled_account_value'] = history_and_returns['resampled_account_value'].\
+        history_and_returns['resampled_account_value'] = history_and_returns['resampled_account_value']. \
             where(history_and_returns['resampled_account_value'].notnull(), None)
 
         # Remove NaN values on this one too
@@ -867,7 +919,7 @@ class BackTestController:
                         'successful': True,
                         'status_summary': 'Completed',
                         'status_details': '',
-                        'time_elapsed': stop_clock-start_clock,
+                        'time_elapsed': stop_clock - start_clock,
                         'backtest_id': platform_result['backtest_id']
                     }, headers={
                         'api_key': api_key,

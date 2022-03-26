@@ -18,43 +18,58 @@
 import typing
 
 from blankly.exchanges.interfaces.paper_trade.backtest_controller import BackTestController, BacktestResult
+from blankly.exchanges.interfaces.paper_trade.backtest_headers import ABCBacktestController
 from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.exchange import Exchange
 import time
+import blankly
 
 
 class Model:
     def __init__(self, exchange: Exchange):
         self.__exchange = exchange
-        self.backtesting = False
-        # Backtest engine pushes this
-        self.backtesting_time = None
+        self.__exchange_cache = self.__exchange
+        self.is_backtesting = False
 
-        self.exchange = exchange
         self.interface = exchange.interface
 
-        self.backtester = BackTestController(PaperTrade(self.__exchange), self)
+        self.backtester: ABCBacktestController = BackTestController(self)
+        # Type these internal calls to the specific backtester
+        self.__backtester: BackTestController = self.backtester
 
-    def backtest(self, args) -> BacktestResult:
+    def backtest(self, args, initial_values: dict = None) -> BacktestResult:
         # Construct the backtest controller
         if not isinstance(self.__exchange, Exchange):
             raise NotImplementedError
 
-        return self.backtester.run(args)
+        # Toggle backtesting
+        self.is_backtesting = True
+        self.__exchange = PaperTrade(self.__exchange)
+        self.interface = self.__exchange.interface
+        backtest = self.__backtester.run(args,
+                                         initial_account_values=initial_values,
+                                         exchange=self.__exchange)
+        self.is_backtesting = False
+        self.__exchange = self.__exchange_cache
+
+        blankly.reporter.export_backtest_result(backtest)
+        return backtest
 
     def run(self, args: typing.Any = None):
-        pass
+        self.main(args)
 
     def main(self, args):
         raise NotImplementedError("Add a main function to your strategy to run the model.")
 
     @property
     def time(self):
-        if not self.backtesting:
+        if not self.is_backtesting:
             return time.time()
         else:
-            return self.backtesting_time
+            return self.__backtester.time
 
     def sleep(self, seconds: [int, float]):
-        if not self.backtesting:
+        if not self.is_backtesting:
             time.sleep(seconds)
+        else:
+            self.__backtester.sleep(seconds)
