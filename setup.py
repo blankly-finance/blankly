@@ -30,6 +30,8 @@ setup(
     # download_url='https://github.com/EmersonDove/Blankly/archive/v0.1.1-alpha.tar.gz',
     keywords=['Crypto', 'Stocks', 'Quantitative Finance', 'Exchanges', 'Bot'],  # Keywords
     install_requires=[
+        'questionary >= 1.10.0',
+        'yaspin >= 2.1.0',
         'alpaca-trade-api >= 1.4.2',
         'bokeh >= 2.4.2',
         'dateparser >= 1.1.0',
