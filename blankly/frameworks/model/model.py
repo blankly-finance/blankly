@@ -33,6 +33,8 @@ class Model:
 
         self.interface = exchange.interface
 
+        self.has_data = True
+
         self.backtester: ABCBacktestController = BackTestController(self)
         # Type these internal calls to the specific backtester
         self.__backtester: BackTestController = self.backtester
@@ -51,6 +53,7 @@ class Model:
                                          exchange=self.__exchange)
         self.is_backtesting = False
         self.__exchange = self.__exchange_cache
+        self.has_data = True
 
         blankly.reporter.export_backtest_result(backtest)
         return backtest

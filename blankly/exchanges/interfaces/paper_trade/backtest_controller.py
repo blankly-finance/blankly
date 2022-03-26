@@ -35,7 +35,8 @@ import blankly.exchanges.interfaces.paper_trade.metrics as metrics
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
-from blankly.utils.utils import load_backtest_preferences, write_backtest_preferences, info_print, update_progress
+from blankly.utils.utils import load_backtest_preferences, write_backtest_preferences, info_print, update_progress, \
+    get_base_asset, get_quote_asset
 from blankly.exchanges.interfaces.paper_trade.backtest.format_platform_result import \
     format_platform_result
 
@@ -156,7 +157,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         self.traded_account_values = []
         self.no_trade_account_values = []
 
-        self.prices = []  # [epoch, "BTC-USD", price]
+        self.prices = []
 
         self.price_dictionary = {}
 
@@ -511,10 +512,13 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
             # This just incrementing the price indexes until it's less than time and ensuring that
             #  it's less than the length of the price
-            price_length = len(self.prices[symbol])
-            while self.prices[symbol][self.price_indexes[symbol]]['time'] < self.time and \
-                    price_length > self.price_indexes[symbol]:
-                self.price_indexes[symbol] += 1
+            price_length = len(self.prices[symbol]) - 2
+            while self.prices[symbol][self.price_indexes[symbol]]['time'] < self.time:
+                if price_length >= self.price_indexes[symbol]:
+                    self.price_indexes[symbol] += 1
+                else:
+                    self.model.has_data = False
+                    break
 
             # Write this new price into the interface
             self.interface.receive_price(symbol, new_price=self.prices[symbol][
@@ -528,7 +532,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         if self.show_progress:
             if self.sleep_count % 300 == 0:
                 # Update the progress occasionally
-                update_progress((self.user_start + self.time) / (self.user_stop - self.user_start))
+                update_progress((self.time - self.user_start) / (self.user_stop - self.user_start))
 
         # Advance the time
         self.time += seconds
@@ -556,12 +560,21 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         # Define the interface on run
         self.interface: PaperTradeInterface = exchange.get_interface()
         # This is where we begin logging the backtest time
+        start_clock = time.time()
+
+        # Figure out our traded assets here
+        self.prices = self.sync_prices(self.interface)
+        for i in self.prices:
+            base = get_base_asset(i)
+            quote = get_quote_asset(i)
+            if base not in self.interface.traded_assets:
+                self.interface.traded_assets.append(base)
+            if quote not in self.interface.traded_assets:
+                self.interface.traded_assets.append(quote)
 
         # Write them in
         if initial_account_values is not None:
             self.__write_initial_price_values(initial_account_values)
-
-        start_clock = time.time()
 
         # Write our queued edits to the file
         if self.queue_backtest_write:
@@ -578,12 +591,10 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             # Check locally for the data and add to price_cache if we do not have it
             self.add_prices(benchmark_symbol, self.user_start, self.user_stop, self.min_resolution)
 
-        prices = self.sync_prices(self.interface)
-
         use_price = self.preferences['settings']['use_price']
         self.use_price = use_price
 
-        for frame_symbol, price_list in prices.items():
+        for frame_symbol, price_list in self.prices.items():
             # This is a list of dictionaries
             frame = price_list  # type: list
 
@@ -600,7 +611,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                             return True
                     return False
 
-                if not check_if_any_column_has_prices(prices):
+                if not check_if_any_column_has_prices(self.prices):
                     raise IndexError('No cached or downloaded data available. Try adding arguments such as to="1y" '
                                      'in the backtest command. If there should be data downloaded, try deleting your'
                                      ' ./price_caches folder.')
@@ -618,7 +629,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             if self.initial_time is None or first_time < self.initial_time:
                 self.initial_time = first_time
 
-        if prices == {}:
+        if self.prices == {}:
             raise ValueError("No data given. "
                              "Try setting an argument such as to='1y' in the .backtest() command.\n"
                              "Example: strategy.backtest(to='1y')")
@@ -701,7 +712,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             'limits_executed': self.interface.executed_orders,
             'limits_canceled': self.interface.canceled_orders,
             'executed_market_orders': self.interface.market_order_execution_details
-        }, prices, self.initial_time, self.interface.time(), self.quote_currency, [])
+        }, self.prices, self.initial_time, self.interface.time(), self.quote_currency, [])
 
         # If they set resampling we use resampling for everything
         resample_setting = self.preferences['settings']['resample_account_value_for_metrics']
@@ -859,14 +870,15 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                                 # This normalizes the benchmark value
                                 initial_account_value = cycle_status['Account Value (' +
                                                                      self.quote_currency + ')'].iloc[0]
-                                initial_benchmark_value = prices[benchmark_symbol][use_price].iloc[0]
+                                initial_benchmark_value = self.prices[benchmark_symbol][use_price].iloc[0]
 
                                 # This multiplier brings the initial asset price to the initial account value
                                 # initial_account_value = initial_benchmark_value * x
                                 multiplier = initial_account_value / initial_benchmark_value
 
-                                normalized_compare_series = prices[benchmark_symbol][use_price].multiply(multiplier)
-                                normalized_compare_time_series = prices[benchmark_symbol]['time']
+                                normalized_compare_series = self.prices[benchmark_symbol][
+                                    use_price].multiply(multiplier)
+                                normalized_compare_time_series = self.prices[benchmark_symbol]['time']
 
                                 # We need to also cast the time series that is needed to compare
                                 # because it's only been done for the cycle status time

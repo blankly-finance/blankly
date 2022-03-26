@@ -135,32 +135,15 @@ def format_platform_result(backtest_result):
     # Set the account values to None
     raw_or_resampled_account_values = None
 
-    # Now we can show the price events resolution and their symbol by knowing the order in the array they appear
-    #  in
-    price_events = []
-    if len(backtest_result.price_events) > 0:
-        shortest_price_event = backtest_result.price_events[0]['interval']
-        for i in backtest_result.price_events:
-            if i['interval'] < shortest_price_event:
-                shortest_price_event = i['interval']
-            price_events.append({'symbol': i['asset_id'], 'interval': i['interval'], 'ohlcv': i['ohlc']})
-
-        if shortest_price_event < 3600:
-            # Turn raw account values
-            raw_or_resampled_account_values = backtest_result.resample_account('Account Value ('
-                                                                               + backtest_result.quote_currency +
-                                                                               ')', 3600).to_dict()
-
     # Now grab the account value dictionary itself
     # Now just replicate the format of the resampled version
     # This was the annoying backtest glitch that almost cost us an investor meeting so its important
-    if raw_or_resampled_account_values is None:
-        history = history_and_returns['history']
-        account_value_name = 'Account Value (' + backtest_result.quote_currency + ')'
-        raw_or_resampled_account_values = {
-            'value': history[account_value_name],
-            'time': history['time']
-        }
+    history = history_and_returns['history']
+    account_value_name = 'Account Value (' + backtest_result.quote_currency + ')'
+    raw_or_resampled_account_values = {
+        'value': history[account_value_name],
+        'time': history['time']
+    }
 
     # Now grab the raw account values
     compressed_asset_column = __compress_dict_series(raw_or_resampled_account_values['value'],
@@ -213,7 +196,6 @@ def format_platform_result(backtest_result):
         'metrics': refined_metrics,
         'indicators': {},  # Add to this array when we support
         # strategy indicators
-        'price_events': price_events,
         'user_callbacks': backtest_result.user_callbacks,
         'initial_account_value': first_account_value,
         'final_account_value': last_account_value,

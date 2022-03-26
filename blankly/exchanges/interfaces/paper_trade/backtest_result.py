@@ -78,11 +78,14 @@ class BacktestResult:
                         # Must be the last one in the list
                         return search_index - 1
 
-                    if arr[search_index] <= x <= arr[search_index + 1]:
-                        # Found it in this range
-                        return search_index
+                    if len(arr) > 1:
+                        if arr[search_index] <= x <= arr[search_index + 1]:
+                            # Found it in this range
+                            return search_index
+                        else:
+                            search_index += 1
                     else:
-                        search_index += 1
+                        return 0
             try:
                 # Iterate and find the correct quote price
                 index_ = search(times, len(times), epoch)

@@ -86,7 +86,6 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
     def evaluate_traded_account_assets(self):
         # Because alpaca has so many columns we need to optimize to perform an accurate backtest
-        self.traded_assets = []
         accounts = self.get_account()
 
         for i in accounts.keys():
