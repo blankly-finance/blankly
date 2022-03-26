@@ -6,6 +6,7 @@ from prompt_toolkit.formatted_text import to_formatted_text
 import questionary.constants
 from yaspin import yaspin, Spinner as YaspinSpinner
 from yaspin.core import Yaspin
+from yaspin.spinners import Spinners
 
 BOLD = '\033[1m'
 

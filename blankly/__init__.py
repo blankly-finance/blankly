@@ -46,6 +46,8 @@ from blankly.deployment.reporter_headers import Reporter as __Reporter_Headers
 is_deployed = False
 _screener_runner = None
 
+
+
 _backtesting = blankly.utils.check_backtesting()
 try:
     from blankly_external import Reporter as __Reporter

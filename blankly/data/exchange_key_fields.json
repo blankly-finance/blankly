@@ -1,0 +1,28 @@
+{
+  "coinbase_pro": {
+    "API_PASS": "API Key Password",
+    "API_SECRET": "API Key Secret",
+    "API_KEY": "API Key"
+  },
+  "binance": {
+    "API_KEY": "API Key",
+    "API_SECRET": "API Key Secret"
+  },
+  "alpaca": {
+    "API_KEY": "API Key",
+    "API_SECRET": "API Key Secret"
+  },
+  "oanda": {
+    "ACCOUNT_ID": "Account ID",
+    "PERSONAL_ACCESS_TOKEN": "Personal Access Token"
+  },
+  "ftx": {
+    "API_KEY": "API Key",
+    "API_SECRET": "API Key Secret"
+  },
+  "kucoin": {
+    "API_KEY": "API Key",
+    "API_SECRET": "API Key Secret",
+    "API_PASS": "API Key Password"
+  }
+}

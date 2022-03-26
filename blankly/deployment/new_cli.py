@@ -1,19 +1,21 @@
 import argparse
+import json
 import sys
 import time
 import traceback
 import webbrowser
+from functools import lru_cache
 from pathlib import Path
 from typing import Optional
-
-from yaspin import yaspin
+import pkgutil
 
 from blankly.deployment.api import API
+from blankly.deployment.keys import add_key, split_exchange
 from blankly.deployment.login import logout, poll_login, get_token
 from blankly.deployment.ui import text, confirm, print_work, print_failure, print_success, select, show_spinner
 
 # TODO autogen some of these
-EXCHANGES = ['binance.com', 'binance.us', 'coinbase_pro', 'alpaca', 'ftx', 'oanda']
+EXCHANGES = ['binance.com', 'binance.us', 'coinbase_pro', 'alpaca', 'ftx.us', 'ftx.com', 'oanda', 'none']
 
 TEMPLATES = ['none', 'rsi_bot']
 
@@ -38,7 +40,7 @@ def get_default_project_id(api) -> str:
 
 
 def create_model(api, name, description, model_type):
-    with show_spinner('Creating Blankly Platform model') as spinner:
+    with show_spinner('Creating model') as spinner:
         try:
             model = api.create_model(get_default_project_id(api), model_type, name, description)
         except Exception:
@@ -52,7 +54,7 @@ def ensure_login() -> API:
     api = is_logged_in()
     if api:
         return api
-    return poll_login()
+    return launch_login_flow()
 
 
 def is_logged_in() -> Optional[API]:
@@ -88,6 +90,33 @@ def launch_login_flow() -> API:
     return api
 
 
+@lru_cache(None)
+def exchange_key_fields():
+    return json.loads(pkgutil.get_data('blankly', 'data/exchange_key_fields.json').decode('utf-8'))
+
+
+def add_key_interactive(exchange: str):
+    exchange_no_tld, tld = split_exchange(exchange)
+
+    fields = exchange_key_fields().get(exchange_no_tld, None)
+    if not fields:
+        print_failure(f'An error occured (cannot add key for exchange {exchange_no_tld}). '
+                      'Please add the key manually to keys.json')
+        return
+
+    name = text('Give this key a name:', instruction='(Optional)').unsafe_ask().strip()
+
+    saved_data = {}
+    for key, instruction in fields.items():
+        saved_data[key] = text(f'{instruction}:', validate=validate_non_empty).unsafe_ask()
+
+    if add_key(exchange_no_tld, tld, name, saved_data):
+        print_success(f'Your API key for {exchange} was added to this model')
+        return True
+    print_failure(f'Your API Key for {exchange} was not added to the model')
+    return False
+
+
 def blankly_init(args):
     model_type = select('What type of model do you want to create?', [mt.title() for mt in MODEL_TYPES]).unsafe_ask()
     if args.prompt_login and confirm('Would you like to connect this model to the Blankly Platform?').unsafe_ask():
@@ -95,9 +124,28 @@ def blankly_init(args):
 
         default_name = Path.cwd().name  # default name is working dir name
         name = text('Model name?', default=default_name, validate=validate_non_empty).unsafe_ask()
-        description = text('Model description?').unsafe_ask()
+        description = text('Model description?', instruction='(Optional)').unsafe_ask()
 
         model = create_model(api, name, description, model_type)
+
+    exchange = select('What exchange would you like to connect to?', EXCHANGES) \
+        .skip_if(args.exchange, args.exchange).unsafe_ask()
+
+    if confirm('Would you like to add keys for this exchange?\n'
+               'You can do this later at any time by running `blankly key add`').unsafe_ask():
+        add_key_interactive(exchange)
+
+    # TODO template depends on model type
+    template = select('What template would you like to use for your new project?', TEMPLATES) \
+        .skip_if(args.template, args.template).unsafe_ask()
+
+    # TODO template generates backtest.json, bot.py, and requirements.txt
+
+    # TODO generate blankly.json if model was created
+
+    # TODO generate settings.json
+
+    print_success('Done! Your model was created. Run `python bot.py` to get started.')
 
 
 def blankly_login(args):
@@ -131,8 +179,9 @@ def blankly_key(args):
 
 
 def blankly_add_key(args):
-    print(args)
-    raise NotImplementedError
+    exchange = select('What exchange would you like to add a key for?', EXCHANGES) \
+        .skip_if(args.exchange, args.exchange).unsafe_ask()
+    add_key_interactive(exchange)
 
 
 def main():
@@ -143,8 +192,6 @@ def main():
     init_parser.add_argument('-n', '--no-login', action='store_false', dest='prompt_login',
                              help='don\'t prompt to connect to Blankly Platform')
     init_parser.add_argument('--exchange', help='the exchange to connect to', choices=EXCHANGES)
-    init_parser.add_argument('--name', help='the model name on the Blankly Platform')
-    init_parser.add_argument('--description', help='the model description on the Blankly Platform')
     init_parser.add_argument('--template', help='the template to use for this model', choices=TEMPLATES)
     init_parser.set_defaults(func=blankly_init)
 
