@@ -16,7 +16,7 @@ from blankly.utils.utils import info_print
 
 
 class Strategy(StrategyBase):
-    _exchange: Exchange
+    __exchange: Exchange
 
     def __init__(self, exchange: Exchange):
         super().__init__(exchange, StrategyLogger(exchange.get_interface(), strategy=self))
@@ -155,7 +155,7 @@ class Strategy(StrategyBase):
             warnings.warn(warning_string)
 
         # Append each of the events the class defines into the backtest
-        for i in self._schedulers:
+        for i in self.__schedulers:
             kwargs = i.get_kwargs()
             self.backtesting_controller.append_backtest_price_event(callback=kwargs['callback'],
                                                                     asset_id=kwargs['symbol'],
@@ -172,7 +172,7 @@ class Strategy(StrategyBase):
         blankly.reporter.export_backtest_result(results)
 
         # Clean up
-        self.interface = self._interface_cache
+        self.interface = self.__interface_cache
         return results
 
     def time(self) -> float:

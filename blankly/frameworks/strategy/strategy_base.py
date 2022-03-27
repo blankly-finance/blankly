@@ -16,31 +16,33 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-import datetime
 import threading
 import time
 import typing
 import warnings
+import enum
 
-import pandas as pd
 
 import blankly
 from blankly.exchanges.abc_base_exchange import ABCBaseExchange
-from blankly.exchanges.exchange import Exchange
 from blankly.exchanges.interfaces.abc_base_exchange_interface import ABCBaseExchangeInterface
-from blankly.exchanges.interfaces.paper_trade.backtest_controller import BackTestController
-from blankly.exchanges.abc_exchange import ABCExchange
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
 from blankly.frameworks.strategy.strategy_state import StrategyState
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import AttributeDict, info_print
 from blankly.utils.utils import get_ohlcv_from_list
-from blankly.exchanges.strategy_logger import StrategyLogger
+
+
+class EventTypes(enum):
+    price_event = 'price_event'
+    bar_event = 'bar_event'
+    scheduled_event = 'scheduled_event'
+    arbitrage_event = 'arbitrage_event'
 
 
 # TODO this entire class needs to be fixed it's all fucked
 class StrategyBase:
-    _exchange: ABCBaseExchange
+    __exchange: ABCBaseExchange
     interface: ABCBaseExchangeInterface
 
     def __init__(self, exchange, interface):
@@ -57,22 +59,22 @@ class StrategyBase:
         bar_event(bar: dict, symbol: str, state: blankly.StrategyState)
         teardown(blankly.StrategyState)
         """
-        self._remote_backtesting = blankly._backtesting
-        self._exchange = exchange
+        self.__remote_backtesting = blankly._backtesting
+        self.__exchange = exchange
         self.interface = interface
 
-        self.ticker_manager = blankly.TickerManager(self._exchange.get_type(), '')
-        self.orderbook_manager = blankly.OrderbookManager(self._exchange.get_type(), '')
+        self.ticker_manager = blankly.TickerManager(self.__exchange.get_type(), '')
+        self.orderbook_manager = blankly.OrderbookManager(self.__exchange.get_type(), '')
 
         self._scheduling_pair = []  # Object to hold a currency and the resolution it's pulled at: ["BTC-USD", 60]
 
         # Create a cache for the current interface
-        self._interface_cache = self.interface
-        self._schedulers = []
+        self.__interface_cache = self.interface
+        self.__schedulers = []
         self.__variables = {}
-        self._hashes = []
-        self._orderbook_websockets = []
-        self._ticker_websockets = []
+        self.__hashes = []
+        self.__orderbook_websockets = []
+        self.__ticker_websockets = []
 
         # Initialize backtesting attributes. This only used for sending times to the Strategy/StrategyState
         # This is done because we switch the interface to a paper trade interface
@@ -89,23 +91,6 @@ class StrategyBase:
 
         # This will be updated when the teardown() function completes
         self.torndown = False
-
-    @property
-    def variables(self):
-        return self.__variables
-
-    def modify_variable(self, callable_: typing.Callable, key, value):
-        hashed = hash(callable_)
-        self.__variables[hashed][key] = value
-
-    # # TODO these could have some parameters assigned by a super class
-    # def add_arbitrage_event(self, callback: typing.Callable, symbols: list, resolution: typing.Union[str, float],
-    #                         init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False,
-    #                         variables: dict = None):
-    #     """
-    #     Add Arbitrage Event - This allows periodic events where prices are gathered asynchronously. When run live at a
-    #      small interval, this allows minimal latency when gathering the price of the requested symbols.
-    #     """
 
     def add_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
                         init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False,
@@ -180,7 +165,7 @@ class StrategyBase:
         if resolution < 60:
             # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
             self.ticker_manager.create_ticker(self.__idle_event, override_symbol=symbol)
-            self._schedulers.append(
+            self.__schedulers.append(
                 blankly.Scheduler(self.__price_event_websocket, resolution,
                                   initially_stopped=True,
                                   callback=callback,
@@ -193,11 +178,11 @@ class StrategyBase:
                                   ohlc=bar,
                                   symbol=symbol)
             )
-            exchange_type = self._exchange.get_type()
-            self._ticker_websockets.append([symbol, exchange_type, init, state, teardown])
+            exchange_type = self.__exchange.get_type()
+            self.__ticker_websockets.append([symbol, exchange_type, init, state, teardown])
         else:
             # Use the API
-            self._schedulers.append(
+            self.__schedulers.append(
                 blankly.Scheduler(self.__price_event_rest, resolution,
                                   initially_stopped=True,
                                   callback=callback,
@@ -320,11 +305,11 @@ class StrategyBase:
             variables = {}
         self._scheduling_pair.append([symbol, None])
         callback_hash = hash((callback, symbol))
-        if callback_hash in self._hashes:
+        if callback_hash in self.__hashes:
             raise ValueError("A callback of the same type and resolution has already been made for the ticker: "
                              "{}".format(symbol))
         else:
-            self._hashes.append(callback_hash)
+            self.__hashes.append(callback_hash)
         self.__variables[callback_hash] = AttributeDict(variables)
         state = StrategyState(self, self.__variables[callback_hash], symbol=symbol)
 
@@ -338,8 +323,8 @@ class StrategyBase:
                                                 variables=variables,
                                                 state_object=state)
 
-        exchange_type = self._exchange.get_type()
-        self._orderbook_websockets.append([symbol, exchange_type, init, state, teardown])
+        exchange_type = self.__exchange.get_type()
+        self.__orderbook_websockets.append([symbol, exchange_type, init, state, teardown])
 
         # Set this to true so that we can throw a warning in the backtest
         self._using_orderbook = True
@@ -350,29 +335,29 @@ class StrategyBase:
 
         Simply call this function to take your strategy configuration live on your exchange
         """
-        if self._remote_backtesting:
+        if self.__remote_backtesting:
             warnings.warn("Aborted attempt to start a live strategy a backtest configuration")
             return
-        for i in self._schedulers:
+        for i in self.__schedulers:
             kwargs = i.get_kwargs()
             if kwargs['init'] is not None:
                 kwargs['init'](kwargs['symbol'], kwargs['state_object'])
             i.start()
 
-        for i in self._orderbook_websockets:
+        for i in self.__orderbook_websockets:
             # Index 2 contains the initialization function for the assigned websockets array
             if i[2] is not None:
                 i[2](i[0], i[3])
             self.orderbook_manager.restart_ticker(i[0], i[1])
 
-        for i in self._ticker_websockets:
+        for i in self.__ticker_websockets:
             # The initialization function should have already been called for ticker websockets
             # Notice this is different from orderbook websockets because these are put into the scheduler
             self.ticker_manager.restart_ticker(i[0], i[1])
 
     def teardown(self):
         self.lock.acquire()
-        for i in self._schedulers:
+        for i in self.__schedulers:
             i.stop_scheduler()
             kwargs = i.get_kwargs()
             teardown = kwargs['teardown']
@@ -380,14 +365,14 @@ class StrategyBase:
             if callable(teardown):
                 teardown(state_object)
 
-        for i in self._orderbook_websockets:
+        for i in self.__orderbook_websockets:
             self.orderbook_manager.close_websocket(override_symbol=i[0], override_exchange=i[1])
             # Call the stored teardown
             teardown_func = i[4]
             if callable(teardown_func):
                 teardown_func(i[3])
 
-        for i in self._ticker_websockets:
+        for i in self.__ticker_websockets:
             self.ticker_manager.close_websocket(override_symbol=i[0], override_exchange=i[1])
         self.lock.release()
 
