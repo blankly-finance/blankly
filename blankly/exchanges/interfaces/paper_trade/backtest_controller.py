@@ -1044,7 +1044,6 @@ class BackTestController:
                 api_key = json_file['api_key']
                 api_pass = json_file['api_pass']
                 # Need this to generate the URL
-                project_id = json_file['project_id']
                 # Need this to know where to post to
                 model_id = json_file['model_id']
 
@@ -1068,7 +1067,7 @@ class BackTestController:
 
                 import webbrowser
 
-                link = f'https://app.blankly.finance/{project_id}/{model_id}/{platform_result["backtest_id"]}' \
+                link = f'https://app.blankly.finance/{api_key}/{model_id}/{platform_result["backtest_id"]}' \
                        f'/backtest'
                 webbrowser.open(
                     link
