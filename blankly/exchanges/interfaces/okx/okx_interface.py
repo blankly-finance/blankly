@@ -73,7 +73,7 @@ class OkexInterface(ExchangeInterface):
                      'hold': parsed_value['exchange_specific']['details'][0]['frozenBal']
                  })
                  return dictionary
-        for i in range(len(accounts)):
+        for i in range(len(accounts['data'][0]['details'])):
             parsed_dictionary[accounts['data'][0]['details'][i]['ccy']] = utils.AttributeDict({
                 'available': float(accounts['data'][0]['details'][i]['availBal']),
                 'hold': float(accounts['data'][0]['details'][i]['frozenBal'])
@@ -115,10 +115,12 @@ class OkexInterface(ExchangeInterface):
         response["id"] = response['data'][0]['ordId']
         response["status"] = response['data'][0]['sCode']
         response["symbol"] = symbol
+        response["size"] = size
+        response["side"] = side
+        response["type"] = 'market'
         response = utils.isolate_specific(needed, response)
-        final = MarketOrder(order, response, self)
+        return MarketOrder(order, response, self)
 
-        return final
 
     @utils.order_protection
     def limit_order(self, symbol, side, price, size) -> LimitOrder:
@@ -141,15 +143,22 @@ class OkexInterface(ExchangeInterface):
         }
 
         response = self._trade.place_order(symbol, 'cash', side, 'limit', size, px=price)
-        if "sMsg" in response:
-            raise InvalidOrder("Invalid Order: " + response["sMsg"])
+        if len(response['data'][0]['sMsg']) != 0:
+            raise InvalidOrder("Invalid Order: " + response['data'][0]["sMsg"])
 
-        response_details = self._trade.get_orders(symbol, ordId=response['ordId'])
+        response_details = self._trade.get_orders(symbol, ordId=response['data'][0]['ordId'])
 
-        response_details["created_at"] = response_details.pop('cTime')
-        response_details["id"] = response_details.pop('ordId')
-        response_details["status"] = response_details.pop('state')
-        response_details = utils.isolate_specific(needed, response)
+        response_details["created_at"] = response_details['data'][0]['cTime']
+        response_details["id"] = response_details['data'][0]['ordId']
+        response_details["status"] = response_details['data'][0]['state']
+        response_details["symbol"] = response_details['data'][0]['instId']
+        response_details["size"] = response_details['data'][0]['sz']
+        response_details["side"] = response_details['data'][0]['side']
+        response_details["price"] = response_details['data'][0]['px']
+        response_details["type"] = response_details['data'][0]['ordType']
+        response_details["time_in_force"] = 'GTC'
+
+        response_details = utils.isolate_specific(needed, response_details)
         return LimitOrder(order, response_details, self)
 
     def cancel_order(self, symbol: str, order_id: str) -> dict:
@@ -160,7 +169,8 @@ class OkexInterface(ExchangeInterface):
         """
         return {"order_id": self._trade.cancel_order(symbol, ordId=order_id)}
 
-    def get_open_orders(self, symbol: str):
+    def get_open_orders(self,
+                        symbol: str = None) -> list:
         """
         List open orders
         """
@@ -195,22 +205,25 @@ class OkexInterface(ExchangeInterface):
         if symbol is None:
             raise ValueError("There was no symbol inputted, please try again.")
         else:
-            orders = list(self._trade.get_order_list(instType=symbol))
+            orders = self._trade.get_order_list(instId=symbol)
 
-        if len(orders) == 0:
+        if len(orders['data']) == 0:
             return []
-        if orders[0] == 'message':
+        if orders['code'].startswith('5'):
             raise InvalidOrder("Invalid Order: " + str(orders))
 
-        for i in range(len(orders)):
-            orders[i]["created_at"] = orders[i].pop("cTime")
-            needed = self.choose_order_specificity(orders[i]['ordType'])
-            orders[i]["symbol"] = orders[i].pop('instId')
-            orders[i]["id"] = orders[i].pop('ordId')
-            orders[i]["status"] = orders[i].pop('state')
-            if orders[i]["ordType"] == "limit":
-                orders[i]["time_in_force"] = 'GTC'
-            orders[i] = utils.isolate_specific(needed, orders[i])
+        for i in range(len(orders['data'])):
+            orders['data'][i]["created_at"] = orders['data'][i]["cTime"]
+            needed = self.choose_order_specificity(orders['data'][i]['ordType'])
+            orders['data'][i]["symbol"] = orders['data'][i]['instId']
+            orders['data'][i]["id"] = orders['data'][i]['ordId']
+            orders['data'][i]["status"] = orders['data'][i]['state']
+            orders['data'][i]["size"] = orders['data'][i]['sz']
+            orders['data'][i]["price"] = orders['data'][i]['px']
+            orders['data'][i]["type"] = orders['data'][i]["ordType"]
+            if orders['data'][i]["ordType"] == "limit":
+                orders['data'][i]["time_in_force"] = 'GTC'
+            orders['data'][i] = utils.isolate_specific(needed, orders['data'][i])
 
         return orders
 
@@ -218,22 +231,26 @@ class OkexInterface(ExchangeInterface):
         response = self._trade.get_orders(symbol, ordId=order_id)
 
         if 'message' in response:
-            raise APIException("Invalid: " + str(response['message']) + ", was the order canceled?")
+            raise APIException("Invalid: " + str(response['msg']) + ", was the order canceled?")
 
-        if response['ordType'] == 'market':
+        if response['data'][0]['ordType'] == 'market':
             needed = self.needed['market_order']
-        elif response['ordType'] == 'limit':
+        elif response['data'][0]['ordType'] == 'limit':
             needed = self.needed['limit_order']
         else:
             needed = self.needed['market_order']
 
-        response["symbol"] = response.pop('instId')
-        response["id"] = response.pop('ordId')
-        response["status"] = response.pop('state')
-        response["time_in_force"] = None # gtc?
+        response["symbol"] = response['data'][0]['instId']
+        response["created_at"] = response['data'][0]['cTime']
+        response["size"] = response['data'][0]['sz']
+        response["side"] = response['data'][0]['side']
+        response["type"] = response['data'][0]['ordType']
+        response["id"] = response['data'][0]['ordId']
+        response["status"] = response['data'][0]['state']
+        response["time_in_force"] = 'GTC'
         return utils.isolate_specific(needed, response)
 
-    def get_fees(self) -> dict:
+    def get_fees(self, symbol: str) -> dict:
         needed = self.needed['get_fees']
         """
         {
@@ -243,9 +260,12 @@ class OkexInterface(ExchangeInterface):
             "timestamp": "2019-12-11T11:02:31.360Z"
         }
         """
-        fees = self._account.get_fee_rates("SPOT")
-        fees['taker_fee_rate'] = fees['data'].pop('taker')
-        fees['maker_fee_rate'] = fees['data'].pop('maker')
+        if symbol is None:
+            raise ValueError("There was no symbol inputted, please try again.")
+        else:
+            fees = self._account.get_fee_rates(instType="SPOT", instId=symbol)
+        fees['taker_fee_rate'] = fees['data'][0]['taker']
+        fees['maker_fee_rate'] = fees['data'][0]['maker']
         return utils.isolate_specific(needed, fees)
 
     def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
@@ -379,7 +399,7 @@ class OkexInterface(ExchangeInterface):
         """
         response = self._market.get_index_ticker(instId=symbol)
         if 'message' in response:
-            raise APIException("Error: " + response['message'])
-        return float(response['idxPx'])
+            raise APIException("Error: " + response['msg'])
+        return float(response['data'][0]['idxPx'])
 
 
