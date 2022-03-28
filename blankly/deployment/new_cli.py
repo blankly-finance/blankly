@@ -284,8 +284,7 @@ def blankly_deploy(args):
 
 
 def blankly_add_key(args):
-    exchange_name = select('What exchange would you like to add a key for?', EXCHANGES) \
-        .skip_if(args.exchange in EXCHANGES, args.exchange).unsafe_ask()
+    exchange_name = select('What exchange would you like to add a key for?', EXCHANGES).unsafe_ask()
     add_key_interactive(EXCHANGES[exchange_name])
 
 
@@ -293,7 +292,8 @@ def blankly_list_key(args):
     data = load_keys()
     for exchange, keys in data.items():
         for name, key_data in keys.items():
-            if any('*' in d for d in key_data.values()):
+            print(key_data.values())
+            if any((isinstance(d, str) and '*' in d) for d in key_data.values()):
                 continue
             exchange_display_name = exc_display_name(exchange)
             print_work(f'{exchange_display_name}: {name}')
@@ -355,7 +355,6 @@ def main():
     key_add_parser.set_defaults(func=blankly_list_key)
 
     key_add_parser = key_subparsers.add_parser('add', help='Add an API Key to this model')
-    key_add_parser.add_argument('--exchange', help='the exchange', choices=EXCHANGES)
     key_add_parser.set_defaults(func=blankly_add_key)
 
     # run the selected command
