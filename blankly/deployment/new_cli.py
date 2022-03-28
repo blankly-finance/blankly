@@ -1,25 +1,28 @@
 import argparse
 import json
+import os.path
 import sys
-import time
 import traceback
 import webbrowser
-from functools import lru_cache
 from pathlib import Path
 from typing import Optional
 import pkgutil
 
+from questionary import Choice
+
 from blankly.deployment.api import API
-from blankly.deployment.keys import add_key, split_exchange
+from blankly.deployment.deploy import zip_dir, get_python_version
+from blankly.deployment.keys import add_key, load_keys, write_keys
 from blankly.deployment.login import logout, poll_login, get_token
 from blankly.deployment.ui import text, confirm, print_work, print_failure, print_success, select, show_spinner
+from blankly.deployment.exchange_data import EXCHANGES, Exchange, exc_display_name
 
-# TODO autogen some of these
-EXCHANGES = ['binance.com', 'binance.us', 'coinbase_pro', 'alpaca', 'ftx.us', 'ftx.com', 'oanda', 'none']
-
-TEMPLATES = ['none', 'rsi_bot']
-
-MODEL_TYPES = ['strategy', 'screener']
+TEMPLATES = {
+    'strategy': {'none': 'none.py',
+                 'rsi_bot': 'rsi_bot.py'},
+    'screener': {'none': 'none_screener.py',
+                 'rsi_screener': 'rsi_screener.py'}
+}
 
 AUTH_URL = 'https://app.blankly.finance/auth/signin?redirectUrl=/deploy'
 
@@ -30,19 +33,10 @@ def validate_non_empty(text):
     return True
 
 
-def get_default_project_id(api) -> str:
-    projects = api.list_projects()
-    if not projects:
-        project = api.create_project('default project', 'default project for all models')
-        return str(project['projectId'])
-    else:
-        return str(projects[0]['id'])
-
-
 def create_model(api, name, description, model_type):
     with show_spinner('Creating model') as spinner:
         try:
-            model = api.create_model(get_default_project_id(api), model_type, name, description)
+            model = api.create_model(api.user_id, model_type, name, description)
         except Exception:
             spinner.fail('Failed to create model')
             raise
@@ -90,62 +84,141 @@ def launch_login_flow() -> API:
     return api
 
 
-@lru_cache(None)
-def exchange_key_fields():
-    return json.loads(pkgutil.get_data('blankly', 'data/exchange_key_fields.json').decode('utf-8'))
+def add_key_interactive(exchange: Exchange):
+    tld = None
+    if exchange.tlds:
+        tld = select('What TLD are you using?',
+                     [Choice(f'{exchange.name}.{tld}', tld) for tld in exchange.tlds]).unsafe_ask()
 
-
-def add_key_interactive(exchange: str):
-    exchange_no_tld, tld = split_exchange(exchange)
-
-    fields = exchange_key_fields().get(exchange_no_tld, None)
-    if not fields:
-        print_failure(f'An error occured (cannot add key for exchange {exchange_no_tld}). '
-                      'Please add the key manually to keys.json')
-        return
-
-    name = text('Give this key a name:', instruction='(Optional)').unsafe_ask().strip()
+    name = text('Give this key a name:', instruction='(Optional)').unsafe_ask()
 
     saved_data = {}
-    for key, instruction in fields.items():
-        saved_data[key] = text(f'{instruction}:', validate=validate_non_empty).unsafe_ask()
+    for instruction, key in exchange.key_info.items():
+        saved_data[key] = text(f'{instruction}:', validate=validate_non_empty).unsafe_ask().strip()
+    saved_data['sandbox'] = False  # TODO sandbox option?
 
-    if add_key(exchange_no_tld, tld, name, saved_data):
-        print_success(f'Your API key for {exchange} was added to this model')
-        return True
-    print_failure(f'Your API Key for {exchange} was not added to the model')
+    if add_key(exchange, tld, name, saved_data):
+        print_success(f'Your API key for {exchange.display_name} was added to this model')
+        return tld
+    print_failure(f'Your API Key for {exchange.display_name} was not added to the model')
     return False
 
 
 def blankly_init(args):
-    model_type = select('What type of model do you want to create?', [mt.title() for mt in MODEL_TYPES]).unsafe_ask()
+    model_type = select('What type of model do you want to create?',
+                        [Choice(mt.title(), mt) for mt in TEMPLATES]).unsafe_ask()
+    templates = TEMPLATES[model_type]
+
+    model = None
     if args.prompt_login and confirm('Would you like to connect this model to the Blankly Platform?').unsafe_ask():
         api = ensure_login()
+        model = create_model_interactive(api, model_type)
 
-        default_name = Path.cwd().name  # default name is working dir name
-        name = text('Model name?', default=default_name, validate=validate_non_empty).unsafe_ask()
-        description = text('Model description?', instruction='(Optional)').unsafe_ask()
+    exchange_name = select('What exchange would you like to connect to?', EXCHANGES) \
+        .skip_if(args.exchange in EXCHANGES, args.exchange).unsafe_ask()
+    exchange = EXCHANGES[exchange_name]
 
-        model = create_model(api, name, description, model_type)
-
-    exchange = select('What exchange would you like to connect to?', EXCHANGES) \
-        .skip_if(args.exchange, args.exchange).unsafe_ask()
-
+    tld = None
     if confirm('Would you like to add keys for this exchange?\n'
                'You can do this later at any time by running `blankly key add`').unsafe_ask():
-        add_key_interactive(exchange)
+        tld = add_key_interactive(exchange)
 
-    # TODO template depends on model type
-    template = select('What template would you like to use for your new project?', TEMPLATES) \
-        .skip_if(args.template, args.template).unsafe_ask()
+    template_name = select('What template would you like to use for your new model?', templates) \
+        .skip_if(args.template in templates, args.template).unsafe_ask()
+    template = templates[template_name]
 
-    # TODO template generates backtest.json, bot.py, and requirements.txt
+    with show_spinner('Generating files') as spinner:
+        files = [
+            ('bot.py', generate_bot_py(exchange, template)),
+            ('backtest.json', generate_backtest_json(exchange)),
+            ('requirements.txt', 'blankly\n'),
+            ('blankly.json', generate_blankly_json(model, model_type)),
+            ('settings.json', generate_settings_json(tld or 'com'))
+        ]
+        spinner.ok('Generated files')
 
-    # TODO generate blankly.json if model was created
+    for path, data in files:
+        if Path(path).exists() and not confirm(f'{path} already exists, would you like to overwrite it?',
+                                               default=False).unsafe_ask():
+            continue
+        with open(path, 'w') as file:
+            file.write(data)
 
-    # TODO generate settings.json
+    # TODO open on platform WITHOUT STARTING
 
-    print_success('Done! Your model was created. Run `python bot.py` to get started.')
+    print_success('Done! Your model was created. Run `python bot.py` to run a backtest and get started.')
+
+
+def create_model_interactive(api, model_type):
+    default_name = Path.cwd().name  # default name is working dir name
+    name = text('Model name?', default=default_name, validate=validate_non_empty).unsafe_ask()
+    description = text('Model description?', instruction='(Optional)').unsafe_ask()
+    return create_model(api, name, description, model_type)
+
+
+def generate_settings_json(tld: str):
+    data = {"settings": {"use_sandbox_websockets": False,
+                         "websocket_buffer_size": 10000,
+                         "test_connectivity_on_auth": True,
+                         "coinbase_pro": {"cash": "USD"},
+                         "binance": {"cash": "USDT",
+                                     "binance_tld": tld, },
+                         "alpaca": {"websocket_stream": "iex",
+                                    "cash": "USD",
+                                    "enable_shorting": True,
+                                    "use_yfinance": False},
+                         "oanda": {"cash": "USD"},
+                         "keyless": {"cash": "USD"},
+                         "ftx": {"cash": "USD",
+                                 "ftx_tld": tld, },
+                         "ftx_futures": {"cash": "USD",
+                                         "ftx_tld": tld},
+                         "kucoin": {"cash": "USDT"}}}
+    return json.dumps(data, indent=4)
+
+
+def generate_blankly_json(model: Optional[dict], model_type):
+    data = {'main_script': './bot.py',
+            'python_version': get_python_version(),
+            'requirements': './requirements.txt',
+            'working_directory': '.',
+            'ignore_files': ['price_caches', '.git', '.idea', '.vscode'],
+            'backtest_args': {'to': '1y'},
+            'type': model_type,
+            'screener': {'schedule': '30 14 * * 1-5'}}
+    if model:
+        data['model_id'] = model['modelId']
+    return json.dumps(data, indent=4)
+
+
+def generate_backtest_json(exchange: Exchange) -> str:
+    data = {'price_data': {'assets': []},
+            'settings': {'use_price': 'close',
+                         'smooth_prices': False,
+                         'GUI_output': True,
+                         'show_tickers_with_zero_delta': False,
+                         'save_initial_account_value': True,
+                         'show_progress_during_backtest': True,
+                         'cache_location': './price_caches',
+                         'continuous_caching': True,
+                         'resample_account_value_for_metrics': '1d',
+                         'quote_account_value_in': exchange.currency,
+                         'ignore_user_exceptions': True,
+                         'risk_free_return_rate': 0.0,
+                         'benchmark_symbol': None}}
+    return json.dumps(data, indent=4)
+
+
+def generate_bot_py(exchange: Exchange, template: str) -> str:
+    bot_py = pkgutil.get_data('blankly', f'data/templates/{template}').decode('utf-8')
+    for pattern, replacement in [
+        ('EXCHANGE_NAME', exchange.display_name,),
+        ('EXCHANGE_CLASS', exchange.python_class,),
+        ('SYMBOL_LIST', "['" + "', '".join(exchange.symbols) + "']",),
+        ('SYMBOL', exchange.symbols[0],)
+    ]:
+        bot_py = bot_py.replace(pattern, replacement)
+    return bot_py
 
 
 def blankly_login(args):
@@ -167,21 +240,88 @@ def blankly_logout(args):
 
 
 def blankly_deploy(args):
-    with show_spinner('wheeeeeeeeeeeeeeeeee') as spinner:
-        time.sleep(5)
-        spinner.ok('YEET')
-    raise NotImplementedError
+    api = ensure_login()
+    # TODO ensure project exists
 
+    description = text('Enter a description for this version of the model:').unsafe_ask()
 
-def blankly_key(args):
-    print(args)
-    raise NotImplementedError
+    # create model if it doesn't exist
+    with open('blankly.json', 'r') as file:
+        data = json.load(file)
+
+    data['plan'] = select('Select a plan:', [Choice(f'{name} - CPU: {info["cpu"]} RAM: {info["ram"]}', name)
+                                     for name, info in api.get_plans('live').items()]) \
+        .skip_if('plan' in data, data.get('plan', None)).unsafe_ask()
+
+    if 'model_id' not in data:
+        model = create_model_interactive(api, data['type'])
+        data['model_id'] = model['modelId']
+
+    # save model_id and plan back into blankly.json
+    with open('blankly.json', 'w') as file:
+        json.dump(data, file)
+
+    with show_spinner('Uploading model') as spinner:
+        model_path = zip_dir('.', data['ignore_files'])
+
+        params = {
+            'file_path': model_path,
+            'project_id': api.user_id,
+            'model_id': data['model_id'],
+            'version_description': description,
+            'python_version': get_python_version(),
+            'type_': data['type'],
+            'plan': data['plan']
+        }
+        if data['type'] == 'screener':
+            params['schedule'] = data['screener']['schedule']
+
+        response = api.deploy(**params)
+        if response.get('status', None) == 'success':
+            spinner.ok('Model uploaded')
+        else:
+            spinner.fail('Error: ' + response['error'])
 
 
 def blankly_add_key(args):
-    exchange = select('What exchange would you like to add a key for?', EXCHANGES) \
-        .skip_if(args.exchange, args.exchange).unsafe_ask()
-    add_key_interactive(exchange)
+    exchange_name = select('What exchange would you like to add a key for?', EXCHANGES) \
+        .skip_if(args.exchange in EXCHANGES, args.exchange).unsafe_ask()
+    add_key_interactive(EXCHANGES[exchange_name])
+
+
+def blankly_list_key(args):
+    data = load_keys()
+    for exchange, keys in data.items():
+        for name, key_data in keys.items():
+            if any('*' in d for d in key_data.values()):
+                continue
+            exchange_display_name = exc_display_name(exchange)
+            print_work(f'{exchange_display_name}: {name}')
+            for k, v in key_data.items():
+                print_work(f'    {k}: {v}')
+
+
+def blankly_remove_key(args):
+    data = load_keys()
+    if not data:
+        return
+
+    exchange, key = select('Which key would you like to delete?', [
+        Choice(f'{exc_display_name(exchange)}: {name}', (exchange, name))
+        for exchange, keys in data.items() for name in keys
+    ]).unsafe_ask()
+
+    del data[exchange][key]
+    write_keys(data)
+
+
+def blankly_key(args):
+    func = select('What would you like to do?', [
+        Choice('Add a key', blankly_add_key),
+        Choice('Show all keys', blankly_list_key),
+        Choice('Remove a key', blankly_remove_key)
+    ]).unsafe_ask()
+    func(args)
 
 
 def main():
@@ -207,6 +347,12 @@ def main():
     key_parser = subparsers.add_parser('key', help='Manage model Exchange API keys')
     key_parser.set_defaults(func=blankly_key)
     key_subparsers = key_parser.add_subparsers()
+
+    key_add_parser = key_subparsers.add_parser('remove', help='Delete API Keys from this model')
+    key_add_parser.set_defaults(func=blankly_remove_key)
+
+    key_add_parser = key_subparsers.add_parser('list', help='List API Keys that this model is using')
+    key_add_parser.set_defaults(func=blankly_list_key)
 
     key_add_parser = key_subparsers.add_parser('add', help='Add an API Key to this model')
     key_add_parser.add_argument('--exchange', help='the exchange', choices=EXCHANGES)

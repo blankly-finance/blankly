@@ -1,0 +1,71 @@
+from typing import Dict, List
+import alpaca_trade_api
+from binance.client import Client as BinanceClient
+
+from blankly.deployment.ui import print_failure
+from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as CoinbaseProAPI
+from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
+from blankly.exchanges.interfaces.oanda.oanda_api import OandaAPI
+
+
+class Exchange:
+    name: str
+    symbols: List[str]
+    python_class: str
+    tlds: List[str]
+    display_name: str
+    key_info: Dict[str, str]
+
+    def __init__(self, name: str, symbols: List[str], test_func, key_info: List[str] = None, python_class: str = None,
+                 tlds: List[str] = None, display_name: str = None, currency: str = 'USD'):
+        self.name = name
+        self.symbols = symbols
+        self.test_func = test_func
+        self.key_info = {k.replace('_', ' ').title().replace('Api', 'API'): k  # autogen key instructions
+                         for k in key_info or ['API_SECRET', 'API_KEY']}  # default to just key/secret
+        self.python_class = python_class or name.replace('_', ' ').title().replace(' ', '')  # snake case to pascalcase
+        self.tlds = tlds or []
+        self.display_name = display_name or name.replace('_', ' ').title()  # prettify
+        self.currency = currency
+
+
+def kucoin_test_func(auth, tld):
+    try:
+        from kucoin import client as KucoinAPI
+    except ImportError:
+        print_failure('kucoin-python must be installed to check Kucoin API Keys')
+        print_failure('Skipping check')
+        return
+    return KucoinAPI.User(auth['API_KEY'], auth['API_SECRET'], auth['API_PASS']).get_base_fee
+
+
+EXCHANGES_LIST = [
+    Exchange('alpaca', ['MSFT', 'GME', 'AAPL'],
+             lambda auth, tld: alpaca_trade_api.REST(key_id=auth['API_KEY'],
+                                                     secret_key=auth['API_SECRET']).get_account()),
+    Exchange('binance', ['BTC-USDT', 'ETH-USDT', 'SOL-USDT'],
+             lambda auth, tld: BinanceClient(api_key=auth['API_KEY'], api_secret=auth['API_SECRET'],
+                                             tld=tld).get_account(),
+             tlds=['com', 'us'], currency='USDT'),
+    Exchange('coinbase_pro', ['BTC-USD', 'ETH-USD', 'SOL-USD'],
+             lambda auth, tld: CoinbaseProAPI(api_key=auth['API_KEY'], api_secret=auth['API_SECRET'],
+                                              api_pass=auth['API_PASS']).get_accounts(),
+             key_info=['API_PASS', 'API_SECRET', 'API_KEY']),
+    Exchange('ftx', ['BTC-USD', 'ETH-USD', 'SOL-USD'],
+             lambda auth, tld: FTXAPI(auth['API_KEY'], auth['API_SECRET'], tld).get_account_info(),
+             tlds=['com', 'us'], python_class='FTX', display_name='FTX'),
+    Exchange('oanda', ['BTC-USD', 'ETH-USD', 'SOL-USD'],
+             lambda auth, tld: OandaAPI(personal_access_token=auth['PERSONAL_ACCESS_TOKEN'],
+                                        account_id=auth['ACCOUNT_ID']).get_account(),
+             key_info=['ACCOUNT_ID', 'PERSONAL_ACCESS_TOKEN']),
+
+    Exchange('kucoin', ['BTC-USDT', 'ETH-USDT', 'SOL-USDT'], kucoin_test_func,
+             key_info=['API_KEY', 'API_SECRET', 'API_PASS'], currency='USDT')
+]
+
+EXCHANGES = {exchange.display_name: exchange for exchange in EXCHANGES_LIST}
+EXCHANGE_DISPLAY_NAMES = {exchange.name: exchange.display_name for exchange in EXCHANGES_LIST}
+
+
+def exc_display_name(exchange_name):
+    return EXCHANGE_DISPLAY_NAMES.get(exchange_name, exchange_name)
