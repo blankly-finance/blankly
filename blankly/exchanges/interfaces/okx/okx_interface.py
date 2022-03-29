@@ -38,14 +38,15 @@ class OkexInterface(ExchangeInterface):
         needed = self.needed['get_products']
         products = self._public.get_instruments(instrument_type)
 
-        for i in range(len(products)):
-            products[i]["base_asset"] = products[i].pop("baseCcy")
-            products[i]["quote_asset"] = products[i].pop("quoteCcy")
-            products[i]["base_min_size"] = products[i].pop("minSz")
-            products[i]["base_max_size"] = 1000000000
-            products[i]["base_increment"] = products[i].pop("tickSz")
-            products[i] = utils.isolate_specific(needed, products[i])
-        return products
+        for i in range(len(products['data'])):
+            products['data'][i]["symbol"] = products['data'][i]["instId"]
+            products['data'][i]["base_asset"] = products['data'][i]["baseCcy"]
+            products['data'][i]["quote_asset"] = products['data'][i]["quoteCcy"]
+            products['data'][i]["base_min_size"] = products['data'][i]["minSz"]
+            products['data'][i]["base_max_size"] = 1000000000
+            products['data'][i]["base_increment"] = products['data'][i]["tickSz"]
+            products['data'][i] = utils.isolate_specific(needed, products['data'][i])
+        return products['data']
 
 
     def get_account(self, symbol=None) -> utils.AttributeDict:
@@ -69,8 +70,8 @@ class OkexInterface(ExchangeInterface):
              for i in accounts_specific['data']:
                  parsed_value = utils.isolate_specific(needed, i)
                  dictionary = utils.AttributeDict({
-                     'available': parsed_value['exchange_specific']['details'][0]['availBal'], # accounts_specific['data'][0]['details'][0]['availBal'],
-                     'hold': parsed_value['exchange_specific']['details'][0]['frozenBal']
+                     'available': float(parsed_value['exchange_specific']['details'][0]['availBal']), # accounts_specific['data'][0]['details'][0]['availBal'],
+                     'hold': float(parsed_value['exchange_specific']['details'][0]['frozenBal'])
                  })
                  return dictionary
         for i in range(len(accounts['data'][0]['details'])):
@@ -398,7 +399,7 @@ class OkexInterface(ExchangeInterface):
         Returns just the price of a currency pair.
         """
         response = self._market.get_index_ticker(instId=symbol)
-        if 'message' in response:
+        if len(response['msg']) != 0:
             raise APIException("Error: " + response['msg'])
         return float(response['data'][0]['idxPx'])
 
