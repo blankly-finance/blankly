@@ -145,9 +145,9 @@ def split(base_range, local_segments) -> typing.Tuple[list, list]:
 
 
 class BackTestController(ABCBacktestController):  # circular import to type model
-    def __init__(self, model, backtest_settings_path: str = None):
-        self.preferences = load_backtest_preferences(backtest_settings_path)
-        self.backtest_settings_path = backtest_settings_path
+    def __init__(self, model):
+        self.preferences = None
+        self.backtest_settings_path = None
 
         self.interface = None
 
@@ -193,7 +193,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         self.user_start = None
         self.user_stop = None
 
-        self.show_progress = self.preferences['settings']['show_progress_during_backtest']
+        self.show_progress = False
         self.sleep_count = 0
 
         # Use this global to retain where we are in the prices dictionary by index
@@ -551,10 +551,18 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         self.no_trade_account_values.append(no_trade_dict)
 
     # TODO this class should be constructed with a BacktestConfiguration object
-    def run(self, args, exchange: ABCExchange, initial_account_values) -> BacktestResult:
+    def run(self,
+            args,
+            exchange: ABCExchange,
+            initial_account_values,
+            backtest_settings_path: str = None) -> BacktestResult:
         """
         Setup
         """
+        self.preferences = load_backtest_preferences(backtest_settings_path)
+        self.backtest_settings_path = backtest_settings_path
+        self.show_progress = self.preferences['settings']['show_progress_during_backtest']
+
         if not exchange.get_type() == "paper_trade":
             raise ValueError("Backtest controller was not constructed with a paper trade exchange object.")
         # Define the interface on run

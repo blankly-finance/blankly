@@ -1,35 +1,85 @@
-import datetime
+"""
+    Spot specific class for strategy
+    Copyright (C) 2021  Emerson Dove
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 import time
 import typing
-import warnings
-
-import pandas as pd
 
 import blankly
 from blankly.exchanges.exchange import Exchange
-from blankly.exchanges.interfaces.paper_trade.backtest_controller import BackTestController
+from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
 from blankly.exchanges.strategy_logger import StrategyLogger
+from blankly.frameworks.model.model import Model
 from blankly.frameworks.strategy import StrategyBase
-from blankly.utils.time_builder import time_interval_to_seconds
-from blankly.utils.utils import info_print
+from blankly.frameworks.strategy import StrategyState
+
+
+class StrategyStructure(Model):
+    def main(self, args):
+        pass
 
 
 class Strategy(StrategyBase):
     __exchange: Exchange
+    interface: ABCExchangeInterface
 
     def __init__(self, exchange: Exchange):
         super().__init__(exchange, StrategyLogger(exchange.get_interface(), strategy=self))
-        self._paper_trade_exchange = blankly.PaperTrade(self._exchange)
+        self._paper_trade_exchange = blankly.PaperTrade(self.__exchange)
+        self.model = Model(exchange)
+
+    def __price_event_rest(self, **kwargs):
+        callback = kwargs['callback']
+        symbol = kwargs['symbol']
+        resolution = kwargs['resolution']
+        variables = kwargs['variables']
+        ohlc = kwargs['ohlc']
+        state = kwargs['state_object']  # type: StrategyState
+
+        state.variables = variables
+        state.resolution = resolution
+
+        if ohlc:
+            ohlcv_time = kwargs['ohlcv_time']
+            while True:
+                # Sometimes coinbase doesn't download recent data correctly
+                try:
+                    data = self.interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
+                    if self.interface.get_exchange_type() == "alpaca":
+                        break
+                    else:
+                        if data['time'] + resolution == ohlcv_time:
+                            break
+                except IndexError:
+                    pass
+                time.sleep(.5)
+            data['price'] = self.interface.get_price(symbol)
+        else:
+            data = self.interface.get_price(symbol)
+
+        callback(data, symbol, state)
 
     def backtest(self,
                  to: str = None,
                  initial_values: dict = None,
                  start_date: typing.Union[str, float, int] = None,
                  end_date: typing.Union[str, float, int] = None,
-                 save: bool = False,
                  settings_path: str = None,
-                 callbacks: list = None,
                  **kwargs
                  ) -> BacktestResult:
         """
@@ -98,82 +148,17 @@ class Strategy(StrategyBase):
                 risk_free_return_rate: float = 0.0
                     Set this to be the theoretical rate of return with no risk
         """
-
-        start = None
-        end = None
-
-        # Even if they specified start/end unevenly it will be overwritten with any to argument
-        if to is not None:
-            start = time.time() - time_interval_to_seconds(to)
-            end = time.time()
-
-        if start_date is not None:
-            if isinstance(end_date, (int, float)):
-                start = start_date
-            else:
-                start_date = pd.to_datetime(start_date)
-                epoch = datetime.datetime.utcfromtimestamp(0)
-                start = (start_date - epoch).total_seconds()
-
-        if end_date is not None:
-            if isinstance(end_date, (int, float)):
-                end = end_date
-            else:
-                end_date = pd.to_datetime(end_date)
-                epoch = datetime.datetime.utcfromtimestamp(0)
-                end = (end_date - epoch).total_seconds()
-
-        # If start/ends are specified unevenly
-        if (start_date is None and end_date is not None) or (start_date is not None and end_date is None):
-            raise ValueError("Both start and end dates must be set or use the 'to' argument.")
-
-        self.interface = self._paper_trade_exchange.get_interface()
-        self.backtesting_controller = BackTestController(self._paper_trade_exchange,
-                                                         backtest_settings_path=settings_path,
-                                                         callbacks=callbacks
-                                                         )
-
-        # Write any kwargs as settings to the settings - save if enabled.
-        for k, v in kwargs.items():
-            self.backtesting_controller.write_setting(k, v, save)
-
-        if initial_values is not None:
-            self.backtesting_controller.write_initial_price_values(initial_values)
-
-        # Write each scheduling pair as a price event - save if enabled.
-        if start is not None and end is not None:
-            for i in self._scheduling_pair:
-                # None means live which is orderbook, which we skip anyway
-                if i[1] is not None:
-                    self.backtesting_controller.add_prices(i[0], start, end, i[1], save=save)
-        else:
-            info_print("User-specified start and end time not given. Defaulting to using only cached data.")
-
-        if self._using_orderbook:
-            warning_string = "Artificial orderbook generation is not yet supported for backtesting - " \
-                             "skipping orderbook callbacks."
-            warnings.warn(warning_string)
-
-        # Append each of the events the class defines into the backtest
-        for i in self.__schedulers:
-            kwargs = i.get_kwargs()
-            self.backtesting_controller.append_backtest_price_event(callback=kwargs['callback'],
-                                                                    asset_id=kwargs['symbol'],
-                                                                    time_interval=i.get_interval(),
-                                                                    state_object=kwargs['state_object'],
-                                                                    ohlc=kwargs['ohlc'],
-                                                                    init=kwargs['init'],
-                                                                    teardown=kwargs['teardown']
-                                                                    )
-
-        # Run the backtest & return results
-        results = self.backtesting_controller.run()
-
-        blankly.reporter.export_backtest_result(results)
-
-        # Clean up
-        self.interface = self.__interface_cache
-        return results
+        for event_type in self.events_schedules:
+            for event_element in event_type:
+                self.model.backtester.add_prices(to=to,
+                                                 start_date=start_date,
+                                                 stop_date=end_date,
+                                                 symbol=event_element['symbol'],
+                                                 resolution=event_element['resolution'])
+        self.model.backtest(args={
+            'events': self.events_schedules
+        })
+        pass
 
     def time(self) -> float:
         if self.backtesting_controller is not None and self.backtesting_controller.time is not None:
