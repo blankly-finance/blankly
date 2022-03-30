@@ -18,6 +18,7 @@
 
 import time
 import typing
+import warnings
 
 import blankly
 from blankly.exchanges.exchange import Exchange
@@ -25,13 +26,63 @@ from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInter
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
 from blankly.exchanges.strategy_logger import StrategyLogger
 from blankly.frameworks.model.model import Model
-from blankly.frameworks.strategy import StrategyBase
+from blankly.frameworks.strategy.strategy_base import StrategyBase, EventType
 from blankly.frameworks.strategy import StrategyState
 
 
 class StrategyStructure(Model):
+    def __init__(self, exchange: Exchange):
+        super().__init__(exchange)
+
+    def __rest_event(self, **kwargs):
+        callback = kwargs['callback']  # type: callable
+        symbol = kwargs['symbol']  # type: str
+        resolution = kwargs['resolution']  # type: int
+        variables = kwargs['variables']  # type: dict
+        type_ = kwargs['type']  # type: EventType
+        state = kwargs['state']  # type: StrategyState
+
+        state.variables = variables
+        state.resolution = resolution
+
+        if type_ == EventType.bar_event:
+            bar_time = kwargs['bar_time']
+            while True:
+                # Sometimes coinbase doesn't download recent data correctly
+                try:
+                    data = self.interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
+                    if self.interface.get_exchange_type() == "alpaca":
+                        break
+                    else:
+                        if data['time'] + resolution == bar_time:
+                            break
+                except IndexError:
+                    pass
+                time.sleep(.5)
+            data['price'] = self.interface.get_price(symbol)
+        else:
+            data = self.interface.get_price(symbol)
+
+        callback(data, symbol, state)
+
     def main(self, args):
-        pass
+        schedulers = args['schedulers']
+        remote_backtesting = args['remote_backtesting']
+        kwargs = []
+        for scheduler in schedulers:
+            kwargs = scheduler.get_kwargs()
+        if self.is_backtesting:
+            while self.has_data:
+                pass
+        else:
+            if remote_backtesting:
+                warnings.warn("Aborted attempt to start a live strategy a backtest configuration")
+                return
+            for i in events:
+                kwargs = i.get_kwargs()
+                if kwargs['init'] is not None:
+                    kwargs['init'](kwargs['symbol'], kwargs['state_object'])
+                i.start()
 
 
 class Strategy(StrategyBase):
@@ -42,37 +93,6 @@ class Strategy(StrategyBase):
         super().__init__(exchange, StrategyLogger(exchange.get_interface(), strategy=self))
         self._paper_trade_exchange = blankly.PaperTrade(self.__exchange)
         self.model = Model(exchange)
-
-    def __price_event_rest(self, **kwargs):
-        callback = kwargs['callback']
-        symbol = kwargs['symbol']
-        resolution = kwargs['resolution']
-        variables = kwargs['variables']
-        ohlc = kwargs['ohlc']
-        state = kwargs['state_object']  # type: StrategyState
-
-        state.variables = variables
-        state.resolution = resolution
-
-        if ohlc:
-            ohlcv_time = kwargs['ohlcv_time']
-            while True:
-                # Sometimes coinbase doesn't download recent data correctly
-                try:
-                    data = self.interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
-                    if self.interface.get_exchange_type() == "alpaca":
-                        break
-                    else:
-                        if data['time'] + resolution == ohlcv_time:
-                            break
-                except IndexError:
-                    pass
-                time.sleep(.5)
-            data['price'] = self.interface.get_price(symbol)
-        else:
-            data = self.interface.get_price(symbol)
-
-        callback(data, symbol, state)
 
     def backtest(self,
                  to: str = None,
@@ -148,15 +168,16 @@ class Strategy(StrategyBase):
                 risk_free_return_rate: float = 0.0
                     Set this to be the theoretical rate of return with no risk
         """
-        for event_type in self.events_schedules:
-            for event_element in event_type:
+        for scheduler in self.schedulers:
+            for event_element in scheduler.get_kwargs():
                 self.model.backtester.add_prices(to=to,
                                                  start_date=start_date,
                                                  stop_date=end_date,
                                                  symbol=event_element['symbol'],
                                                  resolution=event_element['resolution'])
         self.model.backtest(args={
-            'events': self.events_schedules
+            'schedulers': self.schedulers,
+            'remote_backtesting': self.remote_backtesting
         })
         pass
 

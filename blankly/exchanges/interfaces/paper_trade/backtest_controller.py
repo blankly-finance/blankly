@@ -642,15 +642,14 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                              "Try setting an argument such as to='1y' in the .backtest() command.\n"
                              "Example: strategy.backtest(to='1y')")
 
+        """
+        Begin backtesting
+        """
         # Create this initial so that we can compare how our strategy performs
         self.initial_account = self.interface.get_account()
 
         # Initialize this before the callbacks, so it works in the initialization functions
         self.time = self.initial_time
-
-        """
-        Begin backtesting
-        """
 
         # Turn on backtesting immediately after setting the time
         self.interface.set_backtesting(True)

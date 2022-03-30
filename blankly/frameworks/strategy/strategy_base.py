@@ -58,7 +58,7 @@ class StrategyBase:
         bar_event(bar: dict, symbol: str, state: blankly.StrategyState)
         teardown(blankly.StrategyState)
         """
-        self.__remote_backtesting = blankly._backtesting
+        self.remote_backtesting = blankly._backtesting
         self.__exchange = exchange
         self.interface = interface
 
@@ -68,13 +68,11 @@ class StrategyBase:
         # Attempt to report the strategy
         blankly.reporter.export_strategy(self)
 
-        # Create a lock for the teardown so nothing happens while its going on
+        # Create a lock for the teardown so nothing happens while it's going on
         self.lock = threading.Lock()
 
         # This will be updated when the teardown() function completes
         self.torndown = False
-
-        self.events_schedules = {}
 
         self.schedulers = []
 
@@ -82,16 +80,6 @@ class StrategyBase:
 
         self.__orderbook_websockets = []
         self.__ticker_websockets = []
-
-    def __add_event(self, type_: EventType, symbol: str, resolution: [int, float], callback, init, teardown, state):
-        if not isinstance(self.events_schedules[type_], list):
-            self.events_schedules[type_] = []
-        self.events_schedules[type_].append({'symbol': symbol,
-                                             'resolution': resolution,
-                                             'callback': callback,
-                                             'init': init,
-                                             'teardown': teardown,
-                                             'state': state})
 
     def add_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
                         init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False,
@@ -161,18 +149,16 @@ class StrategyBase:
         variables_ = AttributeDict(variables)
         state = StrategyState(self, variables_, symbol, resolution=resolution)
 
-        self.__add_event(type_, symbol, resolution, callback=callback, init=init, teardown=teardown, state=state)
-
         # Use the API
         self.schedulers.append(
             blankly.Scheduler(self.__price_event_rest, resolution,
                               initially_stopped=True,
+                              synced=synced,
                               callback=callback,
                               resolution=resolution,
                               variables=variables_,
-                              state_object=state,
-                              synced=synced,
-                              ohlc=bar,
+                              state=state,
+                              type=type_,
                               init=init,
                               teardown=teardown,
                               symbol=symbol)
@@ -285,7 +271,7 @@ class StrategyBase:
 
         Simply call this function to take your strategy configuration live on your exchange
         """
-        if self.__remote_backtesting:
+        if self.remote_backtesting:
             warnings.warn("Aborted attempt to start a live strategy a backtest configuration")
             return
         for i in self.schedulers:
