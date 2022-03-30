@@ -640,6 +640,9 @@ def main():
             info_print(f"\tModel ID:\t{response['modelId']}")
             info_print(f"\tVersion:\t{response['versionId']}")
             info_print(f"\tStatus:  \t{response['status']}")
+            url = f"https://app.blankly.finance/{api.user_id}/{response['modelId']}/overview"
+            webbrowser.open(url)
+            info_print(f"\tView your model here: {url}")
 
     elif which == 'init':
         exchange = args['exchange']
