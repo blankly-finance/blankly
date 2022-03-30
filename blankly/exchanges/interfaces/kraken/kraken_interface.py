@@ -18,8 +18,8 @@ from blankly.exchanges.orders.market_order import MarketOrder
 class KrakenInterface(ExchangeInterface):
 
     # NOTE, kraken has no sandbox mode
-    def __init__(self, authenticated_API: KrakenAPI, preferences_path: str):
-        super().__init__('kraken', authenticated_API, preferences_path, valid_resolutions=None)
+    def __init__(self, exchange_name, authenticated_api):
+        super().__init__(exchange_name, authenticated_api, valid_resolutions=None)
 
         self.account_levels_to_max_open_orders = {
             "Starter": 60,

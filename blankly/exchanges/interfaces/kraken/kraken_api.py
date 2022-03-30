@@ -8,18 +8,16 @@ import binascii
 import requests
 #from . import version
 import requests
-from blankly.exchanges.auth.abc_auth import ABCAuth
-from blankly.exchanges.interfaces.kraken.kraken_auth import KrakenAuth
 
 
 class API:
     
-    def __init__(self, auth: ABCAuth, API_URL='https://api.kraken.com', timeout = 30):
+    def __init__(self, api_key, api_secret, API_URL='https://api.kraken.com', timeout=30):
         self.__api_url = API_URL
         self.session = requests.Session()
 
-        self._api_key = auth.keys['API_SECRET']
-        self._api_secret = auth.keys['API_KEY']
+        self._api_key = api_key
+        self._api_secret = api_secret
         self.timeout = [timeout]
         self.proxy = {}
         self.version = "0"
