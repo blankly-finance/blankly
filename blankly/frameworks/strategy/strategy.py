@@ -34,7 +34,7 @@ class StrategyStructure(Model):
     def __init__(self, exchange: Exchange):
         super().__init__(exchange)
 
-    def __rest_event(self, **kwargs):
+    def __rest_event(self, kwargs):
         callback = kwargs['callback']  # type: callable
         symbol = kwargs['symbol']  # type: str
         resolution = kwargs['resolution']  # type: int
@@ -65,24 +65,42 @@ class StrategyStructure(Model):
 
         callback(data, symbol, state)
 
+    def run_price_events(self, kwargs_list: list):
+        for events_definition in kwargs_list:
+            events_definition['next_run'] = self.backtester.initial_time
+        while self.has_data:
+            kwargs_list = sorted(kwargs_list, key=lambda d: d['next_run'])
+            next_event = kwargs_list[0]
+
+            # Sleep the difference
+            self.sleep(next_event['next_run'] - self.time)
+
+            # Run the event
+            self.__rest_event(next_event)
+
+            # Value the account after each run
+            self.backtester.value_account()
+            kwargs_list[0]['next_run'] += kwargs_list[0]['resolution']
+
     def main(self, args):
         schedulers = args['schedulers']
         remote_backtesting = args['remote_backtesting']
-        kwargs = []
         for scheduler in schedulers:
             kwargs = scheduler.get_kwargs()
+            if kwargs['init'] is not None:
+                kwargs['init'](kwargs['symbol'], kwargs['state'])
         if self.is_backtesting:
-            while self.has_data:
-                pass
+            kwargs_list = []
+            for scheduler in schedulers:
+                kwargs_list.append(scheduler.get_kwargs())
+            self.run_price_events(kwargs_list)
         else:
             if remote_backtesting:
                 warnings.warn("Aborted attempt to start a live strategy a backtest configuration")
                 return
-            for i in events:
-                kwargs = i.get_kwargs()
-                if kwargs['init'] is not None:
-                    kwargs['init'](kwargs['symbol'], kwargs['state_object'])
-                i.start()
+            # Start all the schedulers in the list
+            for scheduler in schedulers:
+                scheduler.start()
 
 
 class Strategy(StrategyBase):
@@ -91,8 +109,8 @@ class Strategy(StrategyBase):
 
     def __init__(self, exchange: Exchange):
         super().__init__(exchange, StrategyLogger(exchange.get_interface(), strategy=self))
-        self._paper_trade_exchange = blankly.PaperTrade(self.__exchange)
-        self.model = Model(exchange)
+        self._paper_trade_exchange = blankly.PaperTrade(exchange)
+        self.model = StrategyStructure(exchange)
 
     def backtest(self,
                  to: str = None,
@@ -116,10 +134,7 @@ class Strategy(StrategyBase):
                 be an epoch time as a float or int.
             end_date (str): End the backtest at a date such as "03/06/2018". This can also be an epoch type as a float
                 or int
-            save (bool): Save the price data references to the data required for the backtest as well as
-                overriden settings.
             settings_path (str): Path to the backtest.json file.
-            callbacks (list of callables): Custom functions that will be run at the end of the backtest
 
             Keyword Arguments:
                 **Use these to override parameters in the backtest.json file**
@@ -169,20 +184,16 @@ class Strategy(StrategyBase):
                     Set this to be the theoretical rate of return with no risk
         """
         for scheduler in self.schedulers:
-            for event_element in scheduler.get_kwargs():
-                self.model.backtester.add_prices(to=to,
-                                                 start_date=start_date,
-                                                 stop_date=end_date,
-                                                 symbol=event_element['symbol'],
-                                                 resolution=event_element['resolution'])
-        self.model.backtest(args={
+            event_element = scheduler.get_kwargs()
+            self.model.backtester.add_prices(to=to,
+                                             start_date=start_date,
+                                             stop_date=end_date,
+                                             symbol=event_element['symbol'],
+                                             resolution=event_element['resolution'])
+        return self.model.backtest(args={
             'schedulers': self.schedulers,
             'remote_backtesting': self.remote_backtesting
-        })
-        pass
+        }, initial_values=initial_values, settings_path=settings_path)
 
     def time(self) -> float:
-        if self.backtesting_controller is not None and self.backtesting_controller.time is not None:
-            return self.backtesting_controller.time
-        else:
-            return time.time()
+        return self.model.time

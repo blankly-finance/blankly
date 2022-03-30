@@ -20,6 +20,9 @@ import typing
 
 
 class ABCBacktestController(abc.ABC):
+    # Only becomes defined when backtest is run
+    initial_time = None
+
     @abc.abstractmethod
     def add_prices(self, symbol: str,
                    resolution: [str, int, float],

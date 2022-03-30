@@ -247,20 +247,13 @@ class StrategyBase:
 
         state = StrategyState(self, AttributeDict(variables), symbol=symbol)
 
-        self.__add_event(EventType.orderbook_event,
-                         symbol, None,
-                         callback=callback,
-                         init=init,
-                         teardown=teardown,
-                         state=state)
-
         # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
         self.orderbook_manager.create_orderbook(self.__orderbook_event, initially_stopped=True,
                                                 override_symbol=symbol,
                                                 symbol=symbol,
                                                 user_callback=callback,
                                                 variables=variables,
-                                                state_object=state)
+                                                state=state)
 
         exchange_type = self.__exchange.get_type()
         self.__orderbook_websockets.append([symbol, exchange_type, init, state, teardown])
@@ -277,7 +270,7 @@ class StrategyBase:
         for i in self.schedulers:
             kwargs = i.get_kwargs()
             if kwargs['init'] is not None:
-                kwargs['init'](kwargs['symbol'], kwargs['state_object'])
+                kwargs['init'](kwargs['symbol'], kwargs['state'])
             i.start()
 
         for i in self.__orderbook_websockets:
@@ -297,7 +290,7 @@ class StrategyBase:
             i.stop_scheduler()
             kwargs = i.get_kwargs()
             teardown = kwargs['teardown']
-            state_object = kwargs['state_object']
+            state_object = kwargs['state']
             if callable(teardown):
                 teardown(state_object)
 
