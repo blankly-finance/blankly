@@ -327,7 +327,7 @@ class OkexInterface(ExchangeInterface):
         history = []
 
         while init_epoch_start:
-            response = self._market.get_history_candlesticks('BTC-USDT', before=init_epoch_start, bar=gran_string, limit=100)
+            response = self._market.get_history_candlesticks(symbol, before=init_epoch_start, bar=gran_string, limit=100)
 
             history = history + response['data']
             new_start_time = int(response['data'][0][0])  # latest value of epoch
