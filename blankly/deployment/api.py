@@ -170,6 +170,15 @@ class API:
                                   'projectId': project_id
                               })
 
+    def list_all_models(self):
+        models = self.list_models(self.user_id)
+        for team in self.list_teams():
+            models += self.list_models(team.id)
+        return models
+
+    def list_teams(self):
+        return self.__request('get', 'teams')
+
     def generate_keys(self, project_id: str):
         return self.__request('post', 'project/generate-project-token', data={
             'projectId': project_id

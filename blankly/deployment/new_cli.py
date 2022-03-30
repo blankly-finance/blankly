@@ -45,6 +45,7 @@ def create_model(api, name, description, model_type):
 
 
 def ensure_login() -> API:
+    # TODO print selected team ?
     api = is_logged_in()
     if api:
         return api
@@ -112,7 +113,7 @@ def blankly_init(args):
     model = None
     if args.prompt_login and confirm('Would you like to connect this model to the Blankly Platform?').unsafe_ask():
         api = ensure_login()
-        model = create_model_interactive(api, model_type)
+        model = get_model_interactive(api, model_type)
 
     exchange_name = select('What exchange would you like to connect to?', EXCHANGES) \
         .skip_if(args.exchange in EXCHANGES, args.exchange).unsafe_ask()
@@ -149,11 +150,21 @@ def blankly_init(args):
     print_success('Done! Your model was created. Run `python bot.py` to run a backtest and get started.')
 
 
-def create_model_interactive(api, model_type):
-    default_name = Path.cwd().name  # default name is working dir name
-    name = text('Model name?', default=default_name, validate=validate_non_empty).unsafe_ask()
-    description = text('Model description?', instruction='(Optional)').unsafe_ask()
-    return create_model(api, name, description, model_type)
+def get_model_interactive(api, model_type):
+    models = api.list_all_models()
+    for model in models:
+        print(model)
+
+    create = select("Would you like to create a new model or attach to an existing one?",
+                    [Choice('Create New', True), Choice('Attach to existing', False)]).unsafe_ask()
+    if create:
+        default_name = Path.cwd().name  # default name is working dir name
+        name = text('Model name?', default=default_name, validate=validate_non_empty).unsafe_ask()
+        description = text('Model description?', instruction='(Optional)').unsafe_ask()
+        return create_model(api, name, description, model_type)
+
+    raise NotImplementedError
+    # select('Select an existing model to attach to:')
 
 
 def generate_settings_json(tld: str):
@@ -250,11 +261,11 @@ def blankly_deploy(args):
         data = json.load(file)
 
     data['plan'] = select('Select a plan:', [Choice(f'{name} - CPU: {info["cpu"]} RAM: {info["ram"]}', name)
-                                     for name, info in api.get_plans('live').items()]) \
+                                             for name, info in api.get_plans('live').items()]) \
         .skip_if('plan' in data, data.get('plan', None)).unsafe_ask()
 
     if 'model_id' not in data:
-        model = create_model_interactive(api, data['type'])
+        model = get_model_interactive(api, data['type'])
         data['model_id'] = model['modelId']
 
     # save model_id and plan back into blankly.json
@@ -324,6 +335,13 @@ def blankly_key(args):
     func(args)
 
 
+def blankly_switch(args):
+    api = ensure_login()
+
+    teams = api.list_teams()
+    team = select('Select a team', [Choice(team.name, team) for team in teams]).unsafe_ask()
+
+
 def main():
     parser = argparse.ArgumentParser(description='Blankly CLI & deployment tool')
     subparsers = parser.add_subparsers(help='Core Blankly commands', required=True)
@@ -343,6 +361,9 @@ def main():
 
     deploy_parser = subparsers.add_parser('deploy', help='Upload this model to the Blankly Platform')
     deploy_parser.set_defaults(func=blankly_deploy)
+
+    deploy_parser = subparsers.add_parser('switch', help='Switch between teams')
+    deploy_parser.set_defaults(func=blankly_switch)
 
     key_parser = subparsers.add_parser('key', help='Manage model Exchange API keys')
     key_parser.set_defaults(func=blankly_key)
