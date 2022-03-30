@@ -27,6 +27,7 @@ def init(symbol, state: blankly.StrategyState):
 
 if __name__ == "__main__":
     # This downloads an example CSV
+    print('Downloading Initial Price Data...')
     data = requests.get('https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/price_examples.csv?'
                         'alt=media&token=3f3c37ee-a87b-46b0-b145-077c0e25254b').text
     f = open('./price_examples.csv', 'w')
@@ -42,5 +43,5 @@ if __name__ == "__main__":
     strategy.add_price_event(price_event, symbol='BTC-USD', resolution='1d', init=init)
 
     # Backtest the strategy
-    results = strategy.backtest(start_date=1568547200, end_date=1642982400)
+    results = strategy.backtest(start_date='2019-09-15', end_date='2022-01-24')
     print(results)
