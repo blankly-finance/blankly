@@ -18,27 +18,9 @@
 
 import abc
 
+from blankly.exchanges.abc_base_exchange import ABCBaseExchange
+from blankly.exchanges.interfaces.abc_base_exchange_interface import ABCBaseExchangeInterface
 
-class ABCExchange(abc.ABC):
-    """
-    Functions required for easy interaction with the GUI/main
-    """
 
-    @abc.abstractmethod
-    def append_model(self, model, coin, args):
-        pass
-
-    @abc.abstractmethod
-    def get_full_state(self, symbol):
-        pass
-
-    @abc.abstractmethod
-    def get_model_state(self, symbol):
-        pass
-
-    @abc.abstractmethod
-    def get_asset_state(self, symbol):
-        pass
-
-    def get_exchange_state(self):
-        pass
+class ABCExchange(ABCBaseExchange, abc.ABC):
+    pass

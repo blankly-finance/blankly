@@ -28,7 +28,7 @@ from websocket import create_connection
 import blankly
 from blankly.utils.utils import info_print
 from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
-from blankly.exchanges.auth.auth_constructor import load_auth
+from blankly.exchanges.auth.utils import load_auth
 from blankly.exchanges.interfaces.alpaca.alpaca_websocket_utils import parse_alpaca_timestamp, switch_type
 
 

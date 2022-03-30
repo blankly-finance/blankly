@@ -44,10 +44,9 @@ class TickerManager(WebsocketManager):
             default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "kraken")
         self.__default_symbol = default_symbol
 
-        self.__tickers = {}
-        self.__tickers[default_exchange] = {}
+        self.__tickers = {default_exchange: {}}
 
-        # Create abstraction for writing many different managers
+        # Create abstraction for writing many managers
         super().__init__(self.__tickers, default_symbol, default_exchange)
 
     """ 
@@ -105,6 +104,7 @@ class TickerManager(WebsocketManager):
                                         "aggTrade",
                                         log=log)
             ticker.append_callback(callback)
+            override_symbol = override_symbol.upper()
             self.__tickers['binance'][override_symbol] = ticker
             return ticker
         elif exchange_name == "alpaca":
@@ -130,6 +130,8 @@ class TickerManager(WebsocketManager):
         elif exchange_name == "ftx":
             if override_symbol is None:
                 override_symbol = self.__default_symbol
+
+            override_symbol = blankly.utils.to_exchange_symbol(override_symbol, "ftx")
 
             if sandbox_mode:
                 raise ValueError("Error: FTX does not have a sandbox mode")

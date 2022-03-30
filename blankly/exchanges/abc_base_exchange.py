@@ -1,6 +1,6 @@
 """
-    Coinbase authentication base class
-    Copyright (C) 2021  Arun Annamalai, Emerson Dove
+    Base Exchange object.
+    Copyright (C) 2022 Matias Kotlik
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -15,12 +15,19 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import abc
 
-from blankly.exchanges.auth.abc_auth import ABCAuth
 
+class ABCBaseExchange(abc.ABC):
 
-class CoinbaseProAuth(ABCAuth):
-    def __init__(self, keys_file, portfolio_name):
-        super().__init__(keys_file, portfolio_name, 'coinbase_pro')
-        needed_keys = ['API_KEY', 'API_SECRET', 'API_PASS']
-        self.validate_credentials(needed_keys)
+    @abc.abstractmethod
+    def get_interface(self):
+        pass
+
+    @abc.abstractmethod
+    def get_name(self) -> str:
+        pass
+
+    @abc.abstractmethod
+    def get_type(self) -> str:
+        pass

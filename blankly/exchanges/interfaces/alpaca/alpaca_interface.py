@@ -26,7 +26,6 @@ import pandas as pd
 from alpaca_trade_api.rest import APIError as AlpacaAPIError, TimeFrame
 from dateutil import parser
 
-from blankly.exchanges.interfaces.alpaca.alpaca_api import API
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
@@ -34,13 +33,12 @@ from blankly.utils import utils as utils
 from blankly.utils.exceptions import APIException
 from blankly.utils.time_builder import build_minute, time_interval_to_seconds, number_interval_to_string
 
-NY = 'America/New_York'
-
 
 class AlpacaInterface(ExchangeInterface):
-    def __init__(self, authenticated_api: API, preferences_path: str):
+    def __init__(self, exchange_name, authenticated_api):
         self.__unique_assets = None
-        super().__init__('alpaca', authenticated_api, preferences_path, valid_resolutions=[60, 60*5, 60*15, 60*60*24])
+        super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 60*5, 60*15,
+                                                                              60*60*24])
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
     def init_exchange(self):
@@ -48,8 +46,8 @@ class AlpacaInterface(ExchangeInterface):
             account_info = self.calls.get_account()
         except alpaca_trade_api.rest.APIError as e:
             raise APIException(e.__str__() + ". Are you trying to use your normal exchange keys "
-                               "while in sandbox mode? \nTry toggling the \'use_sandbox\' setting "
-                               "in your settings.json or check if the keys were input correctly into your "
+                               "while in sandbox mode? \nTry toggling the \'sandbox\' setting "
+                               "in your keys.json or check if the keys were input correctly into your "
                                "keys.json.")
         try:
             if account_info['account_blocked']:
@@ -111,6 +109,7 @@ class AlpacaInterface(ExchangeInterface):
         account_dict = self.calls.get_account()
         return float(account_dict['buying_power'])
 
+    @utils.enforce_base_asset
     def get_account(self, symbol=None):
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
@@ -372,8 +371,8 @@ class AlpacaInterface(ExchangeInterface):
                     return pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
             except AlpacaAPIError as e:
                 if e.code == 42210000:
-                    warning_string = "Your alpaca subscription does not permit querying data from the last 15 minutes. " \
-                                     "Blankly is adjusting your query."
+                    warning_string = "Your alpaca subscription does not permit querying data from the last 15 " \
+                                     "minutes. Blankly is adjusting your query."
                     utils.info_print(warning_string)
                     epoch_stop = time.time() - (build_minute() * 15)
                     if epoch_stop >= epoch_start:
@@ -400,68 +399,6 @@ class AlpacaInterface(ExchangeInterface):
             # This runs yfinance on the symbol
             return self.parse_yfinance(symbol, epoch_start, epoch_stop, resolution)
 
-    # def history(self,
-    #             symbol: str,
-    #             to: Union[str, int] = 200,
-    #             resolution: Union[str, int] = '1d',
-    #             start_date: Union[str, dt, float] = None,
-    #             end_date: Union[str, dt, float] = None,
-    #             return_as: str = 'df'):
-    #
-    #     assert isinstance(self.calls, alpaca_trade_api.REST)
-    #
-    #     if not end_date:
-    #         end_date = dt.now(tz=timezone.utc)
-    #
-    #     end_date = self.__convert_times(end_date)
-    #
-    #     if start_date:
-    #         start_date = self.__convert_times(start_date)
-    #
-    #     alpaca_v1_resolutions = [60 * 1, 60 * 5, 60 * 15, 60 * 60 * 24]
-    #
-    #     # convert resolution into epoch seconds
-    #     resolution_seconds = time_interval_to_seconds(resolution)
-    #
-    #     found_multiple, row_divisor = self.__evaluate_multiples(alpaca_v1_resolutions, resolution_seconds)
-    #
-    #     if found_multiple == 60:
-    #         time_interval = '1Min'
-    #     elif found_multiple == 60 * 5:
-    #         time_interval = '5Min'
-    #     elif found_multiple == 60 * 15:
-    #         time_interval = '15Min'
-    #     elif found_multiple == 60 * 60 * 24:
-    #         time_interval = '1D'
-    #     else:
-    #         time_interval = 'failed'
-    #
-    #     if to:
-    #         aggregated_limit = to * row_divisor
-    #         bars = self.calls.get_barset(symbol, time_interval, limit=int(aggregated_limit),
-    #         end=end_date.isoformat())[
-    #             symbol]
-    #         return_df = pd.DataFrame(bars)
-    #         return_df.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
-    #                          inplace=True)
-    #
-    #         history = utils.get_ohlcv(return_df, row_divisor, from_zero=True)
-    #
-    #     else:
-    #         # bars = self.calls.get_barset(symbol, time_interval, start=start_date.isoformat(),
-    #         # end=end_date.isoformat())[symbol]
-    #         history = self.get_product_history(symbol,
-    #                                            start_date.timestamp(),
-    #                                            end_date.timestamp(),
-    #                                            int(resolution_seconds))
-    #
-    #     return super().cast_type(history, return_as)
-    #     # return_df = pd.DataFrame(bars)
-    #     # return_df.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v": "volume"},
-    #     # inplace=True)
-    #     #
-    #     # return utils.get_ohlcv_2(return_df, row_divisor)
-
     def overridden_history(self, symbol, epoch_start, epoch_stop, resolution_seconds, **kwargs) -> pd.DataFrame:
         to = kwargs['to']
         # If it's a string alpaca is an edge case where epoch can be used
@@ -476,31 +413,51 @@ class AlpacaInterface(ExchangeInterface):
                     60: '1Min',
                     300: '5Min',
                     900: '15Min',
-                    86400: '1D'
+                    86400: '1Day'
                 }
+
                 time_interval = resolution_lookup[resolution_seconds]
 
-                frames = []
+                def find_last_n_points(epoch_start_, epoch_stop_):
+                    frames = []
 
-                while to > 1000:
-                    # Create an end time by moving after the start time by 1000 datapoints
-                    epoch_stop -= resolution_seconds * 1000
+                    # This just overestimates and then chops off the remainder
+                    while epoch_start_ <= epoch_stop_:
+                        # Create an end time by moving after the start time by 1000 datapoints
+                        frames.append(self.calls.get_bars(symbol, time_interval, limit=10000,
+                                                          start=utils.iso8601_from_epoch(epoch_start_)).df)
+                        epoch_start_ += resolution_seconds * 10000
 
-                    frames.append(self.calls.get_barset(symbol, time_interval, limit=1000,
-                                                        end=utils.ISO8601_from_epoch(epoch_stop))[symbol])
-                    to -= 1000
+                    for i in range(len(frames)):
+                        series = []
+                        for j in frames[i].index:
+                            series.append(j.timestamp())
+                        frames[i]['time'] = pd.Series(series).values
+                        frames[i] = frames[i].reset_index(drop=True)
 
-                frames.append(self.calls.get_barset(symbol, time_interval, limit=to,
-                                                    end=utils.ISO8601_from_epoch(epoch_stop))[symbol])
+                    if len(frames) != 0:
+                        response_ = pd.concat(frames, ignore_index=True)
+                    else:
+                        response_ = pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
 
-                for i in range(len(frames)):
-                    frames[i] = pd.DataFrame(frames[i])
+                    return response_
 
-                response = pd.concat(frames, ignore_index=True)
-                response.rename(columns={"t": "time", "o": "open", "h": "high", "l": "low", "c": "close", "v":
-                                "volume"}, inplace=True)
+                # Create an empty dataframe here
+                response = pd.DataFrame(columns=['time', 'open', 'high', 'low', 'close', 'volume'])
+                batched_ranges = [epoch_start, epoch_stop]
+                # Batch it until we have enough points
+                tries = 2
+                while len(response) < to:
+                    response = pd.concat([response, find_last_n_points(batched_ranges[0], batched_ranges[1])])
+                    batched_ranges[0] -= resolution_seconds * tries
+                    batched_ranges[1] -= resolution_seconds * tries
+                    tries = tries * 2
+
+                response = response[['time', 'open', 'high', 'low', 'close', 'volume']]
 
                 response = response.sort_values(by=['time'], ignore_index=True)
+
+                response = response.tail(to)
 
                 response = response.astype({
                     'time': int,
@@ -564,6 +521,10 @@ class AlpacaInterface(ExchangeInterface):
             # base_increment = product['base_increment']
             min_price = 0.0001
             max_price = 10000000000
+
+            # Guaranteed nano share if fractionable
+            base_min_size = 1e-9
+            base_increment = 1e-9
         else:
             quote_increment = current_price
             min_funds_buy = current_price
@@ -574,6 +535,10 @@ class AlpacaInterface(ExchangeInterface):
             # base_increment = product['base_increment']
             min_price = 0.0001
             max_price = 10000000000
+
+            # Always 1 if not fractionable
+            base_min_size = 1
+            base_increment = 1
 
         max_funds = current_price * 10000000000
 
@@ -595,12 +560,9 @@ class AlpacaInterface(ExchangeInterface):
             'market_order': {
                 "fractionable": fractionable,
 
-                # TODO alpaca is very broken right now and is only allowing whole number quantity so these are
-                #  overridden. If I see anyone creating an issue about this it better be that I can finally allow
-                #  fractional back
-                "base_min_size": 1,  # Minimum size to buy
+                "base_min_size": base_min_size,  # Minimum size to buy
                 "base_max_size": base_max_size,  # Maximum size to buy
-                "base_increment": 1,  # Specifies the minimum increment for the base_asset.
+                "base_increment": base_increment,  # Specifies the minimum increment for the base_asset.
 
                 "quote_increment": quote_increment,  # Specifies the min order price as well as the price increment.
                 "buy": {
@@ -627,8 +589,8 @@ class AlpacaInterface(ExchangeInterface):
 
     def get_price(self, symbol) -> float:
         assert isinstance(self.calls, alpaca_trade_api.REST)
-        response = self.calls.get_last_trade(symbol=symbol)
-        return float(response['price'])
+        response = self.calls.get_latest_trade(symbol=symbol)
+        return float(response['p'])
 
     @staticmethod
     def parse_yfinance(symbol: str, epoch_start: [int, float], epoch_stop: [int, float], resolution: int):

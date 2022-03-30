@@ -21,10 +21,10 @@ from pathlib import Path
 
 import pytest
 
-from blankly.exchanges.interfaces.oanda.oanda_auth import OandaAuth
+import blankly
 from blankly.exchanges.interfaces.oanda.oanda_interface import OandaInterface
-from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 from tests.helpers.comparisons import validate_response
+from tests.testing_utils import forex_market_open
 
 
 @pytest.fixture
@@ -32,9 +32,13 @@ def oanda_interface():
     keys_file_path = Path("tests/config/keys.json").resolve()
     settings_file_path = Path("tests/config/settings.json").resolve()
 
-    auth_obj = OandaAuth(str(keys_file_path), "oanda test portfolio")
-    _, oanda_interface = DirectCallsFactory.create("oanda", auth_obj, str(settings_file_path))
-    return oanda_interface
+    oanda = blankly.Oanda(keys_path=keys_file_path,
+                          settings_path=settings_file_path,
+                          portfolio_name='oanda test portfolio')
+
+    # auth_obj = OandaAuth(str(keys_file_path), "oanda test portfolio")
+    # _, oanda_interface = DirectCallsFactory.create("oanda", auth_obj, str(settings_file_path))
+    return oanda.interface
 
 
 def test_get_exchange(oanda_interface: OandaInterface) -> None:
@@ -52,6 +56,9 @@ def test_get_cash(oanda_interface: OandaInterface) -> None:
 
 def test_marketorder_comprehensive(oanda_interface: OandaInterface) -> None:
     # query for the unique ID of EUR_USD
+    if not forex_market_open():
+        return
+
     products = oanda_interface.get_products()
 
     found_eur_usd = False
@@ -64,7 +71,7 @@ def test_marketorder_comprehensive(oanda_interface: OandaInterface) -> None:
     eur_usd = 'EUR-USD'
     market_buy_order = oanda_interface.market_order(eur_usd, 'buy', 200)
 
-    time.sleep(1)
+    time.sleep(2)
     resp = oanda_interface.get_order(eur_usd, market_buy_order.get_id())
 
     # verify resp is correct
@@ -73,7 +80,7 @@ def test_marketorder_comprehensive(oanda_interface: OandaInterface) -> None:
     # Todo: validate market sell order object can query its info correctly
     oanda_interface.market_order(eur_usd, 'sell', 200)
 
-    time.sleep(1)
+    time.sleep(2)
     resp = oanda_interface.get_order(eur_usd, market_buy_order.get_id())
 
     # verify resp is correct

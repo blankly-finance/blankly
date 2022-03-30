@@ -23,8 +23,9 @@ from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import Paper
 class PaperTrade(Exchange):
     def __init__(self, authenticated_exchange: Exchange, initial_account_values: dict = None):
         # Giving the preferences path as none allows us to create a default
-        Exchange.__init__(self, "paper_trade", "", None, None)
+        Exchange.__init__(self, "paper_trade", authenticated_exchange.portfolio_name, None)
 
+        # This construction is unique because it doesn't make the interface super call for construction
         self.interface = PaperTradeInterface(authenticated_exchange.get_interface(),
                                              initial_account_values)
         self.calls = authenticated_exchange.get_direct_calls()

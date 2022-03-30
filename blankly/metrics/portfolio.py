@@ -25,8 +25,7 @@ from blankly.utils.utils import info_print
 
 
 def cagr(start_value, end_value, years):
-    if end_value < start_value:
-        info_print('End Value less than Start Value makes CAGR meaningless, returning 0')
+    if years == 0:
         return 0.0
     return (end_value / start_value) ** (1 / years) - 1
 
@@ -52,12 +51,17 @@ def sharpe(returns, n=252, risk_free_rate=None):
     else:
         mean = returns.mean() * n
     std = returns.std() * np.sqrt(n)
+    if std == 0.0:
+        return 0.0
     return mean / std
 
 
 def calmar(returns, n=252):
     return_series = pd.Series(returns)
-    return return_series.mean() * n / abs(max_drawdown(return_series))
+    max_draw = max_drawdown(return_series)
+    if max_draw == 0:
+        return 0.0
+    return return_series.mean() * n / abs(max_draw)
 
 
 def volatility(returns, n=None):
@@ -65,12 +69,14 @@ def volatility(returns, n=None):
 
 
 def variance(returns, n=None):
-    return np.nanvar(returns) * np.sqrt(n) if n else np.nanvar(returns)
+    if len(returns) <= 1:
+        return 0.0
+    return np.nanvar(returns) * n if n else np.nanvar(returns)
 
 
-def beta(returns, market_base_returns):
+def beta(returns, market_base_returns, n=None):
     m = np.matrix([returns, market_base_returns])
-    return np.cov(m)[0][1] / np.std(market_base_returns)
+    return np.cov(m)[0][1] / variance(market_base_returns, n)
 
 
 def var(initial_value, returns, alpha: float):

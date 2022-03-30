@@ -32,14 +32,14 @@ from blankly.utils.exceptions import APIException
 
 
 class OandaInterface(ExchangeInterface):
-    def __init__(self, authenticated_api: OandaAPI, preferences_path: str):
+    def __init__(self, exchange_name: str, authenticated_api: OandaAPI):
         self.default_trunc = None
-        super().__init__('oanda', authenticated_api, preferences_path, valid_resolutions=[5, 10, 15, 30, 60,
-                                                                                          60 * 2, 60 * 4, 60 * 5,
-                                                                                          60 * 10, 60 * 15, 60 * 30,
-                                                                                          60 * 60, 60 * 60 * 24,
-                                                                                          60 * 60 * 24 * 7,
-                                                                                          60 * 60 * 24 * 30])
+        super().__init__(exchange_name, authenticated_api, valid_resolutions=[5, 10, 15, 30, 60,
+                                                                              60 * 2, 60 * 4, 60 * 5,
+                                                                              60 * 10, 60 * 15, 60 * 30,
+                                                                              60 * 60, 60 * 60 * 24,
+                                                                              60 * 60 * 24 * 7,
+                                                                              60 * 60 * 24 * 30])
         self.supported_multiples = {5: "S5", 10: "S10", 15: "S15", 30: "S30", 60: "M1", 60 * 2: "M2",
                                     60 * 4: "M4", 60 * 5: "M5", 60 * 10: "M10", 60 * 15: "M15", 60 * 30: "M30",
                                     60 * 60: "H1", 60 * 60 * 24: "D", 60 * 60 * 24 * 7: "W", 60 * 60 * 24 * 30: "M"}
@@ -55,8 +55,8 @@ class OandaInterface(ExchangeInterface):
     def init_exchange(self):
         account_info = self.calls.get_account()
         if 'errorMessage' in account_info:
-            raise LookupError(f"{account_info['errorMessage']}. \nTry toggling the \'use_sandbox\' setting "
-                              "in your settings.json or check if the keys were input correctly into your "
+            raise LookupError(f"{account_info['errorMessage']}. \nTry toggling the \'sandbox\' setting "
+                              "in your keys.json or check if the keys were input correctly into your "
                               "keys.json.")
         assert account_info['account']['id'] is not None, "Oanda exchange account does not exist"
 
@@ -139,6 +139,7 @@ class OandaInterface(ExchangeInterface):
 
         return instruments
 
+    @utils.enforce_base_asset
     def get_account(self, symbol=None) -> utils.AttributeDict:
         if symbol is not None:
             symbol = self.__convert_blankly_to_oanda(symbol)

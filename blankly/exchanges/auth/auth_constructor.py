@@ -1,6 +1,6 @@
 """
-    Allows the user to load the Keys in any Keys.json.
-    Copyright (C) 2021  Emerson Dove
+    Inherited authentication object
+    Copyright (C) 2021  Arun Annamalai, Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
@@ -16,105 +16,55 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+import abc
 import json
+
+from blankly.exchanges.auth.utils import load_auth
+from blankly.utils.exceptions import AuthError
 from blankly.utils.utils import info_print
 
-keys_path_cache = None
 
-# This is currently unused
-auth_cache = {}
+class AuthConstructor(abc.ABC):
+    def __init__(self, keys_file: str, portfolio_name: str, exchange: str, needed_keys: list):
+        """
+        Create an auth interface
+        Args:
+            keys_file (str): filepath to keys.json
+            portfolio_name (str): name of portfolio
+            exchange (str): name of exchange
+        """
+        # self.portfolio_name = portfolio_name
+        self.exchange = exchange
 
+        # Load from file
+        self.portfolio_name, self.keys = load_auth(exchange, keys_file, portfolio_name)
 
-def load_json(keys_file):
-    try:
-        f = open(keys_file)
-        contents = json.load(f)
-        f.close()
-        return contents
-    except FileNotFoundError:
-        raise FileNotFoundError("Make sure a keys.json file is placed in the same folder as the project working "
-                                "directory (or specified in the exchange constructor)!")
+        # Create an error message template to throw if needed
+        error_message = ""
 
+        # Make a copy of the keys dict & list to avoid modifying passed variables
+        keys_dict = {**self.keys}
+        needed_keys = list.copy(needed_keys)
+        for i in needed_keys:
+            if i in keys_dict.keys():
+                keys_dict.pop(i)
+            else:
+                # Append a description header if not present
+                example_str = json.dumps({'portfolio': {'API_KEY': '********************',
+                                                        'API_SECRET': '********************',
+                                                        f'{i}': False}}, indent=2)
+                if error_message == "":
+                    error_message += f"Error while loading authentication. Required keys for this are missing: \n" \
+                                     f"Please add the \"{i}\" key to the keys.json file. For example: \n" \
+                                     f"{example_str}"
 
-# def load_auth_coinbase_pro(keys_file, name):
-#     exchange_type = "coinbase_pro"
-#     name, portfolio = __load_auth(keys_file, name, exchange_type)
-#
-#     return [portfolio["API_KEY"], portfolio["API_SECRET"], portfolio["API_PASS"]], name
-#
-#
-# def load_auth_binance(keys_file, name):
-#     exchange_type = "binance"
-#     name, portfolio = __load_auth(keys_file, name, exchange_type)
-#
-#     return [portfolio["API_KEY"], portfolio["API_SECRET"]], name
+                if i != "sandbox":
+                    raise AuthError(error_message)
+                else:
+                    info_print(f"Please add the sandbox keys to your keys.json file. The use_sandbox setting will be "
+                               f"removed in the next update: \n"
+                               f"{example_str}")
 
-
-def load_auth(exchange_type, keys_file=None, name=None):
-    global keys_path_cache
-
-    if keys_file is None:
-        if keys_path_cache is None:
-            # Add a default for if info is passed in and nobody knows anything about paths
-            keys_path_cache = './keys.json'
-            keys_file = keys_path_cache
-        else:
-            # Default to the cached path if the passed variable is wrong
-            keys_file = keys_path_cache
-    else:
-        # If its not non then there's no problem, just write it to the cache though
-        keys_path_cache = keys_file
-
-    auth_object = load_json(keys_file)
-    exchange_keys = auth_object[exchange_type]
-    if name is None:
-        name, portfolio = __determine_first_key(exchange_keys)
-    else:
-        portfolio = exchange_keys[name]
-
-    if exchange_type not in auth_cache:
-        auth_cache[exchange_type] = {}
-    return name, portfolio
-
-
-def __determine_first_key(exchange_keys):
-    first_key = list(exchange_keys.keys())[0]
-    warning_string = "No portfolio name to load specified, defaulting to the first in the file: " \
-                     "(" + first_key + "). This is fine if there is only one portfolio in use."
-    info_print(warning_string)
-    # Read the first in the portfolio
-    portfolio = exchange_keys[first_key]
-    name = first_key
-    return name, portfolio
-
-
-def write_auth_cache(exchange, name, auth):
-    """
-    Write an authenticated object into the global authentication cache. This can be used by other pieces of code
-    in the module to pull from exchanges at points they need the API
-
-    Args:
-        exchange (str): Exchange name ex: "coinbase_pro" or "binance"
-        name (str): Portfolio name ex: "my cool portfolio"
-        auth (obj): Authenticated object to store & recover.
-    """
-    global auth_cache
-    if exchange not in auth_cache:
-        auth_cache[exchange] = {}
-
-    auth_cache[exchange][name] = auth
-
-
-def read_auth_cache(exchange, name=None):
-    """
-    Pull an authenticated object on an exchange. This can be used for API calls anywhere in the code.
-    """
-    global auth_cache
-    if exchange in auth_cache:
-        if name is None:
-            first_key = list(auth_cache[exchange])[0]
-            return auth_cache[exchange][first_key]
-        else:
-            return auth_cache[exchange][name]
-    else:
-        raise KeyError("Request exchange invalid or does not exist")
+        if len(keys_dict.keys()) > 0:
+            info_print(f"Additional keys for Exchange: {self.exchange} Portfolio: {self.portfolio_name} will be"
+                       f" ignored.")

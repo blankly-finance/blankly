@@ -14,7 +14,7 @@ setup(
     name='blankly',  # How you named your package folder (MyLib)
     packages=find_packages(),
     # packages=['blankly'],  # Potentially should be the same thing as name
-    version='v1.14.7-beta',
+    version='v1.16.17-beta',
     license='lgpl-3.0',  # Licenses: https://help.github.com/articles/licensing-a-repository
     description='Rapidly build & deploy cross-exchange trading bots',  # Give a short description about your library
     long_description=long_description,
@@ -29,17 +29,16 @@ setup(
     # download_url='https://github.com/EmersonDove/Blankly/archive/v0.1.1-alpha.tar.gz',
     keywords=['Crypto', 'Stocks', 'Quantitative Finance', 'Exchanges', 'Bot'],  # Keywords
     install_requires=[
-        'alpaca-trade-api >= 1.2.3',
-        'bokeh',
-        'dateparser',
-        'newtulipy',
-        'numpy',
-        'pandas',
-        'pandas_market_calendars',
-        'python-binance',
-        'requests',
-        'websocket-client',
-        'ciso8601'
+        'alpaca-trade-api >= 1.4.2',
+        'bokeh >= 2.4.2',
+        'dateparser >= 1.1.0',
+        'newtulipy >= 0.4.6',
+        'numpy >= 1.21.4',
+        'pandas >= 1.1.5',
+        'pandas_market_calendars >= 3.2',
+        'python-binance >= 1.0.15',
+        'requests >= 2.26.0',
+        'websocket-client >= 1.2.1',
     ],
     classifiers=[
         # Possible: "3 - Alpha", "4 - Beta" or "5 - Production/Stable"

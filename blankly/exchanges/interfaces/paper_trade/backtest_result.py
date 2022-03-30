@@ -16,13 +16,13 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-from pandas import DataFrame
-from blankly.utils.utils import time_interval_to_seconds as _time_interval_to_seconds
+from pandas import DataFrame, to_datetime, Timestamp
+from blankly.utils.utils import time_interval_to_seconds as _time_interval_to_seconds, info_print
 
 
 class BacktestResult:
     def __init__(self, history_and_returns: dict, trades: dict, history: dict,
-                 start_time: float, stop_time: float, quote_currency: str, price_events: list):
+                 start_time: float, stop_time: float, quote_currency: str, price_events: list, figures: list):
         # This can use a ton of memory if these attributes are not cleared
         self.history_and_returns = history_and_returns
         self.metrics = None  # Assigned after construction
@@ -35,6 +35,8 @@ class BacktestResult:
 
         self.start_time = start_time
         self.stop_time = stop_time
+
+        self.figures = figures
 
     def get_account_history(self) -> DataFrame:
         return self.history_and_returns['history']
@@ -51,7 +53,9 @@ class BacktestResult:
     def get_metrics(self) -> dict:
         return self.metrics
 
-    def resample_account(self, symbol, interval: [str, float]) -> DataFrame:
+    def resample_account(self, symbol, interval: [str, float],
+                         use_asset_history: bool = False,
+                         use_price=None) -> DataFrame:
         """
         Resample the raw account value metrics to any resolution
 
@@ -59,6 +63,8 @@ class BacktestResult:
             symbol: The column to resample at the interval resolution. This can include the account value column
             interval: A string such as '1h' or '1m' or a number in seconds such as 3600 or 60 which the values
             will be resampled at
+            use_asset_history: Use the history from the assets rather than the account history
+            use_price: Specify a price to use when querying comparison columns
         """
         search_index = 0
 
@@ -89,9 +95,14 @@ class BacktestResult:
         resampled_array = []
         interval = _time_interval_to_seconds(interval)
 
-        # Find the necessary values to assemble the resamples
-        time_array = self.history_and_returns['history']['time'].tolist()
-        price_array = self.history_and_returns['history'][symbol].tolist()
+        if use_asset_history:
+            # Find the necessary values to assemble the resamples
+            time_array = self.history[symbol]['time'].tolist()
+            price_array = self.history[symbol][use_price].tolist()
+        else:
+            # Find the necessary values to assemble the resamples
+            time_array = self.history_and_returns['history']['time'].tolist()
+            price_array = self.history_and_returns['history'][symbol].tolist()
 
         # Add the epoch
         epoch_start = time_array[0]
@@ -108,8 +119,20 @@ class BacktestResult:
             epoch_start += interval
 
         # Turn that resample into a dataframe
-        df_conversion = DataFrame(columns=['time', 'value'])
-        return df_conversion.append(resampled_array, ignore_index=True)
+        return DataFrame(resampled_array, columns=['time', 'value'])
+
+    def get_quantstats_metrics(self):
+        try:
+            import quantstats as qs
+            try:
+                returns = self.get_returns()['value']
+                returns.index = to_datetime(returns.index, origin=Timestamp(self.start_time, unit='s'), unit='D')
+                return qs.reports.metrics(returns, display=False)
+            except ValueError as e:
+                info_print(e)
+        except ImportError:
+            raise ImportError(
+                "Quantstats not installed. Run 'pip install quantstats' to calculate metrics using Quantstats.")
 
     def __str__(self):
         return_string = "\n"
@@ -129,9 +152,11 @@ class BacktestResult:
 
         return_string += "Blankly Metrics: \n"
         for i in self.metrics.keys():
-            spaces_needed = 33 - len(i)
-            user_metrics_line = i + ": " + (' ' * spaces_needed) + str(self.metrics[i])
-            if i[-3:] == "(%)":
+            display_name = self.metrics[i]['display_name']
+            value = self.metrics[i]['value']
+            spaces_needed = 33 - len(display_name)
+            user_metrics_line = display_name + ": " + (' ' * spaces_needed) + str(value)
+            if display_name[-3:] == "(%)":
                 user_metrics_line += "%"
             user_metrics_line += "\n"
             return_string += user_metrics_line

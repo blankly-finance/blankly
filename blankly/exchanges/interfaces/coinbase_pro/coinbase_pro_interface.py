@@ -39,8 +39,8 @@ class CoinbaseProInterface(ExchangeInterface):
         try:
             if fees['message'] == "Invalid API Key":
                 raise LookupError("Invalid API Key - are you trying to use your normal exchange keys "
-                                  "while in sandbox mode? \nTry toggling the \'use_sandbox\' setting "
-                                  "in your settings.json or check if the keys were input correctly into your "
+                                  "while in sandbox mode? \nTry toggling the \'sandbox\' setting "
+                                  "in your keys.json or check if the keys were input correctly into your "
                                   "keys.json.")
         except KeyError:
             pass
@@ -79,6 +79,7 @@ class CoinbaseProInterface(ExchangeInterface):
             products[i] = utils.isolate_specific(needed, products[i])
         return products
 
+    @utils.enforce_base_asset
     def get_account(self, symbol=None) -> utils.AttributeDict:
         """
         Get all currencies in an account, or sort by symbol/account_id
@@ -166,7 +167,7 @@ class CoinbaseProInterface(ExchangeInterface):
         response = self.calls.place_market_order(symbol, side, size=size)
         if "message" in response:
             raise InvalidOrder("Invalid Order: " + response["message"])
-        response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
+        response["created_at"] = utils.epoch_from_iso8601(response["created_at"])
         response["symbol"] = response.pop('product_id')
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
@@ -211,7 +212,7 @@ class CoinbaseProInterface(ExchangeInterface):
         response = self.calls.place_limit_order(symbol, side, price, size=size)
         if "message" in response:
             raise InvalidOrder("Invalid Order: " + response["message"])
-        response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
+        response["created_at"] = utils.epoch_from_iso8601(response["created_at"])
         response["symbol"] = response.pop('product_id')
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
@@ -324,7 +325,7 @@ class CoinbaseProInterface(ExchangeInterface):
             raise InvalidOrder("Invalid Order: " + str(orders))
 
         for i in range(len(orders)):
-            orders[i]["created_at"] = utils.epoch_from_ISO8601(orders[i]["created_at"])
+            orders[i]["created_at"] = utils.epoch_from_iso8601(orders[i]["created_at"])
             needed = self.choose_order_specificity(orders[i]['type'])
             orders[i]["symbol"] = orders[i].pop('product_id')
             orders[i] = utils.isolate_specific(needed, orders[i])
@@ -386,7 +387,7 @@ class CoinbaseProInterface(ExchangeInterface):
             #         raise APIException("Invalid: " + str(response['message']) + ", was the order canceled?")
             # else:
             raise APIException("Invalid: " + str(response['message']) + ", was the order canceled?")
-        response["created_at"] = utils.epoch_from_ISO8601(response["created_at"])
+        response["created_at"] = utils.epoch_from_iso8601(response["created_at"])
 
         if response['type'] == 'market':
             needed = self.needed['market_order']
@@ -458,8 +459,8 @@ class CoinbaseProInterface(ExchangeInterface):
         while need > 300:
             # Close is always 300 points ahead
             window_close = window_open + 300 * resolution
-            open_iso = utils.ISO8601_from_epoch(window_open)
-            close_iso = utils.ISO8601_from_epoch(window_close)
+            open_iso = utils.iso8601_from_epoch(window_open)
+            close_iso = utils.iso8601_from_epoch(window_close)
             response = self.calls.get_product_historic_rates(symbol, open_iso, close_iso, resolution)
             if isinstance(response, dict):
                 raise APIException(response['message'])
@@ -471,8 +472,8 @@ class CoinbaseProInterface(ExchangeInterface):
             utils.update_progress((initial_need - need) / initial_need)
 
         # Fill the remainder
-        open_iso = utils.ISO8601_from_epoch(window_open)
-        close_iso = utils.ISO8601_from_epoch(epoch_stop)
+        open_iso = utils.iso8601_from_epoch(window_open)
+        close_iso = utils.iso8601_from_epoch(epoch_stop)
         response = self.calls.get_product_historic_rates(symbol, open_iso, close_iso, resolution)
         if isinstance(response, dict):
             raise APIException(response['message'])

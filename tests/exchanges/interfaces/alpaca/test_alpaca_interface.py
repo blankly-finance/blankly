@@ -21,8 +21,7 @@ from pathlib import Path
 import pytest
 from pytest_mock import MockerFixture
 
-from blankly.exchanges.interfaces.alpaca.alpaca_auth import AlpacaAuth
-from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
+import blankly
 
 
 class mock_alpaca_direct_calls:
@@ -199,15 +198,18 @@ class mock_alpaca_interface:
 
 
 @pytest.fixture
-def alpaca_mock_interface(mocker: MockerFixture) -> None:
-    keys_file_path = Path("tests/config/keys.json").resolve()
-    settings_file_path = Path("tests/config/settings.json").resolve()
+def alpaca_mock_interface(mocker: MockerFixture):
+    keys_file_path = Path("tests/config/keys.json").resolve().__str__()
+    settings_file_path = Path("tests/config/settings.json").resolve().__str__()
 
-    auth_obj = AlpacaAuth(keys_file_path, "alpaca test portfolio")
     mocker.patch("alpaca_trade_api.REST", new=mock_alpaca_direct_calls)
-    _, alpaca_interface = DirectCallsFactory.create("alpaca", auth_obj, settings_file_path)
+    alpaca = blankly.Alpaca(keys_path=keys_file_path,
+                            settings_path=settings_file_path,
+                            portfolio_name="alpaca test portfolio")
+    # auth_obj = AlpacaAuth(keys_file_path, "alpaca test portfolio")
+    # _, alpaca_interface = DirectCallsFactory.create("alpaca", auth_obj, settings_file_path)
 
-    return alpaca_interface
+    return alpaca.interface
 
 
 # TODO: Need to create a functional testing package

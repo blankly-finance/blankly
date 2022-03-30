@@ -1,3 +1,21 @@
+"""
+    Utilities for defining how websockets should integrate
+    Copyright (C) 2021 Blankly Finance
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 import time
 import blankly.utils.utils as utils
 from typing import List
@@ -42,7 +60,7 @@ def process_trades(response: dict) -> List[dict]:
     for trade_ in trades_data:
         trade_['symbol'] = response['market']
         trade_['trade_id'] = trade_.pop('id')
-        trade_['time'] = utils.epoch_from_ISO8601(trade_['time'])
+        trade_['time'] = utils.epoch_from_iso8601(trade_['time'])
         trade_['symbol'] = trade_['symbol'].replace('/', '-')
 
         list_trades.append(utils.isolate_specific(needed, trade_))

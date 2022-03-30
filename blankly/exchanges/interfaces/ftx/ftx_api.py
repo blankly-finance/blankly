@@ -1,25 +1,48 @@
+"""
+    General FTX Api definition
+    Copyright (C) 2021 Blankly Finance
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
+
 import requests
 from typing import Optional, Dict, Any, List
 import urllib.parse
-from blankly.exchanges.auth.abc_auth import ABCAuth
-from blankly.utils.utils import epoch_from_ISO8601
+from blankly.utils.utils import epoch_from_iso8601
 import time
 import hmac
 
 
 class FTXAPI:
-    _API_URL = "https://ftx.us/api/"
+    API_URL = "https://ftx.{}/api/"
 
     # no option to instantiate with sandbox mode, unlike every other exchange
-    def __init__(self, auth: ABCAuth, _subaccount_name=None):
+    def __init__(self, api_key, api_secret, tld: str = 'us', _subaccount_name=None):
 
         self._ftx_session = requests.Session()
-        self._api_key = auth.keys['API_KEY']
-        self._api_secret = auth.keys['API_SECRET']
+        self._api_url = self.API_URL.format(tld)
+        self._api_key = api_key
+        self._api_secret = api_secret
         self._subaccount_name = _subaccount_name
 
+        self._header_prefix = 'FTX'
+        if tld == 'us':
+            self._header_prefix += 'US'
+
     def _signed_request(self, method: str, path: str, **kwargs):
-        request = requests.Request(method, self._API_URL + path, **kwargs)
+        request = requests.Request(method, self._api_url + path, **kwargs)
         self._get_signature(request)
         result = self._ftx_session.send(request.prepare())
         return self._handle_response(result)
@@ -34,12 +57,12 @@ class FTXAPI:
 
         signature = hmac.new(self._api_secret.encode(), signed_data, 'sha256').hexdigest()
 
-        request.headers['FTXUS-KEY'] = self._api_key
-        request.headers['FTXUS-SIGN'] = signature
-        request.headers['FTXUS-TS'] = str(ts)
+        request.headers[f'{self._header_prefix}-KEY'] = self._api_key
+        request.headers[f'{self._header_prefix}-SIGN'] = signature
+        request.headers[f'{self._header_prefix}-TS'] = str(ts)
 
         if self._subaccount_name:
-            request.headers['FTXUS-SUBACCOUNT'] = urllib.parse.quote(self._subaccount_name)
+            request.headers[f'{self._header_prefix}-SUBACCOUNT'] = urllib.parse.quote(self._subaccount_name)
 
     def _signed_delete(self, path: str, params: Optional[Dict[str, Any]] = None):
         return self._signed_request('DELETE', path, json=params)
@@ -68,6 +91,9 @@ class FTXAPI:
     def list_markets(self) -> List[dict]:
 
         return self._signed_get('markets')
+
+    def change_account_leverage(self, leverage: int) -> dict:
+        return self._signed_post('account/leverage', {'leverage': leverage})
 
     def get_market(self, symbol: str) -> dict:
 
@@ -105,11 +131,24 @@ class FTXAPI:
     def get_balances(self) -> List[dict]:
         return self._signed_get('wallet/balances')
 
+    def get_coins(self) -> List[dict]:
+        return self._signed_get('wallet/coins')
+
+    def get_future(self, future) -> dict:
+        return self._signed_get(f'futures/{future}')
+
     def get_deposit_addresses(self, ticker: str) -> dict:
         return self._signed_get(f'wallet/deposit_addresses/{ticker}')
 
     def get_positions(self, display_price_avg: bool = False) -> List[dict]:
         return self._signed_get('positions', {'showAvgPrice': display_price_avg})
+
+    def get_funding_rates(self, start_time: int, end_time: int, symbol: str):
+        return self._signed_get('funding_rates', {
+            'start_time': start_time,
+            'end_time': end_time,
+            'future': symbol
+        })
 
     def get_specific_position(self, pos_name: str, display_price_avg: bool = False) -> dict:
         filtered = filter(lambda pos: pos['future'] == pos_name, self.get_positions(display_price_avg))
@@ -289,7 +328,7 @@ class FTXAPI:
 
             if len(resp) == 0:
                 break
-            interval_end = min(epoch_from_ISO8601(time_['time']) for time_ in resp)
+            interval_end = min(epoch_from_iso8601(time_['time']) for time_ in resp)
             if lim > len(resp):
                 break
 

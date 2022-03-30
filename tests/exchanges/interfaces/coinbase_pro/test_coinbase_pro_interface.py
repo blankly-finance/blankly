@@ -15,17 +15,15 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
+
 import unittest
-from datetime import datetime as dt
 from pathlib import Path
 
-import dateparser
 import pytest
 
 import blankly
-from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_auth import CoinbaseProAuth
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
-from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 
 
 class CoinbaseInterface2(unittest.TestCase):
@@ -46,9 +44,13 @@ def coinbase_interface():
     keys_file_path = Path("tests/config/keys.json").resolve()
     settings_file_path = Path("tests/config/settings.json").resolve()
 
-    auth_obj = CoinbaseProAuth(str(keys_file_path), "Sandbox Portfolio")
-    _, coinbase_interface = DirectCallsFactory.create("coinbase_pro", auth_obj, str(settings_file_path))
-    return coinbase_interface
+    coinbase_pro = blankly.CoinbasePro(keys_path=keys_file_path,
+                                       settings_path=settings_file_path,
+                                       portfolio_name='Sandbox Portfolio')
+
+    # auth_obj = CoinbaseProAuth(str(keys_file_path), "Sandbox Portfolio")
+    # _, coinbase_interface = DirectCallsFactory.create("coinbase_pro", auth_obj, str(settings_file_path))
+    return coinbase_pro.interface
 
 
 def test_get_exchange(coinbase_interface: CoinbaseProInterface) -> None:

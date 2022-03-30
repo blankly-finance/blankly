@@ -27,9 +27,8 @@ import dateparser as dp
 import pytest
 import pytz
 
-from blankly.exchanges.interfaces.alpaca.alpaca_auth import AlpacaAuth
+import blankly
 from blankly.exchanges.interfaces.alpaca.alpaca_interface import AlpacaInterface
-from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
 
 timeZ_Ny = pytz.timezone('America/New_York')
 MARKET_OPEN = datetime.time(hour=9, minute=0, second=0, tzinfo=timeZ_Ny)
@@ -41,9 +40,13 @@ def alpaca_interface():
     keys_file_path = Path("tests/config/keys.json").resolve()
     settings_file_path = Path("tests/config/settings.json").resolve()
 
-    auth_obj = AlpacaAuth(str(keys_file_path), "alpaca test portfolio")
-    _, alpaca_interface = DirectCallsFactory.create("alpaca", auth_obj, str(settings_file_path))
-    return alpaca_interface
+    alpaca = blankly.Alpaca(keys_path=keys_file_path,
+                            settings_path=settings_file_path,
+                            portfolio_name="alpaca test portfolio")
+
+    # auth_obj = AlpacaAuth(str(keys_file_path), "alpaca test portfolio")
+    # _, alpaca_interface = DirectCallsFactory.create("alpaca", auth_obj, str(settings_file_path))
+    return alpaca.interface
 
 
 def test_get_exchange(alpaca_interface: AlpacaInterface) -> None:

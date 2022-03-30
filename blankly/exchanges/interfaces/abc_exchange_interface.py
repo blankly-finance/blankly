@@ -22,12 +22,13 @@ from typing import Union
 
 import pandas
 
+from blankly.exchanges.interfaces.abc_base_exchange_interface import ABCBaseExchangeInterface
 from blankly.utils.utils import AttributeDict
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 
 
-class ABCExchangeInterface(abc.ABC):
+class ABCExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
     @abc.abstractmethod
     def __init__(self, exchange_name, authenticated_API):
         """
@@ -160,61 +161,9 @@ class ABCExchangeInterface(abc.ABC):
         """
         pass
 
-    """
-    Coinbase Pro: get_account_history
-    binance: 
-        get_deposit_history
-        get_withdraw_history
-
-    """
-
-    @abc.abstractmethod
-    def history(self,
-                symbol: str,
-                to: Union[str, int] = 200,
-                resolution: Union[str, int] = '1d',
-                start_date: Union[str, dt, float] = None,
-                end_date: Union[str, dt, float] = None,
-                return_as: str = 'df') -> pandas.DataFrame:
-        """
-        Wrapper for .get_product_history() which allows users to more easily get product history from right now.
-        Args:
-            symbol: Blankly product ID format (BTC-USD)
-            to (str or int): The number of data points back in time either expressed as a string
-                ("1y" meaning 1 year back") or int of points (300 points at specified resolution)
-            resolution: Resolution as a string (i.e. "1d", "4h", "1y")
-            start_date (str or datetime or float): Start Date for data gathering (in either string, datetime or epoch
-                timestamp)
-            end_date (str or datetime or float): End Date for data gathering (in either string, datetime or epoch
-                timestamp)
-            return_as (str): Return Type (Either list or df (dataframe))
-        Returns:
-            Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
-            TODO add return example
-        """
-        pass
-
-    @abc.abstractmethod
-    def get_product_history(self,
-                            symbol: str,
-                            epoch_start: float,
-                            epoch_stop: float,
-                            resolution: Union[str, int]) -> pandas.DataFrame:
-        """
-        Returns the product history from an exchange
-        Args:
-            symbol: The asset such as (BTC-USD, or MSFT)
-            epoch_start: Time to begin download
-            epoch_stop: Time to stop download
-            resolution: Resolution in seconds between tick (ex: 60 = 1 per minute)
-        Returns:
-            Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
-            TODO add return example
-        """
-
     @abc.abstractmethod
     def get_order_filter(self,
-                         symbol: str):
+                         symbol: str) -> dict:
         """
         Find order limits for the exchange
         Args:

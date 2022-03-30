@@ -20,32 +20,69 @@ import time
 
 import blankly
 from blankly.exchanges.abc_exchange import ABCExchange
-from blankly.exchanges.auth.auth_constructor import write_auth_cache
-from blankly.exchanges.auth.auth_factory import AuthFactory
+from blankly.exchanges.auth.utils import write_auth_cache
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_interface import CoinbaseProInterface
-from blankly.exchanges.interfaces.direct_calls_factory import DirectCallsFactory
+from blankly.exchanges.interfaces.oanda.oanda_interface import OandaInterface
+from blankly.exchanges.interfaces.ftx.ftx_interface import FTXInterface
+from blankly.exchanges.interfaces.alpaca.alpaca_interface import AlpacaInterface
 from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
+from blankly.exchanges.interfaces.kucoin.kucoin_interface import KucoinInterface
 
 
 class Exchange(ABCExchange, abc.ABC):
     interface: ABCExchangeInterface
 
-    def __init__(self, exchange_type, portfolio_name, keys_path, preferences_path):
+    def __init__(self, exchange_type, portfolio_name, preferences_path):
         self.__type = exchange_type  # coinbase_pro, binance, alpaca, oanda, ftx
         self.__name = portfolio_name  # my_cool_portfolio
-        self.__factory = AuthFactory()
 
-        self.__auth = self.__factory.create_auth(keys_path, self.__type, self.__name)
-        self.__direct_calls_factory = DirectCallsFactory()
-
-        self.calls, self.interface = self.__direct_calls_factory.create(self.__type, self.__auth, preferences_path)
-        write_auth_cache(exchange_type, portfolio_name, self.calls)
+        # Make a public version of portfolio name
+        self.portfolio_name = self.__name
 
         self.preferences = blankly.utils.load_user_preferences(preferences_path)
 
-        # Create the model container
         self.models = {}
+
+        # Fill this in the method below
+        self.calls = None
+
+    # TODO this will be removed in the next update
+    def evaluate_sandbox(self, auth):
+        """
+        This will try to maintain compatibility with older versions if they fail to pivot to the new version immediately
+        """
+        if 'sandbox' not in auth.keys:
+            try:
+                return self.preferences['settings']['use_sandbox']
+            except KeyError:
+                raise KeyError("No sandbox setting found in either settings.json or keys.json. Please use the example"
+                               " above this error to modify your keys.json.")
+        else:
+            return auth.keys['sandbox']
+
+    def construct_interface_and_cache(self, calls):
+        """
+        If you are a contributor, you need to modify this function to add exchanges
+        The core functions that creates the interface based on the exchange type & automatically caches
+        """
+        self.calls = calls
+        if self.__type == "coinbase_pro":
+            self.interface = CoinbaseProInterface(self.__type, calls)
+        elif self.__type == "binance":
+            self.interface = BinanceInterface(self.__type, calls)
+        elif self.__type == "alpaca":
+            self.interface = AlpacaInterface(self.__type, calls)
+        elif self.__type == "ftx":
+            self.interface = FTXInterface(self.__type, calls)
+        elif self.__type == "oanda":
+            self.interface = OandaInterface(self.__type, calls)
+        elif self.__type == "kucoin":
+            self.interface = KucoinInterface(self.__type, calls)
+
+        blankly.reporter.export_used_exchange(self.__type)
+
+        write_auth_cache(self.__type, self.__name, calls)
 
     def get_name(self):
         return self.__name
@@ -55,13 +92,6 @@ class Exchange(ABCExchange, abc.ABC):
 
     def get_preferences(self):
         return self.preferences
-
-    # Can be removed?
-    def construct_interface(self, calls):
-        if self.__type == "coinbase_pro":
-            self.interface = CoinbaseProInterface(self.__type, calls)
-        elif self.__type == "binance":
-            self.interface = BinanceInterface(self.__type, calls)
 
     def get_interface(self) -> ABCExchangeInterface:
         """
