@@ -292,7 +292,7 @@ def blankly_list_key(args):
     data = load_keys()
     for exchange, keys in data.items():
         for name, key_data in keys.items():
-            print(key_data.values())
+            # filter 'empty'
             if any((isinstance(d, str) and '*' in d) for d in key_data.values()):
                 continue
             exchange_display_name = exc_display_name(exchange)
