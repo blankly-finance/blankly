@@ -87,6 +87,8 @@ class StrategyStructure(Model):
         remote_backtesting = args['remote_backtesting']
         for scheduler in schedulers:
             kwargs = scheduler.get_kwargs()
+            # Overwrite the internal interface in the created strategy
+            kwargs['state'].strategy.interface = self.interface
             if kwargs['init'] is not None:
                 kwargs['init'](kwargs['symbol'], kwargs['state'])
         if self.is_backtesting:

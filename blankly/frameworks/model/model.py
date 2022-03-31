@@ -51,6 +51,7 @@ class Model:
         backtest = self.__backtester.run(args,
                                          initial_account_values=initial_values,
                                          exchange=self.__exchange,
+                                         backtest_settings_path=settings_path
                                          )
         self.is_backtesting = False
         self.__exchange = self.__exchange_cache

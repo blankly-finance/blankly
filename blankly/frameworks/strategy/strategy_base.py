@@ -114,7 +114,7 @@ class StrategyBase:
                 positions, writing or cleaning up data or anything else useful
             variables: A dictionary to initialize the state's internal values
         """
-        self.__custom_price_event(type_=EventType.bar_event, synced=True, bar=True, callback=callback, symbol=symbol,
+        self.__custom_price_event(type_=EventType.bar_event, synced=True, callback=callback, symbol=symbol,
                                   resolution=resolution, init=init, teardown=teardown, variables=variables)
 
     def __custom_price_event(self,
@@ -124,7 +124,6 @@ class StrategyBase:
                              resolution: typing.Union[str, float] = None,
                              init: typing.Callable = None,
                              synced: bool = False,
-                             bar: bool = False,
                              teardown: typing.Callable = None, variables: dict = None):
         """
         Add Price Event
@@ -175,54 +174,6 @@ class StrategyBase:
 
     def __price_event_rest(self, **kwargs):
         raise NotImplementedError
-
-    # TODO add this in as a live event
-    # def __price_event_websocket(self, **kwargs):
-    #     callback = kwargs['callback']
-    #     symbol = kwargs['symbol']
-    #     resolution = kwargs['resolution']
-    #     variables = kwargs['variables']
-    #     ohlc = kwargs['ohlc']
-    #     state = kwargs['state_object']  # type: StrategyState
-    #
-    #     if ohlc:
-    #         close_time = kwargs['ohlcv_time']
-    #         open_time = close_time-resolution
-    #         ticker_feed = list(reversed(self.ticker_manager.get_feed(override_symbol=symbol)))
-    #         #     tick        tick
-    #         #      |    ohlcv close                            ohlcv open
-    #         # 0    |   -20          -40            -60        -80
-    #         # newest, newest - 1, newest - 2
-    #         count = 0
-    #         while ticker_feed[count]['time'] > close_time:
-    #             count += 1
-    #
-    #         close_index = count
-    #
-    #         # Start at the close index to save some iterations
-    #         count = close_index
-    #         while ticker_feed[count]['time'] < open_time:
-    #             count += 1
-    #         # Subtract 1 to put it back inside the range
-    #         count -= 1
-    #         open_index = count
-    #
-    #         # Get the latest price that isn't past the timeframe
-    #         last_price = ticker_feed[close_index:][-1]['price']
-    #
-    #         data = get_ohlcv_from_list(list(reversed(ticker_feed[close_index:open_index])), last_price)
-    #
-    #     else:
-    #         try:
-    #             data = self.ticker_manager.get_most_recent_tick(override_symbol=symbol)['price']
-    #         except TypeError:
-    #             info_print("No valid data yet - using rest.")
-    #             data = self.interface.get_price(symbol)
-    #
-    #     state.variables = variables
-    #     state.resolution = resolution
-    #
-    #     callback(data, symbol, state)
 
     @staticmethod
     def __orderbook_event(tick, symbol, user_callback, state_object):
@@ -316,10 +267,7 @@ class StrategyBase:
                  initial_values: dict = None,
                  start_date: typing.Union[str, float, int] = None,
                  end_date: typing.Union[str, float, int] = None,
-                 save: bool = False,
                  settings_path: str = None,
-                 callbacks: list = None,
                  **kwargs
                  ) -> BacktestResult:
         raise NotImplementedError
-
