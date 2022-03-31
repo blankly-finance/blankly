@@ -420,6 +420,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
+        # Identify the trade also by exchange
+        self.paper_trade_orders[-1]['exchange'] = self.get_exchange_type()
 
         if self.__exchange_properties is None:
             self.init_exchange()
@@ -559,6 +561,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
+        # Identify the trade also by exchange
+        self.paper_trade_orders[-1]['exchange'] = self.get_exchange_type()
 
         base = utils.get_base_asset(symbol)
         quote = utils.get_quote_asset(symbol)
