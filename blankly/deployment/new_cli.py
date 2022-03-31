@@ -152,8 +152,6 @@ def blankly_init(args):
 
 def get_model_interactive(api, model_type):
     models = api.list_all_models()
-    for model in models:
-        print(model)
 
     create = select("Would you like to create a new model or attach to an existing one?",
                     [Choice('Create New', True), Choice('Attach to existing', False)]).unsafe_ask()
@@ -163,8 +161,18 @@ def get_model_interactive(api, model_type):
         description = text('Model description?', instruction='(Optional)').unsafe_ask()
         return create_model(api, name, description, model_type)
 
-    raise NotImplementedError
-    # select('Select an existing model to attach to:')
+    model = select('Select an existing model to attach to:',
+                   [Choice(get_model_repr(model), model) for model in models]).unsafe_ask()
+    if model.get('type', None) != model_type:
+        pass  # TODO
+    return api.get_details(model)
+
+
+def get_model_repr(model: dict) -> str:
+    # TODO only show if needed
+    team = model.get('team', 'Personal')
+    name = model.get('name', model['id'])
+    return f'{team} - {name}'
 
 
 def generate_settings_json(tld: str):

@@ -21,7 +21,8 @@ import json
 import requests
 from blankly.utils.utils import info_print
 
-blankly_deployment_url = 'https://deploy.blankly.finance'
+# blankly_deployment_url = 'https://deploy.blankly.finance'
+blankly_deployment_url = 'http://localhost:8080'
 
 
 class API:
@@ -173,11 +174,13 @@ class API:
     def list_all_models(self):
         models = self.list_models(self.user_id)
         for team in self.list_teams():
-            models += self.list_models(team.id)
+            # TODO nah
+            models += [{'team': team.get('name', team['id']), **model}
+                       for model in self.list_models(team['id'])]
         return models
 
     def list_teams(self):
-        return self.__request('get', 'teams')
+        return self.__request('get', 'project/teams')
 
     def generate_keys(self, project_id: str):
         return self.__request('post', 'project/generate-project-token', data={
