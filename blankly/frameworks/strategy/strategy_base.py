@@ -137,7 +137,6 @@ class StrategyBase:
             teardown: A function to run when the strategy is stopped or interrupted. Example usages include liquidating
                 positions, writing or cleaning up data or anything else useful
             synced: Sync the function to
-            bar: Get the OHLCV data for a valid exchange interval
             variables: Initial dictionary to write into the state variable
         """
         # Make sure variables is always an empty dictionary if None
@@ -165,12 +164,6 @@ class StrategyBase:
 
         # Export a new symbol to the backend
         blankly.reporter.export_used_symbol(symbol)
-
-    def __idle_event(self, *args, **kwargs):
-        """
-        Function to skip & ignore callbacks
-        """
-        pass
 
     def __price_event_rest(self, **kwargs):
         raise NotImplementedError
