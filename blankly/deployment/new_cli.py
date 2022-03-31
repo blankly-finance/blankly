@@ -169,10 +169,11 @@ def get_model_interactive(api, model_type):
 
 
 def get_model_repr(model: dict) -> str:
-    # TODO only show if needed
-    team = model.get('team', 'Personal')
     name = model.get('name', model['id'])
-    return f'{team} - {name}'
+    team = model.get('team', None)
+    if team:
+        name = team + ' - ' + name
+    return name
 
 
 def generate_settings_json(tld: str):
