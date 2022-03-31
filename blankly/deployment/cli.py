@@ -60,7 +60,7 @@ class TermColors:
 
 
 supported_exchanges = ['binance.com', 'binance.us',
-                       'coinbase_pro', 'alpaca', 'ftx', 'oanda']
+                       'coinbase_pro', 'alpaca', 'ftx', 'oanda', 'getting-started']
 
 
 def choose_option(choice: str, options: list, descriptions: list):
