@@ -1,6 +1,7 @@
 from typing import Dict, List
 import alpaca_trade_api
 from binance.client import Client as BinanceClient
+from questionary import Choice
 
 from blankly.deployment.ui import print_failure
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as CoinbaseProAPI
@@ -39,7 +40,7 @@ def kucoin_test_func(auth, tld):
     return KucoinAPI.User(auth['API_KEY'], auth['API_SECRET'], auth['API_PASS']).get_base_fee
 
 
-EXCHANGES_LIST = [
+EXCHANGES = [
     Exchange('alpaca', ['MSFT', 'GME', 'AAPL'],
              lambda auth, tld: alpaca_trade_api.REST(key_id=auth['API_KEY'],
                                                      secret_key=auth['API_SECRET']).get_account()),
@@ -63,9 +64,5 @@ EXCHANGES_LIST = [
              key_info=['API_KEY', 'API_SECRET', 'API_PASS'], currency='USDT')
 ]
 
-EXCHANGES = {exchange.display_name: exchange for exchange in EXCHANGES_LIST}
-EXCHANGE_DISPLAY_NAMES = {exchange.name: exchange.display_name for exchange in EXCHANGES_LIST}
-
-
-def exc_display_name(exchange_name):
-    return EXCHANGE_DISPLAY_NAMES.get(exchange_name, exchange_name)
+EXCHANGE_CHOICES = [Choice(exchange.display_name, exchange)
+                    for exchange in EXCHANGES]

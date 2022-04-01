@@ -43,8 +43,7 @@ def add_key(exchange: Exchange, tld: str, key_name: str, data: dict):
     keys[key_name] = data  # this writes to saved_data
 
     key_is_valid = check_key(exchange, tld, data)
-    if confirm('Would you like to save this key anyway?', default=False) \
-            .skip_if(key_is_valid, True).ask():
+    if not key_is_valid and confirm('Would you like to save this key anyway?', default=False).unsafe_ask():
         write_keys(saved_data)
         return True
     return False

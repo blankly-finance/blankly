@@ -15,14 +15,12 @@ from blankly.deployment.deploy import zip_dir, get_python_version
 from blankly.deployment.keys import add_key, load_keys, write_keys
 from blankly.deployment.login import logout, poll_login, get_token
 from blankly.deployment.ui import text, confirm, print_work, print_failure, print_success, select, show_spinner
-from blankly.deployment.exchange_data import EXCHANGES, Exchange, exc_display_name
+from blankly.deployment.exchange_data import EXCHANGES, Exchange, EXCHANGE_CHOICES
 
-TEMPLATES = {
-    'strategy': {'none': 'none.py',
-                 'rsi_bot': 'rsi_bot.py'},
-    'screener': {'none': 'none_screener.py',
-                 'rsi_screener': 'rsi_screener.py'}
-}
+TEMPLATES = {'strategy': {'none': 'none.py',
+                          'rsi_bot': 'rsi_bot.py'},
+             'screener': {'none': 'none_screener.py',
+                          'rsi_screener': 'rsi_screener.py'}}
 
 AUTH_URL = f'{blankly_deployment_url}/auth/signin?redirectUrl=/deploy'
 
@@ -107,6 +105,12 @@ def add_key_interactive(exchange: Exchange):
 
 
 def blankly_init(args):
+    # warn nonempty dir
+    dir_is_empty = len([f for f in os.listdir() if not f.startswith('.')]) == 0
+    if not dir_is_empty \
+            and not confirm('This directory is not empty. Would you like to continue anyways?').unsafe_ask():
+        return
+
     model_type = select('What type of model do you want to create?',
                         [Choice(mt.title(), mt) for mt in TEMPLATES]).unsafe_ask()
     templates = TEMPLATES[model_type]
@@ -116,17 +120,14 @@ def blankly_init(args):
         api = ensure_login()
         model = get_model_interactive(api, model_type)
 
-    exchange_name = select('What exchange would you like to connect to?', EXCHANGES) \
-        .skip_if(args.exchange in EXCHANGES, args.exchange).unsafe_ask()
-    exchange = EXCHANGES[exchange_name]
+    exchange = select('What exchange would you like to connect to?', EXCHANGE_CHOICES).unsafe_ask()
 
     tld = None
     if confirm('Would you like to add keys for this exchange?\n'
                'You can do this later at any time by running `blankly key add`').unsafe_ask():
         tld = add_key_interactive(exchange)
 
-    template_name = select('What template would you like to use for your new model?', templates) \
-        .skip_if(args.template in templates, args.template).unsafe_ask()
+    template_name = select('What template would you like to use for your new model?', templates).unsafe_ask()
     template = templates[template_name]
 
     with show_spinner('Generating files') as spinner:
@@ -152,26 +153,29 @@ def blankly_init(args):
 
 
 def get_model_interactive(api, model_type):
-    models = api.list_all_models()
-
     create = select("Would you like to create a new model or attach to an existing one?",
-                    [Choice('Create New', True), Choice('Attach to existing', False)]).unsafe_ask()
+                    [Choice('Create new model', True), Choice('Attach to existing model', False)]).unsafe_ask()
     if create:
         default_name = Path.cwd().name  # default name is working dir name
         name = text('Model name?', default=default_name, validate=validate_non_empty).unsafe_ask()
         description = text('Model description?', instruction='(Optional)').unsafe_ask()
         return create_model(api, name, description, model_type)
 
+    with show_spinner('Loading models...') as spinner:
+        models = api.list_all_models()
+        spinner.ok('Loaded')
+
     model = select('Select an existing model to attach to:',
                    [Choice(get_model_repr(model), model) for model in models]).unsafe_ask()
     if model.get('type', None) != model_type:
         pass  # TODO
-    return api.get_details(model)
+    print(model)
+    return model
 
 
 def get_model_repr(model: dict) -> str:
     name = model.get('name', model['id'])
-    team = model.get('team', None)
+    team = model.get('team', {}).get('name', None)
     if team:
         name = team + ' - ' + name
     return name
@@ -208,7 +212,7 @@ def generate_blankly_json(model: Optional[dict], model_type):
             'type': model_type,
             'screener': {'schedule': '30 14 * * 1-5'}}
     if model:
-        data['model_id'] = model['modelId']
+        data['model_id'] = model['id']
     return json.dumps(data, indent=4)
 
 
@@ -305,18 +309,21 @@ def blankly_deploy(args):
 
 
 def blankly_add_key(args):
-    exchange_name = select('What exchange would you like to add a key for?', EXCHANGES).unsafe_ask()
-    add_key_interactive(EXCHANGES[exchange_name])
+    exchanges = select('What exchange would you like to add a key for?', EXCHANGE_CHOICES).unsafe_ask()
+    add_key_interactive(exchanges)
 
 
 def blankly_list_key(args):
     data = load_keys()
-    for exchange, keys in data.items():
+    for exchange_name, keys in data.items():
+        exchange_display_name = next((exchange.display_name
+                                      for exchange in EXCHANGES
+                                      if exchange.name == exchange_name), exchange_name)
         for name, key_data in keys.items():
             # filter 'empty'
             if any((isinstance(d, str) and '*' in d) for d in key_data.values()):
                 continue
-            exchange_display_name = exc_display_name(exchange)
+            exchange_display_name = exchange.display_name
             print_work(f'{exchange_display_name}: {name}')
             for k, v in key_data.items():
                 print_work(f'    {k}: {v}')
@@ -345,13 +352,6 @@ def blankly_key(args):
     func(args)
 
 
-def blankly_switch(args):
-    api = ensure_login()
-
-    teams = api.list_teams()
-    team = select('Select a team', [Choice(team.name, team) for team in teams]).unsafe_ask()
-
-
 def main():
     parser = argparse.ArgumentParser(description='Blankly CLI & deployment tool')
     subparsers = parser.add_subparsers(help='Core Blankly commands', required=True)
@@ -359,8 +359,6 @@ def main():
     init_parser = subparsers.add_parser('init', help='Initialize a new model in the current directory')
     init_parser.add_argument('-n', '--no-login', action='store_false', dest='prompt_login',
                              help='don\'t prompt to connect to Blankly Platform')
-    init_parser.add_argument('--exchange', help='the exchange to connect to', choices=EXCHANGES)
-    init_parser.add_argument('--template', help='the template to use for this model', choices=TEMPLATES)
     init_parser.set_defaults(func=blankly_init)
 
     login_parser = subparsers.add_parser('login', help='Login to the Blankly Platform')
@@ -371,9 +369,6 @@ def main():
 
     deploy_parser = subparsers.add_parser('deploy', help='Upload this model to the Blankly Platform')
     deploy_parser.set_defaults(func=blankly_deploy)
-
-    deploy_parser = subparsers.add_parser('switch', help='Switch between teams')
-    deploy_parser.set_defaults(func=blankly_switch)
 
     key_parser = subparsers.add_parser('key', help='Manage model Exchange API keys')
     key_parser.set_defaults(func=blankly_key)
