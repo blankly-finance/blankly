@@ -135,6 +135,7 @@ def blankly_init(args):
             ('bot.py', generate_bot_py(exchange, template)),
             ('backtest.json', generate_backtest_json(exchange)),
             ('requirements.txt', 'blankly\n'),
+            ('keys.json', generate_keys_json()),
             ('blankly.json', generate_blankly_json(model, model_type)),
             ('settings.json', generate_settings_json(tld or 'com'))
         ]
@@ -199,6 +200,11 @@ def generate_settings_json(tld: str):
                                          "ftx_tld": tld},
                          "kucoin": {"cash": "USDT"}}}
     return json.dumps(data, indent=4)
+
+
+def generate_keys_json():
+    return json.dumps({exchange.name: {}
+                       for exchange in EXCHANGES}, indent=4)
 
 
 def generate_blankly_json(model: Optional[dict], model_type):
