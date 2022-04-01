@@ -15,8 +15,9 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import threading
 import time
+import traceback
 import typing
 import warnings
 
@@ -28,13 +29,30 @@ from blankly.exchanges.strategy_logger import StrategyLogger
 from blankly.frameworks.model.model import Model
 from blankly.frameworks.strategy.strategy_base import StrategyBase, EventType
 from blankly.frameworks.strategy import StrategyState
+from blankly.utils.utils import info_print
 
 
 class StrategyStructure(Model):
     def __init__(self, exchange: Exchange):
+        self.lock = threading.Lock()
         super().__init__(exchange)
 
-    def __rest_event(self, kwargs):
+        self.orderbook_websockets = None
+        self.ticker_websockets = None
+        self.ticker_manager = None
+        self.orderbook_manager = None
+        self.schedulers = None
+        self.remote_backtesting = None
+
+    def construct_strategy(self, schedulers, orderbook_websockets,
+                           ticker_websockets, orderbook_manager, ticker_manager):
+        self.schedulers = schedulers
+        self.orderbook_websockets = orderbook_websockets
+        self.ticker_websockets = ticker_websockets
+        self.orderbook_manager = orderbook_manager
+        self.ticker_manager = ticker_manager
+
+    def rest_event(self, **kwargs):
         callback = kwargs['callback']  # type: callable
         symbol = kwargs['symbol']  # type: str
         resolution = kwargs['resolution']  # type: int
@@ -47,23 +65,30 @@ class StrategyStructure(Model):
 
         if type_ == EventType.bar_event:
             bar_time = kwargs['bar_time']
-            while True:
-                # Sometimes coinbase doesn't download recent data correctly
-                try:
-                    data = self.interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
-                    if self.interface.get_exchange_type() == "alpaca":
-                        break
-                    else:
-                        if data['time'] + resolution == bar_time:
+            if not self.is_backtesting:
+                while True:
+                    # Sometimes coinbase doesn't download recent data correctly
+                    try:
+                        data = self.interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
+                        if self.interface.get_exchange_type() == "alpaca":
                             break
-                except IndexError:
-                    pass
-                time.sleep(.5)
+                        else:
+                            if data['time'] + resolution == bar_time:
+                                break
+                    except IndexError:
+                        pass
+                    time.sleep(.5)
+            else:
+                # If we are backtesting always just grab the last point and hope for the best of course
+                data = self.interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
             data['price'] = self.interface.get_price(symbol)
         else:
             data = self.interface.get_price(symbol)
 
-        callback(data, symbol, state)
+        try:
+            callback(data, symbol, state)
+        except Exception:
+            traceback.print_exc()
 
     def run_price_events(self, kwargs_list: list):
         for events_definition in kwargs_list:
@@ -76,33 +101,75 @@ class StrategyStructure(Model):
             self.sleep(next_event['next_run'] - self.time)
 
             # Run the event
-            self.__rest_event(next_event)
+            self.rest_event(**next_event)
 
             # Value the account after each run
             self.backtester.value_account()
             kwargs_list[0]['next_run'] += kwargs_list[0]['resolution']
 
     def main(self, args):
-        schedulers = args['schedulers']
-        remote_backtesting = args['remote_backtesting']
-        for scheduler in schedulers:
+        if self.is_backtesting:
+            self.run_backtest()
+        else:
+            self.run_live()
+
+    def run_backtest(self):
+        # Write in the new interface, no matter which type it is
+        for scheduler in self.schedulers:
             kwargs = scheduler.get_kwargs()
             # Overwrite the internal interface in the created strategy
             kwargs['state'].strategy.interface = self.interface
+        self.__run_init()
+
+        kwargs_list = []
+        for scheduler in self.schedulers:
+            kwargs_list.append(scheduler.get_kwargs())
+
+        self.run_price_events(kwargs_list)
+
+    def __run_init(self):
+        for i in self.schedulers:
+            kwargs = i.get_kwargs()
             if kwargs['init'] is not None:
                 kwargs['init'](kwargs['symbol'], kwargs['state'])
-        if self.is_backtesting:
-            kwargs_list = []
-            for scheduler in schedulers:
-                kwargs_list.append(scheduler.get_kwargs())
-            self.run_price_events(kwargs_list)
-        else:
-            if remote_backtesting:
-                warnings.warn("Aborted attempt to start a live strategy a backtest configuration")
-                return
-            # Start all the schedulers in the list
-            for scheduler in schedulers:
-                scheduler.start()
+
+    def run_live(self):
+        self.__run_init()
+
+        for scheduler in self.schedulers:
+            scheduler.start()
+
+        for i in self.orderbook_websockets:
+            # Index 2 contains the initialization function for the assigned websockets array
+            if i[2] is not None:
+                i[2](i[0], i[3])
+            self.orderbook_manager.restart_ticker(i[0], i[1])
+
+        for i in self.ticker_websockets:
+            # The initialization function should have already been called for ticker websockets
+            # Notice this is different from orderbook websockets because these are put into the scheduler
+            self.ticker_manager.restart_ticker(i[0], i[1])
+
+    def teardown(self):
+        self.lock.acquire()
+        for i in self.schedulers:
+            i.stop_scheduler()
+            kwargs = i.get_kwargs()
+            teardown = kwargs['teardown']
+            state_object = kwargs['state']
+            if callable(teardown):
+                teardown(state_object)
+
+        for i in self.orderbook_websockets:
+            self.orderbook_manager.close_websocket(override_symbol=i[0], override_exchange=i[1])
+            # Call the stored teardown
+            teardown_func = i[4]
+            if callable(teardown_func):
+                teardown_func(i[3])
+
+        for i in self.ticker_websockets:
+            self.ticker_manager.close_websocket(override_symbol=i[0], override_exchange=i[1])
+        self.lock.release()
 
 
 class Strategy(StrategyBase):
@@ -110,9 +177,9 @@ class Strategy(StrategyBase):
     interface: ABCExchangeInterface
 
     def __init__(self, exchange: Exchange):
-        super().__init__(exchange, StrategyLogger(exchange.get_interface(), strategy=self))
-        self._paper_trade_exchange = blankly.PaperTrade(exchange)
         self.model = StrategyStructure(exchange)
+        super().__init__(exchange, StrategyLogger(exchange.get_interface(), strategy=self), model=self.model)
+        self._paper_trade_exchange = blankly.PaperTrade(exchange)
 
     def backtest(self,
                  to: str = None,
@@ -185,6 +252,11 @@ class Strategy(StrategyBase):
                 risk_free_return_rate: float = 0.0
                     Set this to be the theoretical rate of return with no risk
         """
+        self.setup_model()
+        if len(self.orderbook_websockets) != 0 or len(self.ticker_websockets) != 0:
+            info_print("Found websocket events added to this strategy. These are not yet backtestable without "
+                       "event based data")
+
         for scheduler in self.schedulers:
             event_element = scheduler.get_kwargs()
             self.model.backtester.add_prices(to=to,
@@ -192,10 +264,24 @@ class Strategy(StrategyBase):
                                              stop_date=end_date,
                                              symbol=event_element['symbol'],
                                              resolution=event_element['resolution'])
-        return self.model.backtest(args={
-            'schedulers': self.schedulers,
-            'remote_backtesting': self.remote_backtesting
-        }, initial_values=initial_values, settings_path=settings_path)
+        return self.model.backtest(args={}, initial_values=initial_values, settings_path=settings_path)
+
+    def setup_model(self):
+        self.model.construct_strategy(self.schedulers, self.orderbook_websockets,
+                                      self.ticker_websockets, self.orderbook_manager,
+                                      self.ticker_manager)
+
+    def start(self):
+        """
+        Run your model live!
+
+        Simply call this function to take your strategy configuration live on your exchange
+        """
+        self.setup_model()
+        if self.remote_backtesting:
+            warnings.warn("Aborted attempt to start a live strategy a backtest configuration")
+            return
+        self.model.run()
 
     def time(self) -> float:
         return self.model.time

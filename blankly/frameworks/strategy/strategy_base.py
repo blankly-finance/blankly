@@ -18,7 +18,6 @@
 
 import threading
 import typing
-import warnings
 import enum
 
 
@@ -39,12 +38,11 @@ class EventType(enum.Enum):
     orderbook_event = "orderbook_event"
 
 
-# TODO this entire class needs to be fixed it's all fucked
 class StrategyBase:
     __exchange: ABCBaseExchange
     interface: ABCBaseExchangeInterface
 
-    def __init__(self, exchange: ABCBaseExchange, interface: ABCBaseExchangeInterface):
+    def __init__(self, exchange: ABCBaseExchange, interface: ABCBaseExchangeInterface, model):
         """
         Create a new strategy object. A strategy can be used to run your code live while be backtestable and modular
          across exchanges.
@@ -78,8 +76,9 @@ class StrategyBase:
 
         self.interface = interface
 
-        self.__orderbook_websockets = []
-        self.__ticker_websockets = []
+        self.orderbook_websockets = []
+        self.ticker_websockets = []
+        self.model = model
 
     def add_price_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
                         init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False,
@@ -149,7 +148,7 @@ class StrategyBase:
 
         # Use the API
         self.schedulers.append(
-            blankly.Scheduler(self.__price_event_rest, resolution,
+            blankly.Scheduler(self.model.rest_event, resolution,
                               initially_stopped=True,
                               synced=synced,
                               callback=callback,
@@ -165,17 +164,43 @@ class StrategyBase:
         # Export a new symbol to the backend
         blankly.reporter.export_used_symbol(symbol)
 
-    def __price_event_rest(self, **kwargs):
-        raise NotImplementedError
-
     @staticmethod
-    def __orderbook_event(tick, symbol, user_callback, state_object):
+    def __websocket_callback(tick, symbol, user_callback, state_object):
         user_callback(tick, symbol, state_object)
 
-    def add_orderbook_event(self, callback: typing.Callable, symbol: str, init: typing.Callable = None,
+    def add_tick_event(self, callback: callable, symbol: str, init: callable = None, teardown: callable = None,
+                       variables: dict = None):
+        """
+        Add a tick event - This will call the callback everytime the exchange provides a change in the price due to a
+         trade occurring
+        Args:
+            callback: The price event callback that will be added to the current ticker and run at the proper resolution
+            symbol: Currency pair to create the orderbook for
+            init: Callback function to allow a setup for the strategy variable. This
+                can be used for accumulating price data
+            teardown: A function to run when the strategy is stopped or interrupted. Example usages include liquidating
+                positions, writing or cleaning up data or anything else useful:
+            variables: A dictionary to initialize the state's internal values
+        """
+        if variables is None:
+            variables = {}
+
+        state = StrategyState(self, AttributeDict(variables), symbol=symbol)
+
+        self.ticker_manager.create_ticker(self.__websocket_callback, initially_stopped=True,
+                                          override_symbol=symbol,
+                                          symbol=symbol,
+                                          user_callback=callback,
+                                          variables=variables,
+                                          state=state)
+
+        self.ticker_websockets.append([symbol, self.__exchange.get_type(), init, state, teardown])
+
+    def add_orderbook_event(self, callback: callable, symbol: str, init: typing.Callable = None,
                             teardown: typing.Callable = None, variables: dict = None):
         """
-        Add Orderbook Event
+        Add Orderbook Event - This will call the given callback everytime the exchange provides a change in the
+         orderbook
         Args:
             callback: The price event callback that will be added to the current ticker and run at the proper resolution
             symbol: Currency pair to create the orderbook for
@@ -192,15 +217,14 @@ class StrategyBase:
         state = StrategyState(self, AttributeDict(variables), symbol=symbol)
 
         # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
-        self.orderbook_manager.create_orderbook(self.__orderbook_event, initially_stopped=True,
+        self.orderbook_manager.create_orderbook(self.__websocket_callback, initially_stopped=True,
                                                 override_symbol=symbol,
                                                 symbol=symbol,
                                                 user_callback=callback,
                                                 variables=variables,
                                                 state=state)
 
-        exchange_type = self.__exchange.get_type()
-        self.__orderbook_websockets.append([symbol, exchange_type, init, state, teardown])
+        self.ticker_websockets.append([symbol, self.__exchange.get_type(), init, state, teardown])
 
     def start(self):
         """
@@ -208,49 +232,10 @@ class StrategyBase:
 
         Simply call this function to take your strategy configuration live on your exchange
         """
-        if self.remote_backtesting:
-            warnings.warn("Aborted attempt to start a live strategy a backtest configuration")
-            return
-        for i in self.schedulers:
-            kwargs = i.get_kwargs()
-            if kwargs['init'] is not None:
-                kwargs['init'](kwargs['symbol'], kwargs['state'])
-            i.start()
-
-        for i in self.__orderbook_websockets:
-            # Index 2 contains the initialization function for the assigned websockets array
-            if i[2] is not None:
-                i[2](i[0], i[3])
-            self.orderbook_manager.restart_ticker(i[0], i[1])
-
-        for i in self.__ticker_websockets:
-            # The initialization function should have already been called for ticker websockets
-            # Notice this is different from orderbook websockets because these are put into the scheduler
-            self.ticker_manager.restart_ticker(i[0], i[1])
+        raise NotImplementedError
 
     def teardown(self):
-        self.lock.acquire()
-        for i in self.schedulers:
-            i.stop_scheduler()
-            kwargs = i.get_kwargs()
-            teardown = kwargs['teardown']
-            state_object = kwargs['state']
-            if callable(teardown):
-                teardown(state_object)
-
-        for i in self.__orderbook_websockets:
-            self.orderbook_manager.close_websocket(override_symbol=i[0], override_exchange=i[1])
-            # Call the stored teardown
-            teardown_func = i[4]
-            if callable(teardown_func):
-                teardown_func(i[3])
-
-        for i in self.__ticker_websockets:
-            self.ticker_manager.close_websocket(override_symbol=i[0], override_exchange=i[1])
-        self.lock.release()
-
-        # Show that all teardowns have finished
-        self.torndown = True
+        raise NotImplementedError
 
     def time(self) -> float:
         raise NotImplementedError
