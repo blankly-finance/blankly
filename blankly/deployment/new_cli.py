@@ -169,7 +169,6 @@ def get_model_interactive(api, model_type):
                    [Choice(get_model_repr(model), model) for model in models]).unsafe_ask()
     if model.get('type', None) != model_type:
         pass  # TODO
-    print(model)
     return model
 
 
