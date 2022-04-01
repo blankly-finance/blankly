@@ -22,6 +22,8 @@ import traceback
 import typing
 from datetime import datetime as dt
 import copy
+import enum
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -199,7 +201,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         # Use this global to retain where we are in the prices dictionary by index
         self.price_indexes = {}
 
-    def sync_prices(self, interface) -> dict:
+    def sync_prices(self) -> dict:
         """
         Parse the local file cache for the requested data, if it doesn't exist, request it from the exchange
 
@@ -211,43 +213,87 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         """
 
         cache_folder = self.preferences['settings']["cache_location"]
+
         # Make sure the cache folder exists and read files
-        try:
-            files = os.listdir(cache_folder)
-        except FileNotFoundError:
-            files = []
-            os.mkdir(cache_folder)
 
-        available_files = []
-        for i in range(len(files)):
-            # example file name: 'BTC-USD.1622400000.1622510793.60.csv'
-            # Remove the .csv from each of the files: BTC-USD.1622400000.1622510793.60
-            identifier = list(files[i][:-4].split(","))
-            # Cast to float first before
+        class PriceIdentifiers(enum.Enum):
+            exchange: str = None,
+            sandbox: bool = None,
+            symbol: str = None,
+            epoch_start: int = None,
+            epoch_stop: int = None,
+            resolution: int = None
+
+        def parse_identifiers() -> List[dict]:
             try:
-                identifier[1] = int(float(identifier[1]))
-                identifier[2] = int(float(identifier[2]))
-                identifier[3] = int(float(identifier[3]))
-                available_files.append(identifier)
-            except IndexError:
-                raise IndexError(f"Please remove file {files[i]} in your price caches or "
-                                 f"match the blankly cache format.")
+                files = os.listdir(cache_folder)
+            except FileNotFoundError:
+                files = []
+                os.mkdir(cache_folder)
 
-        # This is only the downloaded data
-        local_history_blocks = {}
-        for i in available_files:
-            # Sort these into resolutions
-            asset = i[0]
+            identifiers = []
+            for i in range(len(files)):
+                # example file name: 'coinbase_pro.sandbox.BTC-USD.1622400000.1622510793.60.csv'
+                # Remove the .csv from each of the files: BTC-USD.1622400000.1622510793.60
+                identifier = files[i][:-4].split(",")
+                # Cast to float first before
+                try:
+                    identifiers.append({
+                        PriceIdentifiers.exchange: identifier[0],
+                        PriceIdentifiers.sandbox: identifier[1] == 'sandbox',
+                        PriceIdentifiers.symbol: identifier[2],
+                        PriceIdentifiers.epoch_start: identifier[3],
+                        PriceIdentifiers.epoch_stop: identifier[4],
+                        PriceIdentifiers.resolution: identifier[5]
+                    })
+                except IndexError:
+                    # Remove each of the cache objects
+                    os.remove(os.path.join(cache_folder, files[i]))
+                    raise IndexError(f"Please remove file {files[i]} in your price caches "
+                                     f"or delete the ./price_caches folder.")
 
-            # Make sure to add the asset as a key
-            if asset not in list(local_history_blocks.keys()):
-                local_history_blocks[asset] = {}
+            return identifiers
 
-            # Add each resolution to its own internal list
-            if i[3] not in list(local_history_blocks[asset].keys()):
-                local_history_blocks[asset][i[3]] = [i]
-            else:
-                local_history_blocks[asset][i[3]].append(i)
+        def sort_identifiers(identifiers: List[dict]) -> dict:
+            """
+            Create the hierarchy based on the identifiers
+            {
+                'coinbase_pro': {
+                    True: {
+                        'BTC-USD': [60, 3600, 86400]
+                    }
+                    False: {
+
+                    }
+                }
+            }
+            """
+            local_history_blocks = {}
+
+            def sort_identifier(identifier_: dict):
+                exchange_ = identifier_[PriceIdentifiers.exchange]
+                sandbox_ = identifier_[PriceIdentifiers.sandbox]
+                symbol_ = identifier_[PriceIdentifiers.symbol]
+                resolution_ = identifier_[PriceIdentifiers.resolution]
+
+                if exchange_ not in local_history_blocks:
+                    local_history_blocks[exchange_] = {}
+
+                if sandbox_ not in local_history_blocks[exchange_]:
+                    local_history_blocks[exchange_][sandbox_] = {}
+
+                if symbol_ not in local_history_blocks[exchange_][sandbox_]:
+                    local_history_blocks[exchange_][sandbox_][symbol_] = []
+
+                # Now we're checking the resolution array
+                if resolution_ not in local_history_blocks[exchange_][sandbox_][symbol_]:
+                    local_history_blocks[exchange_][sandbox_][symbol_].append(resolution_)
+
+            # This is only the downloaded data
+            for identifier in identifiers:
+                sort_identifier(identifier)
+
+            return local_history_blocks
 
         # This is the data the user has requested: [asset_id, start_time, end_time, resolution]
         items = self.__user_added_times
