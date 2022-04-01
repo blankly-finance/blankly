@@ -71,6 +71,7 @@ def launch_login_flow() -> API:
     except Exception:
         print_work(f'Could not find a browser to open. Navigate to {AUTH_URL} and login')
 
+    api = None
     with show_spinner(f'Waiting for login') as spinner:
         try:
             api = poll_login()
