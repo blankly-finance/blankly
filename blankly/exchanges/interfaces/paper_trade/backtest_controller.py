@@ -23,7 +23,6 @@ import typing
 from datetime import datetime as dt
 import copy
 import enum
-from typing import List
 
 import numpy as np
 import pandas as pd
@@ -202,12 +201,12 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         self.price_indexes = {}
 
     class PriceIdentifiers(enum.Enum):
-        exchange: str = None,
-        sandbox: bool = None,
-        symbol: str = None,
-        epoch_start: int = None,
-        epoch_stop: int = None,
-        resolution: int = None
+        exchange: str = 0
+        sandbox: bool = 1
+        symbol: str = 2
+        epoch_start: int = 3
+        epoch_stop: int = 4
+        resolution: int = 5
 
     def sync_prices(self) -> dict:
         """
@@ -224,37 +223,35 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
         # Make sure the cache folder exists and read files
 
-        def parse_identifiers() -> List[dict]:
+        def parse_identifiers() -> list:
             try:
                 files = os.listdir(cache_folder)
             except FileNotFoundError:
                 files = []
                 os.mkdir(cache_folder)
 
-            identifiers = []
-            for i in range(len(files)):
+            identifiers_ = []
+            for file in range(len(files)):
                 # example file name: 'coinbase_pro.sandbox.BTC-USD.1622400000.1622510793.60.csv'
                 # Remove the .csv from each of the files: BTC-USD.1622400000.1622510793.60
-                identifier = files[i][:-4].split(",")
+                identifier = files[file][:-4].split(",")
                 # Cast to float first before
                 try:
-                    identifiers.append({
+                    identifiers_.append({
                         self.PriceIdentifiers.exchange: identifier[0],
-                        self.PriceIdentifiers.sandbox: identifier[1] == 'sandbox',
+                        self.PriceIdentifiers.sandbox: identifier[1] == 'True',
                         self.PriceIdentifiers.symbol: identifier[2],
-                        self.PriceIdentifiers.epoch_start: identifier[3],
-                        self.PriceIdentifiers.epoch_stop: identifier[4],
-                        self.PriceIdentifiers.resolution: identifier[5]
+                        self.PriceIdentifiers.epoch_start: int(float(identifier[3])),
+                        self.PriceIdentifiers.epoch_stop: int(float(identifier[4])),
+                        self.PriceIdentifiers.resolution: int(float(identifier[5]))
                     })
                 except IndexError:
-                    # Remove each of the cache objects
-                    os.remove(os.path.join(cache_folder, files[i]))
-                    raise IndexError(f"Please remove file {files[i]} in your price caches "
-                                     f"or delete the ./price_caches folder.")
+                    # Remove each of the failed cache objects
+                    os.remove(os.path.join(cache_folder, files[file]))
 
-            return identifiers
+            return identifiers_
 
-        def sort_identifiers(identifiers_: List[dict]) -> dict:
+        def sort_identifiers(identifiers_: list) -> dict:
             """
             Create the hierarchy based on the identifiers
             {
@@ -268,7 +265,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                 }
             }
             """
-            local_history_blocks = {}
+            local_history_blocks_ = {}
 
             def sort_identifier(identifier_: dict):
                 exchange_ = identifier_[self.PriceIdentifiers.exchange]
@@ -276,98 +273,116 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                 symbol_ = identifier_[self.PriceIdentifiers.symbol]
                 resolution_ = identifier_[self.PriceIdentifiers.resolution]
 
-                if exchange_ not in local_history_blocks:
-                    local_history_blocks[exchange_] = {}
+                if exchange_ not in local_history_blocks_:
+                    local_history_blocks_[exchange_] = {}
 
-                if sandbox_ not in local_history_blocks[exchange_]:
-                    local_history_blocks[exchange_][sandbox_] = {}
+                if sandbox_ not in local_history_blocks_[exchange_]:
+                    local_history_blocks_[exchange_][sandbox_] = {}
 
-                if symbol_ not in local_history_blocks[exchange_][sandbox_]:
-                    local_history_blocks[exchange_][sandbox_][symbol_] = []
+                if symbol_ not in local_history_blocks_[exchange_][sandbox_]:
+                    local_history_blocks_[exchange_][sandbox_][symbol_] = {}
 
                 # Now we're checking the resolution array
-                if resolution_ not in local_history_blocks[exchange_][sandbox_][symbol_]:
-                    local_history_blocks[exchange_][sandbox_][symbol_].append(resolution_)
+                if resolution_ not in local_history_blocks_[exchange_][sandbox_][symbol_]:
+                    local_history_blocks_[exchange_][sandbox_][symbol_][resolution_] = []
+
+                # Add these in as a dictionary
+                local_history_blocks_[exchange_][sandbox_][symbol_][resolution_].append({
+                    self.PriceIdentifiers.epoch_start: identifier_[self.PriceIdentifiers.epoch_start],
+                    self.PriceIdentifiers.epoch_stop: identifier_[self.PriceIdentifiers.epoch_stop]
+                })
 
             # This is only the downloaded data
             for identifier in identifiers_:
                 sort_identifier(identifier)
 
-            return local_history_blocks
+            return local_history_blocks_
 
-        identifiers = parse_identifiers() + self.__user_added_times
+        identifiers = parse_identifiers()
 
         local_history_blocks = sort_identifiers(identifiers)
 
         final_prices = {}
-        for i in range(len(identifiers)):
-            if identifiers[i] is None:
+        for i in range(len(self.__user_added_times)):
+            if self.__user_added_times[i] is None:
                 continue
-            asset = identifiers[i][self.PriceIdentifiers.symbol]
-            resolution = identifiers[i][self.PriceIdentifiers.resolution]
-            start_time = identifiers[i][self.PriceIdentifiers.epoch_start]
-            end_time = identifiers[i][self.PriceIdentifiers.epoch_stop] - resolution
+            symbol = self.__user_added_times[i][self.PriceIdentifiers.symbol]
+            resolution = self.__user_added_times[i][self.PriceIdentifiers.resolution]
+            start_time = self.__user_added_times[i][self.PriceIdentifiers.epoch_start]
+            end_time = self.__user_added_times[i][self.PriceIdentifiers.epoch_stop] - resolution
+            exchange = self.interface.get_exchange_type()
+            sandbox = True
 
             if end_time < start_time:
                 raise RuntimeError("Must specify a longer timeframe to run the backtest.")
 
-            download_ranges = []
+            downloaded_ranges = []
 
             # Attempt to find the same symbol/asset possibilities in the backtest blocks
             try:
                 # Make sure to copy it because if you don't you delete this for any similar resolution
                 # If you don't copy it fails if you use two price events at the same resolution
-                download_ranges = copy.deepcopy(local_history_blocks[asset][resolution])
+                available_prices = copy.deepcopy(local_history_blocks[exchange][sandbox][symbol][resolution])
+                # Pull the epoch start and epoch stop for this particular symbol / resolution
+                for price_set in available_prices:
+                    downloaded_ranges.append([
+                        price_set[self.PriceIdentifiers.epoch_start],
+                        price_set[self.PriceIdentifiers.epoch_stop]
+                    ])
             except KeyError:
                 pass
 
-            for j in range(len(download_ranges)):
-                download_ranges[j] = download_ranges[j][1:3]
-
-            used_ranges, negative_ranges = split([start_time, end_time], download_ranges)
+            used_ranges, negative_ranges = split([start_time, end_time], downloaded_ranges)
 
             relevant_data = []
             for j in used_ranges:
-                relevant_data.append(pd.read_csv(os.path.join(cache_folder, to_string_key([asset, j[0], j[1],
+                relevant_data.append(pd.read_csv(os.path.join(cache_folder, to_string_key([exchange,
+                                                                                           True,
+                                                                                           symbol,
+                                                                                           j[0],
+                                                                                           j[1],
                                                                                            resolution]) + ".csv")))
 
             if len(relevant_data) > 0:
-                final_prices[asset] = pd.concat(relevant_data)
+                final_prices[symbol] = pd.concat(relevant_data)
 
             # If there is any data left to download do it here
             for j in negative_ranges:
-                print("No cached data found for " + asset + " from: " + str(j[0]) + " to " +
+                print("No cached data found for " + symbol + " from: " + str(j[0]) + " to " +
                       str(j[1]) + " at a resolution of " + str(resolution) + " seconds.")
-                download = self.interface.get_product_history(asset,
-                                                         j[0],
-                                                         j[1],
-                                                         resolution)
+                download = self.interface.get_product_history(symbol,
+                                                              j[0],
+                                                              j[1],
+                                                              resolution)
 
                 # Write the file but this time include very accurately the start and end times
                 if self.preferences['settings']['continuous_caching']:
                     if not download.empty:
-                        download.to_csv(os.path.join(cache_folder, f'{asset},'
-                                                                   f'{j[0]},'
-                                                                   f'{j[1] + resolution},'  # This adds resolution 
-                                                                                            # back to the exported
-                                                                                            # time series
+                        download.to_csv(os.path.join(cache_folder, f'{exchange},'
+                                                                   f'{True},'
+                                                                   f'{symbol},'
+                                                                   f'{int(j[0])},'
+                                                                   f'{int(j[1]) + resolution},'  # This adds resolution 
+                                                                                                 # back to the exported
+                                                                                                 # time series
                                                                    f'{resolution}.csv'),
                                         index=False)
 
                 # Write these into the data array
-                if asset not in list(final_prices.keys()):
-                    final_prices[asset] = download
+                if symbol not in list(final_prices.keys()):
+                    final_prices[symbol] = download
                 else:
-                    final_prices[asset] = pd.concat([final_prices[asset], download])
+                    final_prices[symbol] = pd.concat([final_prices[symbol], download])
 
             # After all the negative ranges are appended, we need to sort & trim
-            final_prices[asset] = final_prices[asset].sort_values(by=['time'], ignore_index=True)
+            final_prices[symbol] = final_prices[symbol].sort_values(by=['time'], ignore_index=True)
 
             # Now make sure to just trim our times to hit the start and end times
-            final_prices[asset] = final_prices[asset][final_prices[asset]['time'] >= start_time]
-            final_prices[asset] = final_prices[asset][final_prices[asset]['time'] <= end_time + resolution]  # Add back
+            final_prices[symbol] = final_prices[symbol][final_prices[symbol]['time'] >= start_time]
+            final_prices[symbol] = final_prices[symbol][
+                final_prices[symbol]['time'] <= end_time + resolution]  # Add back
 
-            final_prices[asset] = final_prices[asset].to_records()
+            final_prices[symbol] = final_prices[symbol].to_records()
 
         return final_prices
 
@@ -383,7 +398,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         start = None
         end = None
 
-        resolution = time_interval_to_seconds(resolution)
+        resolution = int(time_interval_to_seconds(resolution))
 
         # Even if they specified start/end unevenly it will be overwritten with any to argument
         if to is not None:
@@ -420,10 +435,9 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         if tuple(identifier) not in self.price_dictionary.keys():
             # Add it as a new price
             self.__user_added_times.append({
-                self.PriceIdentifiers.symbol: symbol,
                 self.PriceIdentifiers.sandbox: True,
+                self.PriceIdentifiers.symbol: symbol,
                 self.PriceIdentifiers.resolution: resolution,
-                self.PriceIdentifiers.exchange: self.interface.get_type(),
                 self.PriceIdentifiers.epoch_start: start_time,
                 self.PriceIdentifiers.epoch_stop: end_time
             })
@@ -625,7 +639,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         start_clock = time.time()
 
         # Figure out our traded assets here
-        self.prices = self.sync_prices(self.interface)
+        self.prices = self.sync_prices()
         for i in self.prices:
             base = get_base_asset(i)
             quote = get_quote_asset(i)
@@ -900,9 +914,9 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                 )
 
                 # Define a helper function to avoid repeating code
-                def add_trace(self_, figure_, time_, data_, label):
+                def add_trace(self_, figure_, time__, data_, label):
                     source = ColumnDataSource(data=dict(
-                        time=time_,
+                        time=time__,
                         value=data_.values.tolist()
                     ))
                     figure_.step('time', 'value',
@@ -914,16 +928,16 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
                 global_x_range = None
 
-                time = [dt.fromtimestamp(ts) for ts in cycle_status['time']]
+                time_ = [dt.fromtimestamp(ts) for ts in cycle_status['time']]
 
                 for column in cycle_status:
                     if column != 'time' and self.__account_was_used(column):
                         p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
-                        add_trace(self, p, time, cycle_status[column], column)
+                        add_trace(self, p, time_, cycle_status[column], column)
 
                         # Add the no-trade line to the backtest
                         if column == 'Account Value (' + self.quote_currency + ')':
-                            add_trace(self, p, time, no_trade_cycle_status['Account Value (No Trades)'],
+                            add_trace(self, p, time_, no_trade_cycle_status['Account Value (No Trades)'],
                                       'Account Value (No Trades)')
 
                             # Add the benchmark, if requested
