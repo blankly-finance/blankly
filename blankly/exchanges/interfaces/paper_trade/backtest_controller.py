@@ -201,6 +201,14 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         # Use this global to retain where we are in the prices dictionary by index
         self.price_indexes = {}
 
+    class PriceIdentifiers(enum.Enum):
+        exchange: str = None,
+        sandbox: bool = None,
+        symbol: str = None,
+        epoch_start: int = None,
+        epoch_stop: int = None,
+        resolution: int = None
+
     def sync_prices(self) -> dict:
         """
         Parse the local file cache for the requested data, if it doesn't exist, request it from the exchange
@@ -215,14 +223,6 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         cache_folder = self.preferences['settings']["cache_location"]
 
         # Make sure the cache folder exists and read files
-
-        class PriceIdentifiers(enum.Enum):
-            exchange: str = None,
-            sandbox: bool = None,
-            symbol: str = None,
-            epoch_start: int = None,
-            epoch_stop: int = None,
-            resolution: int = None
 
         def parse_identifiers() -> List[dict]:
             try:
@@ -239,12 +239,12 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                 # Cast to float first before
                 try:
                     identifiers.append({
-                        PriceIdentifiers.exchange: identifier[0],
-                        PriceIdentifiers.sandbox: identifier[1] == 'sandbox',
-                        PriceIdentifiers.symbol: identifier[2],
-                        PriceIdentifiers.epoch_start: identifier[3],
-                        PriceIdentifiers.epoch_stop: identifier[4],
-                        PriceIdentifiers.resolution: identifier[5]
+                        self.PriceIdentifiers.exchange: identifier[0],
+                        self.PriceIdentifiers.sandbox: identifier[1] == 'sandbox',
+                        self.PriceIdentifiers.symbol: identifier[2],
+                        self.PriceIdentifiers.epoch_start: identifier[3],
+                        self.PriceIdentifiers.epoch_stop: identifier[4],
+                        self.PriceIdentifiers.resolution: identifier[5]
                     })
                 except IndexError:
                     # Remove each of the cache objects
@@ -254,7 +254,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
             return identifiers
 
-        def sort_identifiers(identifiers: List[dict]) -> dict:
+        def sort_identifiers(identifiers_: List[dict]) -> dict:
             """
             Create the hierarchy based on the identifiers
             {
@@ -271,10 +271,10 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             local_history_blocks = {}
 
             def sort_identifier(identifier_: dict):
-                exchange_ = identifier_[PriceIdentifiers.exchange]
-                sandbox_ = identifier_[PriceIdentifiers.sandbox]
-                symbol_ = identifier_[PriceIdentifiers.symbol]
-                resolution_ = identifier_[PriceIdentifiers.resolution]
+                exchange_ = identifier_[self.PriceIdentifiers.exchange]
+                sandbox_ = identifier_[self.PriceIdentifiers.sandbox]
+                symbol_ = identifier_[self.PriceIdentifiers.symbol]
+                resolution_ = identifier_[self.PriceIdentifiers.resolution]
 
                 if exchange_ not in local_history_blocks:
                     local_history_blocks[exchange_] = {}
@@ -290,22 +290,23 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                     local_history_blocks[exchange_][sandbox_][symbol_].append(resolution_)
 
             # This is only the downloaded data
-            for identifier in identifiers:
+            for identifier in identifiers_:
                 sort_identifier(identifier)
 
             return local_history_blocks
 
-        # This is the data the user has requested: [asset_id, start_time, end_time, resolution]
-        items = self.__user_added_times
+        identifiers = parse_identifiers() + self.__user_added_times
+
+        local_history_blocks = sort_identifiers(identifiers)
 
         final_prices = {}
-        for i in range(len(items)):
-            if items[i] is None:
+        for i in range(len(identifiers)):
+            if identifiers[i] is None:
                 continue
-            asset = items[i][0]
-            resolution = items[i][3]
-            start_time = items[i][1]
-            end_time = items[i][2] - resolution
+            asset = identifiers[i][self.PriceIdentifiers.symbol]
+            resolution = identifiers[i][self.PriceIdentifiers.resolution]
+            start_time = identifiers[i][self.PriceIdentifiers.epoch_start]
+            end_time = identifiers[i][self.PriceIdentifiers.epoch_stop] - resolution
 
             if end_time < start_time:
                 raise RuntimeError("Must specify a longer timeframe to run the backtest.")
@@ -337,7 +338,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             for j in negative_ranges:
                 print("No cached data found for " + asset + " from: " + str(j[0]) + " to " +
                       str(j[1]) + " at a resolution of " + str(resolution) + " seconds.")
-                download = interface.get_product_history(asset,
+                download = self.interface.get_product_history(asset,
                                                          j[0],
                                                          j[1],
                                                          resolution)
@@ -411,14 +412,21 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
         self.__add_prices(symbol, start, end, resolution)
 
-    def __add_prices(self, asset_id, start_time, end_time, resolution, save=False):
+    def __add_prices(self, symbol, start_time, end_time, resolution, save=False):
         # Create its unique identifier
-        identifier = [asset_id, int(start_time), int(end_time), int(resolution)]
+        identifier = [symbol, int(start_time), int(end_time), int(resolution)]
 
         # If it's not loaded then write it to the file
         if tuple(identifier) not in self.price_dictionary.keys():
-            # self.preferences['price_data']['assets'].append(identifier)
-            self.__user_added_times.append(identifier)
+            # Add it as a new price
+            self.__user_added_times.append({
+                self.PriceIdentifiers.symbol: symbol,
+                self.PriceIdentifiers.sandbox: True,
+                self.PriceIdentifiers.resolution: resolution,
+                self.PriceIdentifiers.exchange: self.interface.get_type(),
+                self.PriceIdentifiers.epoch_start: start_time,
+                self.PriceIdentifiers.epoch_stop: end_time
+            })
             if save:
                 self.queue_backtest_write = True
 
