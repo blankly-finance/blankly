@@ -147,6 +147,7 @@ def split(base_range, local_segments) -> typing.Tuple[list, list]:
 
 class BackTestController(ABCBacktestController):  # circular import to type model
     def __init__(self, model):
+        self.backtesting = False
         self.preferences = None
         self.backtest_settings_path = None
 
@@ -613,6 +614,10 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
         This is accessible by the user
         """
+        # Don't do anything when live
+        if not self.backtesting:
+            return
+
         available_dict, no_trade_dict = self.format_account_data(self.interface, self.time)
 
         self.traded_account_values.append(available_dict)
@@ -627,6 +632,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         """
         Setup
         """
+        self.backtesting = True
         self.preferences = load_backtest_preferences(backtest_settings_path)
         self.backtest_settings_path = backtest_settings_path
         self.show_progress = self.preferences['settings']['show_progress_during_backtest']
@@ -1031,4 +1037,5 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         result_object.figures = figures
 
         self.interface.set_backtesting(False)
+        self.backtesting = False
         return result_object
