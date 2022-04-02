@@ -22,7 +22,7 @@ TEMPLATES = {'strategy': {'none': 'none.py',
              'screener': {'none': 'none_screener.py',
                           'rsi_screener': 'rsi_screener.py'}}
 
-AUTH_URL = f'{blankly_deployment_url}/auth/signin?redirectUrl=/deploy'
+AUTH_URL = f'https://app.blankly.finance/auth/signin?redirectUrl=/deploy'
 
 
 def validate_non_empty(text):
@@ -31,10 +31,10 @@ def validate_non_empty(text):
     return True
 
 
-def create_model(api, name, description, model_type):
+def create_model(api, name, description, model_type, project_id=None):
     with show_spinner('Creating model') as spinner:
         try:
-            model = api.create_model(api.user_id, model_type, name, description)
+            model = api.create_model(project_id or api.user_id, model_type, name, description)
         except Exception:
             spinner.fail('Failed to create model')
             raise
@@ -154,23 +154,29 @@ def blankly_init(args):
 
 
 def get_model_interactive(api, model_type):
-    create = select("Would you like to create a new model or attach to an existing one?",
+    create = select('Would you like to create a new model or attach to an existing one?',
                     [Choice('Create new model', True), Choice('Attach to existing model', False)]).unsafe_ask()
     if create:
         default_name = Path.cwd().name  # default name is working dir name
         name = text('Model name?', default=default_name, validate=validate_non_empty).unsafe_ask()
         description = text('Model description?', instruction='(Optional)').unsafe_ask()
-        return create_model(api, name, description, model_type)
+        teams = api.list_teams()
+        team_id = None
+        if teams:
+            team_choices = [Choice('Create on my personal account', None)] \
+                           + [Choice(team.get('name', team['id']), team['id']) for team in teams]
+            team_id = select('What team would you like to create this model under?', team_choices).unsafe_ask()
+            return create_model(api, name, description, model_type, team_id)
 
-    with show_spinner('Loading models...') as spinner:
-        models = api.list_all_models()
-        spinner.ok('Loaded')
+        with show_spinner('Loading models...') as spinner:
+            models = api.list_all_models()
+            spinner.ok('Loaded')
 
-    model = select('Select an existing model to attach to:',
-                   [Choice(get_model_repr(model), model) for model in models]).unsafe_ask()
-    if model.get('type', None) != model_type:
-        pass  # TODO
-    return model
+        model = select('Select an existing model to attach to:',
+                       [Choice(get_model_repr(model), model) for model in models]).unsafe_ask()
+        if model.get('type', None) != model_type:
+            pass  # TODO
+        return model
 
 
 def get_model_repr(model: dict) -> str:
@@ -218,6 +224,7 @@ def generate_blankly_json(model: Optional[dict], model_type):
             'screener': {'schedule': '30 14 * * 1-5'}}
     if model:
         data['model_id'] = model['id']
+        data['project_id'] = model['projectId']
     return json.dumps(data, indent=4)
 
 
@@ -279,24 +286,25 @@ def blankly_deploy(args):
     with open('blankly.json', 'r') as file:
         data = json.load(file)
 
-    data['plan'] = select('Select a plan:', [Choice(f'{name} - CPU: {info["cpu"]} RAM: {info["ram"]}', name)
-                                             for name, info in api.get_plans('live').items()]) \
-        .skip_if('plan' in data, data.get('plan', None)).unsafe_ask()
+    if 'plan' not in data:
+        data['plan'] = select('Select a plan:', [Choice(f'{name} - CPU: {info["cpu"]} RAM: {info["ram"]}', name)
+                                                 for name, info in api.get_plans('live').items()]).unsafe_ask()
 
-    if 'model_id' not in data:
+    if 'model_id' not in data or 'project_id' not in data:
         model = get_model_interactive(api, data['type'])
         data['model_id'] = model['modelId']
+        data['project_id'] = model['projectId']
 
     # save model_id and plan back into blankly.json
     with open('blankly.json', 'w') as file:
-        json.dump(data, file)
+        json.dump(data, file, indent=4)
 
     with show_spinner('Uploading model') as spinner:
         model_path = zip_dir('.', data['ignore_files'])
 
         params = {
             'file_path': model_path,
-            'project_id': api.user_id,
+            'project_id': data['project_id'],
             'model_id': data['model_id'],
             'version_description': description,
             'python_version': get_python_version(),

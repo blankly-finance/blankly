@@ -161,19 +161,23 @@ class API:
     def create_model(self, project_id: str, type_: str, name: str, description: str):
         model = self.__request('post', 'model/create-model',
                                data={
-                                   'projectId': project_id,
+                                   'projectId': project_id or self.user_id,
                                    'type': type_,
                                    'name': name,
                                    'description': description
                                })
         model['id'] = model['modelId']
+        model['projectId'] = project_id or self.user_id
         return model
 
     def list_models(self, project_id: str):
-        return self.__request('post', 'model/list',
-                              data={
-                                  'projectId': project_id
-                              })
+        models = self.__request('post', 'model/list',
+                                data={
+                                    'projectId': project_id or self.user_id
+                                })
+        for model in models:
+            model['projectId'] = project_id or self.user_id
+        return models
 
     def list_all_models(self):
         models = self.list_models(self.user_id)
