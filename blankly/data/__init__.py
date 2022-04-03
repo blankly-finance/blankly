@@ -1,5 +1,5 @@
 import enum as __enum
-from .data_reader import DataReader
+from .data_reader import __DataReader
 
 
 class DataTypes(__enum):
@@ -30,9 +30,8 @@ ohlcv_json
 event_json
 {
     "event_type": {
-        time: {
-            "any": "event details"
-        }
+        "time": [],
+        "data": []
     }
 
 }
