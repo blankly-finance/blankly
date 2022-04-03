@@ -43,6 +43,30 @@ def compare_responses(response_list, force_exchange_specific=True):
 
 
 class InterfaceHomogeneity(unittest.TestCase):
+    paper_trade_coinbase_pro_interface = None
+    paper_trade_coinbase_pro = None
+    paper_trade_binance_interface_data = None
+    paper_trade_binance_data = None
+    paper_trade_binance_interface = None
+    paper_trade_binance = None
+    FTX_Interface = None
+    Oanda = None
+    Oanda_Interface = None
+    Alpaca_Interface = None
+    alpaca = None
+    Binance_data = None
+    Kucoin_Interface_data = None
+    Binance_Interface = None
+    Binance = None
+    Binance_Interface_data = None
+    Kucoin_data = None
+    Kucoin_Interface = None
+    Coinbase_Pro_Interface = None
+    Kucoin = None
+    Coinbase_Pro = None
+    data_interfaces = None
+    interfaces = None
+    FTX = None
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -225,8 +249,8 @@ class InterfaceHomogeneity(unittest.TestCase):
             if i['type'] == "market":
                 try:
                     self.Alpaca_Interface.cancel_order(i['symbol'], i['id'])
-                except Exception:
-                    print("Failed canceling order - may have already executed")
+                except Exception as e:
+                    print(f"Failed canceling order for reason {e} - may have already executed")
 
     def check_limit_order(self, limit_order: LimitOrder, expected_side: str, size, product_id):
         self.assertEqual(limit_order.get_side(), expected_side)
@@ -460,7 +484,6 @@ class InterfaceHomogeneity(unittest.TestCase):
             type_ = i.get_exchange_type()
 
             # Exclude alpaca currently because the trading hours make it unreliable
-            # TODO add separate tests for trading hours exchanges (for now they're just run and types checked)
             if not (type_ == "alpaca" or type_ == 'oanda'):
                 responses.append(i.get_product_history(get_valid_symbol(type_),
                                                        intervals_ago,

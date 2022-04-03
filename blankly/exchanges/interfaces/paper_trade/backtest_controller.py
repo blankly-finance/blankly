@@ -35,7 +35,7 @@ from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import load_backtest_preferences, update_progress, write_backtest_preferences, \
-    get_base_asset, get_quote_asset, info_print
+    get_base_asset, get_quote_asset, info_print, trunc
 
 
 def to_string_key(separated_list):
@@ -1017,8 +1017,8 @@ class BackTestController:
                 if result == np.NAN:
                     result = None
                 return result
-            except (ZeroDivisionError, Exception) as e_:
-                return f'failed: {e_}'
+            except (ZeroDivisionError, Exception) as e__:
+                return f'failed: {e__}'
 
         risk_free_return_rate = self.preferences['settings']["risk_free_return_rate"]
         metrics_indicators['Max Drawdown (%)'] = attempt(metrics.max_drawdown, history_and_returns)
@@ -1030,7 +1030,7 @@ class BackTestController:
         metrics_indicators['Sharpe Ratio'] = attempt(metrics.sharpe, history_and_returns,
                                                      {'risk_free_rate': risk_free_return_rate,
                                                       'trading_period': interval_value})
-        metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, history_and_returns, 
+        metrics_indicators['Calmar Ratio'] = attempt(metrics.calmar, history_and_returns,
                                                      {'trading_period': interval_value})
         metrics_indicators['Volatility'] = attempt(metrics.volatility, history_and_returns,
                                                    {'trading_period': interval_value})
