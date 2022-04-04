@@ -15,10 +15,11 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import typing
 
 from blankly.exchanges.interfaces.paper_trade.backtest_controller import BackTestController, BacktestResult
-from blankly.exchanges.interfaces.paper_trade.backtest_headers import ABCBacktestController
+from blankly.exchanges.interfaces.paper_trade.abc_backtest_controller import ABCBacktestController
 from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.exchange import Exchange
 import time
@@ -65,6 +66,13 @@ class Model:
 
     def main(self, args):
         raise NotImplementedError("Add a main function to your strategy to run the model.")
+
+    def event(self, type_: str, data: any):
+        """
+        Override this to gain access to any custom events passed in
+        """
+        print(type_)
+        print(data)
 
     @property
     def time(self):

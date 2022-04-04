@@ -41,8 +41,9 @@ from blankly.utils.utils import load_backtest_preferences, write_backtest_prefer
 from blankly.exchanges.interfaces.paper_trade.backtest.format_platform_result import \
     format_platform_result
 
-from blankly.exchanges.interfaces.paper_trade.backtest_headers import ABCBacktestController
+from blankly.exchanges.interfaces.paper_trade.abc_backtest_controller import ABCBacktestController
 from blankly.exchanges.exchange import ABCExchange
+from blankly.data.data_reader import PriceReader, EventReader
 
 
 def to_string_key(separated_list):
@@ -159,9 +160,10 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         self.traded_account_values = []
         self.no_trade_account_values = []
 
-        self.prices = []
-
-        self.price_dictionary = {}
+        # Prices sorted by symbol and then records of prices
+        self.prices = {}
+        # A list of events sorted by time. All events are put into this single list
+        self.events = []
 
         # User added times
         self.__user_added_times = []
@@ -200,6 +202,10 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
         # Use this global to retain where we are in the prices dictionary by index
         self.price_indexes = {}
+
+        # Custom injected price readers and events readers
+        self.__price_readers = []
+        self.__event_readers = []
 
     class PriceIdentifiers(enum.Enum):
         exchange: str = 0
@@ -383,6 +389,18 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             final_prices[symbol] = final_prices[symbol][
                 final_prices[symbol]['time'] <= end_time + resolution]  # Add back
 
+        # Now add any custom prices
+        for price_reader in self.__price_readers:
+            data = price_reader.data
+            for symbol in data:
+                # Add each symbol to the final prices without doing any processing
+                if symbol in final_prices:
+                    final_prices[symbol] = pd.concat([final_prices[symbol], data])
+                else:
+                    final_prices[symbol] = data
+
+        # Finally, convert back into records
+        for symbol in final_prices:
             final_prices[symbol] = final_prices[symbol].to_records()
 
         return final_prices
@@ -428,43 +446,48 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
         self.__add_prices(symbol, start, end, resolution)
 
+    def add_custom_prices(self, price_reader: PriceReader):
+        self.__price_readers.append(price_reader)
+
+    def add_custom_events(self, event_reader: EventReader):
+        self.__event_readers.append(event_reader)
+
     def __add_prices(self, symbol, start_time, end_time, resolution, save=False):
         # Create its unique identifier
         identifier = [symbol, int(start_time), int(end_time), int(resolution)]
 
         # If it's not loaded then write it to the file
-        if tuple(identifier) not in self.price_dictionary.keys():
-            # Add it as a new price
-            self.__user_added_times.append({
-                self.PriceIdentifiers.sandbox: True,
-                self.PriceIdentifiers.symbol: symbol,
-                self.PriceIdentifiers.resolution: resolution,
-                self.PriceIdentifiers.epoch_start: start_time,
-                self.PriceIdentifiers.epoch_stop: end_time
-            })
-            if save:
-                self.queue_backtest_write = True
+        # Add it as a new price
+        self.__user_added_times.append({
+            self.PriceIdentifiers.sandbox: True,
+            self.PriceIdentifiers.symbol: symbol,
+            self.PriceIdentifiers.resolution: resolution,
+            self.PriceIdentifiers.epoch_start: start_time,
+            self.PriceIdentifiers.epoch_stop: end_time
+        })
+        if save:
+            self.queue_backtest_write = True
 
-            # This makes sure that we keep track of our bounds which is just generally kind of useful
-            # Any time a new price event is added we check this
-            if self.user_start is None:
+        # This makes sure that we keep track of our bounds which is just generally kind of useful
+        # Any time a new price event is added we check this
+        if self.user_start is None:
+            self.user_start = start_time
+        else:
+            if start_time < self.user_start:
                 self.user_start = start_time
-            else:
-                if start_time < self.user_start:
-                    self.user_start = start_time
 
-            if self.user_stop is None:
+        if self.user_stop is None:
+            self.user_stop = end_time
+        else:
+            if end_time > self.user_stop:
                 self.user_stop = end_time
-            else:
-                if end_time > self.user_stop:
-                    self.user_stop = end_time
 
-            # Now keep track of the smallest price event added
-            if self.min_resolution is None:
+        # Now keep track of the smallest price event added
+        if self.min_resolution is None:
+            self.min_resolution = resolution
+        else:
+            if resolution < self.min_resolution:
                 self.min_resolution = resolution
-            else:
-                if resolution < self.min_resolution:
-                    self.min_resolution = resolution
 
     def write_setting(self, key, value, save=False):
         """

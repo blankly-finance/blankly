@@ -7,6 +7,7 @@ class DataTypes(__enum):
     ohlcv_json = 1
     event_json = 2
 
+
 """
 Some datatype examples
 

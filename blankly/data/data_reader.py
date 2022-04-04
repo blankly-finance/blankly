@@ -33,7 +33,7 @@ This class seeks to solve these problems:
 class __DataReader:
     @staticmethod
     def __is_price_data(data_type: DataTypes) -> bool:
-        return data_type == DataTypes.ohlcv_json or data_type == DataTypes.ohlcv_json
+        return data_type == DataTypes.ohlcv_json or data_type == DataTypes.ohlcv_csv
 
     @property
     def data(self) -> Dict[pd.DataFrame]:

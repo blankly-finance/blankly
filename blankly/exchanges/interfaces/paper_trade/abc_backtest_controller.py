@@ -17,6 +17,7 @@
 """
 import abc
 import typing
+from blankly.data.data_reader import PriceReader, EventReader
 
 
 class ABCBacktestController(abc.ABC):
@@ -32,6 +33,14 @@ class ABCBacktestController(abc.ABC):
         """
         Add prices directly to the backtest engine
         """
+        pass
+
+    @abc.abstractmethod
+    def add_custom_prices(self, price_reader: PriceReader):
+        pass
+
+    @abc.abstractmethod
+    def add_custom_events(self, event_reader: EventReader):
         pass
 
     @abc.abstractmethod
