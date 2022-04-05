@@ -71,8 +71,7 @@ class Model:
         """
         Override this to gain access to any custom events passed in
         """
-        print(type_)
-        print(data)
+        pass
 
     @property
     def time(self):

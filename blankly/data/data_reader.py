@@ -54,11 +54,10 @@ class __DataReader:
     def _write_dataset(self, contents: dict, key: str, required_columns: tuple):
         try:
             # Check if all the keys exist for each part of the dictionary
-            assert (all(key in contents[key] for key in required_columns))
-        except AssertionError as e:
-            raise AssertionError(f"Must have at least these columns: f{required_columns} for {key}"
-                                 f" with error {e}")
-        self._internal_dataset[key] = pd.DataFrame.from_dict(contents[key])
+            assert (all(key in contents for key in required_columns))
+        except AssertionError:
+            raise AssertionError(f"Must have at least these columns: {required_columns} for {key}")
+        self._internal_dataset[key] = pd.DataFrame.from_dict(contents)
 
     def __init__(self, data_type: [DataTypes, str]):
         self._internal_dataset = {}
@@ -73,7 +72,7 @@ class PriceReader(__DataReader):
             contents = json.loads(open(file).read())
 
             for symbol in contents:
-                self._write_dataset(contents, symbol, ('open', 'high', 'low', 'close', 'volume', 'time'))
+                self._write_dataset(contents[symbol], symbol, ('open', 'high', 'low', 'close', 'volume', 'time'))
 
                 self._check_length(self._internal_dataset[symbol], file)
 
@@ -186,15 +185,16 @@ class PriceReader(__DataReader):
 
 class EventReader(__DataReader):
     def __parse_json_events(self, file_path):
-        contents = json.loads(file_path)
+        contents = json.loads(open(file_path).read())
 
         for event_type in contents:
-            self._write_dataset(contents, event_type, ('time', 'data'))
+            self._write_dataset(contents[event_type], event_type, ('time', 'data'))
 
     def __init__(self, file_path):
-        try:
-            assert file_path[-3:] == 'csv'
-        except AssertionError:
-            raise AssertionError(f"The filepath did not have a \'csv\' ending - got: {file_path[-3:]}")
-
         super().__init__(DataTypes.event_json)
+        try:
+            assert file_path[-4:] == 'json'
+        except AssertionError:
+            raise AssertionError(f"The filepath did not have a \'json\' ending - got: {file_path[-4:]}")
+
+        self.__parse_json_events(file_path)

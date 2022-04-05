@@ -237,8 +237,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                 # Now turn it into a set of records
                 records = event_df.to_dict(orient='records')
                 # And make sure to add on the event type to each one
-                for record in records:
-                    record['type']: event_type
+                for record_index in range(len(records)):
+                    records[record_index]['type'] = event_type
 
                 self.events += records
 
@@ -638,7 +638,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
             # Store the time because we need accurate time for the async stuff
             time_backup = self.time
-            while self.events[self.event_index] < time_backup:
+            while self.events[self.event_index]['time'] < time_backup:
                 # Set time to something different here
                 event = self.events[self.event_index]
                 self.time = event['time']
@@ -726,6 +726,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
         # Figure out our traded assets here
         self.prices = self.sync_prices()
+        # Now ensure all events are processed
+        self.parse_events()
         for i in self.prices:
             base = get_base_asset(i)
             quote = get_quote_asset(i)
