@@ -202,6 +202,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
         # Use this global to retain where we are in the prices dictionary by index
         self.price_indexes = {}
+        # Use this to keep trace globally of the event index we're using
+        self.event_index = 0
 
         # Custom injected price readers and events readers
         self.__price_readers = []
@@ -214,6 +216,34 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         epoch_start: int = 3
         epoch_stop: int = 4
         resolution: int = 5
+
+    def parse_events(self):
+        """
+        Transform to:
+        [
+            {
+                "type": "news event",
+                "data": "gotem",
+                "time": 2
+            }
+        ]
+        """
+        for reader in self.__event_readers:
+            # Get the data as dict of dataframes
+            data = reader.data
+            for event_type in data:
+                # Get the dataframe in each one
+                event_df: pd.DataFrame = data[event_type]
+                # Now turn it into a set of records
+                records = event_df.to_dict(orient='records')
+                # And make sure to add on the event type to each one
+                for record in records:
+                    record['type']: event_type
+
+                self.events += records
+
+        # Now we just need to sort by time
+        self.events = sorted(self.events, key=lambda d: d['time'])
 
     def sync_prices(self) -> dict:
         """
@@ -596,6 +626,29 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             return next(self.__color_generator)
 
     def advance_time_and_price_index(self):
+        def run_events():
+            # Ensure that we don't index error here
+            events_length = len(self.events)
+            # Make sure we don't crash at first
+            if self.event_index >= events_length:
+                return
+
+            # Store the time because we need accurate time for the async stuff
+            time_backup = self.time
+            while self.events[self.event_index] < time_backup:
+                # Set time to something different here
+                event = self.events[self.event_index]
+                self.time = event['time']
+                self.model.event(event['type'], event['data'])
+                # Fired some event, go to the next one
+                self.event_index += 1
+
+                # Just check after doing that if we went outside the index
+                if self.event_index >= events_length:
+                    return
+
+            self.time = time_backup
+
         # Now update the time to match
         self.interface.receive_time(self.time)
 
@@ -606,6 +659,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             #  it's less than the length of the price
             price_length = len(self.prices[symbol]) - 2
             while self.prices[symbol][self.price_indexes[symbol]]['time'] < self.time:
+                run_events()
                 if price_length >= self.price_indexes[symbol]:
                     self.price_indexes[symbol] += 1
                 else:
