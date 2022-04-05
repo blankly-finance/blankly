@@ -18,7 +18,7 @@
 
 import json
 import pandas as pd
-from typing import Dict
+from enum import Enum
 
 from . import DataTypes
 
@@ -30,13 +30,18 @@ This class seeks to solve these problems:
 """
 
 
+class FileTypes(Enum):
+    csv = 'csv'
+    json = 'json'
+
+
 class __DataReader:
     @staticmethod
     def __is_price_data(data_type: DataTypes) -> bool:
         return data_type == DataTypes.ohlcv_json or data_type == DataTypes.ohlcv_csv
 
     @property
-    def data(self) -> Dict[pd.DataFrame]:
+    def data(self):
         return self._internal_dataset
 
     def _write_dataset(self, contents: dict, key: str, required_columns: tuple):
@@ -49,7 +54,7 @@ class __DataReader:
         self._internal_dataset[key] = pd.DataFrame.from_dict(contents[key])
 
     def __init__(self, data_type: [DataTypes, str]):
-        self._internal_dataset = None
+        self._internal_dataset = {}
         self.type: DataTypes = data_type
         self.price_data: bool = self.__is_price_data(data_type)
 
@@ -82,26 +87,25 @@ class PriceReader(__DataReader):
 
     @staticmethod
     def __associate(file_paths: list) -> str:
-        data_type = ''
+        file_type = ''
 
-        def complain_if_different(ending_: str, type_: DataTypes):
-            nonlocal data_type
-            if data_type == '':
-                data_type = type_
-            elif data_type is not None and data_type != ending_:
+        def complain_if_different(ending_: str, type_: str):
+            nonlocal file_type
+            if file_type == '':
+                file_type = type_
+            elif file_type is not None and file_type != ending_:
                 raise LookupError("Cannot pass both csv files and json files into a single constructor.")
 
         for file_path in file_paths:
-            ending = file_path[-4:]
-            if ending == '.csv':
-                complain_if_different('.csv', DataTypes.ohlcv_csv)
-            elif ending == 'json':
+            if file_path[-3:] == 'csv':
+                complain_if_different('csv', FileTypes.csv.value)
+            elif file_path[-4:] == 'json':
                 # In this instance the symbols should be None
-                complain_if_different('json', DataTypes.ohlcv_json)
+                complain_if_different('json', FileTypes.json.value)
             else:
-                raise LookupError(f"Unknown ending {ending}")
+                raise LookupError(f"Unknown filetype for {file_path}")
 
-        return data_type
+        return file_type
 
     def __init__(self, file_path: [str, list], symbol: [str, list] = None):
         """
@@ -128,9 +132,9 @@ class PriceReader(__DataReader):
 
         super().__init__(data_type)
 
-        if data_type == DataTypes.ohlcv_json:
+        if data_type == FileTypes.json.value:
             self.__parse_json_prices(file_paths)
-        elif data_type == DataTypes.ohlcv_csv:
+        elif data_type == FileTypes.csv.value:
             self.__parse_csv_prices(file_paths, symbols)
         else:
             raise LookupError("No parsing written for input type.")

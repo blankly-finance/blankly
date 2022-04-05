@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import blankly.utils.utils
+import blankly.data as data
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro import CoinbasePro
 from blankly.exchanges.interfaces.binance.binance import Binance
 from blankly.exchanges.interfaces.alpaca.alpaca import Alpaca

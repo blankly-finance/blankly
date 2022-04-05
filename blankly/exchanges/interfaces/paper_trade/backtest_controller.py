@@ -339,7 +339,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
         local_history_blocks = sort_identifiers(identifiers)
 
-        final_prices = {}
+        final_prices: dict = {}
         for i in range(len(self.__user_added_times)):
             if self.__user_added_times[i] is None:
                 continue
@@ -425,9 +425,9 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             for symbol in data:
                 # Add each symbol to the final prices without doing any processing
                 if symbol in final_prices:
-                    final_prices[symbol] = pd.concat([final_prices[symbol], data])
+                    final_prices[symbol] = pd.concat([final_prices[symbol], data[symbol]])
                 else:
-                    final_prices[symbol] = data
+                    final_prices[symbol] = data[symbol]
 
         # Finally, convert back into records
         for symbol in final_prices:
@@ -483,9 +483,6 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         self.__event_readers.append(event_reader)
 
     def __add_prices(self, symbol, start_time, end_time, resolution, save=False):
-        # Create its unique identifier
-        identifier = [symbol, int(start_time), int(end_time), int(resolution)]
-
         # If it's not loaded then write it to the file
         # Add it as a new price
         self.__user_added_times.append({
@@ -498,6 +495,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         if save:
             self.queue_backtest_write = True
 
+    def __check_user_time_bounds(self, start_time, end_time, resolution):
         # This makes sure that we keep track of our bounds which is just generally kind of useful
         # Any time a new price event is added we check this
         if self.user_start is None:
