@@ -37,6 +37,13 @@ class FileTypes(Enum):
 
 class __DataReader:
     @staticmethod
+    def _check_length(df: pd.DataFrame, identifier: str):
+        try:
+            assert (len(df) > 2)
+        except AssertionError:
+            raise AssertionError(f"Must give data with at least 2 rows in {identifier}.")
+
+    @staticmethod
     def __is_price_data(data_type: DataTypes) -> bool:
         return data_type == DataTypes.ohlcv_json or data_type == DataTypes.ohlcv_csv
 
@@ -68,6 +75,11 @@ class PriceReader(__DataReader):
             for symbol in contents:
                 self._write_dataset(contents, symbol, ('open', 'high', 'low', 'close', 'volume', 'time'))
 
+                self._check_length(self._internal_dataset[symbol], file)
+
+                # Ensure that the dataframe is sorted by time
+                self._internal_dataset[symbol] = self._internal_dataset[symbol].sort_values('time')
+
     def __parse_csv_prices(self, file_paths: list, symbols: list) -> None:
         if symbols is None:
             raise LookupError("Must pass one or more symbols to identify the csv files")
@@ -79,11 +91,13 @@ class PriceReader(__DataReader):
             # Load the file via pandas
             contents = pd.read_csv(file_paths[index])
 
+            self._check_length(contents, file_paths[index])
+
             # Check if its contained
             assert ({'open', 'high', 'low', 'close', 'volume', 'time'}.issubset(contents.columns))
 
-            # Now push it directly into the dataset
-            self._internal_dataset[symbols[index]] = contents
+            # Now push it directly into the dataset and sort by time
+            self._internal_dataset[symbols[index]] = contents.sort_values('time')
 
     @staticmethod
     def __associate(file_paths: list) -> str:
@@ -107,6 +121,21 @@ class PriceReader(__DataReader):
 
         return file_type
 
+    def _guess_resolutions(self):
+        for symbol in self._internal_dataset:
+            # Get the time diff
+            time_series: pd.Series = self._internal_dataset[symbol]['time']
+            time_dif = time_series.diff()
+
+            # Now find the most common difference and use that
+            if symbol not in self.prices_info:
+                self.prices_info[symbol] = {}
+
+            # Store the resolution start time and end time of each dataset
+            self.prices_info[symbol]['resolution'] = int(time_dif.value_counts().idxmax())
+            self.prices_info[symbol]['start_time'] = time_series.iloc[0]
+            self.prices_info[symbol]['stop_time'] = time_series.iloc[-1]
+
     def __init__(self, file_path: [str, list], symbol: [str, list] = None):
         """
         Read in a new custom price dataset in either json or csv format
@@ -114,7 +143,11 @@ class PriceReader(__DataReader):
         Args:
             file_path (str or list): A single file path or list of filepaths pointing to a set of price data
             symbol (str or list): Only required if using .csv files. These must match in index to the symbol that the
-             csv file path corresponds to
+             csv file path corresponds to. The CSV files also must have at least 2 rows of data in them.
+
+            symbol (str or list): Pass the symbol or symbols that the file paths correspond to. One file path and one
+             symbol can be passed as a non list but multiple can be passed as lists in both arguments. Just make sure
+             that the symbol indices match on both arguments
         """
         # Turn it into a list
         if isinstance(file_path, str):
@@ -128,6 +161,15 @@ class PriceReader(__DataReader):
             # Could be None still
             symbols = symbol
 
+        # Empty dict to store the resolutions of the inputs by symbol
+        self.prices_info = {}
+
+        try:
+            assert(len(symbols) == len(set(symbols)))
+        except AssertionError:
+            raise AssertionError("Cannot use duplicate symbols for one price reader. Please use multiple price readers"
+                                 " to read in different datasets of the same symbol.")
+
         data_type = self.__associate(file_paths)
 
         super().__init__(data_type)
@@ -138,6 +180,8 @@ class PriceReader(__DataReader):
             self.__parse_csv_prices(file_paths, symbols)
         else:
             raise LookupError("No parsing written for input type.")
+
+        self._guess_resolutions()
 
 
 class EventReader(__DataReader):

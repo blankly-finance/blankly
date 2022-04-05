@@ -429,6 +429,11 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                 else:
                     final_prices[symbol] = data[symbol]
 
+                symbol_info = price_reader.prices_info[symbol]
+                self.__check_user_time_bounds(symbol_info['start_time'],
+                                              symbol_info['stop_time'],
+                                              symbol_info['resolution'])
+
         # Finally, convert back into records
         for symbol in final_prices:
             final_prices[symbol] = final_prices[symbol].to_records()
