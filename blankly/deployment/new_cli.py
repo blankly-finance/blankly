@@ -28,10 +28,10 @@ import pkgutil
 
 from questionary import Choice
 
-from slate.deployment.login import logout, poll_login, get_token
-from slate.deployment.ui import text, confirm, print_work, print_failure, print_success, select, show_spinner
-from slate.deployment.api import API, blankly_deployment_url
-from slate.deployment.deploy import zip_dir, get_python_version
+from slate.cli.login import logout, poll_login, get_token
+from slate.cli.ui import text, confirm, print_work, print_failure, print_success, select, show_spinner
+from slate.cli.api import API, blankly_deployment_url
+from slate.cli.deploy import zip_dir, get_python_version
 from blankly.deployment.keys import add_key, load_keys, write_keys
 from blankly.deployment.exchange_data import EXCHANGES, Exchange, EXCHANGE_CHOICES
 

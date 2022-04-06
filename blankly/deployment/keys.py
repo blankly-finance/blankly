@@ -20,7 +20,7 @@ import json
 
 from blankly.deployment.exchange_data import Exchange
 
-from slate.deployment.ui import confirm, print_failure, show_spinner
+from slate.cli.ui import confirm, print_failure, show_spinner
 
 
 def load_keys():

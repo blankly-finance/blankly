@@ -30,7 +30,7 @@ import zipfile
 import tempfile
 import webbrowser
 
-from slate.deployment.api import API
+from slate.cli.api import API
 from blankly.utils.utils import load_json_file, info_print, load_deployment_settings
 
 very_important_string = """
