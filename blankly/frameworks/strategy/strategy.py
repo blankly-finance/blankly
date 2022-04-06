@@ -25,6 +25,7 @@ import blankly
 from blankly.exchanges.exchange import Exchange
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
+from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.exchanges.strategy_logger import StrategyLogger
 from blankly.frameworks.model.model import Model
 from blankly.frameworks.strategy.strategy_base import StrategyBase, EventType
@@ -81,7 +82,6 @@ class StrategyStructure(Model):
             else:
                 # If we are backtesting always just grab the last point and hope for the best of course
                 data = self.interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
-            data['price'] = self.interface.get_price(symbol)
         else:
             data = self.interface.get_price(symbol)
 

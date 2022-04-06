@@ -817,3 +817,10 @@ def add_all_products(nonzero_products: dict, all_products: list):
             }
 
     return nonzero_products
+
+
+def trim_df_time_column(df, epoch_start: [int, float], epoch_stop: [int, float]):
+    df = df[df['time'] >= epoch_start]
+    df = df[df['time'] <= epoch_stop]
+
+    return df

@@ -667,7 +667,18 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             return self.calls.get_fees()
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
-        return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        if self.backtesting:
+            if symbol in self.full_prices:
+                if resolution in self.full_prices[symbol]:
+                    price_set = self.full_prices[symbol][resolution]
+                else:
+                    raise LookupError(f"The resolution {resolution} not found or downloaded for {symbol}.")
+            else:
+                raise LookupError(f"Prices for this symbol founded or downloaded ({symbol})")
+
+            return utils.trim_df_time_column(price_set, epoch_start - resolution, epoch_stop + resolution)
+        else:
+            return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
     def get_order_filter(self, symbol):
         # Don't re-query order filter if its cached

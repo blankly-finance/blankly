@@ -256,9 +256,27 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             dictionary with keys for each 'symbol'
         """
 
+        # Make sure the cache folder exists and read files
         cache_folder = self.preferences['settings']["cache_location"]
 
-        # Make sure the cache folder exists and read files
+        def sort_prices_by_resolution(price_dict):
+            for symbol_ in price_dict:
+                for resolution_ in price_dict[symbol_]:
+                    price_dict[symbol_][resolution_] = price_dict[symbol_][resolution_].sort_values(by=['time'],
+                                                                                                    ignore_index=True)
+
+            return price_dict
+
+        def aggregate_prices_by_resolution(price_dict, symbol_, resolution_, data_) -> dict:
+            if symbol_ not in price_dict:
+                price_dict[symbol_] = {}
+            # Concat after the resolution check here
+            if resolution_ not in price_dict[symbol_]:
+                price_dict[symbol_][resolution_] = data_
+            else:
+                price_dict[symbol_][resolution_] = pd.concat([price_dict[symbol_][resolution_],
+                                                              data_])
+            return price_dict
 
         def parse_identifiers() -> list:
             try:
@@ -340,6 +358,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         local_history_blocks = sort_identifiers(identifiers)
 
         final_prices: dict = {}
+        prices_by_resolution: dict = {}
         for i in range(len(self.__user_added_times)):
             if self.__user_added_times[i] is None:
                 continue
@@ -405,8 +424,9 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                                                                    f'{resolution}.csv'),
                                         index=False)
 
+                prices_by_resolution = aggregate_prices_by_resolution(prices_by_resolution, symbol, resolution, download)
                 # Write these into the data array
-                if symbol not in list(final_prices.keys()):
+                if symbol not in final_prices:
                     final_prices[symbol] = download
                 else:
                     final_prices[symbol] = pd.concat([final_prices[symbol], download])
@@ -423,16 +443,26 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         for price_reader in self.__price_readers:
             data = price_reader.data
             for symbol in data:
+                symbol_info = price_reader.prices_info[symbol]
+                resolution = symbol_info['resolution']
+                start_time = symbol_info['start_time']
+                stop_time = symbol_info['stop_time']
+
                 # Add each symbol to the final prices without doing any processing
                 if symbol in final_prices:
                     final_prices[symbol] = pd.concat([final_prices[symbol], data[symbol]])
                 else:
                     final_prices[symbol] = data[symbol]
 
-                symbol_info = price_reader.prices_info[symbol]
-                self.__check_user_time_bounds(symbol_info['start_time'],
-                                              symbol_info['stop_time'],
-                                              symbol_info['resolution'])
+                prices_by_resolution = aggregate_prices_by_resolution(prices_by_resolution, symbol, resolution,
+                                                                      data[symbol])
+
+                self.__check_user_time_bounds(start_time,
+                                              stop_time,
+                                              resolution)
+
+        # Send the prices by resolution to the interface
+        self.interface.receive_price_cache(sort_prices_by_resolution(prices_by_resolution))
 
         # Finally, convert back into records
         for symbol in final_prices:
@@ -499,6 +529,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         })
         if save:
             self.queue_backtest_write = True
+
+        self.__check_user_time_bounds(start_time, end_time, resolution)
 
     def __check_user_time_bounds(self, start_time, end_time, resolution):
         # This makes sure that we keep track of our bounds which is just generally kind of useful
@@ -758,7 +790,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
         if benchmark_symbol is not None:
             # Check locally for the data and add to price_cache if we do not have it
-            self.add_prices(benchmark_symbol, self.user_start, self.user_stop, self.min_resolution)
+            self.add_prices(benchmark_symbol, start_date=self.user_start, stop_date=self.user_stop,
+                            resolution=self.min_resolution)
 
         use_price = self.preferences['settings']['use_price']
         self.use_price = use_price
@@ -869,7 +902,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             except ValueError:
                 return False
 
-        history_and_returns = {
+        history_and_returns: dict = {
             'history': cycle_status
         }
         metrics_indicators = {}
@@ -1038,14 +1071,14 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                                 # This normalizes the benchmark value
                                 initial_account_value = cycle_status['Account Value (' +
                                                                      self.quote_currency + ')'].iloc[0]
-                                initial_benchmark_value = self.prices[benchmark_symbol][use_price].iloc[0]
+                                benchmark_series = pd.Series(self.prices[benchmark_symbol][use_price])
+                                initial_benchmark_value = benchmark_series.iloc[0]
 
                                 # This multiplier brings the initial asset price to the initial account value
                                 # initial_account_value = initial_benchmark_value * x
                                 multiplier = initial_account_value / initial_benchmark_value
 
-                                normalized_compare_series = self.prices[benchmark_symbol][
-                                    use_price].multiply(multiplier)
+                                normalized_compare_series = benchmark_series.multiply(multiplier)
                                 normalized_compare_time_series = self.prices[benchmark_symbol]['time']
 
                                 # We need to also cast the time series that is needed to compare

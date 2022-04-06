@@ -26,6 +26,8 @@ class BacktestingWrapper:
             'time': 0
         }
 
+        self.full_prices = {}
+
     def set_backtesting(self, status: bool):
         self.backtesting = status
 
@@ -34,6 +36,9 @@ class BacktestingWrapper:
 
     def receive_price(self, asset_id, new_price):
         self.frame['prices'][asset_id] = new_price
+
+    def receive_price_cache(self, prices: dict):
+        self.full_prices = prices
 
     """
     Override functions for manipulating backtesting
