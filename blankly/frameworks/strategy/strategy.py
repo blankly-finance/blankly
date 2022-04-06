@@ -64,8 +64,8 @@ class StrategyStructure(Model):
         state.resolution = resolution
 
         if type_ == EventType.bar_event:
-            bar_time = kwargs['bar_time']
             if not self.is_backtesting:
+                bar_time = kwargs['bar_time']
                 while True:
                     # Sometimes coinbase doesn't download recent data correctly
                     try:
@@ -264,7 +264,7 @@ class Strategy(StrategyBase):
                                              stop_date=end_date,
                                              symbol=event_element['symbol'],
                                              resolution=event_element['resolution'])
-        return self.model.backtest(args={}, initial_values=initial_values, settings_path=settings_path)
+        return self.model.backtest(args={}, initial_values=initial_values, settings_path=settings_path, kwargs=kwargs)
 
     def setup_model(self):
         self.model.construct_strategy(self.schedulers, self.orderbook_websockets,

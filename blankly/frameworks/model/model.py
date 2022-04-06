@@ -40,10 +40,13 @@ class Model:
         # Type these internal calls to the specific backtester
         self.__backtester: BackTestController = self.backtester
 
-    def backtest(self, args, initial_values: dict = None, settings_path: str = None) -> BacktestResult:
+    def backtest(self, args, initial_values: dict = None, settings_path: str = None, kwargs=None) -> BacktestResult:
         # Construct the backtest controller
         if not isinstance(self.__exchange, Exchange):
             raise NotImplementedError
+
+        if kwargs is None:
+            kwargs = {}
 
         # Toggle backtesting
         self.is_backtesting = True
@@ -52,7 +55,8 @@ class Model:
         backtest = self.__backtester.run(args,
                                          initial_account_values=initial_values,
                                          exchange=self.__exchange,
-                                         backtest_settings_path=settings_path
+                                         backtest_settings_path=settings_path,
+                                         **kwargs
                                          )
         self.is_backtesting = False
         self.__exchange = self.__exchange_cache

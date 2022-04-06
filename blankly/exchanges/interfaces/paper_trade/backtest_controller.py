@@ -708,12 +708,17 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             args,
             exchange: ABCExchange,
             initial_account_values,
-            backtest_settings_path: str = None) -> BacktestResult:
+            backtest_settings_path: str = None,
+            **kwargs) -> BacktestResult:
         """
         Setup
         """
         self.backtesting = True
         self.preferences = load_backtest_preferences(backtest_settings_path)
+        # Write any dynamic arguments back into the backtest preferences
+        for setting in kwargs:
+            self.preferences['settings'][setting] = kwargs[setting]
+
         self.backtest_settings_path = backtest_settings_path
         self.show_progress = self.preferences['settings']['show_progress_during_backtest']
 
