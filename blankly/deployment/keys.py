@@ -18,16 +18,9 @@
 
 import json
 
-import alpaca_trade_api
-from binance.client import Client as BinanceClient
-
 from blankly.deployment.exchange_data import Exchange
-from blankly.deployment.ui import print_failure, show_spinner
-from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as CoinbaseProAPI
-from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
-from blankly.exchanges.interfaces.oanda.oanda_api import OandaAPI
 
-from blankly.deployment.ui import confirm
+from slate.deployment.ui import confirm, print_failure, show_spinner
 
 
 def load_keys():
