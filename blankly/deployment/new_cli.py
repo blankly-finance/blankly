@@ -1,3 +1,21 @@
+"""
+    Updated CLI for interacting with and uploading blankly models.
+    Copyright (C) 2022 Matias Kotlik
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 import argparse
 import json
 import os.path
@@ -383,7 +401,7 @@ def blankly_key(args):
 
 def main():
     parser = argparse.ArgumentParser(description='Blankly CLI & deployment tool')
-    subparsers = parser.add_subparsers(help='Core Blankly commands', required=True)
+    subparsers = parser.add_subparsers(required=True)
 
     init_parser = subparsers.add_parser('init', help='Initialize a new model in the current directory')
     init_parser.add_argument('-n', '--no-login', action='store_false', dest='prompt_login',

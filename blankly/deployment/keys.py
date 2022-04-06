@@ -1,3 +1,21 @@
+"""
+    Functions for managing Exchange API Keys
+    Copyright (C) 2022 Matias Kotlik
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 import json
 
 import alpaca_trade_api
@@ -43,7 +61,9 @@ def add_key(exchange: Exchange, tld: str, key_name: str, data: dict):
     keys[key_name] = data  # this writes to saved_data
 
     key_is_valid = check_key(exchange, tld, data)
-    if not key_is_valid and confirm('Would you like to save this key anyway?', default=False).unsafe_ask():
+    if key_is_valid:
+        return True
+    if confirm('Would you like to save this key anyway?', default=False).unsafe_ask():
         write_keys(saved_data)
         return True
     return False
