@@ -176,6 +176,7 @@ class API:
                                     'projectId': project_id or self.user_id
                                 })
         for model in models:
+            model['modelId'] = model['id']
             model['projectId'] = project_id or self.user_id
         return models
 

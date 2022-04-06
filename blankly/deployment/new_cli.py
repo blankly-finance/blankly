@@ -33,7 +33,7 @@ from blankly.deployment.deploy import zip_dir, get_python_version
 from blankly.deployment.keys import add_key, load_keys, write_keys
 from blankly.deployment.login import logout, poll_login, get_token
 from blankly.deployment.ui import text, confirm, print_work, print_failure, print_success, select, show_spinner
-from blankly.deployment.exchange_data import EXCHANGES, Exchange, EXCHANGE_CHOICES
+from blankly.deployment.exchange_data import EXCHANGES, Exchange, EXCHANGE_CHOICES, exc_display_name
 
 TEMPLATES = {'strategy': {'none': 'none.py',
                           'rsi_bot': 'rsi_bot.py'},
@@ -186,15 +186,15 @@ def get_model_interactive(api, model_type):
             team_id = select('What team would you like to create this model under?', team_choices).unsafe_ask()
             return create_model(api, name, description, model_type, team_id)
 
-        with show_spinner('Loading models...') as spinner:
-            models = api.list_all_models()
-            spinner.ok('Loaded')
+    with show_spinner('Loading models...') as spinner:
+        models = api.list_all_models()
+        spinner.ok('Loaded')
 
-        model = select('Select an existing model to attach to:',
-                       [Choice(get_model_repr(model), model) for model in models]).unsafe_ask()
-        if model.get('type', None) != model_type:
-            pass  # TODO
-        return model
+    model = select('Select an existing model to attach to:',
+                   [Choice(get_model_repr(model), model) for model in models]).unsafe_ask()
+    if model.get('type', None) != model_type:
+        pass  # TODO
+    return model
 
 
 def get_model_repr(model: dict) -> str:

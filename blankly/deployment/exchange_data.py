@@ -84,3 +84,7 @@ EXCHANGES = [
 
 EXCHANGE_CHOICES = [Choice(exchange.display_name, exchange)
                     for exchange in EXCHANGES]
+
+
+def exc_display_name(name):
+    return next((exchange.display_name for exchange in EXCHANGES if name == exchange.name), name)
