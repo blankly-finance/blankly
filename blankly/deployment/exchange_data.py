@@ -41,7 +41,7 @@ class Exchange:
         self.symbols = symbols
         self.test_func = test_func
         self.key_info = {k.replace('_', ' ').title().replace('Api', 'API'): k  # autogen key instructions
-                         for k in key_info or ['API_SECRET', 'API_KEY']}  # default to just key/secret
+                         for k in key_info or ['API_KEY', 'API_SECRET']}  # default to just key/secret
         self.python_class = python_class or name.replace('_', ' ').title().replace(' ', '')  # snake case to pascalcase
         self.tlds = tlds or []
         self.display_name = display_name or name.replace('_', ' ').title()  # prettify
@@ -69,7 +69,7 @@ EXCHANGES = [
     Exchange('coinbase_pro', ['BTC-USD', 'ETH-USD', 'SOL-USD'],
              lambda auth, tld: CoinbaseProAPI(api_key=auth['API_KEY'], api_secret=auth['API_SECRET'],
                                               api_pass=auth['API_PASS']).get_accounts(),
-             key_info=['API_PASS', 'API_SECRET', 'API_KEY']),
+             key_info=['API_KEY', 'API_SECRET', 'API_PASS']),
     Exchange('ftx', ['BTC-USD', 'ETH-USD', 'SOL-USD'],
              lambda auth, tld: FTXAPI(auth['API_KEY'], auth['API_SECRET'], tld).get_account_info(),
              tlds=['com', 'us'], python_class='FTX', display_name='FTX'),
