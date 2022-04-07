@@ -119,18 +119,18 @@ class Scheduler:
             base_time = ceil_date(dt.now(), seconds=interval).timestamp()
             offset = base_time - time.time()
             time.sleep(offset)
-            kwargs['ohlcv_time'] = base_time
+            kwargs['bar_time'] = base_time
         while True:
             if self.__stop:
                 break
-            # This try except is replicated in the backtesting framework
+            # This try except is replicated in the strategy structure
             try:
                 func(**kwargs)
             except Exception:
                 traceback.print_exc()
             base_time += interval
             if self.synced:
-                kwargs['ohlcv_time'] += interval
+                kwargs['bar_time'] += interval
 
             # The downside of this is that it keeps the thread running while waiting to stop
             # It's dependent on delay if its more efficient to just check more

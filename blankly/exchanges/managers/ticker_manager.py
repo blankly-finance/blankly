@@ -50,7 +50,8 @@ class TickerManager(WebsocketManager):
     Manager Functions 
     """
 
-    def create_ticker(self, callback, log: str = None, override_symbol: str = None, override_exchange: str = None):
+    def create_ticker(self, callback, log: str = None, override_symbol: str = None, override_exchange: str = None,
+                      **kwargs):
         """
         Create a ticker on a given exchange.
         Args:
@@ -58,6 +59,7 @@ class TickerManager(WebsocketManager):
             log: Fill this with a path to log the price updates.
             override_symbol: The currency to create a ticker for.
             override_exchange: Override the default exchange.
+            kwargs: Any keyword arguments to be passed into the callback besides the first positional message argument
         Returns:
             Direct ticker object
         """
@@ -78,9 +80,9 @@ class TickerManager(WebsocketManager):
 
             if sandbox_mode:
                 ticker = Coinbase_Pro_Ticker(override_symbol, "ticker", log=log,
-                                             WEBSOCKET_URL="wss://ws-feed-public.sandbox.pro.coinbase.com")
+                                             websocket_url="wss://ws-feed-public.sandbox.pro.coinbase.com", **kwargs)
             else:
-                ticker = Coinbase_Pro_Ticker(override_symbol, "ticker", log=log)
+                ticker = Coinbase_Pro_Ticker(override_symbol, "ticker", log=log, **kwargs)
 
             ticker.append_callback(callback)
             # Store this object
@@ -95,11 +97,11 @@ class TickerManager(WebsocketManager):
                 ticker = Binance_Ticker(override_symbol,
                                         "aggTrade",
                                         log=log,
-                                        WEBSOCKET_URL="wss://testnet.binance.vision/ws")
+                                        websocket_url="wss://testnet.binance.vision/ws", **kwargs)
             else:
                 ticker = Binance_Ticker(override_symbol,
                                         "aggTrade",
-                                        log=log)
+                                        log=log, **kwargs)
             ticker.append_callback(callback)
             override_symbol = override_symbol.upper()
             self.__tickers['binance'][override_symbol] = ticker
@@ -114,12 +116,14 @@ class TickerManager(WebsocketManager):
                 ticker = Alpaca_Ticker(override_symbol,
                                        "trades",
                                        log=log,
-                                       WEBSOCKET_URL="wss://paper-api.alpaca.markets/stream/v2/{}/".format(stream))
+                                       websocket_url="wss://paper-api.alpaca.markets/stream/v2/{}/".format(stream),
+                                       **kwargs)
             else:
                 ticker = Alpaca_Ticker(override_symbol,
                                        "trades",
                                        log=log,
-                                       WEBSOCKET_URL="wss://stream.data.alpaca.markets/v2/{}/".format(stream))
+                                       websocket_url="wss://stream.data.alpaca.markets/v2/{}/".format(stream),
+                                       **kwargs)
             ticker.append_callback(callback)
             self.__tickers['alpaca'][override_symbol] = ticker
             return ticker
@@ -133,7 +137,7 @@ class TickerManager(WebsocketManager):
             if sandbox_mode:
                 raise ValueError("Error: FTX does not have a sandbox mode")
             else:
-                ticker = FTX_Ticker(override_symbol, "trades", log=log)
+                ticker = FTX_Ticker(override_symbol, "trades", log=log, **kwargs)
 
             ticker.append_callback(callback)
             # Store this object
