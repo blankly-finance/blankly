@@ -229,7 +229,7 @@ def generate_settings_json(tld: str):
 def generate_keys_json():
     return json.dumps({
         exchange.name: {
-            {v: '*' * 20 for v in exchange.key_info.values()}
+            v: '*' * 20 for v in exchange.key_info.values()
         } for exchange in EXCHANGES}, indent=4)
 
 
