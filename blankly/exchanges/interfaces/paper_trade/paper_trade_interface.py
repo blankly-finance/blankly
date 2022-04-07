@@ -420,7 +420,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
         # Identify the trade also by exchange
-        self.paper_trade_orders[-1]['exchange'] = self.get_exchange_type()
+        if self.backtesting:
+            self.paper_trade_orders[-1]['exchange'] = self.get_exchange_type()
 
         if self.__exchange_properties is None:
             self.init_exchange()
@@ -676,7 +677,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             else:
                 raise LookupError(f"Prices for this symbol founded or downloaded ({symbol})")
 
-            return utils.trim_df_time_column(price_set, epoch_start - resolution, epoch_stop + resolution)
+            return utils.trim_df_time_column(price_set, epoch_start - resolution, epoch_stop)
         else:
             return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
