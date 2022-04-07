@@ -113,7 +113,7 @@ def add_key_interactive(exchange: Exchange):
     saved_data = {}
     for instruction, key in exchange.key_info.items():
         saved_data[key] = text(f'{instruction}:', validate=validate_non_empty).unsafe_ask().strip()
-    saved_data['sandbox'] = False  # TODO sandbox option?
+    saved_data['sandbox'] = confirm('Is this testnet/sandbox key?', default=False).unsafe_ask()
 
     if add_key(exchange, tld, name, saved_data):
         print_success(f'Your API key for {exchange.display_name} was added to this model')
@@ -129,24 +129,27 @@ def blankly_init(args):
             and not confirm('This directory is not empty. Would you like to continue anyways?').unsafe_ask():
         return
 
-    model_type = select('What type of model do you want to create?',
-                        [Choice(mt.title(), mt) for mt in TEMPLATES]).unsafe_ask()
-    templates = TEMPLATES[model_type]
+    exchange = select('What exchange would you like to connect to?', EXCHANGE_CHOICES).unsafe_ask()
+
+    model_type = 'strategy'
+    tld = None
+    template = None
+    if exchange:
+        model_type = select('What type of model do you want to create?',
+                            [Choice(mt.title(), mt) for mt in TEMPLATES]).unsafe_ask()
+        templates = TEMPLATES[model_type]
+
+        template_name = select('What template would you like to use for your new model?', templates).unsafe_ask()
+        template = templates[template_name]
+
+        if confirm('Would you like to add keys for this exchange?\n'
+                   'You can do this later at any time by running `blankly key add`').unsafe_ask():
+            tld = add_key_interactive(exchange)
 
     model = None
     if args.prompt_login and confirm('Would you like to connect this model to the Blankly Platform?').unsafe_ask():
         api = ensure_login()
         model = get_model_interactive(api, model_type)
-
-    exchange = select('What exchange would you like to connect to?', EXCHANGE_CHOICES).unsafe_ask()
-
-    tld = None
-    if confirm('Would you like to add keys for this exchange?\n'
-               'You can do this later at any time by running `blankly key add`').unsafe_ask():
-        tld = add_key_interactive(exchange)
-
-    template_name = select('What template would you like to use for your new model?', templates).unsafe_ask()
-    template = templates[template_name]
 
     with show_spinner('Generating files') as spinner:
         files = [
@@ -237,13 +240,11 @@ def generate_keys_json():
         keys = {}
 
     for exchange in EXCHANGES:
-        if exchange.name not in keys:
-            keys[exchange.name] = {}
-        if not keys[exchange.name]:
-            # add example portfolio
-            keys[exchange.name] = {
-                'example-portfolio': {v: '*' * 20 for v in exchange.key_info.values()}
-            }
+        keys[exchange.name] = keys.get(exchange.name, {
+            'example-portfolio': {v: '*' * 20 for v in exchange.key_info.values()}
+        })
+        for portfolio in keys[exchange.name].values():
+            portfolio['sandbox'] = portfolio.get('sandbox', False)
     return json.dumps(keys, indent=4)
 
 
@@ -262,7 +263,8 @@ def generate_blankly_json(model: Optional[dict], model_type):
     return json.dumps(data, indent=4)
 
 
-def generate_backtest_json(exchange: Exchange) -> str:
+def generate_backtest_json(exchange: Optional[Exchange]) -> str:
+    currency = exchange.currency if exchange else 'USD'
     data = {'price_data': {'assets': []},
             'settings': {'use_price': 'close',
                          'smooth_prices': False,
@@ -273,14 +275,17 @@ def generate_backtest_json(exchange: Exchange) -> str:
                          'cache_location': './price_caches',
                          'continuous_caching': True,
                          'resample_account_value_for_metrics': '1d',
-                         'quote_account_value_in': exchange.currency,
+                         'quote_account_value_in': currency,
                          'ignore_user_exceptions': True,
                          'risk_free_return_rate': 0.0,
                          'benchmark_symbol': None}}
     return json.dumps(data, indent=4)
 
 
-def generate_bot_py(exchange: Exchange, template: str) -> str:
+def generate_bot_py(exchange: Optional[Exchange], template: str) -> str:
+    if not exchange:
+        # template should be None
+        return pkgutil.get_data('blankly', 'data/templates/keyless.py').decode('utf-8')
     bot_py = pkgutil.get_data('blankly', f'data/templates/{template}').decode('utf-8')
     for pattern, replacement in [
         ('EXCHANGE_NAME', exchange.display_name,),

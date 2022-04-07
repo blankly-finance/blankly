@@ -22,6 +22,7 @@ from binance.client import Client as BinanceClient
 from questionary import Choice
 
 from blankly.deployment.ui import print_failure
+from blankly.exchanges.interfaces.alpaca import alpaca_api
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as CoinbaseProAPI
 from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
 from blankly.exchanges.interfaces.oanda.oanda_api import OandaAPI
@@ -48,42 +49,49 @@ class Exchange:
         self.currency = currency
 
 
-def kucoin_test_func(auth, tld):
+def kucoin_test_func(auth, tld, sandbox):
     try:
         from kucoin import client as KucoinAPI
     except ImportError:
         print_failure('kucoin-python must be installed to check Kucoin API Keys')
         print_failure('Skipping check')
         return
-    return KucoinAPI.User(auth['API_KEY'], auth['API_SECRET'], auth['API_PASS']).get_base_fee
+    return KucoinAPI.User(auth['API_KEY'], auth['API_SECRET'], auth['API_PASS'], sandbox).get_base_fee
 
 
 EXCHANGES = [
     Exchange('alpaca', ['MSFT', 'GME', 'AAPL'],
-             lambda auth, tld: alpaca_trade_api.REST(key_id=auth['API_KEY'],
-                                                     secret_key=auth['API_SECRET']).get_account()),
+             lambda auth, tld, sandbox: alpaca_trade_api.REST(key_id=auth['API_KEY'],
+                                                              secret_key=auth['API_SECRET'],
+                                                              base_url=(alpaca_api.live_url,
+                                                                        alpaca_api.paper_url)[sandbox]
+                                                              ).get_account()),
     Exchange('binance', ['BTC-USDT', 'ETH-USDT', 'SOL-USDT'],
-             lambda auth, tld: BinanceClient(api_key=auth['API_KEY'], api_secret=auth['API_SECRET'],
-                                             tld=tld).get_account(),
+             lambda auth, tld, sandbox: BinanceClient(api_key=auth['API_KEY'], api_secret=auth['API_SECRET'],
+                                                      tld=tld, testnet=sandbox).get_account(),
              tlds=['com', 'us'], currency='USDT'),
     Exchange('coinbase_pro', ['BTC-USD', 'ETH-USD', 'SOL-USD'],
-             lambda auth, tld: CoinbaseProAPI(api_key=auth['API_KEY'], api_secret=auth['API_SECRET'],
-                                              api_pass=auth['API_PASS']).get_accounts(),
+             lambda auth, tld, sandbox: CoinbaseProAPI(api_key=auth['API_KEY'], api_secret=auth['API_SECRET'],
+                                                       api_pass=auth['API_PASS'],
+                                                       API_URL=('https://api.pro.coinbase.com/',
+                                                                'https://api-public.sandbox.pro.coinbase.com/')[sandbox]
+                                                       ).get_accounts(),
              key_info=['API_KEY', 'API_SECRET', 'API_PASS']),
     Exchange('ftx', ['BTC-USD', 'ETH-USD', 'SOL-USD'],
-             lambda auth, tld: FTXAPI(auth['API_KEY'], auth['API_SECRET'], tld).get_account_info(),
+             lambda auth, tld, sandbox: FTXAPI(auth['API_KEY'], auth['API_SECRET'], tld).get_account_info(),
              tlds=['com', 'us'], python_class='FTX', display_name='FTX'),
     Exchange('oanda', ['BTC-USD', 'ETH-USD', 'SOL-USD'],
-             lambda auth, tld: OandaAPI(personal_access_token=auth['PERSONAL_ACCESS_TOKEN'],
-                                        account_id=auth['ACCOUNT_ID']).get_account(),
+             lambda auth, tld, sandbox: OandaAPI(personal_access_token=auth['PERSONAL_ACCESS_TOKEN'],
+                                                 account_id=auth['ACCOUNT_ID'], sandbox=sandbox).get_account(),
              key_info=['ACCOUNT_ID', 'PERSONAL_ACCESS_TOKEN']),
 
     Exchange('kucoin', ['BTC-USDT', 'ETH-USDT', 'SOL-USDT'], kucoin_test_func,
-             key_info=['API_KEY', 'API_SECRET', 'API_PASS'], currency='USDT')
+             key_info=['API_KEY', 'API_SECRET', 'API_PASS'], currency='USDT'),
 ]
 
 EXCHANGE_CHOICES = [Choice(exchange.display_name, exchange)
                     for exchange in EXCHANGES]
+EXCHANGE_CHOICES.append(Choice('Keyless/No Exchange', False))
 
 
 def exc_display_name(name):

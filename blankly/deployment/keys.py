@@ -51,7 +51,7 @@ def add_key(exchange: Exchange, tld: str, key_name: str, data: dict):
 
     # change name until it's not already in our file
     if not key_name:
-        key_name = 'default'
+        key_name = 'example-portfolio'
     if key_name in keys:
         key_name = key_name + '-1'
     while key_name in keys:
