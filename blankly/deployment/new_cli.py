@@ -227,8 +227,10 @@ def generate_settings_json(tld: str):
 
 
 def generate_keys_json():
-    return json.dumps({exchange.name: {}
-                       for exchange in EXCHANGES}, indent=4)
+    return json.dumps({
+        exchange.name: {
+            {v: '*' * 20 for v in exchange.key_info.values()}
+        } for exchange in EXCHANGES}, indent=4)
 
 
 def generate_blankly_json(model: Optional[dict], model_type):
