@@ -186,8 +186,8 @@ def get_model_interactive(api, model_type):
         if teams:
             team_choices = [Choice('Create on my personal account', False)] \
                            + [Choice(team.get('name', team['id']), team['id']) for team in teams]
-            team_id = select('What team would you like to create this model under?', team_choices or None).unsafe_ask()
-            return create_model(api, name, description, model_type, team_id)
+            team_id = select('What team would you like to create this model under?', team_choices).unsafe_ask()
+            return create_model(api, name, description, model_type, team_id or None)
 
     with show_spinner('Loading models...') as spinner:
         models = api.list_all_models()
