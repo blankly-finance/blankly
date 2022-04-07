@@ -150,18 +150,21 @@ def blankly_init(args):
 
     with show_spinner('Generating files') as spinner:
         files = [
-            ('bot.py', generate_bot_py(exchange, template)),
-            ('backtest.json', generate_backtest_json(exchange)),
-            ('requirements.txt', 'blankly\n'),
-            ('keys.json', generate_keys_json()),
-            ('blankly.json', generate_blankly_json(model, model_type)),
-            ('settings.json', generate_settings_json(tld or 'com'))
+            ('bot.py', generate_bot_py(exchange, template), False),
+            ('backtest.json', generate_backtest_json(exchange), False),
+            ('requirements.txt', 'blankly\n', False),
+            ('keys.json', generate_keys_json(), True),
+            ('blankly.json', generate_blankly_json(model, model_type), False),
+            ('settings.json', generate_settings_json(tld or 'com'), False)
         ]
         spinner.ok('Generated files')
 
-    for path, data in files:
-        if Path(path).exists() and not confirm(f'{path} already exists, would you like to overwrite it?',
-                                               default=False).unsafe_ask():
+    for path, data, force_overwrite in files:
+        exists = Path(path).exists()
+        if exists \
+                and not force_overwrite \
+                and not confirm(f'{path} already exists, would you like to overwrite it?',
+                                default=False).unsafe_ask():
             continue
         with open(path, 'w') as file:
             file.write(data)
@@ -227,10 +230,21 @@ def generate_settings_json(tld: str):
 
 
 def generate_keys_json():
-    return json.dumps({
-        exchange.name: {
-            'example-portfolio': {v: '*' * 20 for v in exchange.key_info.values()}
-        } for exchange in EXCHANGES}, indent=4)
+    try:
+        with open('keys.json') as file:
+            keys = json.load(file)
+    except FileNotFoundError:
+        keys = {}
+
+    for exchange in EXCHANGES:
+        if exchange.name not in keys:
+            keys[exchange.name] = {}
+        if not keys[exchange.name]:
+            # add example portfolio
+            keys[exchange.name] = {
+                'example-portfolio': {v: '*' * 20 for v in exchange.key_info.values()}
+            }
+    return json.dumps(keys, indent=4)
 
 
 def generate_blankly_json(model: Optional[dict], model_type):
@@ -376,7 +390,7 @@ def blankly_list_key(args):
             # filter 'empty'
             if any((isinstance(d, str) and '*' in d) for d in key_data.values()):
                 continue
-            exchange_display_name = exchange.display_name
+            exchange_display_name = exchange_display_name(exchange_name)
             print_work(f'{exchange_display_name}: {name}')
             for k, v in key_data.items():
                 print_work(f'    {k}: {v}')
