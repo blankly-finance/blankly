@@ -1018,6 +1018,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         result_object.history_and_returns = history_and_returns
         result_object.metrics = metrics_indicators
         result_object.user_callbacks = user_callbacks
+        result_object.exchange = self.interface.get_exchange_type()
 
         figures = []
         # This modifies the platform result in place

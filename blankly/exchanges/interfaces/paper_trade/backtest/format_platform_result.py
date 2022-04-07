@@ -192,6 +192,7 @@ def format_platform_result(backtest_result):
 
     backtest_result.metrics = refined_metrics
     return {
+        'exchange': backtest_result.exchange,
         'symbols': traded_symbols,
         'quote_asset': backtest_result.quote_currency,
         'start_time': backtest_result.start_time,

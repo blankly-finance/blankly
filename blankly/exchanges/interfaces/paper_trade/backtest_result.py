@@ -27,6 +27,7 @@ class BacktestResult:
         self.history_and_returns = history_and_returns
         self.metrics = None  # Assigned after construction
         self.user_callbacks = None  # Assigned after construction
+        self.exchange = None  # Assigned after construction
         self.trades = trades
         self.history = history
 
