@@ -73,7 +73,7 @@ class Reporter:
         if self.__screener is None:
             self.__screener = screener
         else:
-            raise RuntimeError("Currently only a single screener can be exported per model.")
+            raise RuntimeError("Currently only a single screener can be created per model.")
 
     def export_screener_result(self, screener: Screener):
         """
