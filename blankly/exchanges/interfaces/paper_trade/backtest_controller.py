@@ -23,6 +23,7 @@ import typing
 from datetime import datetime as dt
 import copy
 import enum
+import blankly
 
 import numpy as np
 import pandas as pd
@@ -1157,4 +1158,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
         self.interface.set_backtesting(False)
         self.backtesting = False
+
+        # Export to the platform here
+        blankly.reporter.export_backtest_result(platform_result)
+
         return result_object

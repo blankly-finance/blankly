@@ -23,7 +23,6 @@ from blankly.exchanges.interfaces.paper_trade.abc_backtest_controller import ABC
 from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.exchange import Exchange
 import time
-import blankly
 
 
 class Model:
@@ -62,7 +61,6 @@ class Model:
         self.__exchange = self.__exchange_cache
         self.has_data = True
 
-        blankly.reporter.export_backtest_result(backtest)
         return backtest
 
     def run(self, args: typing.Any = None):

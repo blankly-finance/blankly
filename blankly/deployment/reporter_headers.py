@@ -84,12 +84,12 @@ class Reporter:
         """
         pass
 
-    def export_backtest_result(self, backtest_result: BacktestResult):
+    def export_backtest_result(self, platform_result: dict):
         """
         Re-export for the finished screener result
 
         Args:
-            backtest_result: A blankly backtest result object
+            platform_result: A blankly backtest result object
         """
         pass
 
