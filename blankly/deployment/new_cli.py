@@ -239,6 +239,8 @@ def generate_keys_json():
     except FileNotFoundError:
         keys = {}
 
+    print(keys)
+
     for exchange in EXCHANGES:
         keys[exchange.name] = keys.get(exchange.name, {
             'example-portfolio': {v: '*' * 20 for v in exchange.key_info.values()}
