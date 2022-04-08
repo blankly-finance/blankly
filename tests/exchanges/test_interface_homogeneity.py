@@ -301,12 +301,12 @@ class InterfaceHomogeneity(unittest.TestCase):
             def check_account_delta(before: dict, after: dict, order: LimitOrder) -> None:
                 # On a buy the quote asset should get moved to hold
                 self.assertAlmostEqual(before['available'], after['available'] + (order.get_price() * order.get_size()),
-                                       places=2)
+                                       places=1)
 
                 # The symbol should have gained less than the size on the buy if there were fees
                 # Before + requested size >= the filled size
                 self.assertAlmostEqual(before['hold'], after['hold'] - (order.get_price() * order.get_size()),
-                                       places=2)
+                                       places=1)
 
             initial_account = interface.get_account(get_quote_asset(symbol))
             buy = interface.limit_order(symbol, 'buy', buy_price, size)
