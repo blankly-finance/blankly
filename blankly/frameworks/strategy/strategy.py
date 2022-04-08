@@ -85,11 +85,41 @@ class StrategyStructure(Model):
                 except IndexError:
                     warnings.warn("No bar found for this time range")
                     return
-        else:
+            args = [data, symbol, state]
+        elif type_ == EventType.price_event:
             data = self.interface.get_price(symbol)
+            args = [data, symbol, state]
+        elif type_ == EventType.scheduled_event:
+            args = [symbol, state]
+        elif type_ == EventType.arbitrage_event:
+            prices = {}
+            # If we're backtesting loop through the symbol and just grab the price
+            if self.is_backtesting:
+                for sym in symbol:
+                    prices[sym] = self.interface.get_price(sym)
+
+            # We have to be a bit more strategy if we're live
+            else:
+                def grab_price(threaded_symbol):
+                    prices[threaded_symbol] = self.interface.get_price(threaded_symbol)
+
+                threadpool = []
+                for sym in symbol:
+                    threadpool.append(threading.Thread(target=grab_price, args=(sym,)))
+
+                # Start the threads
+                for thread in threadpool:
+                    thread.start()
+
+                # Join each of the threads because they've writen to the symbol
+                for thread in threadpool:
+                    thread.join()
+            args = [prices, symbol, state]
+        else:
+            return
 
         try:
-            callback(data, symbol, state)
+            callback(*args)
         except Exception:
             traceback.print_exc()
 
@@ -260,14 +290,46 @@ class Strategy(StrategyBase):
             info_print("Found websocket events added to this strategy. These are not yet backtestable without "
                        "event based data")
 
+        self.__add_prices(to, start_date, end_date)
+        return self.model.backtest(args={}, initial_values=initial_values, settings_path=settings_path, kwargs=kwargs)
+
+    def __add_prices(self, to, start_date, end_date):
+        prices_added = False
         for scheduler in self.schedulers:
             event_element = scheduler.get_kwargs()
-            self.model.backtester.add_prices(to=to,
-                                             start_date=start_date,
-                                             stop_date=end_date,
-                                             symbol=event_element['symbol'],
-                                             resolution=event_element['resolution'])
-        return self.model.backtest(args={}, initial_values=initial_values, settings_path=settings_path, kwargs=kwargs)
+
+            # Skip any scheduled events
+            if event_element['symbol'] is None:
+                continue
+
+            # Loop through the symbols if it is a list
+            if isinstance(event_element['symbol'], list):
+                for symbol in event_element['symbol']:
+                    self.model.backtester.add_prices(to=to,
+                                                     start_date=start_date,
+                                                     stop_date=end_date,
+                                                     symbol=symbol,
+                                                     resolution=event_element['resolution'])
+            else:
+                self.model.backtester.add_prices(to=to,
+                                                 start_date=start_date,
+                                                 stop_date=end_date,
+                                                 symbol=event_element['symbol'],
+                                                 resolution=event_element['resolution'])
+
+            prices_added = True
+
+        if not prices_added:
+            raise LookupError("No prices added. If using scheduled events, create an empty price event or add prices"
+                              " manually using strategy.add_prices()")
+
+    def add_prices(self, symbol: str, resolution: [str, int, float], to: str = None,
+                   start_date: typing.Union[str, float, int] = None,
+                   stop_date: typing.Union[str, float, int] = None):
+        """
+        Directly add prices to the strategy
+        """
+        self.model.backtester.add_prices(symbol, resolution, to, start_date, stop_date)
 
     def setup_model(self):
         self.model.construct_strategy(self.schedulers, self.orderbook_websockets,

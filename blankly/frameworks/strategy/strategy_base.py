@@ -99,6 +99,44 @@ class StrategyBase:
         self.__custom_price_event(callback=callback, symbol=symbol, resolution=resolution, init=init, synced=synced,
                                   teardown=teardown, variables=variables, type_=EventType.price_event)
 
+    def add_scheduled_event(self, callback: typing.Callable, resolution: typing.Union[str, float],
+                            init: typing.Callable = None, teardown: typing.Callable = None,
+                            synced: bool = False, variables: dict = None):
+        """
+        Add a scheduled event. This will call the callback at the rate defined in the resolution
+
+        Args:
+            callback: The price event callback that will be added to the current ticker and run at the proper resolution
+            resolution: The resolution that the callback will be run - in seconds
+            init: Callback function to allow a setup for the strategy variable. Example usages include
+                downloading price data before usage
+            teardown: A function to run when the strategy is stopped or interrupted. Example usages include liquidating
+                positions, writing or cleaning up data or anything else useful
+            synced: Sync the function to
+            variables: A dictionary to initialize the state's internal values
+        """
+        self.__custom_price_event(callback=callback, symbol=None, resolution=resolution, init=init, synced=synced,
+                                  teardown=teardown, variables=variables, type_=EventType.scheduled_event)
+
+    def add_arbitrage_event(self, callback: typing.Callable, symbols: list, resolution: typing.Union[str, float],
+                            init: typing.Callable = None, teardown: typing.Callable = None, synced: bool = False,
+                            variables: dict = None):
+        """
+        Add Price Event. This will provide you with an updated price every time the callback is run
+        Args:
+            callback: The price event callback that will be added to the current ticker and run at the proper resolution
+            symbols: A list of symbols to get data for
+            resolution: The resolution that the callback will be run - in seconds
+            init: Callback function to allow a setup for the strategy variable. Example usages include
+                downloading price data before usage
+            teardown: A function to run when the strategy is stopped or interrupted. Example usages include liquidating
+                positions, writing or cleaning up data or anything else useful
+            synced: Sync the function to
+            variables: A dictionary to initialize the state's internal values
+        """
+        self.__custom_price_event(callback=callback, symbol=symbols, resolution=resolution, init=init, synced=synced,
+                                  teardown=teardown, variables=variables, type_=EventType.price_event)
+
     def add_bar_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
                       init: typing.Callable = None, teardown: typing.Callable = None, variables: dict = None):
         """
@@ -119,7 +157,7 @@ class StrategyBase:
     def __custom_price_event(self,
                              type_: EventType,
                              callback: typing.Callable = None,
-                             symbol: str = None,
+                             symbol: [str, list] = None,
                              resolution: typing.Union[str, float] = None,
                              init: typing.Callable = None,
                              synced: bool = False,
