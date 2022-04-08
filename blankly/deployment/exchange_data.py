@@ -55,8 +55,8 @@ def kucoin_test_func(auth, tld):
     except ImportError:
         print_failure('kucoin-python must be installed to check Kucoin API Keys')
         print_failure('Skipping check')
-        return
-    return KucoinAPI.User(auth['API_KEY'], auth['API_SECRET'], auth['API_PASS'], auth['sandbox']).get_base_fee
+    else:
+        return KucoinAPI.User(auth['API_KEY'], auth['API_SECRET'], auth['API_PASS'], auth['sandbox']).get_base_fee
 
 
 EXCHANGES = [
