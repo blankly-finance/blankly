@@ -135,7 +135,7 @@ class StrategyBase:
             variables: A dictionary to initialize the state's internal values
         """
         self.__custom_price_event(callback=callback, symbol=symbols, resolution=resolution, init=init, synced=synced,
-                                  teardown=teardown, variables=variables, type_=EventType.price_event)
+                                  teardown=teardown, variables=variables, type_=EventType.arbitrage_event)
 
     def add_bar_event(self, callback: typing.Callable, symbol: str, resolution: typing.Union[str, float],
                       init: typing.Callable = None, teardown: typing.Callable = None, variables: dict = None):

@@ -90,7 +90,7 @@ class StrategyStructure(Model):
             data = self.interface.get_price(symbol)
             args = [data, symbol, state]
         elif type_ == EventType.scheduled_event:
-            args = [symbol, state]
+            args = [state]
         elif type_ == EventType.arbitrage_event:
             prices = {}
             # If we're backtesting loop through the symbol and just grab the price
@@ -164,7 +164,10 @@ class StrategyStructure(Model):
         for i in self.schedulers:
             kwargs = i.get_kwargs()
             if kwargs['init'] is not None:
-                kwargs['init'](kwargs['symbol'], kwargs['state'])
+                if kwargs['type'] != EventType.scheduled_event:
+                    kwargs['init'](kwargs['symbol'], kwargs['state'])
+                else:
+                    kwargs['init'](kwargs['state'])
 
     def run_live(self):
         self.__run_init()
@@ -213,6 +216,7 @@ class Strategy(StrategyBase):
         self.model = StrategyStructure(exchange)
         super().__init__(exchange, StrategyLogger(exchange.get_interface(), strategy=self), model=self.model)
         self._paper_trade_exchange = blankly.PaperTrade(exchange)
+        self.__prices_added = False
 
     def backtest(self,
                  to: str = None,
@@ -294,7 +298,6 @@ class Strategy(StrategyBase):
         return self.model.backtest(args={}, initial_values=initial_values, settings_path=settings_path, kwargs=kwargs)
 
     def __add_prices(self, to, start_date, end_date):
-        prices_added = False
         for scheduler in self.schedulers:
             event_element = scheduler.get_kwargs()
 
@@ -317,9 +320,9 @@ class Strategy(StrategyBase):
                                                  symbol=event_element['symbol'],
                                                  resolution=event_element['resolution'])
 
-            prices_added = True
+            self.__prices_added = True
 
-        if not prices_added:
+        if not self.__prices_added:
             raise LookupError("No prices added. If using scheduled events, create an empty price event or add prices"
                               " manually using strategy.add_prices()")
 
@@ -330,6 +333,7 @@ class Strategy(StrategyBase):
         Directly add prices to the strategy
         """
         self.model.backtester.add_prices(symbol, resolution, to, start_date, stop_date)
+        self.__prices_added = True
 
     def setup_model(self):
         self.model.construct_strategy(self.schedulers, self.orderbook_websockets,
