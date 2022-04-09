@@ -94,7 +94,6 @@ def __parse_backtest_trades(trades: list, limit_executed: list, limit_canceled: 
             for j in limit_executed:
                 if trades[i]['id'] == j['id']:
                     trades[i]['time'] = j['executed_time']
-                    trades[i]['price'] = trades[i]['price']
                     break
 
             for j in limit_canceled:

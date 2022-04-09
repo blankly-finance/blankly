@@ -591,6 +591,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         """
         This block could potentially work for both exchanges
         """
+        del symbol
         order_index = None
         for i in range(len(self.paper_trade_orders)):
             index = self.paper_trade_orders[i]
