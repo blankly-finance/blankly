@@ -52,14 +52,12 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
             self.init_exchange()
 
     @staticmethod
-    @abc.abstractmethod
     def to_blankly_symbol(symbol: str):
-        pass
+        return symbol
 
     @staticmethod
-    @abc.abstractmethod
     def to_exchange_symbol(symbol: str):
-        pass
+        return symbol
 
     def get_exchange_type(self) -> str:
         """Returns the exchange type (ex. 'binance', 'coinbase', 'alpaca')"""

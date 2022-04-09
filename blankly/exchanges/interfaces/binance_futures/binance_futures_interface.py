@@ -25,9 +25,9 @@ try:
 except ImportError:  # emerson is "too cool" for py3.8
     from functools import lru_cache
 
+
     def cached_property(func):
         return property(lru_cache(maxsize=None)(func))
-
 
 from datetime import datetime as dt
 import pandas as pd
@@ -190,6 +190,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             symbol = asset['asset']
             accounts[symbol] = utils.AttributeDict({
                 'available': float(asset['availableBalance']),
+                'hold': 0.0,  # TODO
                 'exchange_specific': asset,
             })
 
@@ -515,9 +516,9 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             # very stinky ^^
 
             history.extend({
-                'rate': float(e['fundingRate']),
-                'time': e['fundingTime'] // 1000
-            } for e in response)
+                               'rate': float(e['fundingRate']),
+                               'time': e['fundingTime'] // 1000
+                           } for e in response)
 
             if history:
                 window_start = history[-1]['time'] + 1

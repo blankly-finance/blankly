@@ -132,6 +132,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         accounts = utils.AttributeDict({
             coin['id']: utils.AttributeDict({
                 'available': 0.0,
+                'hold': 0.0,  # TODO
                 'exchange_specific': coin
             })
             for coin in coins
