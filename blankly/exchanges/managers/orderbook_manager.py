@@ -297,7 +297,7 @@ class OrderbookManager(WebsocketManager):
         book_sells = self.__orderbooks['okx'][symbol]['asks']  # type: list
 
         # Buys are b, count from low to high with reverse (which is the ::-1 thing)
-        new_buys = update['data']['bids'][::-1]  # type: list
+        new_buys = update['data'][0]['bids'][::-1]  # type: list
         for i in new_buys:
             i[0] = float(i[0])
             i[1] = float(i[1])
@@ -307,7 +307,7 @@ class OrderbookManager(WebsocketManager):
                 book_buys.append((i[0], i[1]))
 
         # Asks are sells, these are also counted from low to high
-        new_sells = update['data']['asks']  # type: list
+        new_sells = update['data'][0]['asks']  # type: list
         for i in new_sells:
             i[0] = float(i[0])
             i[1] = float(i[1])
@@ -330,21 +330,21 @@ class OrderbookManager(WebsocketManager):
               **self.__websockets_kwargs['okx'][symbol])
 
     def okx_snapshot_update(self, update):
-        print("Orderbook snapshot acquired for: " + update['product_id'])
+        print("Orderbook snapshot acquired for: " + update['arg']['instId'])
 
         book = {
             "bids": [],
             "asks": []
         }
 
-        buys = update['data']['bids'] # [0][:-1]
+        buys = update['data'][0]['bids'] # [0][:-1]
         buys[0] = buys[0][:-1]
         # Convert these to float and write to our order dictionaries
         for i in range(len(buys)):
             buy = buys[i]
             book['bids'].append((float(buy[0]), float(buy[1])))
 
-        sells = update['data']['asks'] # [0][:-1]
+        sells = update['data'][0]['asks'] # [0][:-1]
         sells[0] = sells[0][:-1]
         for i in range(len(sells)):
             sell = sells[i]
@@ -353,7 +353,7 @@ class OrderbookManager(WebsocketManager):
         book["bids"] = sort_list_tuples(book["bids"])
         book["asks"] = sort_list_tuples(book["asks"])
 
-        self.__orderbooks['okx'][update['data']['symbol']] = book
+        self.__orderbooks['okx'][update['arg']['instId']] = book
 
     def binance_update(self, update):
         try:

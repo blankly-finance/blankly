@@ -6,8 +6,8 @@ def switch_type(stream):
     if stream == "tickers":
         return trade, \
                trade_interface, \
-               "time, system_time, price, open_24h, volume_24h, low_24h, high_24h, best_bid,best_ask," \
-               "last_traded_piece, last_traded_size\n"
+               "time, system_time, price, open_24h, volume_24h, low_24h, high_24h, best_bid, best_ask," \
+               "last_traded_price, last_traded_size\n"
 
     elif stream == "books":
         return no_callback, \
@@ -40,10 +40,12 @@ def trade_interface(message):
         ["size", float]
     ]
 
-    symbol = message['data']['instId']
+    symbol = message['instId']
     new_symbol = '-'.join(symbol.split('-')[:2])
     message['symbol'] = new_symbol
-    message['size'] = message['data']['last_traded_size']
+    message['size'] = message['lastSz']
     message['trade_id'] = None
+    message['price'] = message['last']
+    message['time'] = message['ts']
 
     return utils.isolate_specific(needed, message)

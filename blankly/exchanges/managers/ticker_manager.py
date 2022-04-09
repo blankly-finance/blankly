@@ -40,8 +40,6 @@ class TickerManager(WebsocketManager):
             default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "alpaca")
         elif default_exchange == "ftx":
             default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "ftx")
-        elif default_exchange == "okx":
-            default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "okx")
 
         self.__default_symbol = default_symbol
 
@@ -114,10 +112,10 @@ class TickerManager(WebsocketManager):
                 override_symbol = self.__default_symbol
 
             if sandbox_mode:
-                ticker = Okx_Ticker(override_symbol, "ticker", log=log,
+                ticker = Okx_Ticker(override_symbol, "tickers", log=log,
                                     WEBSOCKET_URL="wss://wspap.okx.com:8443/ws/v5/public?brokerId=9999")
             else:
-                ticker = Okx_Ticker(override_symbol, "ticker", log=log)
+                ticker = Okx_Ticker(override_symbol, "tickers", log=log)
 
             ticker.append_callback(callback)
             # Store this object

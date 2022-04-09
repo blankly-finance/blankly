@@ -8,6 +8,8 @@ import blankly.exchanges.interfaces.okx.okx_websocket_utils as websocket_utils
 from blankly.exchanges.interfaces.websocket import Websocket
 from blankly.utils.utils import info_print
 
+
+
 class Tickers(Websocket):
     def __init__(self, symbol, stream, log=None,
                  pre_event_callback=None, initially_stopped=False, WEBSOCKET_URL="wss://ws.okx.com:8443/ws/v5/public"):
@@ -22,6 +24,8 @@ class Tickers(Websocket):
 
         super().__init__(symbol, stream, log, log_message, WEBSOCKET_URL, pre_event_callback)
 
+        self.__pre_event_callback_filled = False
+
         # Start the websocket
         if not initially_stopped:
             self.start_websocket(
@@ -31,6 +35,7 @@ class Tickers(Websocket):
                 self.on_close,
                 self.read_websocket
             )
+        self.checked = False
 
     def read_websocket(self):
         # Main thread to sit here and run
@@ -38,30 +43,42 @@ class Tickers(Websocket):
 
     def on_message(self, ws, message):
         received_dict = json.loads(message)
-        if received_dict['type'] == 'subscribed':
-            info_print(f"Subscribed to {received_dict['channel']}")
+        if len(received_dict) == 2 and self.checked is not True:
+            info_print(f"Subscribed to {received_dict['arg']['channel']}")
+            self.checked = True
             return
-        parsed_received_trades = websocket_utils.process_trades(received_dict)
-        for received in parsed_received_trades:
-            # ISO8601 is converted to epoch in process_trades
-            self.most_recent_time = received["time"]
-            self.time_feed.append(self.most_recent_time)
+        if (self.pre_event_callback is not None) and (not self.__pre_event_callback_filled) and \
+                (self.stream == "books"):
+            if received_dict['action'] == 'snapshot':
+                try:
+                    self.pre_event_callback(received_dict)
+                except Exception:
+                    traceback.print_exc()
 
-            self.log_response(self.__logging_callback, received)
+            self.__pre_event_callback_filled = True
+            return
 
-            # Manage price events and fire for each manager attached
-            interface_message = self.__interface_callback(received)
-            self.ticker_feed.append(interface_message)
-            self.most_recent_tick = interface_message
+        self.most_recent_time = received_dict['data'][0]["ts"]
+        received_dict['data'][0]["ts"] = self.most_recent_time
+        self.time_feed.append(self.most_recent_time)
+        self.log_response(self.__logging_callback, received_dict['data'][0])
 
-            try:
-                for i in self.callbacks:
-                    i(interface_message)
-            except Exception as e:
-                info_print(e)
-                traceback.print_exc()
+        # Manage price events and fire for each manager attached
+        if self.stream == "books":
+            interface_message = self.__interface_callback(received_dict)
+        else: # self.stream == 'tickers':
+            interface_message = self.__interface_callback(received_dict['data'][0])
+        self.ticker_feed.append(interface_message)
+        self.most_recent_tick = interface_message
 
-            self.message_count += 1
+        try:
+            for i in self.callbacks:
+                i(interface_message)
+        except Exception as e:
+            info_print(e)
+            traceback.print_exc()
+
+        self.message_count += 1
 
     def on_error(self, ws, error):
         info_print(error)
@@ -72,10 +89,12 @@ class Tickers(Websocket):
 
     def on_open(self, ws):
         request = json.dumps({
-            'type': 'subscribe',
-            'product_ids': [self.symbol],
-            'channels': [self.stream]
-        })
+            'op': 'subscribe',
+            'args': [{
+                'channel': self.stream,
+                'instId': self.symbol,
+                }]
+            })
         ws.send(request)
 
     def restart_ticker(self):

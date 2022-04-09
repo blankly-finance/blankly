@@ -1,4 +1,5 @@
 import time
+import matplotlib.pyplot as plt
 import pandas as pd
 import blankly.utils.time_builder
 import blankly.utils.utils as utils
@@ -10,24 +11,24 @@ from blankly.exchanges.orders.stop_limit import StopLimit
 from blankly.utils.exceptions import APIException, InvalidOrder
 
 
-class OkexInterface(ExchangeInterface):
+class OkxInterface(ExchangeInterface):
     def __init__(self, exchange_name, authenticated_api):
+        self._market: MarketAPI = authenticated_api['market']
+        self._account: AccountAPI = authenticated_api['account']
+        self._trade: TradeAPI = authenticated_api['trade']
+        self._convert: ConvertAPI = authenticated_api['convert']
+        self._funding: FundingAPI = authenticated_api['funding']
+        self._public: PublicAPI = authenticated_api['public']
         super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 180, 300, 1800, 3600, 7200,
                                                                               14400, 21600, 43200, 86400, 604800,
                                                                               2629746, 7889238, 15778476, 31556952])
 
-        self._market: MarketAPI = self.calls['market']
-        self._account: AccountAPI = self.calls['account']
-        self._trade: TradeAPI = self.calls['trade']
-        self._convert: ConvertAPI = self.calls['convert']
-        self._funding: FundingAPI = self.calls['funding']
-        self._public: PublicAPI = self.calls['public']
-
     def init_exchange(self):
         # This is purely an authentication check which can be disabled in settings
-        fees = self._account.get_fee_rates('SPOT')
+        # todo: change get_fee_rates
+        fees = self._account.get_fee_rates(instType='SPOT', instId='BTC-USDT')
         try:
-            if fees['message'] == "Invalid API Key":
+            if fees['msg'] == "Invalid API Key":
                 raise LookupError("Invalid API Key. Please check if the keys were input correctly into your "
                                   "keys.json.")
         except KeyError:
@@ -64,16 +65,16 @@ class OkexInterface(ExchangeInterface):
         parsed_dictionary = utils.AttributeDict({})
         #We have to sort through it if the accounts are none
         if symbol is not None:
-             accounts_specific = self._account.get_account(symbol)
-             if accounts_specific['code'] == 51000 or accounts_specific['code'] == 51001:
-                 raise ValueError("Symbol not found")
-             for i in accounts_specific['data']:
-                 parsed_value = utils.isolate_specific(needed, i)
-                 dictionary = utils.AttributeDict({
-                     'available': float(parsed_value['exchange_specific']['details'][0]['availBal']), # accounts_specific['data'][0]['details'][0]['availBal'],
-                     'hold': float(parsed_value['exchange_specific']['details'][0]['frozenBal'])
-                 })
-                 return dictionary
+            accounts_specific = self._account.get_account(symbol)
+            if accounts_specific['code'] == 51000 or accounts_specific['code'] == 51001:
+                raise ValueError("Symbol not found")
+            for i in accounts_specific['data']:
+                parsed_value = utils.isolate_specific(needed, i)
+                dictionary = utils.AttributeDict({
+                    'available': float(parsed_value['exchange_specific']['details'][0]['availBal']), # accounts_specific['data'][0]['details'][0]['availBal'],
+                    'hold': float(parsed_value['exchange_specific']['details'][0]['frozenBal'])
+                })
+                return dictionary
         for i in range(len(accounts['data'][0]['details'])):
             parsed_dictionary[accounts['data'][0]['details'][i]['ccy']] = utils.AttributeDict({
                 'available': float(accounts['data'][0]['details'][i]['availBal']),
@@ -110,7 +111,7 @@ class OkexInterface(ExchangeInterface):
         }
 
         response = self._trade.place_order(symbol, 'cash', side, 'market', size)
-        if len(response['data'][0]['sMsg']) != 0:
+        if response['data'][0]['sMsg'] is not None:
             raise InvalidOrder("Invalid Order: " + response['data'][0]["sMsg"])
         response["created_at"] = time.time()
         response["id"] = response['data'][0]['ordId']
@@ -251,7 +252,8 @@ class OkexInterface(ExchangeInterface):
         response["time_in_force"] = 'GTC'
         return utils.isolate_specific(needed, response)
 
-    def get_fees(self, symbol: str) -> dict:
+    def get_fees(self) -> dict:
+        symbol = 'BTC-USDT'
         needed = self.needed['get_fees']
         """
         {
@@ -288,8 +290,8 @@ class OkexInterface(ExchangeInterface):
 
         resolution = blankly.time_builder.time_interval_to_seconds(resolution)
 
-        init_epoch_start = int((epoch_start) * 1000)
-        init_epoch_stop = int((epoch_stop) * 1000)
+        init_epoch_start = int(epoch_start * 1000)
+        init_epoch_stop = int(epoch_stop * 1000)
 
         accepted_grans = [60, 180, 300, 1800, 3600, 7200, 14400, 21600, 43200, 86400, 604800, 2629746, 7889238, 15778476, 31556952]
 
@@ -321,27 +323,25 @@ class OkexInterface(ExchangeInterface):
 
         gran_string = lookup_dict[resolution]
 
-        # need = int(epoch_stop + 300 * resolution)
-        # initial_need = need
-        # window_open = epoch_start
         history = []
+        while init_epoch_start < init_epoch_stop + resolution * 100 * 1100:
+            response = self._market.get_history_candlesticks(symbol, after=init_epoch_start, bar=gran_string, limit=100)
 
-        while init_epoch_start:
-            response = self._market.get_history_candlesticks(symbol, before=init_epoch_start, bar=gran_string, limit=100)
+            if len(response['data']) != 0:
+                history = history + response['data']
+            init_epoch_start = init_epoch_start + (100 * 1000 * resolution)
 
-            history = history + response['data']
-            new_start_time = int(response['data'][0][0])  # latest value of epoch
-            init_epoch_start = new_start_time
-
-            if init_epoch_start >= init_epoch_stop - (2 * resolution * 1000):
-                break
         history.sort(key=lambda x: x[0])
-
-        df = pd.DataFrame(history, columns=['time', 'open', 'high', 'low', 'close', 'volume', 'volume_currency'])
+        new_history = list(set(tuple(sub) for sub in history))
+        new_history.sort(key=lambda x: x[0])
+        df = pd.DataFrame(new_history, columns=['time', 'open', 'high', 'low', 'close', 'volume', 'volume_currency'])
         df = df.drop(columns=['volume_currency'])
-        #df[['time']] = df[['time']]
         df[['time']] = df[['time']].astype('int64').div(1000).astype(int)
         df[['open', 'high', 'low', 'close', 'volume']] = df[['open', 'high', 'low', 'close', 'volume']].astype(float)
+        # df.plot(x='time', y='close', kind='scatter')
+        df = df[df['time'] >= epoch_start]
+        df = df[df['time'] <= epoch_stop]
+        # plt.show()
 
         return df
 
