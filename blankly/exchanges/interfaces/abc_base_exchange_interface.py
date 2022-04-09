@@ -97,7 +97,7 @@ class ABCBaseExchangeInterface(abc.ABC):
         # response.index = pd.to_datetime(response['time'], unit='s')
         return self.cast_type(response, return_as, point_count)
 
-    def calculate_epochs(self, end_date, resolution, start_date, to):
+    def calculate_epochs(self, start_date, end_date, resolution, to):
         is_backtesting = self.is_backtesting()
         if is_backtesting is not None and end_date is None:
             # is_backtesting can only return a non None value if a function overrides the is_backtesting function
