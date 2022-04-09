@@ -22,6 +22,7 @@ from blankly.exchanges.interfaces.paper_trade.backtest_controller import BackTes
 from blankly.exchanges.interfaces.paper_trade.abc_backtest_controller import ABCBacktestController
 from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
 from blankly.exchanges.exchange import Exchange
+from blankly.utils.time_builder import time_interval_to_seconds
 import time
 
 
@@ -82,7 +83,8 @@ class Model:
         else:
             return self.__backtester.time
 
-    def sleep(self, seconds: [int, float]):
+    def sleep(self, seconds: [int, float, str]):
+        seconds = time_interval_to_seconds(seconds)
         if not self.is_backtesting:
             time.sleep(seconds)
         else:
