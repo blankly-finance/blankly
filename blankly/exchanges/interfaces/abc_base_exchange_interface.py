@@ -52,22 +52,29 @@ class ABCBaseExchangeInterface(abc.ABC):
                 end_date: Union[str, dt, float] = None,
                 return_as: str = 'df'):
 
+        start, stop, resolution, to, present = self.calculate_epochs(start_date, end_date, resolution, to)
+
+        response = self.overridden_history(symbol, start, stop, resolution, to=to)
+
+        # Determine the deque length - we really should use this generally
+        if isinstance(to, int):
+            point_count = to
+        else:
+            point_count = (stop - start) / resolution + 1
+
+        # response.index = pd.to_datetime(response['time'], unit='s')
+        return self.cast_type(response, return_as, point_count)
+
+    def calculate_epochs(self, start_date, end_date, resolution, to):
         is_backtesting = self.is_backtesting()
         if is_backtesting is not None and end_date is None:
             # is_backtesting can only return a non None value if a function overrides the is_backtesting function
             #  and says its backtesting by returning a valid time
             end_date = is_backtesting
-
         if start_date is not None and end_date is not None:
             to = None
-
-        to_present = False
-        if end_date is None:
-            to_present = True
-
         # convert resolution into epoch seconds
         resolution_seconds = int(time_interval_to_seconds(resolution))
-
         if end_date is None:
             # Figure out the next point and then subtract to the last stamp
             most_recent_valid_resolution = utils.ceil_date(dt.now(),
@@ -87,7 +94,6 @@ class ABCBaseExchangeInterface(abc.ABC):
                                                  seconds=resolution_seconds).timestamp() - resolution_seconds
             epoch_stop = valid_time_in_past - resolution_seconds
             count_from = valid_time_in_past
-
         if start_date is None and end_date is None:
             if isinstance(to, int):
                 # use number of points to calculate the start epoch
@@ -101,48 +107,7 @@ class ABCBaseExchangeInterface(abc.ABC):
                 epoch_start = count_from - time_interval_to_seconds(to)
         else:
             epoch_start = utils.convert_input_to_epoch(start_date)
-
-        response = self.overridden_history(symbol, epoch_start, epoch_stop, resolution_seconds, to=to,)
-
-        # Add a check to make sure that coinbase pro has updated
-        if to_present and self.get_exchange_type() == "coinbase_pro":
-            data_append = None
-            tries = 0
-            while True:
-                if data_append is None:
-                    # We can continue if this is valid
-                    if response['time'].iloc[-1] == epoch_stop:
-                        break
-                else:
-                    if data_append[0]['time'] == epoch_stop:
-                        break
-                time.sleep(.5)
-                tries += 1
-                if tries > 5:
-                    # Admit failure and return
-                    warnings.warn("Exchange failed to provide updated data within the timeout.")
-                    return self.cast_type(response, return_as)
-                try:
-                    data_append = [self.get_product_history(symbol,
-                                                            epoch_stop - resolution_seconds,
-                                                            epoch_stop,
-                                                            resolution_seconds).iloc[-1].to_dict()]
-                    data_append[0]['time'] = int(data_append[0]['time'])
-                except IndexError:
-                    # If there is no recent data on the exchange this will be an empty dataframe.
-                    # This happens for low volume
-                    utils.info_print("Most recent bar at this resolution does not yet exist - skipping.")
-                    break
-
-            response = response.append(data_append, ignore_index=True)
-
-        # Determine the deque length - we really should use this generally
-        if isinstance(to, int):
-            point_count = to
-        else:
-            point_count = (epoch_stop-epoch_start)/resolution_seconds + 1
-        # response.index = pd.to_datetime(response['time'], unit='s')
-        return self.cast_type(response, return_as, point_count)
+        return epoch_start, epoch_stop, resolution_seconds, to, to_present
 
     def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
         return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
