@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import threading
 import typing
 
 from blankly.exchanges.interfaces.paper_trade.backtest_controller import BackTestController, BacktestResult
@@ -64,8 +64,10 @@ class Model:
 
         return backtest
 
-    def run(self, args: typing.Any = None):
-        self.main(args)
+    def run(self, args: typing.Any = None) -> threading.Thread:
+        thread = threading.Thread(target=self.main, args=(args,))
+        thread.start()
+        return thread
 
     def main(self, args):
         raise NotImplementedError("Add a main function to your strategy to run the model.")
