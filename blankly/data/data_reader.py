@@ -65,21 +65,30 @@ class __DataReader:
         self.price_data: bool = self.__is_price_data(data_type)
 
 
-class PriceReader(__DataReader):
-    def __parse_json_prices(self, file_paths: list) -> None:
-        for file in file_paths:
-            # Load the contents into json first because it has a ton of symbols
-            contents = json.loads(open(file).read())
+class __FormatReader(__DataReader):
+    def __init__(self, data_type):
+        super().__init__(data_type)
 
-            for symbol in contents:
-                self._write_dataset(contents[symbol], symbol, ('open', 'high', 'low', 'close', 'volume', 'time'))
+    @staticmethod
+    def _convert_to_list(file_path, symbol):
+        """
+        Primarily for CSV prices, this allows single or multi sets of symbols to be converted into matching arrays
+        """
+        # Turn it into a list
+        if isinstance(file_path, str):
+            file_paths = [file_path]
+        else:
+            file_paths = file_path
 
-                self._check_length(self._internal_dataset[symbol], file)
+        if isinstance(symbol, str):
+            symbols = [symbol]
+        else:
+            # Could be None still
+            symbols = symbol
 
-                # Ensure that the dataframe is sorted by time
-                self._internal_dataset[symbol] = self._internal_dataset[symbol].sort_values('time')
+        return file_paths, symbols
 
-    def __parse_csv_prices(self, file_paths: list, symbols: list) -> None:
+    def _parse_csv_prices(self, file_paths: list, symbols: list, columns: set) -> None:
         if symbols is None:
             raise LookupError("Must pass one or more symbols to identify the csv files")
         if len(file_paths) != len(symbols):
@@ -93,11 +102,26 @@ class PriceReader(__DataReader):
             self._check_length(contents, file_paths[index])
 
             # Check if its contained
-            assert ({'open', 'high', 'low', 'close', 'volume', 'time'}.issubset(contents.columns))
+            assert (columns.issubset(contents.columns))
 
             # Now push it directly into the dataset and sort by time
             self._internal_dataset[symbols[index]] = contents.sort_values('time')
 
+    def _parse_json_prices(self, file_paths: list, keys: tuple) -> None:
+        for file in file_paths:
+            # Load the contents into json first because it has a ton of symbols
+            contents = json.loads(open(file).read())
+
+            for symbol in contents:
+                self._write_dataset(contents[symbol], symbol, keys)
+
+                self._check_length(self._internal_dataset[symbol], file)
+
+                # Ensure that the dataframe is sorted by time
+                self._internal_dataset[symbol] = self._internal_dataset[symbol].sort_values('time')
+
+
+class PriceReader(__FormatReader):
     @staticmethod
     def __associate(file_paths: list) -> str:
         file_type = ''
@@ -148,17 +172,7 @@ class PriceReader(__DataReader):
              symbol can be passed as a non list but multiple can be passed as lists in both arguments. Just make sure
              that the symbol indices match on both arguments
         """
-        # Turn it into a list
-        if isinstance(file_path, str):
-            file_paths = [file_path]
-        else:
-            file_paths = file_path
-
-        if isinstance(symbol, str):
-            symbols = [symbol]
-        else:
-            # Could be None still
-            symbols = symbol
+        file_paths, symbols = self._convert_to_list(file_path, symbol)
 
         # Empty dict to store the resolutions of the inputs by symbol
         self.prices_info = {}
@@ -174,9 +188,9 @@ class PriceReader(__DataReader):
         super().__init__(data_type)
 
         if data_type == FileTypes.json.value:
-            self.__parse_json_prices(file_paths)
+            self._parse_json_prices(file_paths, ('open', 'high', 'low', 'close', 'volume', 'time'))
         elif data_type == FileTypes.csv.value:
-            self.__parse_csv_prices(file_paths, symbols)
+            self._parse_csv_prices(file_paths, symbols, {'open', 'high', 'low', 'close', 'volume', 'time'})
         else:
             raise LookupError("No parsing written for input type.")
 
@@ -198,3 +212,15 @@ class EventReader(__DataReader):
             raise AssertionError(f"The filepath did not have a \'json\' ending - got: {file_path[-4:]}")
 
         self.__parse_json_events(file_path)
+
+
+class TickReader(__FormatReader):
+    def __init__(self, file_path: [str, list], symbol: [str, list] = None):
+        super().__init__(DataTypes.tick_csv)
+        file_paths, symbols = self._convert_to_list(file_path, symbol)
+
+        try:
+            assert file_path[-3:] == 'csv'
+        except AssertionError:
+            raise AssertionError(f"The filepath did not have a \'csv\' ending - got: {file_path[-3:]}")
+        self._parse_csv_prices(file_paths, symbols, {'time', 'price'})

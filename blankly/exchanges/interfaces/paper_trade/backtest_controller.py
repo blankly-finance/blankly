@@ -44,7 +44,7 @@ from blankly.exchanges.interfaces.paper_trade.backtest.format_platform_result im
 
 from blankly.exchanges.interfaces.paper_trade.abc_backtest_controller import ABCBacktestController
 from blankly.exchanges.exchange import ABCExchange
-from blankly.data.data_reader import PriceReader, EventReader
+from blankly.data.data_reader import PriceReader, EventReader, TickReader
 
 
 def to_string_key(separated_list):
@@ -209,6 +209,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         # Custom injected price readers and events readers
         self.__price_readers = []
         self.__event_readers = []
+        self.__tick_readers = []
 
     class PriceIdentifiers(enum.Enum):
         exchange: str = 0
@@ -229,6 +230,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             }
         ]
         """
+        # TODO some code duplication here for the different events
         for reader in self.__event_readers:
             # Get the data as dict of dataframes
             data = reader.data
@@ -242,6 +244,18 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                     records[record_index]['type'] = event_type
 
                 self.events += records
+
+        # for tick_reader in self.__tick_readers:
+        #     data = tick_reader.data
+        #     for symbol in data:
+        #         symbol_df: pd.DataFrame = data[symbol]
+        #
+        #         records = symbol_df.to_dict(orient='records')
+        #         for record_index in range(len(records)):
+        #             records[record_index]['type'] = ['__blankly__tick']
+        #             records[record_index]['__symbol'] = symbol
+        #
+        #         self.events += records
 
         # Now we just need to sort by time
         self.events = sorted(self.events, key=lambda d: d['time'])
@@ -402,6 +416,9 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
             if len(relevant_data) > 0:
                 final_prices[symbol] = pd.concat(relevant_data)
+                for dataset in relevant_data:
+                    prices_by_resolution = aggregate_prices_by_resolution(prices_by_resolution, symbol, resolution,
+                                                                          dataset)
 
             # If there is any data left to download do it here
             for j in negative_ranges:
@@ -425,7 +442,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                                                                    f'{resolution}.csv'),
                                         index=False)
 
-                prices_by_resolution = aggregate_prices_by_resolution(prices_by_resolution, symbol, resolution, download)
+                prices_by_resolution = aggregate_prices_by_resolution(prices_by_resolution, symbol, resolution,
+                                                                      download)
                 # Write these into the data array
                 if symbol not in final_prices:
                     final_prices[symbol] = download
@@ -517,6 +535,9 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
     def add_custom_events(self, event_reader: EventReader):
         self.__event_readers.append(event_reader)
+
+    def add_tick_events(self, tick_reader: TickReader):
+        self.__tick_readers.append(tick_reader)
 
     def __add_prices(self, symbol, start_time, end_time, resolution, save=False):
         # If it's not loaded then write it to the file

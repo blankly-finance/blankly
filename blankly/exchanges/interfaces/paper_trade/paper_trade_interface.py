@@ -676,7 +676,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 else:
                     raise LookupError(f"The resolution {resolution} not found or downloaded for {symbol}.")
             else:
-                raise LookupError(f"Prices for this symbol founded or downloaded ({symbol})")
+                raise LookupError(f"Prices for this symbol ({symbol}) not found")
 
             return utils.trim_df_time_column(price_set, epoch_start - resolution, epoch_stop)
         else:

@@ -22,11 +22,12 @@ from enum import Enum as __Enum
 
 class DataTypes(__Enum):
     ohlcv_csv = 0
-    ohlcv_json = 1
-    event_json = 2
+    tick_csv = 1
+    ohlcv_json = 2
+    event_json = 3
 
 
-from .data_reader import PriceReader, EventReader
+from .data_reader import PriceReader, EventReader, TickReader
 
 
 """
