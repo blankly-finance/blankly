@@ -164,13 +164,10 @@ def blankly_init(args):
 
     for path, data, force_overwrite in files:
         exists = Path(path).exists()
-        if exists \
-                and not force_overwrite \
-                and not confirm(f'{path} already exists, would you like to overwrite it?',
-                                default=False).unsafe_ask():
-            continue
-        with open(path, 'w') as file:
-            file.write(data)
+        overwrite_prompt = confirm(f'{path} already exists, would you like to overwrite it?', default=False)
+        if force_overwrite or not exists or overwrite_prompt.unsafe_ask():
+            with open(path, 'w') as file:
+                file.write(data)
 
     # TODO open on platform WITHOUT STARTING
 
