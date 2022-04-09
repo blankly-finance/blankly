@@ -52,20 +52,52 @@ class ABCBaseExchangeInterface(abc.ABC):
                 end_date: Union[str, dt, float] = None,
                 return_as: str = 'df'):
 
-        start, stop, resolution, to, present = self.calculate_epochs(start_date, end_date, resolution, to)
+        start, stop, res_seconds, to, present = self.calculate_epochs(start_date, end_date, resolution, to)
 
-        response = self.overridden_history(symbol, start, stop, resolution, to=to)
+        response = self.overridden_history(symbol, start, stop, res_seconds, to=to,)
+
+        # Add a check to make sure that coinbase pro has updated
+        # I tried to delete this code but the entire function broke :(
+        if present and self.get_exchange_type() == "coinbase_pro":
+            data_append = None
+            tries = 0
+            while True:
+                if data_append is None:
+                    # We can continue if this is valid
+                    if response['time'].iloc[-1] == stop:
+                        break
+                else:
+                    if data_append[0]['time'] == stop:
+                        break
+                time.sleep(.5)
+                tries += 1
+                if tries > 5:
+                    # Admit failure and return
+                    warnings.warn("Exchange failed to provide updated data within the timeout.")
+                    return self.cast_type(response, return_as)
+                try:
+                    data_append = [self.get_product_history(symbol,
+                                                            stop - res_seconds,
+                                                            stop,
+                                                            res_seconds).iloc[-1].to_dict()]
+                    data_append[0]['time'] = int(data_append[0]['time'])
+                except IndexError:
+                    # If there is no recent data on the exchange this will be an empty dataframe.
+                    # This happens for low volume
+                    utils.info_print("Most recent bar at this resolution does not yet exist - skipping.")
+                    break
+
+            response = response.append(data_append, ignore_index=True)
 
         # Determine the deque length - we really should use this generally
         if isinstance(to, int):
             point_count = to
         else:
-            point_count = (stop - start) / resolution + 1
-
+            point_count = (stop-start)/res_seconds + 1
         # response.index = pd.to_datetime(response['time'], unit='s')
         return self.cast_type(response, return_as, point_count)
 
-    def calculate_epochs(self, start_date, end_date, resolution, to):
+    def calculate_epochs(self, end_date, resolution, start_date, to):
         is_backtesting = self.is_backtesting()
         if is_backtesting is not None and end_date is None:
             # is_backtesting can only return a non None value if a function overrides the is_backtesting function
@@ -73,6 +105,9 @@ class ABCBaseExchangeInterface(abc.ABC):
             end_date = is_backtesting
         if start_date is not None and end_date is not None:
             to = None
+        to_present = False
+        if end_date is None:
+            to_present = True
         # convert resolution into epoch seconds
         resolution_seconds = int(time_interval_to_seconds(resolution))
         if end_date is None:
