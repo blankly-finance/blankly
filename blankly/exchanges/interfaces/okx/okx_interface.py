@@ -355,7 +355,6 @@ class OkxInterface(ExchangeInterface):
                 break
 
         base_min_size = float(products.pop('minSz'))
-        # base_max_size = 100000000   #This value was hardcoded
         base_increment = float(products.pop('tickSz'))
 
         return {
@@ -366,8 +365,7 @@ class OkxInterface(ExchangeInterface):
             "limit_order": {
                 "base_min_size": base_min_size,  # Minimum size to buy
                 "base_max_size": 100000000,  # Maximum size to buy, this value was hardcoded
-                "base_increment": base_increment,  # Specifies the minimum increment
-                # for the base_asset.
+                "base_increment": base_increment,  # Specifies the minimum increment for the base_asset.
                 "price_increment": 0.1,
 
                 "min_price": 0.1,
@@ -380,8 +378,7 @@ class OkxInterface(ExchangeInterface):
                 "base_max_size": 100000000,  # Maximum size to buy, this value was hardcoded
                 "base_increment": base_increment,  # Specifies the minimum increment
 
-                "quote_increment": 0.1,  # Specifies the min order price as well
-                # as the price increment.
+                "quote_increment": 0.1,  # Specifies the min order price as well as the price increment.
                 "buy": {
                     "min_funds": 0.1,  # This value was hardcoded
                     "max_funds": 1000000,  # This value was hardcoded

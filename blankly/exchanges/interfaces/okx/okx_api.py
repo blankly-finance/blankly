@@ -297,9 +297,9 @@ class Client(object):
         # send request
         response = None
 
-        print("url:", url)
+        #print("url:", url)
         # print("headers:", header)
-        print("body:", body)
+        #print("body:", body)
         if method == GET:
             response = requests.get(url, headers=header)
         elif method == POST:
