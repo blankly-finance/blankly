@@ -53,6 +53,7 @@ def kucoin_test_func(auth, tld):
     try:
         from kucoin import client as KucoinAPI
     except ImportError:
+        print()  # we are running loading bar at this point, go next line to avoid making a mess
         print_failure('kucoin-python must be installed to check Kucoin API Keys')
         print_failure('Skipping check')
     else:
@@ -88,8 +89,9 @@ EXCHANGES = [
              key_info=['API_KEY', 'API_SECRET', 'API_PASS'], currency='USDT'),
 ]
 
-EXCHANGE_CHOICES = [Choice(exchange.display_name, exchange)
-                    for exchange in EXCHANGES]
+EXCHANGE_CHOICES_NO_KEYLESS = [Choice(exchange.display_name, exchange)
+                               for exchange in EXCHANGES]
+EXCHANGE_CHOICES = EXCHANGE_CHOICES_NO_KEYLESS[:]
 EXCHANGE_CHOICES.append(Choice('Keyless/No Exchange', False))
 
 

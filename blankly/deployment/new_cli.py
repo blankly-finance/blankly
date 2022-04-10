@@ -33,7 +33,8 @@ from blankly.deployment.deploy import zip_dir, get_python_version
 from blankly.deployment.keys import add_key, load_keys, write_keys
 from blankly.deployment.login import logout, poll_login, get_token
 from blankly.deployment.ui import text, confirm, print_work, print_failure, print_success, select, show_spinner
-from blankly.deployment.exchange_data import EXCHANGES, Exchange, EXCHANGE_CHOICES, exc_display_name
+from blankly.deployment.exchange_data import EXCHANGES, Exchange, EXCHANGE_CHOICES, exc_display_name, \
+    EXCHANGE_CHOICES_NO_KEYLESS
 
 TEMPLATES = {'strategy': {'none': 'none.py',
                           'rsi_bot': 'rsi_bot.py'},
@@ -378,21 +379,18 @@ def blankly_deploy(args):
 
 
 def blankly_add_key(args):
-    exchange = select('What exchange would you like to add a key for?', EXCHANGE_CHOICES).unsafe_ask()
+    exchange = select('What exchange would you like to add a key for?', EXCHANGE_CHOICES_NO_KEYLESS).unsafe_ask()
     add_key_interactive(exchange)
 
 
 def blankly_list_key(args):
     data = load_keys()
     for exchange_name, keys in data.items():
-        exchange_display_name = next((exchange.display_name
-                                      for exchange in EXCHANGES
-                                      if exchange.name == exchange_name), exchange_name)
         for name, key_data in keys.items():
             # filter 'empty'
             if any((isinstance(d, str) and '*' in d) for d in key_data.values()):
                 continue
-            exchange_display_name = exchange_display_name(exchange_name)
+            exchange_display_name = exc_display_name(exchange_name)
             print_work(f'{exchange_display_name}: {name}')
             for k, v in key_data.items():
                 print_work(f'    {k}: {v}')
@@ -400,13 +398,12 @@ def blankly_list_key(args):
 
 def blankly_remove_key(args):
     data = load_keys()
-    if not data:
-        return
 
-    exchange, key = select('Which key would you like to delete?', [
-        Choice(f'{exc_display_name(exchange)}: {name}', (exchange, name))
-        for exchange, keys in data.items() for name in keys
-    ]).unsafe_ask()
+    key_choices = [Choice(f'{exc_display_name(exchange)}: {name}', (exchange, name))
+                   for exchange, keys in data.items() for name in keys]
+    if not key_choices:
+        return
+    exchange, key = select('Which key would you like to delete?', key_choices).unsafe_ask()
 
     del data[exchange][key]
     write_keys(data)

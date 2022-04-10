@@ -55,7 +55,7 @@ def add_key(exchange: Exchange, tld: str, key_name: str, data: dict):
     if key_name in keys:
         key_name = key_name + '-1'
     while key_name in keys:
-        base, num = key_name.rsplit('-')
+        base, num = key_name.rsplit('-', 1)
         key_name = f'{base}-{int(num) + 1}'
 
     keys[key_name] = data  # this writes to saved_data
