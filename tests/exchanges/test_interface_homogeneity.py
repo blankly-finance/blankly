@@ -64,7 +64,8 @@ class InterfaceHomogeneity(unittest.TestCase):
     Kucoin_data = None
     Kucoin_Interface = None
     Okx_data = None
-    #Okx_Interface = None
+    Okx_Interface = None
+    Okx_Interface_Data = None
     Coinbase_Pro_Interface = None
     Kucoin = None
     Coinbase_Pro = None
@@ -99,11 +100,11 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.Okx_Interface_data = cls.Okx_data.get_interface()
         cls.data_interfaces.append(cls.Okx_Interface_data)
 
-        # cls.Kucoin_data = blankly.Kucoin(portfolio_name="KC Data Keys",
-        #                                  keys_path='./tests/config/keys.json',
-        #                                  settings_path="./tests/config/settings.json")
-        # cls.Kucoin_Interface_data = cls.Kucoin_data.get_interface()
-        # cls.data_interfaces.append(cls.Kucoin_Interface_data)
+        cls.Kucoin_data = blankly.Kucoin(portfolio_name="KC Data Keys",
+                                         keys_path='./tests/config/keys.json',
+                                         settings_path="./tests/config/settings.json")
+        cls.Kucoin_Interface_data = cls.Kucoin_data.get_interface()
+        cls.data_interfaces.append(cls.Kucoin_Interface_data)
 
         # Binance definition and appending
         cls.Binance = blankly.Binance(portfolio_name="Spot Test Key",
@@ -128,12 +129,12 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.data_interfaces.append(cls.Alpaca_Interface)
 
         # Oanda definition and appending
-        # cls.Oanda = blankly.Oanda(portfolio_name="oanda test portfolio",
-        #                           keys_path='./tests/config/keys.json',
-        #                           settings_path="./tests/config/settings.json")
-        # cls.Oanda_Interface = cls.Oanda.get_interface()
-        # cls.interfaces.append(cls.Oanda_Interface)
-        # cls.data_interfaces.append(cls.Oanda_Interface)
+        cls.Oanda = blankly.Oanda(portfolio_name="oanda test portfolio",
+                                  keys_path='./tests/config/keys.json',
+                                  settings_path="./tests/config/settings.json")
+        cls.Oanda_Interface = cls.Oanda.get_interface()
+        cls.interfaces.append(cls.Oanda_Interface)
+        cls.data_interfaces.append(cls.Oanda_Interface)
 
         cls.FTX = blankly.FTX(portfolio_name="Main Account",
                               keys_path='./tests/config/keys.json',
@@ -351,17 +352,17 @@ class InterfaceHomogeneity(unittest.TestCase):
 
             return [buy, sell]
 
-        # limits += evaluate_limit_order(self.Alpaca_Interface, 'AAPL', 10, 100000, 1)
+        limits += evaluate_limit_order(self.Alpaca_Interface, 'AAPL', 10, 100000, 1)
 
-        # binance_limits = self.Binance_Interface.get_order_filter('BTC-USDT')["limit_order"]
-        # limits += evaluate_limit_order(self.Binance_Interface, 'BTC-USDT', int(binance_limits['min_price'] + 100),
-        #                                int(binance_limits['max_price'] - 100), .01)
+        binance_limits = self.Binance_Interface.get_order_filter('BTC-USDT')["limit_order"]
+        limits += evaluate_limit_order(self.Binance_Interface, 'BTC-USDT', int(binance_limits['min_price'] + 100),
+                                       int(binance_limits['max_price'] - 100), .01)
 
-        # limits += evaluate_limit_order(self.Coinbase_Pro_Interface, 'BTC-USD', .01, 100000, 1)
+        limits += evaluate_limit_order(self.Coinbase_Pro_Interface, 'BTC-USD', .01, 100000, 1)
 
-        # limits += evaluate_limit_order(self.Kucoin_Interface, 'ETH-USDT', .01, 100000, 1)
+        limits += evaluate_limit_order(self.Kucoin_Interface, 'ETH-USDT', .01, 100000, 1)
 
-        # limits += evaluate_limit_order(self.Oanda_Interface, 'EUR-USD', .01, 100000, .1)
+        limits += evaluate_limit_order(self.Oanda_Interface, 'EUR-USD', .01, 100000, .1)
 
         limits += evaluate_limit_order(self.Okx_Interface, 'PAX-USDT', 0.50, 100000, 1)
 
@@ -370,11 +371,11 @@ class InterfaceHomogeneity(unittest.TestCase):
         cancels = []
 
         open_orders = {
-            # 'coinbase_pro': self.Coinbase_Pro_Interface.get_open_orders('BTC-USD'),
-            # 'binance': self.Binance_Interface.get_open_orders('BTC-USDT'),
-            # 'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
-            # 'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
-            # 'oanda': self.Oanda_Interface.get_open_orders('EUR-USD'),
+            'coinbase_pro': self.Coinbase_Pro_Interface.get_open_orders('BTC-USD'),
+            'binance': self.Binance_Interface.get_open_orders('BTC-USDT'),
+            'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
+            'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
+            'oanda': self.Oanda_Interface.get_open_orders('EUR-USD'),
             'okx': self.Okx_Interface.get_open_orders('PAX-USDT')
         }
 
@@ -383,12 +384,12 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.assertTrue(len(open_orders[i]) >= 2)
 
         # Just scan through both simultaneously to reduce code copying
-        # all_orders = open_orders['coinbase_pro']
-        # all_orders = all_orders + open_orders['binance']
-        all_orders = open_orders['okx']['data']
-        # all_orders = all_orders + open_orders['kucoin']
-        # all_orders = all_orders + open_orders['alpaca']
-        # all_orders = all_orders + open_orders['oanda']
+        all_orders = open_orders['coinbase_pro']
+        all_orders = all_orders + open_orders['binance']
+        all_orders = all_orders + open_orders['okx']
+        all_orders = all_orders + open_orders['kucoin']
+        all_orders = all_orders + open_orders['alpaca']
+        all_orders = all_orders + open_orders['oanda']
 
         # Filter for limit orders
         open_orders = []
@@ -418,24 +419,24 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertTrue(compare_responses(responses))
         self.assertTrue(compare_responses(status))
 
-        # cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', sorted_orders['binance']['buy'].get_id()))
-        # cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', sorted_orders['binance']['sell'].get_id()))
+        cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', sorted_orders['binance']['buy'].get_id()))
+        cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', sorted_orders['binance']['sell'].get_id()))
 
-        #cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', sorted_orders['kucoin']['buy'].get_id()))
-        #cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', sorted_orders['kucoin']['sell'].get_id()))
+        cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', sorted_orders['kucoin']['buy'].get_id()))
+        cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', sorted_orders['kucoin']['sell'].get_id()))
         cancels.append(self.Okx_Interface.cancel_order('PAX-USDT', sorted_orders['okx']['buy'].get_id()))
         cancels.append(self.Okx_Interface.cancel_order('PAX-USDT', sorted_orders['okx']['sell'].get_id()))
 
-        # cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD',
-        #                                                         sorted_orders['coinbase_pro']['buy'].get_id()))
-        # cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD',
-        #                                                         sorted_orders['coinbase_pro']['sell'].get_id()))
+        cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD',
+                                                                sorted_orders['coinbase_pro']['buy'].get_id()))
+        cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD',
+                                                                sorted_orders['coinbase_pro']['sell'].get_id()))
 
-        # cancels.append(self.Alpaca_Interface.cancel_order('AAPL', sorted_orders['alpaca']['buy'].get_id()))
-        # cancels.append(self.Alpaca_Interface.cancel_order('AAPL', sorted_orders['alpaca']['sell'].get_id()))
+        cancels.append(self.Alpaca_Interface.cancel_order('AAPL', sorted_orders['alpaca']['buy'].get_id()))
+        cancels.append(self.Alpaca_Interface.cancel_order('AAPL', sorted_orders['alpaca']['sell'].get_id()))
 
-        #cancels.append(self.Oanda_Interface.cancel_order('EUR-USD', sorted_orders['oanda']['buy'].get_id()))
-        #cancels.append(self.Oanda_Interface.cancel_order('EUR-USD', sorted_orders['oanda']['sell'].get_id()))
+        cancels.append(self.Oanda_Interface.cancel_order('EUR-USD', sorted_orders['oanda']['buy'].get_id()))
+        cancels.append(self.Oanda_Interface.cancel_order('EUR-USD', sorted_orders['oanda']['sell'].get_id()))
 
         self.assertTrue(compare_responses(cancels, force_exchange_specific=False))
 
