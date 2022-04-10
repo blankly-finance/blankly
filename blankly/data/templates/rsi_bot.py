@@ -21,7 +21,7 @@ def price_event(price, symbol, state: blankly.StrategyState):
 def init(symbol, state: blankly.StrategyState):
     # Download price data to give context to the algo
     state.variables.history = state.interface.history(symbol, to=150, return_as='deque',
-                                                      resolution=state.resolution).close
+                                                      resolution=state.resolution)['close']
 
     # Get the max precision for this symbol from the API
     increment = next(product['base_increment']
