@@ -18,7 +18,6 @@
 import time
 
 import binance.exceptions
-import numpy
 import pandas as pd
 
 import blankly.utils.exceptions as exceptions
@@ -151,6 +150,7 @@ class BinanceInterface(ExchangeInterface):
             products[i] = utils.isolate_specific(needed, products[i])
         return products
 
+    @utils.enforce_base_asset
     def get_account(self, symbol=None) -> utils.AttributeDict:
         """
         Get all currencies in an account, or sort by asset/account_id

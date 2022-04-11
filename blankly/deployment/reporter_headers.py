@@ -73,7 +73,7 @@ class Reporter:
         if self.__screener is None:
             self.__screener = screener
         else:
-            raise RuntimeError("Currently only a single screener can be exported per model.")
+            raise RuntimeError("Currently only a single screener can be created per model.")
 
     def export_screener_result(self, screener: Screener):
         """
@@ -84,12 +84,12 @@ class Reporter:
         """
         pass
 
-    def export_backtest_result(self, backtest_result: BacktestResult):
+    def export_backtest_result(self, platform_result: dict):
         """
         Re-export for the finished screener result
 
         Args:
-            backtest_result: A blankly backtest result object
+            platform_result: A blankly backtest result object
         """
         pass
 

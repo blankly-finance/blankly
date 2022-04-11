@@ -22,16 +22,16 @@ from blankly.utils.utils import time_interval_to_seconds as _time_interval_to_se
 
 class BacktestResult:
     def __init__(self, history_and_returns: dict, trades: dict, history: dict,
-                 start_time: float, stop_time: float, quote_currency: str, price_events: list, figures: list):
+                 start_time: float, stop_time: float, quote_currency: str, figures: list):
         # This can use a ton of memory if these attributes are not cleared
         self.history_and_returns = history_and_returns
         self.metrics = None  # Assigned after construction
         self.user_callbacks = None  # Assigned after construction
+        self.exchange = None  # Assigned after construction
         self.trades = trades
         self.history = history
 
         self.quote_currency = quote_currency
-        self.price_events = price_events
 
         self.start_time = start_time
         self.stop_time = stop_time
@@ -79,11 +79,14 @@ class BacktestResult:
                         # Must be the last one in the list
                         return search_index - 1
 
-                    if arr[search_index] <= x <= arr[search_index + 1]:
-                        # Found it in this range
-                        return search_index
+                    if len(arr) > 1:
+                        if arr[search_index] <= x <= arr[search_index + 1]:
+                            # Found it in this range
+                            return search_index
+                        else:
+                            search_index += 1
                     else:
-                        search_index += 1
+                        return 0
             try:
                 # Iterate and find the correct quote price
                 index_ = search(times, len(times), epoch)
@@ -152,9 +155,11 @@ class BacktestResult:
 
         return_string += "Blankly Metrics: \n"
         for i in self.metrics.keys():
-            spaces_needed = 33 - len(i)
-            user_metrics_line = i + ": " + (' ' * spaces_needed) + str(self.metrics[i])
-            if i[-3:] == "(%)":
+            display_name = self.metrics[i]['display_name']
+            value = self.metrics[i]['value']
+            spaces_needed = 33 - len(display_name)
+            user_metrics_line = display_name + ": " + (' ' * spaces_needed) + str(value)
+            if display_name[-3:] == "(%)":
                 user_metrics_line += "%"
             user_metrics_line += "\n"
             return_string += user_metrics_line

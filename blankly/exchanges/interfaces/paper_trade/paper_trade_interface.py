@@ -86,7 +86,6 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
     def evaluate_traded_account_assets(self):
         # Because alpaca has so many columns we need to optimize to perform an accurate backtest
-        self.traded_assets = []
         accounts = self.get_account()
 
         for i in accounts.keys():
@@ -326,6 +325,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         return order, funds, executed_value, fill_fees, fill_size
 
+    @utils.enforce_base_asset
     def get_account(self, symbol=None) -> utils.AttributeDict:
         if symbol is None:
             return self.local_account.get_accounts()
@@ -419,6 +419,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
+        # Identify the trade also by exchange
+        if self.backtesting:
+            self.paper_trade_orders[-1]['exchange'] = self.get_exchange_type()
 
         if self.__exchange_properties is None:
             self.init_exchange()
@@ -558,6 +561,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
+        # Identify the trade also by exchange
+        self.paper_trade_orders[-1]['exchange'] = self.get_exchange_type()
 
         base = utils.get_base_asset(symbol)
         quote = utils.get_quote_asset(symbol)
@@ -578,12 +583,15 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             # Gain size on hold when selling
             hold = self.local_account.get_account(base)['hold']
             self.local_account.update_hold(base, hold + size)
+        else:
+            raise APIException(f"Invalid side {side}")
         return LimitOrder(order, response, self)
 
     def cancel_order(self, symbol, order_id) -> dict:
         """
         This block could potentially work for both exchanges
         """
+        del symbol
         order_index = None
         for i in range(len(self.paper_trade_orders)):
             index = self.paper_trade_orders[i]
@@ -592,7 +600,34 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 break
 
         if order_index is not None:
-            order_id = self.paper_trade_orders[order_index]['id']
+            # Now that we found it make sure that we move the funds back on available
+            order = self.paper_trade_orders[order_index]
+            side = order['side']
+            size = order['size']
+            symbol = order['symbol']
+            price = order['price']
+            base_asset = utils.get_base_asset(symbol)
+            quote_asset = utils.get_quote_asset(symbol)
+
+            if side == 'buy':
+                # When you cancel on the buy side you get those funds back in available
+                available = self.local_account.get_account(quote_asset)['available']
+                self.local_account.update_available(quote_asset, available + (size * price))
+
+                # And loose them on hold
+                hold = self.local_account.get_account(quote_asset)['hold']
+                self.local_account.update_hold(quote_asset, hold - (size * price))
+            elif side == 'sell':
+                # Canceling a sell you gain the size back into available
+                available = self.local_account.get_account(base_asset)['available']
+                self.local_account.update_available(base_asset, available + size)
+
+                # And you loose it in the hold
+                hold = self.local_account.get_account(base_asset)['hold']
+                self.local_account.update_hold(base_asset, hold - size)
+
+            # This saves the order
+            order_id = order['id']
             # Make sure to save this as a canceled order just before closing it
             # Make sure to write in the time also
             self.canceled_orders.append({
@@ -602,6 +637,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
             del self.paper_trade_orders[order_index]
             return {"order_id": order_id}
+        else:
+            raise APIException("Order ID not found.")
 
     def get_open_orders(self, symbol=None):
         open_orders = []
@@ -632,7 +669,18 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             return self.calls.get_fees()
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
-        return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        if self.backtesting:
+            if symbol in self.full_prices:
+                if resolution in self.full_prices[symbol]:
+                    price_set = self.full_prices[symbol][resolution]
+                else:
+                    raise LookupError(f"The resolution {resolution} not found or downloaded for {symbol}.")
+            else:
+                raise LookupError(f"Prices for this symbol ({symbol}) not found")
+
+            return utils.trim_df_time_column(price_set, epoch_start - resolution, epoch_stop)
+        else:
+            return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
     def get_order_filter(self, symbol):
         # Don't re-query order filter if its cached

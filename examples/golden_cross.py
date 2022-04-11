@@ -1,5 +1,5 @@
 """
-    This shows a simple golden cross example on MSFT, checking at a 1d resolution over two years
+    This shows a simple golden cross example on GME and SNAP checking at a 1h resolution over two years
 """
 
 from blankly import Strategy, StrategyState, Interface

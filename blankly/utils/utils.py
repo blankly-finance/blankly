@@ -50,7 +50,8 @@ default_general_settings = {
             "cash": "USDT"
         },
         "ftx": {
-            "cash": "USD"
+            "cash": "USD",
+            "ftx_tld": "us"
         },
         "alpaca": {
             "websocket_stream": "iex",
@@ -134,7 +135,7 @@ class __BlanklySettings:
             default_settings: The default settings in which to compare the loaded settings to. This helps the user
              learn if they're missing important settings and avoids keyerrors later on
             not_found_err: A string that is shown if the file they specify is not found
-            allow_nonexistent: Enable this to create the file if not found
+            allow_nonexistent: Enable this to just get the defaults if the file isn't found
         """
         self.__settings_cache = {}
         self.__default_path = default_path
@@ -174,9 +175,10 @@ class __BlanklySettings:
                 preferences = load_json_file(self.__default_path)
             except FileNotFoundError:
                 if self.__allow_nonexistent:
-                    self.write(self.__default_settings)
-                    # Recursively run this
-                    return self.load(override_path)
+                    return self.__default_settings
+                    # self.write(self.__default_settings)
+                    # # Recursively run this
+                    # return self.load(override_path)
                 else:
                     raise FileNotFoundError(self.__not_found_err)
             preferences = self.__compare_dicts(self.__default_settings, preferences)
@@ -776,6 +778,19 @@ def check_backtesting() -> bool:
         return False
 
 
+def enforce_base_asset(func):
+    """
+    Used for get_account functions, this enforces that the user is always getting the base asset which is probably
+    what the user meant
+    """
+    def wrapper(self, symbol=None):
+        # Get the base asset if it was defined
+        if symbol is not None:
+            symbol = get_base_asset(symbol)
+        return func(self, symbol=symbol)
+    return wrapper
+
+
 def order_protection(func):
     """
     Decorator to provide protection against live orders inside backtest environment
@@ -802,3 +817,10 @@ def add_all_products(nonzero_products: dict, all_products: list):
             }
 
     return nonzero_products
+
+
+def trim_df_time_column(df, epoch_start: [int, float], epoch_stop: [int, float]):
+    df = df[df['time'] >= epoch_start]
+    df = df[df['time'] <= epoch_stop]
+
+    return df

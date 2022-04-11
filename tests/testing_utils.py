@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import datetime
 
 
 def get_valid_symbol(exchange: str):
@@ -32,3 +33,16 @@ def get_valid_symbol(exchange: str):
         return 'ETH-USDT'
     else:
         raise LookupError("Specified exchange not found.")
+
+
+def forex_market_open():
+    now = datetime.datetime.now()
+    # friday == 4
+    # saturday == 5
+    # TODO Technically it resumes at 5pm sunday but I don't handle that
+    if now.weekday() >= 5:
+        return False
+    elif now.weekday() >= 4 and now.hour >= 17:
+        return False
+    else:
+        return True
