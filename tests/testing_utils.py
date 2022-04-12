@@ -22,7 +22,7 @@ def get_valid_symbol(exchange: str):
     if exchange == 'binance':
         return 'BTC-USDT'
     elif exchange == 'okx':
-        return 'BTC-USDT'
+        return 'ADA-USDT'
     elif exchange == 'coinbase_pro':
         return 'BTC-USD'
     elif exchange == 'alpaca':

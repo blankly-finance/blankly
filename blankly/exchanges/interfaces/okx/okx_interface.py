@@ -111,7 +111,7 @@ class OkxInterface(ExchangeInterface):
         }
 
         response = self._trade.place_order(symbol, 'cash', side, 'market', size)
-        if response['data'][0]['sMsg'] is not None:
+        if len(response['data'][0]['sMsg']) != 0:
             raise InvalidOrder("Invalid Order: " + response['data'][0]["sMsg"])
         response["created_at"] = time.time()
         response["id"] = response['data'][0]['ordId']
