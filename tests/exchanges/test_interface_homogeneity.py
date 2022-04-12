@@ -86,20 +86,20 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
 
         # Kucoin definition and appending
-        cls.Kucoin = blankly.Kucoin(portfolio_name="KC Sandbox Portfolio",
-                                    keys_path='./tests/config/keys.json',
-                                    settings_path="./tests/config/settings.json")
-        cls.Kucoin_Interface = cls.Kucoin.get_interface()
-        cls.interfaces.append(cls.Kucoin_Interface)
-
-        cls.Kucoin_data = blankly.Kucoin(portfolio_name="KC Data Keys",
-                                         keys_path='./tests/config/keys.json',
-                                         settings_path="./tests/config/settings.json")
-        cls.Kucoin_Interface_data = cls.Kucoin_data.get_interface()
-        cls.data_interfaces.append(cls.Kucoin_Interface_data)
+        # cls.Kucoin = blankly.Kucoin(portfolio_name="KC Sandbox Portfolio",
+        #                             keys_path='./tests/config/keys.json',
+        #                             settings_path="./tests/config/settings.json")
+        # cls.Kucoin_Interface = cls.Kucoin.get_interface()
+        # cls.interfaces.append(cls.Kucoin_Interface)
+        #
+        # cls.Kucoin_data = blankly.Kucoin(portfolio_name="KC Data Keys",
+        #                                  keys_path='./tests/config/keys.json',
+        #                                  settings_path="./tests/config/settings.json")
+        # cls.Kucoin_Interface_data = cls.Kucoin_data.get_interface()
+        # cls.data_interfaces.append(cls.Kucoin_Interface_data)
 
         #kraken definition and appending
-        cls.Kraken = blankly.Kraken(portfolio_name="default",
+        cls.Kraken = blankly.Kraken(portfolio_name="kraken test portfolio",
                                     keys_path='./tests/config/keys.json',
                                     settings_path="./tests/config/settings.json")
         cls.Kraken_Interface = cls.Kraken.get_interface()
@@ -130,12 +130,12 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.data_interfaces.append(cls.Alpaca_Interface)
 
         # Oanda definition and appending
-        cls.Oanda = blankly.Oanda(portfolio_name="oanda test portfolio",
-                                  keys_path='./tests/config/keys.json',
-                                  settings_path="./tests/config/settings.json")
-        cls.Oanda_Interface = cls.Oanda.get_interface()
-        cls.interfaces.append(cls.Oanda_Interface)
-        cls.data_interfaces.append(cls.Oanda_Interface)
+        # cls.Oanda = blankly.Oanda(portfolio_name="oanda test portfolio",
+        #                           keys_path='./tests/config/keys.json',
+        #                           settings_path="./tests/config/settings.json")
+        # cls.Oanda_Interface = cls.Oanda.get_interface()
+        # cls.interfaces.append(cls.Oanda_Interface)
+        # cls.data_interfaces.append(cls.Oanda_Interface)
         
         cls.FTX = blankly.FTX(portfolio_name="Main Account",
                               keys_path='./tests/config/keys.json',
@@ -348,11 +348,11 @@ class InterfaceHomogeneity(unittest.TestCase):
         limits += evaluate_limit_order(self.Binance_Interface, 'BTC-USDT', int(binance_limits['min_price']+100),
                                        int(binance_limits['max_price']-100), .01)
 
-        limits += evaluate_limit_order(self.Coinbase_Pro_Interface, 'BTC-USD', .01, 100000, 1)
+        # limits += evaluate_limit_order(self.Coinbase_Pro_Interface, 'BTC-USD', .01, 100000, 1)
 
-        limits += evaluate_limit_order(self.Kucoin_Interface, 'ETH-USDT', .01, 100000, 1)
+        # limits += evaluate_limit_order(self.Kucoin_Interface, 'ETH-USDT', .01, 100000, 1)
 
-        limits += evaluate_limit_order(self.Oanda_Interface, 'EUR-USD', .01, 100000, 1)
+        # limits += evaluate_limit_order(self.Oanda_Interface, 'EUR-USD', .01, 100000, 1)
 
         responses = []
         status = []
@@ -360,10 +360,11 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         open_orders = {
             'coinbase_pro': self.Coinbase_Pro_Interface.get_open_orders('BTC-USD'),
+            'kraken': self.Kraken_Interface.get_open_orders(),
             'binance': self.Binance_Interface.get_open_orders('BTC-USDT'),
-            'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
+            # 'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
             'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
-            'oanda': self.Oanda_Interface.get_open_orders('EUR-USD')
+            # 'oanda': self.Oanda_Interface.get_open_orders('EUR-USD')
         }
 
         # Simple test to ensure that some degree of orders have been placed
@@ -373,9 +374,9 @@ class InterfaceHomogeneity(unittest.TestCase):
         # Just scan through both simultaneously to reduce code copying
         all_orders = open_orders['coinbase_pro']
         all_orders = all_orders + open_orders['binance']
-        all_orders = all_orders + open_orders['kucoin']
+        # all_orders = all_orders + open_orders['kucoin']
         all_orders = all_orders + open_orders['alpaca']
-        all_orders = all_orders + open_orders['oanda']
+        # all_orders = all_orders + open_orders['oanda']
 
         # Filter for limit orders
         open_orders = []
@@ -414,8 +415,8 @@ class InterfaceHomogeneity(unittest.TestCase):
         cancels.append(self.Alpaca_Interface.cancel_order('AAPL', sorted_orders['alpaca']['buy'].get_id()))
         cancels.append(self.Alpaca_Interface.cancel_order('AAPL', sorted_orders['alpaca']['sell'].get_id()))
 
-        cancels.append(self.Oanda_Interface.cancel_order('EUR-USD', sorted_orders['oanda']['buy'].get_id()))
-        cancels.append(self.Oanda_Interface.cancel_order('EUR-USD', sorted_orders['oanda']['sell'].get_id()))
+        # cancels.append(self.Oanda_Interface.cancel_order('EUR-USD', sorted_orders['oanda']['buy'].get_id()))
+        # cancels.append(self.Oanda_Interface.cancel_order('EUR-USD', sorted_orders['oanda']['sell'].get_id()))
 
         self.assertTrue(compare_responses(cancels, force_exchange_specific=False))
 

@@ -17,7 +17,7 @@ from blankly.exchanges.orders.market_order import MarketOrder
 
 class KrakenInterface(ExchangeInterface):
 
-    # NOTE, kraken has no sandbox mode
+    # NOTE: kraken has no sandbox mode
     def __init__(self, exchange_name, authenticated_api):
         super().__init__(exchange_name, authenticated_api, valid_resolutions=None)
 
@@ -218,7 +218,8 @@ class KrakenInterface(ExchangeInterface):
         Args:
             symbol (optional) (str): Asset such as BTC-USD
         """
-        response = self.get_calls().open_orders(symbol)["open"]
+        response = self.get_calls().open_orders()
+
         response_needed_fulfilled = []
         if len(response) == 0:
             return []
@@ -325,7 +326,7 @@ class KrakenInterface(ExchangeInterface):
 
     def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
         """
-        Kucoin is strange because it's exclusive instead of inclusive. This generally invovles adding an extra
+        Kraken is strange because it's exclusive instead of inclusive. This generally invovles adding an extra
         datapoint so this is here to do some of that work
         """
         to = kwargs['to']
