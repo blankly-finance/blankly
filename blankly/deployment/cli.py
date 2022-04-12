@@ -60,7 +60,7 @@ class TermColors:
 
 
 supported_exchanges = ['binance.com', 'binance.us',
-                       'coinbase_pro', 'alpaca', 'ftx', 'oanda']
+                       'coinbase_pro', 'alpaca', 'ftx', 'oanda', 'getting-started']
 
 
 def choose_option(choice: str, options: list, descriptions: list):
@@ -182,7 +182,7 @@ def choose_option(choice: str, options: list, descriptions: list):
         return options[index]
 
 
-def get_project_model_and_name(args, projects, api: API):
+def get_project_model_and_name(args, api: API):
     if 'path' not in args or args['path'] is None:
         print(TermColors.WARNING + "Warning - No filepath specified. Assuming the current directory (./)\n" +
               TermColors.ENDC)
@@ -200,24 +200,12 @@ def get_project_model_and_name(args, projects, api: API):
         This handles identifying the project on login
         """
         if 'model_id' not in deployment_options or \
-                'project_id' not in deployment_options or \
                 'type' not in deployment_options or \
                 'model_name' not in deployment_options:
             # This performs all the querying necessary to send the data up
-            # This the logic that selects the project
-            ids = []
-            for i in projects:
-                ids.append(i['projectId'])
-            descriptions = []
-
-            for i in projects:
-                descriptions.append("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
-                                    TermColors.ENDC + TermColors.OKCYAN + i['name'])
-            project_id = choose_option('project', ids, descriptions)
-
             choice = choose_option('way to connect to a model', ['Create New', 'Choose from Existing'],
-                                   ['Generate a new model in this project',
-                                    'Attach to an existing model in this project'])
+                                   ['Generate a new model',
+                                    'Attach to an existing model'])
 
             if choice == 'Create New':
                 model_name = input(TermColors.BOLD + TermColors.WARNING +
@@ -233,9 +221,9 @@ def get_project_model_and_name(args, projects, api: API):
                                        "\t" + TermColors.BOLD + TermColors.WARNING +
                                        'A screener is a model uses blankly.Screener' + TermColors.ENDC])
 
-                model_id = api.create_model(project_id, type_, model_name, general_description)['modelId']
+                model_id = api.create_model(type_, model_name, general_description)['modelId']
             else:
-                models = api.list_models(project_id)
+                models = api.list_models()
                 ids = []
                 descriptions = []
                 for i in models:
@@ -265,16 +253,14 @@ def get_project_model_and_name(args, projects, api: API):
 
             deployment_options['type'] = type_
             deployment_options['model_id'] = model_id
-            deployment_options['project_id'] = project_id
             deployment_options['model_name'] = model_name
         model_name = deployment_options['model_name']
-        project_id = deployment_options['project_id']
 
         """
         This part generates API keys if they aren't found
         """
         if 'api_key' not in deployment_options or 'api_pass' not in deployment_options:
-            response = api.generate_keys(deployment_options['project_id'])
+            response = api.generate_keys()
             deployment_options['api_key'] = response['apiKey']
             deployment_options['api_pass'] = response['apiPass']
             queue_write = True
@@ -289,7 +275,7 @@ def get_project_model_and_name(args, projects, api: API):
                                 f"directory specified.")
 
     python_version = deployment_options['python_version']
-    return model_name, project_id, deployment_options, python_version
+    return model_name, deployment_options, python_version
 
 
 temporary_zip_file = None
@@ -379,15 +365,16 @@ deploy_parser = subparsers.add_parser('deploy', help='Command to upload & start 
 deploy_parser.set_defaults(which='deploy')
 add_path_arg(deploy_parser, required=False)
 
-project_create_parser = subparsers.add_parser('create', help='Create a new project.')
-project_create_parser.set_defaults(which='create')
+# Old project tools
+# project_create_parser = subparsers.add_parser('create', help='Create a new project.')
+# project_create_parser.set_defaults(which='create')
+# list_parser = subparsers.add_parser('list', help='Show available projects & exit.')
+# list_parser.set_defaults(which='list')
 
 backtest_parser = subparsers.add_parser('backtest', help='Start a backtest on an uploaded model.')
 backtest_parser.set_defaults(which='backtest')
 add_path_arg(backtest_parser, required=False)
 
-list_parser = subparsers.add_parser('list', help='Show available projects & exit.')
-list_parser.set_defaults(which='list')
 
 run_parser = subparsers.add_parser('run', help='Mimic the run mechanism used in blankly deployment.')
 run_parser.add_argument('--monitor',
@@ -620,16 +607,9 @@ def main():
 
         api = API(token_)
 
-        projects = api.list_projects()
-
-        if len(projects) == 0:
-            print(TermColors.FAIL +
-                  "Please create a project with 'blankly create' first." + TermColors.ENDC)
-            return
-
         # Read and write to the deployment options if necessary
-        model_name, project_id, deployment_options, python_version = \
-            get_project_model_and_name(args, projects, api)
+        model_name, deployment_options, python_version = \
+            get_project_model_and_name(args, api)
 
         info_print("Zipping...")
 
@@ -643,7 +623,6 @@ def main():
         info_print("Uploading...")
         kwargs = {
             'file_path': model_path,
-            'project_id': project_id,
             'model_id': deployment_options['model_id'],
             'version_description': version_description,
             'python_version': python_version,
@@ -661,7 +640,9 @@ def main():
             info_print(f"\tModel ID:\t{response['modelId']}")
             info_print(f"\tVersion:\t{response['versionId']}")
             info_print(f"\tStatus:  \t{response['status']}")
-            info_print(f"\tProject:\t{response['projectId']}")
+            url = f"https://app.blankly.finance/{api.user_id}/{response['modelId']}/overview"
+            webbrowser.open(url)
+            info_print(f"\tView your model here: {url}")
 
     elif which == 'init':
         exchange = args['exchange']
@@ -748,9 +729,8 @@ def main():
                 # We know we're logged in so make sure that we also get a project id and a model id
                 print(f'{TermColors.WARNING}Automatically logged in!{TermColors.ENDC}')
                 api = API(login())
-                print(f'{TermColors.WARNING}Attaching this to a platform project...{TermColors.ENDC}')
-                projects = api.list_projects()
-                get_project_model_and_name(args, projects, api)
+                print(f'{TermColors.WARNING}Attaching this to a platform model...{TermColors.ENDC}')
+                get_project_model_and_name(args, api)
             else:
                 print(f'{TermColors.WARNING}Run \"blankly login\" and then \"blankly init\" again to get better '
                       f'backtest '
@@ -769,26 +749,23 @@ def main():
         logout()
         info_print("Cleared all blankly credentials.")
 
-    elif which == 'list':
-        api = API(login())
-        projects = api.list_projects()
-        if len(projects) > 0:
-            print(TermColors.BOLD + TermColors.WARNING + "Projects: " + TermColors.ENDC)
-            for i in projects:
-                print("\t" + TermColors.BOLD + TermColors.WARNING + i['projectId'] + ": " +
-                      TermColors.ENDC + TermColors.OKCYAN + i['name'])
-                print(f"\t\t Description: {i['description']}")
-        else:
-            info_print("No projects found.")
+    # elif which == 'list':
+    #     api = API(login())
+    #     models = api.list_models()
+    #     if len(models) > 0:
+    #         print(TermColors.BOLD + TermColors.WARNING + "Models: " + TermColors.ENDC)
+    #         for i in models:
+    #             print("\t" + TermColors.BOLD + TermColors.WARNING + i['id'] + ": " +
+    #                   TermColors.ENDC + TermColors.OKCYAN + i['name'])
+    #             print(f"\t\t Description: {i['description']}")
+    #     else:
+    #         info_print("No projects found.")
 
     elif which == 'backtest':
         api = API(login())
 
-        projects = api.list_projects()
-
         # Read and write to the deployment options if necessary
-        model_name, project_id, deployment_options, python_version = \
-            get_project_model_and_name(args, projects, api)
+        model_name, deployment_options, python_version = get_project_model_and_name(args, api)
 
         if deployment_options['type'] == 'screener':
             raise AttributeError("Screeners are not backtestable.")
@@ -804,7 +781,6 @@ def main():
         info_print("Uploading...")
 
         response = api.backtest(file_path=model_path,
-                                project_id=project_id,
                                 model_id=deployment_options['model_id'],
                                 args=deployment_options['backtest_args'],
                                 plan=chosen_plan,
@@ -820,25 +796,23 @@ def main():
             info_print(f"\tModel ID:\t{response['modelId']}")
             info_print(f"\tVersion:\t{response['versionId']}")
             info_print(f"\tStatus:  \t{response['status']}")
-            info_print(f"\tProject:\t{response['projectId']}")
 
-    elif which == 'create':
-        api = API(login())
-
-        project_name = input(TermColors.BOLD + "Input a name for your project: " + TermColors.ENDC)
-
-        project_description = input(TermColors.BOLD + "Input a description for your project: " + TermColors.ENDC)
-
-        input(TermColors.BOLD + TermColors.FAIL + "Press enter to confirm project creation." + TermColors.ENDC)
-
-        response = api.create_project(project_name, description=project_description)
-
-        if 'error' in response:
-            info_print('Error: ' + response['error'])
-        elif 'status' in response and response['status'] == 'success':
-            info_print(f"Created {response['name']} at {response['createdAt']}:")
-            info_print(f"\tProject Id:\t{response['projectId']}")
-            info_print(f"\tStatus:\t{response['status']}")
+    # elif which == 'create':
+    #     api = API(login())
+    #
+    #     project_name = input(TermColors.BOLD + "Input a name for your model: " + TermColors.ENDC)
+    #
+    #     project_description = input(TermColors.BOLD + "Input a description for your model: " + TermColors.ENDC)
+    #
+    #     input(TermColors.BOLD + TermColors.FAIL + "Press enter to confirm model creation." + TermColors.ENDC)
+    #
+    #     response = api.create_model(type_='strategy', name=project_name, description=project_description)
+    #
+    #     if 'error' in response:
+    #         info_print('Error: ' + response['error'])
+    #     elif 'status' in response and response['status'] == 'success':
+    #         info_print(f"Created {response['name']} at {response['createdAt']}:")
+    #         info_print(f"\tModel Id:\t{response['id']}")
 
     elif which == 'run':
         if args['path'] is None:

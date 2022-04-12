@@ -220,7 +220,7 @@ class InterfaceHomogeneity(unittest.TestCase):
     def test_market_order(self):
         def check_account_delta(before: dict, after: dict, order: MarketOrder) -> None:
             # A market order should not have changed the funds on hold
-            self.assertEqual(before['hold'], after['hold'])
+            self.assertAlmostEqual(before['hold'], after['hold'], places=1)
 
             # The symbol should have gained less than the size on the buy if there were fees
             # Before + requested size >= the filled size
@@ -331,12 +331,12 @@ class InterfaceHomogeneity(unittest.TestCase):
                 after['hold'] = float(after['hold'])
 
                 self.assertAlmostEqual(before['available'], after['available'] + (order.get_price() * order.get_size()),
-                                       places=2)
+                                       places=1)
 
                 # The symbol should have gained less than the size on the buy if there were fees
                 # Before + requested size >= the filled size
                 self.assertAlmostEqual(before['hold'], after['hold'] - (order.get_price() * order.get_size()),
-                                       places=2)
+                                       places=1)
 
             initial_account = interface.get_account(get_quote_asset(symbol))
             buy = interface.limit_order(symbol, 'buy', buy_price, size)

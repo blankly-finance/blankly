@@ -85,23 +85,27 @@ def __parse_backtest_trades(trades: list, limit_executed: list, limit_canceled: 
 
     # Now just parse if there should be an executed time or a canceled time
     for i in range(len(trades)):
+        try:
+            trades[i]['time'] = trades[i].pop('created_at')
+        except KeyError:
+            pass
         if trades[i]['type'] == 'limit':
             # TODO this wastes a few CPU cycles at the moment so it could be cleaned up
             for j in limit_executed:
                 if trades[i]['id'] == j['id']:
-                    trades[i]['executed_at'] = j['executed_time']
-                    trades[i]['executed_price'] = trades[i]['price']
+                    trades[i]['time'] = j['executed_time']
                     break
 
             for j in limit_canceled:
                 if trades[i]['id'] == j['id']:
-                    trades[i]['canceled_at'] = j['canceled_time']
+                    trades[i]['canceledTime'] = j['canceled_time']
                     break
         elif trades[i]['type'] == 'market':
             # This adds in the execution price for the market orders
+            trades[i]['type'] = 'spot-market'
             for j in market_executed:
                 if trades[i]['id'] == j['id']:
-                    trades[i]['executed_price'] = j['executed_price']
+                    trades[i]['price'] = j['executed_price']
                     break
 
     return trades
@@ -135,32 +139,15 @@ def format_platform_result(backtest_result):
     # Set the account values to None
     raw_or_resampled_account_values = None
 
-    # Now we can show the price events resolution and their symbol by knowing the order in the array they appear
-    #  in
-    price_events = []
-    if len(backtest_result.price_events) > 0:
-        shortest_price_event = backtest_result.price_events[0]['interval']
-        for i in backtest_result.price_events:
-            if i['interval'] < shortest_price_event:
-                shortest_price_event = i['interval']
-            price_events.append({'symbol': i['asset_id'], 'interval': i['interval'], 'ohlcv': i['ohlc']})
-
-        if shortest_price_event < 3600:
-            # Turn raw account values
-            raw_or_resampled_account_values = backtest_result.resample_account('Account Value ('
-                                                                               + backtest_result.quote_currency +
-                                                                               ')', 3600).to_dict()
-
     # Now grab the account value dictionary itself
     # Now just replicate the format of the resampled version
     # This was the annoying backtest glitch that almost cost us an investor meeting so its important
-    if raw_or_resampled_account_values is None:
-        history = history_and_returns['history']
-        account_value_name = 'Account Value (' + backtest_result.quote_currency + ')'
-        raw_or_resampled_account_values = {
-            'value': history[account_value_name],
-            'time': history['time']
-        }
+    history = history_and_returns['history']
+    account_value_name = 'Account Value (' + backtest_result.quote_currency + ')'
+    raw_or_resampled_account_values = {
+        'value': history[account_value_name],
+        'time': history['time']
+    }
 
     # Now grab the raw account values
     compressed_asset_column = __compress_dict_series(raw_or_resampled_account_values['value'],
@@ -204,6 +191,7 @@ def format_platform_result(backtest_result):
 
     backtest_result.metrics = refined_metrics
     return {
+        'exchange': backtest_result.exchange,
         'symbols': traded_symbols,
         'quote_asset': backtest_result.quote_currency,
         'start_time': backtest_result.start_time,
@@ -213,7 +201,6 @@ def format_platform_result(backtest_result):
         'metrics': refined_metrics,
         'indicators': {},  # Add to this array when we support
         # strategy indicators
-        'price_events': price_events,
         'user_callbacks': backtest_result.user_callbacks,
         'initial_account_value': first_account_value,
         'final_account_value': last_account_value,

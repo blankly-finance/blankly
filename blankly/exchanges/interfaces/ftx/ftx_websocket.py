@@ -48,17 +48,17 @@ from blankly.utils.utils import info_print
 
 class Tickers(Websocket):
     def __init__(self, symbol, stream, log=None,
-                 pre_event_callback=None, initially_stopped=False, WEBSOCKET_URL="wss://ftx.com/ws/"):
+                 pre_event_callback=None, initially_stopped=False, websocket_url="wss://ftx.com/ws/", **kwargs):
         """
         Create and initialize the ticker
         Args:
             symbol: Currency to initialize on such as "BTC-USD"
             log: Fill this with a path to a log file that should be created
-            WEBSOCKET_URL: Default websocket URL feed.
+            websocket_url: Default websocket URL feed.
         """
         self.__logging_callback, self.__interface_callback, log_message = websocket_utils.switch_type(stream)
 
-        super().__init__(symbol, stream, log, log_message, WEBSOCKET_URL, pre_event_callback)
+        super().__init__(symbol, stream, log, log_message, websocket_url, pre_event_callback, kwargs)
 
         # Start the websocket
         if not initially_stopped:
@@ -100,7 +100,7 @@ class Tickers(Websocket):
 
             try:
                 for i in self.callbacks:
-                    i(interface_message)
+                    i(interface_message, **self.kwargs)
             except Exception as e:
                 info_print(e)
                 traceback.print_exc()

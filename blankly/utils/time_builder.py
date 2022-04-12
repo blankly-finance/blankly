@@ -17,6 +17,7 @@
 """
 
 from typing import Union
+from numpy import int64, int32
 
 
 def build_second() -> int:
@@ -63,7 +64,8 @@ def time_interval_to_seconds(interval: Union[str, float]) -> float:
     """
     Extract the number of seconds in an interval string
     """
-    if isinstance(interval, float) or isinstance(interval, int):
+    if isinstance(interval, float) or isinstance(interval, int) or isinstance(interval, int64) or \
+            isinstance(interval, int32):
         return float(interval)
     # Extract intervals
     if 'mo' in interval:

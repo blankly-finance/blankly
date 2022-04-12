@@ -14,17 +14,12 @@ organized, and you make the changes where they make sense and are easy to mainta
 The first step to getting started is to install from source. Our best suggestions is to use this in conjunction with an anaconda environment or a venv to make sure that you separate the production blankly from your local source.
 
 1. First [fork](https://help.github.com/articles/fork-a-repo/) the repo to your own GitHub and then [clone](https://help.github.com/articles/cloning-a-repository/) it locally.
-
-2. Create a new branch that highlights what you plan on changing:
-```bash
-$ git checkout -b MY_BRANCH_NAME
-```
-
-4. Install testing dependencies
+2. Install testing dependencies
 ```bash
 $ pip install pytest pytest_mock
 ```
-5. Ensure that you have proper API keys on the various exchanges to run the test, or submit a PR, and we can run them.
+3. Ensure that you have proper API keys on the various exchanges to run the test, or submit a PR, and we can run them.
+   1. Note that the keys should be placed inside `keys.json` at `./tests/config`
 
 Now you should be up and running and installed from source.
 

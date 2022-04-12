@@ -18,7 +18,6 @@
 import time
 
 import binance.exceptions
-import numpy
 import pandas as pd
 
 import blankly.utils.exceptions as exceptions
