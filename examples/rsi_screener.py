@@ -13,6 +13,7 @@ def is_stock_buy(symbol, state: ScreenerState):
     rsi_values = rsi(prices['close'], 14)
     return {'is_oversold': bool(rsi_values[-1] < 30), 'price': price, 'symbol': symbol}
 
+
 def formatter(results, state: ScreenerState):
     # results is a dictionary on a per-symbol basis
     result_string = 'These are all the stocks that are currently oversold: \n'

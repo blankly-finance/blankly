@@ -35,8 +35,8 @@ class FTX(Exchange):
         keys = auth.keys
         sandbox = super().evaluate_sandbox(auth)
 
-        calls = FTXAPI(keys['API_KEY'], keys['API_SECRET'],
-                       tld=self.preferences["settings"]["ftx"]["ftx_tld"])
+        calls = FTXAPI(keys['API_KEY'], keys['API_SECRET'], tld=self.preferences["settings"]["ftx"]["ftx_tld"],
+                       _subaccount_name=keys.get('SUBACCOUNT', None))
 
         # Always finish the method with this function
         super().construct_interface_and_cache(calls)

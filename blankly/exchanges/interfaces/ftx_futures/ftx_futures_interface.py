@@ -282,7 +282,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         self.calls.cancel_order(str(order_id))
         return res
 
-    def get_open_orders(self, symbol: str) -> list:
+    def get_open_orders(self, symbol: str = None) -> list:
         return [
             self.parse_order_response(o) for o in self.calls.get_open_orders()
         ]

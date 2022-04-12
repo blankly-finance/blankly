@@ -86,7 +86,6 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
     def evaluate_traded_account_assets(self):
         # Because alpaca has so many columns we need to optimize to perform an accurate backtest
-        self.traded_assets = []
         accounts = self.get_account()
 
         for i in accounts.keys():
@@ -420,6 +419,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
+        # Identify the trade also by exchange
+        if self.backtesting:
+            self.paper_trade_orders[-1]['exchange'] = self.get_exchange_type()
 
         if self.__exchange_properties is None:
             self.init_exchange()
@@ -559,6 +561,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
+        # Identify the trade also by exchange
+        self.paper_trade_orders[-1]['exchange'] = self.get_exchange_type()
 
         base = utils.get_base_asset(symbol)
         quote = utils.get_quote_asset(symbol)
@@ -587,6 +591,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         """
         This block could potentially work for both exchanges
         """
+        del symbol
         order_index = None
         for i in range(len(self.paper_trade_orders)):
             index = self.paper_trade_orders[i]
@@ -664,7 +669,18 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             return self.calls.get_fees()
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
-        return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        if self.backtesting:
+            if symbol in self.full_prices:
+                if resolution in self.full_prices[symbol]:
+                    price_set = self.full_prices[symbol][resolution]
+                else:
+                    raise LookupError(f"The resolution {resolution} not found or downloaded for {symbol}.")
+            else:
+                raise LookupError(f"Prices for this symbol ({symbol}) not found")
+
+            return utils.trim_df_time_column(price_set, epoch_start - resolution, epoch_stop)
+        else:
+            return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
     def get_order_filter(self, symbol):
         # Don't re-query order filter if its cached

@@ -27,22 +27,22 @@ from blankly.utils.utils import info_print
 
 class Tickers(Websocket):
     def __init__(self, symbol, stream, log=None, initially_stopped=False,
-                 WEBSOCKET_URL="wss://stream.binance.{}:9443/ws"):
+                 websocket_url="wss://stream.binance.{}:9443/ws", **kwargs):
         """
         Create and initialize the ticker
         Args:
             symbol: Currency to initialize on such as "btcusdt"
             stream: Stream to use, such as "depth" or "trade"
             log: Fill this with a path to a log file that should be created
-            WEBSOCKET_URL: Default websocket URL feed.
+            websocket_url: Default websocket URL feed.
         """
         # Reload preferences
         self.__preferences = blankly.utils.load_user_preferences()
 
         self.__logging_callback, self.__interface_callback, log_message = websocket_utils.switch_type(stream)
-        url = WEBSOCKET_URL.format(self.__preferences['settings']['binance']['binance_tld'])
+        url = websocket_url.format(self.__preferences['settings']['binance']['binance_tld'])
 
-        super().__init__(symbol, stream, log, log_message, url, None)
+        super().__init__(symbol, stream, log, log_message, url, None, kwargs)
 
         # Start the websocket
         if not initially_stopped:
@@ -75,7 +75,7 @@ class Tickers(Websocket):
             self.ticker_feed.append(interface_message)
             self.most_recent_tick = interface_message
             for i in self.callbacks:
-                i(interface_message)
+                i(interface_message, **self.kwargs)
         except KeyError:
             # If the try below figures this out then we don't have to traceback
             error_found = False

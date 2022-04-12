@@ -158,7 +158,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_open_orders(self, symbol: str) -> List[FuturesOrder]:
+    def get_open_orders(self, symbol: str = None) -> List[FuturesOrder]:
         """Returns all currently open orders, filtered by `symbol` if one is provided."""
         pass
 
