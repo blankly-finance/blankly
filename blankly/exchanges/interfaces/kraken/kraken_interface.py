@@ -211,6 +211,7 @@ class KrakenInterface(ExchangeInterface):
     def cancel_order(self, symbol: str, order_id: str):
         return self.get_calls().cancel_order(order_id)
 
+    #EAPI:Invalid key error for open orders
     def get_open_orders(self, symbol: str = None) -> list:
         """
         List open orders.
