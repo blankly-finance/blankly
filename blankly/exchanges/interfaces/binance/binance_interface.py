@@ -533,7 +533,7 @@ class BinanceInterface(ExchangeInterface):
     binance: get_trade_fee
     """
 
-    def get_fees(self) -> dict:
+    def get_fees(self, symbol) -> dict:
         needed = self.needed['get_fees']
         """
         {

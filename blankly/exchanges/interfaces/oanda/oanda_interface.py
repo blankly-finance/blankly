@@ -304,7 +304,7 @@ class OandaInterface(ExchangeInterface):
         order = self.calls.get_order(order_id)
         return self.homogenize_order(order['order'])
 
-    def get_fees(self):
+    def get_fees(self, symbol):
         return {
             'maker_fee_rate': 0.0,
             'taker_fee_rate': 0.0

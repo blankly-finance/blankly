@@ -100,6 +100,14 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.Okx_Interface_data = cls.Okx_data.get_interface()
         cls.data_interfaces.append(cls.Okx_Interface_data)
 
+        # Kucoin definition and appending
+        cls.Kucoin = blankly.Kucoin(portfolio_name="KC Sandbox Portfolio",
+                                    keys_path='./tests/config/keys.json',
+                                    settings_path="./tests/config/settings.json")
+        cls.Kucoin_Interface = cls.Kucoin.get_interface()
+        cls.interfaces.append(cls.Kucoin_Interface)
+        cls.data_interfaces.append(cls.Kucoin_Interface)
+
         cls.Kucoin_data = blankly.Kucoin(portfolio_name="KC Data Keys",
                                          keys_path='./tests/config/keys.json',
                                          settings_path="./tests/config/settings.json")
@@ -443,7 +451,7 @@ class InterfaceHomogeneity(unittest.TestCase):
     def test_get_keys(self):
         responses = []
         for i in self.interfaces:
-            responses.append(i.get_fees())
+            responses.append(i.get_fees(get_valid_symbol(i.get_exchange_type())))
 
         self.assertTrue(compare_responses(responses, force_exchange_specific=False))
 
@@ -480,7 +488,11 @@ class InterfaceHomogeneity(unittest.TestCase):
 
     def test_point_based_history(self):
         for i in self.data_interfaces:
-            valid_symbol = get_valid_symbol(i.get_exchange_type())
+            type_ = i.get_exchange_type()
+
+            if type_ == 'okx':
+                continue
+            valid_symbol = get_valid_symbol(type_)
             response = i.history(valid_symbol, 150, resolution='1d')
 
             print(f'Checking {i.get_exchange_type()}')
@@ -554,6 +566,9 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
         for i in self.data_interfaces:
             type_ = i.get_exchange_type()
+
+            if type_ == 'okx':
+                continue
 
             # Exclude alpaca currently because the trading hours make it unreliable
             if not (type_ == "alpaca" or type_ == 'oanda'):

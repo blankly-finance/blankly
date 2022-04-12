@@ -252,8 +252,7 @@ class OkxInterface(ExchangeInterface):
         response["time_in_force"] = 'GTC'
         return utils.isolate_specific(needed, response)
 
-    def get_fees(self) -> dict:
-        symbol = 'BTC-USDT'
+    def get_fees(self, symbol) -> dict:
         needed = self.needed['get_fees']
         """
         {

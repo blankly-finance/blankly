@@ -428,7 +428,7 @@ class KucoinInterface(ExchangeInterface):
 
         return utils.isolate_specific(needed, response)
 
-    def get_fees(self) -> dict:
+    def get_fees(self, symbol) -> dict:
         needed = self.needed['get_fees']
         """
             {

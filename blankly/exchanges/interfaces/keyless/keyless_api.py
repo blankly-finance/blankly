@@ -94,7 +94,7 @@ class KeylessAPI(ExchangeInterface):
     def get_order(self, symbol: str, order_id: str):
         self.__invalid_live()
 
-    def get_fees(self) -> dict:
+    def get_fees(self, symbol) -> dict:
         return {
             'maker_fee_rate': .005,
             'taker_fee_rate': .005
