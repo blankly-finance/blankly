@@ -370,9 +370,9 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         limits += evaluate_limit_order(self.Kucoin_Interface, 'ETH-USDT', .01, 100000, 1)
 
-        limits += evaluate_limit_order(self.Oanda_Interface, 'EUR-USD', .01, 100000, .1)
+        limits += evaluate_limit_order(self.Oanda_Interface, 'EUR-USD', .01, 100000, 1)
 
-        limits += evaluate_limit_order(self.Okx_Interface, 'PAX-USDT', 0.50, 100000, 1)
+        limits += evaluate_limit_order(self.Okx_Interface, 'BTC-USDT', 0.50, 100000, .01)
 
         responses = []
         status = []
@@ -384,7 +384,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
             'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
             'oanda': self.Oanda_Interface.get_open_orders('EUR-USD'),
-            'okx': self.Okx_Interface.get_open_orders('PAX-USDT')
+            'okx': self.Okx_Interface.get_open_orders('BTC-USDT')
         }
 
         # Simple test to ensure that some degree of orders have been placed

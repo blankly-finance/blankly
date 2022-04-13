@@ -205,7 +205,7 @@ class OkxInterface(ExchangeInterface):
         ]
         """
         if symbol is None:
-            raise ValueError("There was no symbol inputted, please try again.")
+            orders = self._trade.get_order_list()
         else:
             orders = self._trade.get_order_list(instId=symbol)
 
@@ -227,7 +227,7 @@ class OkxInterface(ExchangeInterface):
                 orders['data'][i]["time_in_force"] = 'GTC'
             orders['data'][i] = utils.isolate_specific(needed, orders['data'][i])
 
-        return orders
+        return orders['data']
 
     def get_order(self, symbol, order_id) -> dict:
         response = self._trade.get_orders(symbol, ordId=order_id)
