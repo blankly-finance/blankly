@@ -18,31 +18,36 @@
 
 import blankly
 from blankly import Side
+from blankly.exchanges.interfaces.binance_futures.binance_futures import BinanceFutures
 from blankly.futures import FuturesStrategyState, FTXFutures, FuturesStrategy, MarginType
 
 
 def price_event(price, symbol, state: FuturesStrategyState):
     state.variables['history'].append(price)
     rsi = blankly.indicators.rsi(state.variables['history'])
+    position = state.interface.get_position('BTC-USDT')
 
-    if rsi[-1] < 30:
+    if rsi[-1] < 50:
         # rsi < 30 indicates the asset is undervalued or will rise in price
         # we want to go long.
-        if state.interface.positions['BTC-USDT'].size <= 0:
+        if position is None or position['size'] <= 0:
             close_position(symbol, state)
             size = blankly.trunc(state.interface.cash / price, 2)
             state.interface.market_order(symbol, side=Side.BUY, size=size)
-    elif rsi[-1] > 70:
+    elif rsi[-1] > 50:
         # rsi < 70 indicates the asset is overvalued or will drop in price
         # we want to short the asset.
-        if state.interface.positions['BTC-USDT'].size >= 0:
+        if position is None or position['size'] >= 0:
             close_position(symbol, state)
             size = blankly.trunc(state.interface.cash / price, 2)
             state.interface.market_order(symbol, side=Side.SELL, size=size)
 
 
 def close_position(symbol, state: FuturesStrategyState):
-    size = state.interface.positions[symbol].size
+    position = state.interface.get_position(symbol)
+    if not position:
+        return
+    size = position.size
     if size < 0:
         state.interface.market_order(symbol,
                                      Side.BUY,
@@ -59,7 +64,7 @@ def init(symbol, state: FuturesStrategyState):
     close_position(symbol, state)
 
     # Set initial leverage and margin type
-    state.interface.set_leverage(symbol, 1)
+    state.interface.set_leverage(1, symbol)
 
     state.interface.set_margin_type(symbol, MarginType.ISOLATED)
 
@@ -69,7 +74,9 @@ def init(symbol, state: FuturesStrategyState):
 
 
 if __name__ == "__main__":
-    exchange = FTXFutures()
+    exchange = BinanceFutures(keys_path="./tests/config/keys.json",
+                              preferences_path="./tests/config/settings.json",
+                              portfolio_name="Futures Test Key")
 
     strategy = FuturesStrategy(exchange)
     strategy.add_price_event(price_event,
@@ -78,4 +85,4 @@ if __name__ == "__main__":
                              symbol='BTC-USDT',
                              resolution='1m')
 
-    strategy.start()
+    strategy.backtest(to='1mo', initial_values={'USDT': 10000}, settings_path='./tests/config/usdt_backtest.json')

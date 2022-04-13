@@ -74,13 +74,13 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_account(self, symbol: str = None) -> utils.AttributeDict:
+    def get_account(self, symbol: str = None) -> dict:
         """Returns account information, or information for only one `symbol` if one is given."""
         pass
 
     # TODO this metohd name might need to change to get_position ?
     @abc.abstractmethod
-    def get_positions(self, symbol: str = None) -> Optional[dict]:
+    def get_position(self, symbol: str = None) -> Optional[dict]:
         """Returns position information, or information for only one `symbol` if one is given"""
         pass
 
@@ -171,14 +171,14 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @property
-    def account(self) -> utils.AttributeDict:
+    def account(self) -> dict:
         """Account information"""
         return self.get_account()
 
     @property
-    def positions(self) -> utils.AttributeDict:
+    def positions(self) -> dict:
         """Position information"""
-        return self.get_positions()
+        return self.get_position()
 
     @property
     def orders(self) -> list:
@@ -199,6 +199,14 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         Get the funding rate history between `epoch_start` and `epoch_end`.
         Returns a list of {'rate': int, 'time': int}
         """
+        pass
+
+    @abc.abstractmethod
+    def get_maker_fee(self) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_taker_fee(self) -> float:
         pass
 
     @abc.abstractmethod

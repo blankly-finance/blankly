@@ -111,7 +111,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
             if '-PERP' not in prod['name']:
                 continue  # only perpetual contracts for now
             symbol = prod['underlying'] + '-USD'
-            products[symbol] = utils.AttributeDict({
+            products[symbol] = {
                 'symbol': symbol,
                 'base_asset': prod['underlying'],
                 'quote_asset': 'USD',
@@ -121,22 +121,22 @@ class FTXFuturesInterface(FuturesExchangeInterface):
                 'size_precision': self.increment_to_precision(
                     prod['sizeIncrement']),
                 'exchange_specific': prod
-            })
+            }
         if filter:
             return products[filter]
         return products
 
-    def get_account(self, filter: str = None) -> utils.AttributeDict:
+    def get_account(self, filter: str = None) -> dict:
         balances = self.calls.get_balances()
         coins = self.calls.get_coins()
-        accounts = utils.AttributeDict({
-            coin['id']: utils.AttributeDict({
+        accounts = {
+            coin['id']: {
                 'available': 0.0,
                 'hold': 0.0,  # TODO
                 'exchange_specific': coin
-            })
+            }
             for coin in coins
-        })
+        }
 
         for bal in balances:
             coin = bal['coin']
@@ -151,7 +151,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
             return accounts[filter]
         return accounts
 
-    def get_positions(self, filter: str = None) -> Optional[dict]:
+    def get_position(self, filter: str = None) -> Optional[dict]:
         leverage = self.get_leverage()
 
         res = self.calls.get_positions()
@@ -161,17 +161,12 @@ class FTXFuturesInterface(FuturesExchangeInterface):
             size = float(position['netSize'])
             if size == 0:
                 continue
-            positions[symbol] = utils.AttributeDict({
+            positions[symbol] = {
                 'size': size,
                 'position': PositionMode.BOTH,
-                'entry_price': float(position['entryPrice']),
                 'contract_type': ContractType.PERPETUAL,
-                'leverage': leverage,
-                'margin_type': MarginType.CROSSED,
-                'unrealized_pnl': float(
-                    position['unrealizedPnl']),  # TODO not sure on this one
                 'exchange_specific': position
-            })
+            }
 
         if filter:
             return positions.get(filter, None)
@@ -340,5 +335,12 @@ class FTXFuturesInterface(FuturesExchangeInterface):
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
         raise NotImplementedError
+
+    def get_maker_fee(self) -> float:
+        raise NotImplementedError
+
+    def get_taker_fee(self) -> float:
+        raise NotImplementedError
+
 
 

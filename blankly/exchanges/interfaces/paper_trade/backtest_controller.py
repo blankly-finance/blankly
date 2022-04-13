@@ -776,7 +776,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         self.backtest_settings_path = backtest_settings_path
         self.show_progress = self.preferences['settings']['show_progress_during_backtest']
 
-        if not exchange.get_type() == "paper_trade":
+        if not exchange.get_type().endswith("paper_trade"):
             raise ValueError("Backtest controller was not constructed with a paper trade exchange object.")
         # Define the interface on run
         self.interface: PaperTradeInterface = exchange.get_interface()

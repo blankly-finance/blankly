@@ -87,8 +87,8 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         try:
             # force oneway mode
             self.calls.futures_change_position_mode(dualSidePosition=False)
-        except binance.error.ClientError as e:
-            if e.error_code != -4059:  # re raise anything other than "already set"
+        except binance.exceptions.BinanceAPIException as e:
+            if e.code != -4059:  # re raise anything other than "already set"
                 raise e
 
     def set_hedge_mode(self, hedge_mode: HedgeMode):
@@ -168,7 +168,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             if '_' in prod['symbol']:
                 continue  # don't support expiring contracts
             symbol = prod['baseAsset'] + '-' + prod['quoteAsset']
-            products[symbol] = utils.AttributeDict({
+            products[symbol] = {
                 'symbol': symbol,
                 'base_asset': prod['baseAsset'],
                 'quote_asset': prod['quoteAsset'],
@@ -176,29 +176,29 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                 'price_precision': int(prod['pricePrecision']),
                 'size_precision': int(prod['quantityPrecision']),
                 'exchange_specific': prod
-            })
+            }
 
         if filter:
             return products[filter]
         return products
 
-    def get_account(self, filter=None) -> utils.AttributeDict:
+    def get_account(self, filter=None) -> dict:
         res = self.calls.futures_account()
 
-        accounts = utils.AttributeDict()
+        accounts = {}
         for asset in res['assets']:
             symbol = asset['asset']
-            accounts[symbol] = utils.AttributeDict({
+            accounts[symbol] = {
                 'available': float(asset['availableBalance']),
                 'hold': 0.0,  # TODO
                 'exchange_specific': asset,
-            })
+            }
 
         if filter:
             return accounts[filter]
         return accounts
 
-    def get_positions(self, filter: str = None) -> Optional[dict]:
+    def get_position(self, filter: str = None) -> Optional[dict]:
         account = self.calls.futures_account()
 
         positions = {}
@@ -212,19 +212,13 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             symbol = self.to_blankly_symbol(symbol)
             margin = MarginType.ISOLATED \
                 if position['isolated'] else MarginType.CROSSED
-            positions[symbol] = utils.AttributeDict({
+            positions[symbol] = {
                 'symbol': symbol,
-                'base_asset': utils.get_base_asset(symbol),
-                'quote_asset': utils.get_quote_asset(symbol),
                 'size': size,
                 'position': PositionMode(position['positionSide'].lower()),
-                'entry_price': float(position['entryPrice']),
                 'contract_type': ContractType.PERPETUAL,
-                'leverage': float(position['leverage']),
-                'margin_type': margin,
-                'unrealized_pnl': float(position['unrealizedProfit']),
                 'exchange_specific': position
-            })
+            }
 
         if filter:
             return positions.get(filter, None)
@@ -376,14 +370,20 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         symbol = self.to_exchange_symbol(symbol)
         return float(self.calls.futures_mark_price(symbol=symbol)['markPrice'])
 
-    def get_fees(self) -> utils.AttributeDict:
+    def get_fees(self) -> dict:
         # https://www.binance.com/en/blog/futures/trade-crypto-futures-how-much-does-it-cost-421499824684902239
         tier = int(self.calls.futures_account()['feeTier'])
         maker, taker = BINANCE_FUTURES_FEES[tier]
-        return utils.AttributeDict({'maker': maker, 'taker': taker})
+        return {'maker': maker, 'taker': taker}
+
+    def get_maker_fee(self) -> float:
+        return self.get_fees()['maker']
+
+    def get_taker_fee(self) -> float:
+        return self.get_fees()['taker']
 
     @property
-    def account(self) -> utils.AttributeDict:
+    def account(self) -> dict:
         return self.get_account()
 
     @property

@@ -1,5 +1,6 @@
 from blankly.exchanges.futures.futures_exchange import FuturesExchange
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
+from blankly.exchanges.interfaces.paper_trade.backtesting_wrapper import BacktestingWrapper
 from blankly.exchanges.interfaces.paper_trade.futures.futures_paper_trade_interface import FuturesPaperTradeInterface
 
 
@@ -12,7 +13,8 @@ class FuturesPaperTrade(FuturesExchange):
         super().__init__("futures_paper_trade", portfolio_name, preferences_path)
 
         self.exchange = exchange
-        self._interface = FuturesPaperTradeInterface(exchange, initial_account_values or {})
+        self._interface = FuturesPaperTradeInterface(exchange.get_type(), self.exchange.interface,
+                                                     initial_account_values)
 
     @property
     def calls(self):

@@ -137,12 +137,12 @@ def buy(interface: FuturesExchangeInterface, symbol: str, funds: int = 20, reduc
     return place_order(interface, symbol, Side.BUY, funds, reduce_only)
 
 def close_all(futures_interface: FuturesExchangeInterface):
-    for symbol in futures_interface.get_positions():
+    for symbol in futures_interface.get_position():
         close_position(futures_interface, symbol)
 
     for order in futures_interface.get_open_orders():
         futures_interface.cancel_order(order.symbol, order.id)
-    assert len(futures_interface.get_positions()) == 0
+    assert len(futures_interface.get_position()) == 0
 
 
 def close_position(interface: FuturesExchangeInterface, symbol: str):
@@ -152,7 +152,7 @@ def close_position(interface: FuturesExchangeInterface, symbol: str):
         interface: the interface to sell on
         symbol: the symbol to sell
     """
-    position = interface.get_positions(symbol)
+    position = interface.get_position(symbol)
     if not position:
         return
     if position.size < 0:
@@ -168,7 +168,7 @@ def close_position(interface: FuturesExchangeInterface, symbol: str):
     else:
         pytest.fail('position size is zero')
     wait_till_filled(interface, order)
-    assert interface.get_positions(symbol) is None
+    assert interface.get_position(symbol) is None
 
 
 @contextmanager
