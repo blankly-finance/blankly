@@ -126,7 +126,7 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
 
     def evaluate_limits(self):
         # TODO reduce_only on limit order "technically" broken
-        for id, order in self._placed_orders.items():
+        for id, order in list(self._placed_orders.items()):
             order: FuturesOrder
 
             if not self.should_run_order(order):
@@ -246,3 +246,11 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
 
     def gen_order_id(self):
         return random.randrange(10 ** 4, 10 ** 5)
+
+    def get_maker_fee(self) -> float:
+        return self.interface.get_maker_fee()
+
+    def get_taker_fee(self) -> float:
+        return self.interface.get_taker_fee()
+
+

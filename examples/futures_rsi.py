@@ -47,7 +47,7 @@ def close_position(symbol, state: FuturesStrategyState):
     position = state.interface.get_position(symbol)
     if not position:
         return
-    size = position.size
+    size = position['size']
     if size < 0:
         state.interface.market_order(symbol,
                                      Side.BUY,
