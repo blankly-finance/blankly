@@ -73,6 +73,7 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
     def init_exchange(self):
         self.interface.init_exchange()
 
+    @functools.lru_cache(None)
     def get_products(self, symbol: str = None) -> dict:
         return self.interface.get_products(symbol)
 
@@ -123,31 +124,6 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
                 return price >= order.limit_price
 
         raise Exception(f'invalid order')
-
-    def evaluate_limits(self):
-        # TODO reduce_only on limit order "technically" broken
-        for id, order in list(self._placed_orders.items()):
-            order: FuturesOrder
-
-            if not self.should_run_order(order):
-                continue
-
-            curr, funds = self._funds_held.pop(id)
-            self.paper_account[curr]['hold'] -= funds
-
-            del self._placed_orders[id]
-            order = dataclasses.replace(order)  # create copy of order
-            self._executed_orders[id] = order
-            order.price = funds
-
-            size = self.paper_positions.get(order.symbol, {'size': 0})['size']
-            self.paper_positions[order.symbol] = {
-                'symbol': order.symbol,
-                'size': size + order.size,
-                'position': PositionMode.BOTH,
-                'contract_type': ContractType.PERPETUAL,
-                'exchange_specific': {}
-            }
 
     def set_hedge_mode(self, hedge_mode: HedgeMode):
         if hedge_mode == HedgeMode.HEDGE:
@@ -204,15 +180,54 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
 
         self.traded_assets.extend(value_dictionary.keys())
 
+    def evaluate_limits(self):
+        # TODO reduce_only on limit order "technically" broken
+        for id, order_data in list(self._placed_orders.items()):
+            is_closing, order = order_data
+            order: FuturesOrder
+
+            if not self.should_run_order(order):
+                continue
+
+            base, quote = order.symbol.split('-')
+
+            asset_price = order.limit_price or self.get_price(order.symbol)
+            # if we held funds for the order, use those orelse just default to current price * ordersize
+            held_curr, notional = self._funds_held.pop(id, (quote, asset_price * order.size))
+
+            assert held_curr == quote
+
+            # copy order to _executed_orders
+            del self._placed_orders[id]
+            self._executed_orders[id] = dataclasses.replace(order, status=OrderStatus.FILLED, price=notional)
+
+            position_size = (self.get_position(order.symbol) or {'size': 0})['size']
+            size_diff = order.size * (1 if order.side == Side.BUY else -1)
+
+            # we sold off our position
+            if is_closing:
+                self.paper_account[quote]['available'] += notional
+            else:
+                self.paper_account[quote]['hold'] -= notional
+
+            # this overwrites but it's fine, we don't need to update
+            self.paper_positions[order.symbol] = {
+                'symbol': order.symbol,
+                'size': position_size + size_diff,
+                'position': PositionMode.BOTH,
+                'contract_type': ContractType.PERPETUAL,
+                'exchange_specific': {}
+            }
+
     def _place_order(self, type: OrderType, symbol: str, side: Side, size: float, limit_price: float = 0,
-                     position: PositionMode = PositionMode.BOTH, reduce_only: bool = False,
+                     positionMode: PositionMode = PositionMode.BOTH, reduce_only: bool = False,
                      time_in_force: TimeInForce = TimeInForce.GTC) -> FuturesOrder:
         product = self.get_products(symbol)
 
         if not product:
             raise ValueError(f'invalid symbol {symbol}')
 
-        if position != PositionMode.BOTH:
+        if positionMode != PositionMode.BOTH:
             raise ValueError(f'only PositionMode.BOTH is supported for paper trading at this time')
 
         if size <= 0:
@@ -224,33 +239,55 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         # place funds on hold
         if type == OrderType.MARKET:
             price = self.get_price(symbol)
+        elif reduce_only:
+            raise ValueError('reduce_only only supported for market order')
         else:
             price = limit_price
-        funds = (price * size) * self.get_taker_fee()
+
+        position = self.get_position(symbol)
+        is_closing = position and (position['size'] > 0) == (side == Side.SELL)
+        if not position and reduce_only:
+            raise Exception('reduce_only set to True but there is no position to reduce')
+
+        if reduce_only and not is_closing:
+            raise Exception(f'reduce_only set to True but order side ({side}) is opening or growing position')
+
+        if reduce_only:
+            size = min(size, abs(position['size']))
+
         base, quote = symbol.split('-')
         acc = self.paper_account[quote]
-        if acc['available'] < funds:
-            raise Exception('not enough funds')
 
-        acc['available'] -= funds
-        acc['hold'] += funds
+        fee = self.get_taker_fee()
+        if is_closing:
+            funds = (price * size) * (1 - fee)
+        else:
+            funds = (price * size) * (1 + fee)
 
-        # place order
         order_id = self.gen_order_id()
+        if not is_closing:
+            if acc['available'] < funds:
+                raise Exception('not enough funds')
+
+            acc['available'] -= funds
+            acc['hold'] += funds
+            self._funds_held[order_id] = (quote, funds)
+
         order = FuturesOrder(symbol=symbol, id=order_id, size=size, status=OrderStatus.OPEN, type=type,
                              contract_type=ContractType.PERPETUAL, side=side, position=PositionMode.BOTH,
                              price=limit_price,
                              limit_price=0, time_in_force=TimeInForce.GTC, response={}, interface=self.interface)
-        self._placed_orders[order_id] = order
-        self._funds_held[order_id] = (quote, funds)
+        self._placed_orders[order_id] = (is_closing, order)
+
+        self.evaluate_limits()
 
     def gen_order_id(self):
         return random.randrange(10 ** 4, 10 ** 5)
 
+    @functools.lru_cache(None)
     def get_maker_fee(self) -> float:
         return self.interface.get_maker_fee()
 
+    @functools.lru_cache(None)
     def get_taker_fee(self) -> float:
         return self.interface.get_taker_fee()
-
-

@@ -24,23 +24,35 @@ from blankly.futures import FuturesStrategyState, FTXFutures, FuturesStrategy, M
 
 def price_event(price, symbol, state: FuturesStrategyState):
     state.variables['history'].append(price)
-    rsi = blankly.indicators.rsi(state.variables['history'])
-    position = state.interface.get_position('BTC-USDT')
 
-    if rsi[-1] < 50:
+    rsi = blankly.indicators.rsi(state.variables['history'])
+
+    position = state.interface.get_position('BTC-USDT')
+    position_size = position['size'] if position else 0
+
+    precision = state.variables['precision']
+
+    if rsi[-1] < 50 and position_size <= 0:
         # rsi < 30 indicates the asset is undervalued or will rise in price
         # we want to go long.
-        if position is None or position['size'] <= 0:
-            close_position(symbol, state)
-            size = blankly.trunc(state.interface.cash / price, 2)
-            state.interface.market_order(symbol, side=Side.BUY, size=size)
-    elif rsi[-1] > 50:
+        side = Side.BUY
+    elif rsi[-1] > 50 and position_size >= 0:
         # rsi < 70 indicates the asset is overvalued or will drop in price
         # we want to short the asset.
-        if position is None or position['size'] >= 0:
-            close_position(symbol, state)
-            size = blankly.trunc(state.interface.cash / price, 2)
-            state.interface.market_order(symbol, side=Side.SELL, size=size)
+        side = Side.SELL
+    else:
+        return
+
+    if position_size:
+        close_position(symbol, state)
+
+    order_size = (state.interface.cash / price) * 0.99
+    order_size = blankly.trunc(order_size, precision)
+
+    if not order_size:
+        return
+
+    state.interface.market_order(symbol, side=side, size=order_size)
 
 
 def close_position(symbol, state: FuturesStrategyState):
@@ -71,6 +83,8 @@ def init(symbol, state: FuturesStrategyState):
     state.variables['history'] = state.interface.history(
         symbol, to=150, return_as='deque',
         resolution=state.resolution)['close']
+
+    state.variables['precision'] = state.interface.get_products(symbol)['size_precision']
 
 
 if __name__ == "__main__":
