@@ -1,13 +1,11 @@
 import time
-import matplotlib.pyplot as plt
 import pandas as pd
 import blankly.utils.time_builder
 import blankly.utils.utils as utils
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
-from blankly.exchanges.interfaces.okx.okx_api import Client as OkxAPI, MarketAPI, AccountAPI, TradeAPI, ConvertAPI, FundingAPI, PublicAPI
+from blankly.exchanges.interfaces.okx.okx_api import MarketAPI, AccountAPI, TradeAPI, ConvertAPI, FundingAPI, PublicAPI
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
-from blankly.exchanges.orders.stop_limit import StopLimit
 from blankly.utils.exceptions import APIException, InvalidOrder
 
 
