@@ -44,6 +44,7 @@ class KucoinInterface(ExchangeInterface):
         self._trade: KucoinAPI.Trade = self.calls['trade']
         self._user: KucoinAPI.User = self.calls['user']
 
+
     def init_exchange(self):
         fees = self.calls['user'].get_base_fee()
         try:
@@ -447,7 +448,7 @@ class KucoinInterface(ExchangeInterface):
 
         return utils.isolate_specific(needed, response)
 
-    def get_fees(self) -> dict:
+    def get_fees(self, symbol) -> dict:
         needed = self.needed['get_fees']
         """
             {

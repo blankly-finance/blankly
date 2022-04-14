@@ -34,4 +34,3 @@ jobs:
       run: |
         pytest
         echo "Sleeping to reduce rate limit pressure..."
-        sleep 300

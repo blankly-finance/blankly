@@ -532,7 +532,7 @@ class BinanceInterface(ExchangeInterface):
     binance: get_trade_fee
     """
 
-    def get_fees(self) -> dict:
+    def get_fees(self, symbol) -> dict:
         needed = self.needed['get_fees']
         """
         {
@@ -771,7 +771,11 @@ class BinanceInterface(ExchangeInterface):
         max_market_notational = 92233720368.547752  # For some reason equal to the first *11 digits* of 2^63 then
         # it gets weird past the decimal
 
-        max_orders = int(filters[6]["maxNumOrders"])
+        # Must test both nowadays
+        try:
+            max_orders = int(filters[7]["maxNumOrders"])
+        except KeyError:
+            max_orders = int(filters[6]["maxNumOrders"])
 
         if percent_min_price < hard_min_price:
             min_price = hard_min_price
