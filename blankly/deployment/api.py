@@ -24,6 +24,9 @@ from blankly.utils.utils import info_print
 blankly_deployment_url = 'https://deploy.blankly.finance'
 
 
+# blankly_deployment_url = 'http://localhost:8080'
+
+
 class API:
     def __init__(self, token, override_url: str = None):
         if override_url:
@@ -98,11 +101,11 @@ class API:
         """
         return self.__request('post', 'auth/token', data={'refreshToken': token})
 
-    def get_details(self, model_id: str):
+    def get_details(self, project_id: str, model_id: str):
         """
         Get the details route
         """
-        return self.__request('post', 'model/details', data={'modelId': model_id})
+        return self.__request('post', 'model/details', data={'projectId': project_id, 'modelId': model_id})
 
     def get_status(self):
         return self.__request('get', 'model/status')
@@ -155,22 +158,47 @@ class API:
                                     'plan': plan,
                                     })
 
-    def create_model(self, type_: str, name: str, description: str):
-        return self.__request('post', 'model/create-model',
-                              data={
-                                  'projectId': self.user_id,
-                                  'type': type_,
-                                  'name': name,
-                                  'description': description
-                              })
+    def create_model(self, project_id: str, type_: str, name: str, description: str):
+        model = self.__request('post', 'model/create-model',
+                               data={
+                                   'projectId': project_id or self.user_id,
+                                   'type': type_,
+                                   'name': name,
+                                   'description': description
+                               })
+        model['id'] = model['modelId']
+        model['projectId'] = project_id or self.user_id
+        return model
 
-    def list_models(self):
-        return self.__request('post', 'model/list',
-                              data={
-                                  'projectId': self.user_id
-                              })
+    def list_models(self, project_id: str):
+        models = self.__request('post', 'model/list',
+                                data={
+                                    'projectId': project_id or self.user_id
+                                })
+        for model in models:
+            model['modelId'] = model['id']
+            model['projectId'] = project_id or self.user_id
+        return models
 
-    def generate_keys(self):
-        return self.__request('post', 'project/generate-project-token', data={
-            'projectId': self.user_id
-        })
+    def list_all_models(self):
+        models = self.list_models(self.user_id)
+        for team in self.list_teams():
+            # TODO nah
+            models += [{'team': team, **model}
+                       for model in self.list_models(team['id'])]
+        return models
+
+    def list_teams(self):
+        return self.__request('get', 'project/teams')
+
+    def generate_keys(self, project_id: str):
+        return self.__request('post', 'project/generate-project-token',
+                              data={'projectId': project_id})
+
+
+if __name__ == '__main__':
+    from blankly.deployment import new_cli as cli
+    import code
+
+    api = cli.ensure_login()
+    code.interact(local=dict(globals(), **locals()))  # drop to interactive
