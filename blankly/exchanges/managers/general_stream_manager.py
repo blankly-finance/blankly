@@ -15,10 +15,16 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import random
+
+import requests
+
 import blankly.utils.utils
 from blankly.exchanges.interfaces.alpaca.alpaca_websocket import Tickers as Alpaca_Websocket
 from blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Binance_Websocket
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tickers as Coinbase_Pro_Websocket
+from blankly.exchanges.interfaces.kucoin.kucoin_websocket import Tickers as Kucoin_Websocket
+from blankly.exchanges.interfaces.ftx.ftx_websocket import Tickers as Ftx_Websocket
 from blankly.exchanges.interfaces.okx.okx_websocket import Tickers as Okx_Websocket
 from blankly.exchanges.managers.websocket_manager import WebsocketManager
 
@@ -62,6 +68,40 @@ class GeneralManager(WebsocketManager):
                                                    WEBSOCKET_URL="wss://ws-feed-public.sandbox.pro.coinbase.com")
             else:
                 websocket = Coinbase_Pro_Websocket(asset_id_cache, channel, log)
+            websocket.append_callback(callback)
+
+            self.__websockets[channel][exchange_cache][asset_id_cache] = websocket
+
+            return websocket
+        elif exchange_cache == "kucoin":
+            if use_sandbox:
+                response = requests.post('https://trade-sandbox.kucoin.com/_api/bullet-usercenter/v1/bullet-public'
+                                         ).json()
+
+                base_endpoint = response['data']['instanceServers'][0]['endpoint']
+                token = response['data']['token']
+                websocket = Kucoin_Websocket(asset_id_cache, channel, f"{base_endpoint}/socket.io/?token={token}", log)
+                # wss://push-socketio-sandbox.kucoin.com
+            else:
+                response = requests.post('https://api.kucoin.com/api/v1/bullet-public').json()
+
+                base_endpoint = response['data']['instanceServers'][0]['endpoint']
+                token = response['data']['token']
+
+                websocket = Kucoin_Websocket(asset_id_cache, channel,
+                                             f"{base_endpoint}/api/v1/?token={token}&[connectId="
+                                             f"{random.randint(1, 100000000) * 100000000}]", log)
+            websocket.append_callback(callback)
+
+            self.__websockets[channel][exchange_cache][asset_id_cache] = websocket
+
+            return websocket
+        elif exchange_cache == "ftx":
+            if use_sandbox:
+                raise ValueError("Error: FTX does not have a sandbox mode")
+            else:
+                websocket = Ftx_Websocket(override_symbol, asset_id_cache, channel, log)
+
             websocket.append_callback(callback)
 
             self.__websockets[channel][exchange_cache][asset_id_cache] = websocket

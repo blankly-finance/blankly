@@ -18,32 +18,11 @@
 
 import json
 import traceback
-
+import blankly
+from blankly.utils.utils import epoch_from_iso8601, to_blankly_symbol
 import blankly.exchanges.interfaces.ftx.ftx_websocket_utils as websocket_utils
 from blankly.exchanges.interfaces.websocket import Websocket
 from blankly.utils.utils import info_print
-
-
-# def create_ticker_connection(id_, url, channel):
-#     ws = create_connection(url, sslopt={"cert_reqs": ssl.CERT_NONE})
-#     request = json.dumps({
-#         "op": "subscribe",
-#         "channel": channel,
-#         "market": id_
-#     })
-#     ws.send(request)
-#     return ws
-
-
-# This could be needed:
-# "channels": [
-#     {
-#         "name": "ticker",
-#         "product_ids": [
-#             \"""" + id + """\"
-#         ]
-#     }
-# ]
 
 
 class Tickers(Websocket):
@@ -59,6 +38,8 @@ class Tickers(Websocket):
         self.__logging_callback, self.__interface_callback, log_message = websocket_utils.switch_type(stream)
 
         super().__init__(symbol, stream, log, log_message, websocket_url, pre_event_callback, kwargs)
+
+        self.__pre_event_callback_filled = False
 
         # Start the websocket
         if not initially_stopped:
@@ -85,27 +66,51 @@ class Tickers(Websocket):
             info_print(f"Subscribed to {received_dict['channel']}")
             return
 
-        parsed_received_trades = websocket_utils.process_trades(received_dict)
-        for received in parsed_received_trades:
-            # ISO8601 is converted to epoch in process_trades
-            self.most_recent_time = received["time"]
+        if (self.pre_event_callback is not None) and (not self.__pre_event_callback_filled) and \
+                (self.stream == "orderbook"):
+            if received_dict['type'] == 'partial':
+                try:
+                    self.pre_event_callback(received_dict)
+                except Exception:
+                    traceback.print_exc()
+
+            self.__pre_event_callback_filled = True
+            return
+
+        if self.stream == "orderbook":
+            interface_response = self.__interface_callback(received_dict['data'])
+            self.most_recent_time = interface_response["time"]
             self.time_feed.append(self.most_recent_time)
-
-            self.log_response(self.__logging_callback, received)
-
-            # Manage price events and fire for each manager attached
-            interface_message = self.__interface_callback(received)
-            self.ticker_feed.append(interface_message)
-            self.most_recent_tick = interface_message
+            self.most_recent_tick = interface_response
 
             try:
+                interface_response['symbol'] = received_dict['market']
                 for i in self.callbacks:
-                    i(interface_message, **self.kwargs)
+                    i(interface_response, **self.kwargs)
             except Exception as e:
                 info_print(e)
                 traceback.print_exc()
+        elif self.stream == "trades":
+            for received in received_dict['data']:
+                interface_response = self.__interface_callback(received)
+                # This could be passed into the received var above which could be cleaner
+                interface_response['symbol'] = to_blankly_symbol(received_dict['market'], 'ftx')
+                self.ticker_feed.append(interface_response)
 
-            self.message_count += 1
+                self.most_recent_time = epoch_from_iso8601(received["time"])
+                self.time_feed.append(self.most_recent_time)
+                self.most_recent_tick = received
+
+                self.log_response(self.__logging_callback, received)
+
+                try:
+                    for i in self.callbacks:
+                        i(interface_response)
+                except Exception as e:
+                    info_print(e)
+                    traceback.print_exc()
+
+        self.message_count += 1
 
     def on_error(self, ws, error):
         info_print(error)

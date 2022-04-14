@@ -1,5 +1,5 @@
 """
-    Implementation for Okx Websockets
+    Implementation for Kucoin Websockets
     Copyright (C) 2022  Emerson Dove
 
     This program is free software: you can redistribute it and/or modify
@@ -17,17 +17,18 @@
 """
 
 import json
+import time
 import traceback
 
-import blankly.exchanges.interfaces.okx.okx_websocket_utils as websocket_utils
+import blankly.exchanges.interfaces.kucoin.kucoin_websocket_utils as websocket_utils
 from blankly.exchanges.interfaces.websocket import Websocket
 from blankly.utils.utils import info_print
 
 
 class Tickers(Websocket):
-    def __init__(self, symbol, stream, log=None,
-                 pre_event_callback=None, initially_stopped=False, WEBSOCKET_URL="wss://ws.okx.com:8443/ws/v5/public",
-                 **kwargs):
+    def __init__(self, symbol, stream, websocket_url, log=None,
+                 pre_event_callback=None, initially_stopped=False,
+                 id_=None, **kwargs):
         """
         Create and initialize the ticker
         Args:
@@ -35,11 +36,10 @@ class Tickers(Websocket):
             log: Fill this with a path to a log file that should be created
             websocket_url: Default websocket URL feed.
         """
+        self.id = id_
         self.__logging_callback, self.__interface_callback, log_message = websocket_utils.switch_type(stream)
 
-        super().__init__(symbol, stream, log, log_message, WEBSOCKET_URL, pre_event_callback, kwargs)
-
-        self.__pre_event_callback_filled = False
+        super().__init__(symbol, stream, log, log_message, websocket_url, pre_event_callback, kwargs)
 
         # Start the websocket
         if not initially_stopped:
@@ -50,39 +50,36 @@ class Tickers(Websocket):
                 self.on_close,
                 self.read_websocket
             )
-        self.checked = False
 
     def read_websocket(self):
         # Main thread to sit here and run
         self.ws.run_forever()
 
     def on_message(self, ws, message):
-        received_dict = json.loads(message)
-        if len(received_dict) == 2 and self.checked is not True:
-            info_print(f"Subscribed to {received_dict['arg']['channel']}")
-            self.checked = True
-            return
-        if (self.pre_event_callback is not None) and (not self.__pre_event_callback_filled) and \
-                (self.stream == "books"):
-            if received_dict['action'] == 'snapshot':
-                try:
-                    self.pre_event_callback(received_dict)
-                except Exception:
-                    traceback.print_exc()
+        """
+        Exchange specific actions to perform when receiving a message
+        """
+        # print(message)
+        message = json.loads(message)
 
-            self.__pre_event_callback_filled = True
+        if message['type'] == 'subscribe':
+            channel = message['topic'].split(":", 1)[0].split("/", 2)[2]
+            info_print(f"Subscribed to {channel}")
+            return
+        elif message['type'] == 'welcome' or message['type'] == 'ack':
             return
 
-        self.most_recent_time = received_dict['data'][0]["ts"]
-        received_dict['data'][0]["ts"] = self.most_recent_time
+        # parsed_received_trades = websocket_utils.trade_interface(message)
+
+        # for received in parsed_received_trades:
+            # ISO8601 is converted to epoch in process_trades
+        self.most_recent_time = time.time()
         self.time_feed.append(self.most_recent_time)
-        self.log_response(self.__logging_callback, received_dict['data'][0])
+
+        self.log_response(self.__logging_callback, message)
 
         # Manage price events and fire for each manager attached
-        if self.stream == "books":
-            interface_message = self.__interface_callback(received_dict)
-        else: # self.stream == 'tickers':
-            interface_message = self.__interface_callback(received_dict['data'][0])
+        interface_message = self.__interface_callback(message)
         self.ticker_feed.append(interface_message)
         self.most_recent_tick = interface_message
 
@@ -104,12 +101,12 @@ class Tickers(Websocket):
 
     def on_open(self, ws):
         request = json.dumps({
-            'op': 'subscribe',
-            'args': [{
-                'channel': self.stream,
-                'instId': self.symbol,
-                }]
-            })
+            'id': self.id,
+            'type': 'subscribe',
+            'topic': f'/market/{self.stream}:{self.symbol}',
+            'privateChannel': False,
+            'response': True
+        })
         ws.send(request)
 
     def restart_ticker(self):

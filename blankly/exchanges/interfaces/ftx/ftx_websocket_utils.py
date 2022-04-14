@@ -18,16 +18,16 @@
 
 import time
 import blankly.utils.utils as utils
-from typing import List
+from typing import List, Dict, Union, Any
 
 
 def switch_type(stream):
-    if stream == "ticker":
+    if stream == "trades":
         return trade, \
                process_trades, \
                "time,system_time,price,open_24h,volume_24h,low_24h,high_24h,volume_30d,best_bid,best_ask," \
                "last_size\n"
-    elif stream == "level2":
+    elif stream == "orderbook":
         return no_callback, \
                no_callback, \
                ""
@@ -44,30 +44,16 @@ Homogenizes response with uhh coinbase and binance
 """
 
 
-def process_trades(response: dict) -> List[dict]:
-    list_trades: List = []
-    num_trades: int = len(response['data'])
-    trades_data: List[dict] = response['data']
+def process_trades(response: dict) -> Dict[str, Union[float, Any]]:
+    output = {
+              'trade_id': response.pop('id'),
+              'time': utils.epoch_from_iso8601(response['time']),
+              'size': response['size'],
+              'price': response['price']
+              }
 
-    needed = [
-        ["symbol", str],
-        ["price", float],
-        ["time", float],
-        ["trade_id", int],
-        ["size", float]
-    ]
+    return output
 
-    for trade_ in trades_data:
-        trade_['symbol'] = response['market']
-        trade_['trade_id'] = trade_.pop('id')
-        trade_['time'] = utils.epoch_from_iso8601(trade_['time'])
-        trade_['symbol'] = trade_['symbol'].replace('/', '-')
-
-        list_trades.append(utils.isolate_specific(needed, trade_))
-
-    assert (num_trades == len(list_trades))
-
-    return list_trades
 
 
 def trade(received):
