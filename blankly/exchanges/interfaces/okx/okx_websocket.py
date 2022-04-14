@@ -1,18 +1,33 @@
-import json
-import time
-import traceback
+"""
+    Implementation for Okx Websockets
+    Copyright (C) 2022  Emerson Dove
 
-import requests
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
+import json
+import traceback
 
 import blankly.exchanges.interfaces.okx.okx_websocket_utils as websocket_utils
 from blankly.exchanges.interfaces.websocket import Websocket
 from blankly.utils.utils import info_print
 
 
-
 class Tickers(Websocket):
     def __init__(self, symbol, stream, log=None,
-                 pre_event_callback=None, initially_stopped=False, WEBSOCKET_URL="wss://ws.okx.com:8443/ws/v5/public"):
+                 pre_event_callback=None, initially_stopped=False, WEBSOCKET_URL="wss://ws.okx.com:8443/ws/v5/public",
+                 **kwargs):
         """
         Create and initialize the ticker
         Args:
@@ -22,7 +37,7 @@ class Tickers(Websocket):
         """
         self.__logging_callback, self.__interface_callback, log_message = websocket_utils.switch_type(stream)
 
-        super().__init__(symbol, stream, log, log_message, WEBSOCKET_URL, pre_event_callback)
+        super().__init__(symbol, stream, log, log_message, WEBSOCKET_URL, pre_event_callback, kwargs)
 
         self.__pre_event_callback_filled = False
 
@@ -73,7 +88,7 @@ class Tickers(Websocket):
 
         try:
             for i in self.callbacks:
-                i(interface_message)
+                i(interface_message, **self.kwargs)
         except Exception as e:
             info_print(e)
             traceback.print_exc()

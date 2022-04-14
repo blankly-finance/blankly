@@ -86,7 +86,7 @@ class Tickers(Websocket):
             try:
                 interface_response['symbol'] = received_dict['market']
                 for i in self.callbacks:
-                    i(interface_message, **self.kwargs)
+                    i(interface_response, **self.kwargs)
             except Exception as e:
                 info_print(e)
                 traceback.print_exc()

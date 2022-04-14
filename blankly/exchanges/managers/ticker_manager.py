@@ -128,14 +128,14 @@ class TickerManager(WebsocketManager):
                 ticker = Kucoin_Ticker(override_symbol,
                                        "ticker",
                                        log=log,
-                                       websocket_url=f"{base_endpoint}/socket.io/?token={token}")
+                                       websocket_url=f"{base_endpoint}/socket.io/?token={token}", **kwargs)
             else:
                 base_endpoint = request_data['data']['instanceServers'][0]['endpoint']
                 token = request_data['data']['token']
                 ticker = Kucoin_Ticker(override_symbol, "ticker",
                                        log=log,
                                        websocket_url=f"{base_endpoint}?token={token}&[connectId="
-                                                     f"{random.randint(1, 100000000) * 100000000}]")
+                                                     f"{random.randint(1, 100000000) * 100000000}]", **kwargs)
             ticker.append_callback(callback)
             self.__tickers['kucoin'][override_symbol] = ticker
         elif exchange_name == "okx":
@@ -144,9 +144,9 @@ class TickerManager(WebsocketManager):
 
             if sandbox_mode:
                 ticker = Okx_Ticker(override_symbol, "tickers", log=log,
-                                    WEBSOCKET_URL="wss://wspap.okx.com:8443/ws/v5/public?brokerId=9999")
+                                    WEBSOCKET_URL="wss://wspap.okx.com:8443/ws/v5/public?brokerId=9999", **kwargs)
             else:
-                ticker = Okx_Ticker(override_symbol, "tickers", log=log)
+                ticker = Okx_Ticker(override_symbol, "tickers", log=log, **kwargs)
 
             ticker.append_callback(callback)
             # Store this object

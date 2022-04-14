@@ -1,3 +1,21 @@
+"""
+    Implementation for Kucoin Websockets
+    Copyright (C) 2022  Emerson Dove
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
 import json
 import time
 import traceback
@@ -10,7 +28,7 @@ from blankly.utils.utils import info_print
 class Tickers(Websocket):
     def __init__(self, symbol, stream, websocket_url, log=None,
                  pre_event_callback=None, initially_stopped=False,
-                 id_=None):
+                 id_=None, **kwargs):
         """
         Create and initialize the ticker
         Args:
@@ -21,7 +39,7 @@ class Tickers(Websocket):
         self.id = id_
         self.__logging_callback, self.__interface_callback, log_message = websocket_utils.switch_type(stream)
 
-        super().__init__(symbol, stream, log, log_message, websocket_url, pre_event_callback)
+        super().__init__(symbol, stream, log, log_message, websocket_url, pre_event_callback, kwargs)
 
         # Start the websocket
         if not initially_stopped:
@@ -67,7 +85,7 @@ class Tickers(Websocket):
 
         try:
             for i in self.callbacks:
-                i(interface_message)
+                i(interface_message, **self.kwargs)
         except Exception as e:
             info_print(e)
             traceback.print_exc()
