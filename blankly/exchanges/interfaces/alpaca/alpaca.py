@@ -38,7 +38,7 @@ class Alpaca(Exchange):
         super().construct_interface_and_cache(calls)
 
     def get_exchange_state(self):
-        return self.interface.get_fees()
+        return self.interface.get_products()
 
     def get_asset_state(self, symbol):
         return self.interface.get_account(symbol)

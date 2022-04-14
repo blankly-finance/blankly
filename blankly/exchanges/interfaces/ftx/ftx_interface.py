@@ -405,7 +405,7 @@ class FTXInterface(ExchangeInterface):
         response = utils.isolate_specific(needed, response)
         return response
 
-    def get_fees(self) -> dict:
+    def get_fees(self, symbol) -> dict:
         """
         Get market fees
 

@@ -8,7 +8,7 @@ def price_event(price, symbol, state: blankly.StrategyState):
     rsi = blankly.indicators.rsi(state.variables['history'])
     if rsi[-1] < 30 and not state.variables['owns_position']:
         # Dollar cost average buy
-        buy = int(state.interface.cash/price)
+        buy = int(state.interface.cash / price)
         state.interface.market_order(symbol, side='buy', size=buy)
         state.variables['owns_position'] = True
     elif rsi[-1] > 70 and state.variables['owns_position']:
@@ -29,8 +29,8 @@ if __name__ == "__main__":
     # This downloads an example CSV
     data = requests.get('https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/price_examples.csv?'
                         'alt=media&token=3f3c37ee-a87b-46b0-b145-077c0e25254b').text
-    f = open('./price_examples.csv', 'w')
-    f.write(data)
+    with open('./price_examples.csv', 'w') as file:
+        file.write(data)
 
     # Run on the keyless exchange, starting at 100k
     exchange = blankly.KeylessExchange('./price_examples.csv', initial_account_values={'USD': 100000})

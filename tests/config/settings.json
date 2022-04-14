@@ -10,6 +10,9 @@
     "kucoin": {
       "cash": "USDT"
     },
+    "okex": {
+      "cash": "USDT"
+    },
     "binance": {
       "cash": "USDT",
       "binance_tld": "us"
@@ -23,6 +26,10 @@
     },
     "oanda": {
       "cash": "USD"
+    },
+    "ftx_futures": {
+      "cash": "USD",
+      "ftx_tld": "com"
     }
   }
 }

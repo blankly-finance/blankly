@@ -142,11 +142,11 @@ class StrategyLogger(ABCExchangeInterface):
             pass
         return out
 
-    def get_fees(self) -> dict:
+    def get_fees(self, symbol) -> dict:
         """
         No logging implemented
         """
-        return self.interface.get_fees()
+        return self.interface.get_fees(symbol)
 
     def get_order_filter(self, symbol: str):
         """

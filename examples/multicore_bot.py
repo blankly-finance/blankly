@@ -19,7 +19,7 @@ class Bot(blankly.BlanklyBot):
         self.update_state("heartbeat", 0)
 
         # This will work on any supported exchange
-        print("Interface call: " + str(self.interface.get_fees()))
+        print("Interface call: " + str(self.interface.get_fees(args['symbol'])))
 
         # You can also bypass the interface and make calls directly to the exchange:
         try:

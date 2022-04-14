@@ -92,6 +92,9 @@ class FTXAPI:
 
         return self._signed_get('markets')
 
+    def change_account_leverage(self, leverage: int) -> dict:
+        return self._signed_post('account/leverage', {'leverage': leverage})
+
     def get_market(self, symbol: str) -> dict:
 
         # symbol format must be BTC/USD instead of BTC-USD
@@ -128,11 +131,24 @@ class FTXAPI:
     def get_balances(self) -> List[dict]:
         return self._signed_get('wallet/balances')
 
+    def get_coins(self) -> List[dict]:
+        return self._signed_get('wallet/coins')
+
+    def get_future(self, future) -> dict:
+        return self._signed_get(f'futures/{future}')
+
     def get_deposit_addresses(self, ticker: str) -> dict:
         return self._signed_get(f'wallet/deposit_addresses/{ticker}')
 
     def get_positions(self, display_price_avg: bool = False) -> List[dict]:
         return self._signed_get('positions', {'showAvgPrice': display_price_avg})
+
+    def get_funding_rates(self, start_time: int, end_time: int, symbol: str):
+        return self._signed_get('funding_rates', {
+            'start_time': start_time,
+            'end_time': end_time,
+            'future': symbol
+        })
 
     def get_specific_position(self, pos_name: str, display_price_avg: bool = False) -> dict:
         filtered = filter(lambda pos: pos['future'] == pos_name, self.get_positions(display_price_avg))

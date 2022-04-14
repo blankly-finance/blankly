@@ -43,10 +43,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         self.market_order_execution_details = []
 
         self.get_products_cache = None
-        self.get_fees_cache = None
+        self.get_fees_cache = {}
         self.get_order_filter_cache = {}
-
-        self.__exchange_properties = None
 
         self.__run_watchdog = True
 
@@ -86,7 +84,6 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
     def evaluate_traded_account_assets(self):
         # Because alpaca has so many columns we need to optimize to perform an accurate backtest
-        self.traded_assets = []
         accounts = self.get_account()
 
         for i in accounts.keys():
@@ -122,18 +119,10 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
     def init_exchange(self):
         try:
-            fees = self.calls.get_fees()
+            self.calls.get_exchange_type()
         except AttributeError:
             traceback.print_exc()
             raise AttributeError("Are you passing a non-exchange object into the paper trade constructor?")
-
-        try:
-            self.__exchange_properties = {
-                "maker_fee_rate": fees['maker_fee_rate'],
-                "taker_fee_rate": fees['taker_fee_rate']
-            }
-        except KeyError:
-            raise KeyError(f'Invalid exchange response: {fees}')
 
     """ Needs to be overridden here """
 
@@ -312,17 +301,10 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             order (dict): Order dictionary to derive the order attributes
             current_price (float): The current price of the currency pair the limit order was created on
         """
-        if self.__exchange_properties is None:
-            self.init_exchange()
-
         funds = order['size'] * current_price
-        executed_value = funds - funds * float((self.__exchange_properties["maker_fee_rate"]))
-        fill_fees = funds * float((self.__exchange_properties["maker_fee_rate"]))
-        fill_size = order['size'] - order['size'] * float((self.__exchange_properties["maker_fee_rate"]))
-
-        # order['executed_value'] = str(executed_value)
-        # order['fill_fees'] = str(fill_fees)
-        # order['filled_size'] = str(fill_size)
+        executed_value = funds - funds * float((self.get_fees(order['symbol'])["maker_fee_rate"]))
+        fill_fees = funds * float((self.get_fees(order['symbol'])["maker_fee_rate"]))
+        fill_size = order['size'] - order['size'] * float((self.get_fees(order['symbol'])["maker_fee_rate"]))
 
         return order, funds, executed_value, fill_fees, fill_size
 
@@ -420,16 +402,16 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
-
-        if self.__exchange_properties is None:
-            self.init_exchange()
+        # Identify the trade also by exchange
+        if self.backtesting:
+            self.paper_trade_orders[-1]['exchange'] = self.get_exchange_type()
 
         if side == "buy":
             self.local_account.trade_local(symbol=symbol,
                                            side=side,
                                            base_delta=utils.trunc(qty -
                                                                   qty *
-                                                                  float((self.__exchange_properties["taker_fee_rate"])),
+                                                                  float((self.get_fees(symbol)["taker_fee_rate"])),
                                                                   quantity_decimals),
                                            # Gain filled size after fees
                                            quote_delta=utils.trunc(funds * -1,
@@ -441,7 +423,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                                            base_delta=utils.trunc(float(qty * -1), quantity_decimals),
                                            # Loose size before any fees
                                            quote_delta=utils.trunc(funds - funds *
-                                                                   float((self.__exchange_properties[
+                                                                   float((self.get_fees(symbol)[
                                                                        "taker_fee_rate"])),
                                                                    base_decimals),  # Gain executed value after fees
                                            quote_resolution=base_decimals, base_resolution=quantity_decimals)
@@ -559,6 +541,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
+        # Identify the trade also by exchange
+        self.paper_trade_orders[-1]['exchange'] = self.get_exchange_type()
 
         base = utils.get_base_asset(symbol)
         quote = utils.get_quote_asset(symbol)
@@ -587,6 +571,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         """
         This block could potentially work for both exchanges
         """
+        del symbol
         order_index = None
         for i in range(len(self.paper_trade_orders)):
             index = self.paper_trade_orders[i]
@@ -655,16 +640,39 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         else:
             return self.calls.get_products()
 
-    def get_fees(self):
+    def get_fees(self, symbol):
         if self.backtesting:
-            if self.get_fees_cache is None:
-                self.get_fees_cache = self.calls.get_fees()
-            return self.get_fees_cache
+            # Add exchanges that actually require a symbol
+            type_ = self.get_exchange_type()
+            if type_ == 'okx' or type_ == 'binance':
+                if symbol not in self.get_fees_cache:
+                    self.get_fees_cache[symbol] = self.calls.get_fees(symbol)
+                    return self.get_fees_cache[symbol]
+                else:
+                    return self.get_fees_cache[symbol]
+            # If it doesn't require a symbol just store it in the root
+            else:
+                if self.get_fees_cache == {}:
+                    self.get_fees_cache = self.calls.get_fees(symbol)
+                    return self.get_fees_cache
+                else:
+                    return self.get_fees_cache
         else:
-            return self.calls.get_fees()
+            return self.calls.get_fees(symbol)
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
-        return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        if self.backtesting:
+            if symbol in self.full_prices:
+                if resolution in self.full_prices[symbol]:
+                    price_set = self.full_prices[symbol][resolution]
+                else:
+                    raise LookupError(f"The resolution {resolution} not found or downloaded for {symbol}.")
+            else:
+                raise LookupError(f"Prices for this symbol ({symbol}) not found")
+
+            return utils.trim_df_time_column(price_set, epoch_start - resolution, epoch_stop)
+        else:
+            return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
     def get_order_filter(self, symbol):
         # Don't re-query order filter if its cached

@@ -10,6 +10,10 @@
       "cash": "USDT",
       "binance_tld": "us"
     },
+    "binance_futures": {
+      "cash": "USDT",
+      "margin_type": "USDT-M"
+    },
     "alpaca": {
       "websocket_stream": "iex",
       "cash": "USD",
@@ -18,6 +22,9 @@
     },
     "oanda": {
       "cash": "USD"
+    },
+    "okx": {
+      "cash": "USDT"
     },
     "keyless": {
       "cash": "USD"
@@ -28,6 +35,10 @@
     "ftx": {
       "cash": "USD",
       "ftx_tld": "us"
+    },
+    "ftx_futures": {
+      "cash": "USD",
+      "ftx_tld": "com"
     }
   }
 }

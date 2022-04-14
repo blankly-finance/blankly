@@ -12,7 +12,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import math
 
 import blankly
 
@@ -817,3 +817,19 @@ def add_all_products(nonzero_products: dict, all_products: list):
             }
 
     return nonzero_products
+
+
+def increment_to_precision(increment: float) -> int:
+    # quick maths
+    # 0.0001 -> 4
+    # 0.025 -> 1
+    # 0.25 -> 0
+    return math.floor(-math.log10(increment))
+
+
+def trim_df_time_column(df, epoch_start: [int, float], epoch_stop: [int, float]):
+    df = df[df['time'] >= epoch_start]
+    df = df[df['time'] <= epoch_stop]
+
+    return df
+
