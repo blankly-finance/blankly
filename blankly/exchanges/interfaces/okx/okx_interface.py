@@ -167,7 +167,8 @@ class OkxInterface(ExchangeInterface):
             dict: Containing the order_id of cancelled order. Example::
             { "client_oid": "order123", }
         """
-        return {"order_id": self._trade.cancel_order(symbol, ordId=order_id)}
+        response = self._trade.cancel_order(symbol, ordId=order_id)
+        return {"order_id": response['data'][0]['ordId']}
 
     def get_open_orders(self,
                         symbol: str = None) -> list:
@@ -237,6 +238,7 @@ class OkxInterface(ExchangeInterface):
             needed = self.needed['market_order']
         elif response['data'][0]['ordType'] == 'limit':
             needed = self.needed['limit_order']
+            response['price'] = response['data'][0]['px']
         else:
             needed = self.needed['market_order']
 

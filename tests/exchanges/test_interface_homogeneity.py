@@ -429,8 +429,8 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', sorted_orders['kucoin']['buy'].get_id()))
         cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', sorted_orders['kucoin']['sell'].get_id()))
-        cancels.append(self.Okx_Interface.cancel_order('PAX-USDT', sorted_orders['okx']['buy'].get_id()))
-        cancels.append(self.Okx_Interface.cancel_order('PAX-USDT', sorted_orders['okx']['sell'].get_id()))
+        cancels.append(self.Okx_Interface.cancel_order('BTC-USDT', sorted_orders['okx']['buy'].get_id()))
+        cancels.append(self.Okx_Interface.cancel_order('BTC-USDT', sorted_orders['okx']['sell'].get_id()))
 
         cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD',
                                                                 sorted_orders['coinbase_pro']['buy'].get_id()))

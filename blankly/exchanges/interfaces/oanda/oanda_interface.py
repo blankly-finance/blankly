@@ -309,7 +309,10 @@ class OandaInterface(ExchangeInterface):
     def get_order(self, symbol, order_id) -> dict:
         # Either the Order’s OANDA-assigned OrderID or the Order’s client-provided ClientID prefixed by the “@” symbol
         order = self.calls.get_order(order_id)
-        return self.homogenize_order(order['order'])
+        homogenized = self.homogenize_order(order['order'])
+        homogenized['symbol'] = self.__convert_symbol_to_blankly(homogenized['symbol'])
+        homogenized['size'] = abs(homogenized['size'])
+        return homogenized
 
     def get_fees(self, symbol):
         return {

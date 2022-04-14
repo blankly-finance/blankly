@@ -648,10 +648,14 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 if symbol not in self.get_fees_cache:
                     self.get_fees_cache[symbol] = self.calls.get_fees(symbol)
                     return self.get_fees_cache[symbol]
+                else:
+                    return self.get_fees_cache[symbol]
             # If it doesn't require a symbol just store it in the root
             else:
                 if self.get_fees_cache == {}:
                     self.get_fees_cache = self.calls.get_fees(symbol)
+                    return self.get_fees_cache
+                else:
                     return self.get_fees_cache
         else:
             return self.calls.get_fees(symbol)
