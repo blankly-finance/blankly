@@ -78,6 +78,9 @@ class Model:
         """
         pass
 
+    def websocket_update(self, data):
+        pass
+
     @property
     def time(self):
         if not self.is_backtesting:
