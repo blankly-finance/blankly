@@ -257,10 +257,15 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                 symbol_df: pd.DataFrame = data[symbol]
 
                 records = symbol_df.to_dict(orient='records')
+                data_formatted_records = []
                 for record_index in range(len(records)):
-                    records[record_index]['type'] = ['__blankly__tick']
+                    data_formatted_records.append({
+                        'type': '__blankly__tick',
+                        'data': records[record_index],
+                        'time': records[record_index]['time']
+                    })
 
-                self.events += records
+                self.events += data_formatted_records
 
         # Now we just need to sort by time
         self.events = sorted(self.events, key=lambda d: d['time'])
@@ -728,7 +733,6 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             #  it's less than the length of the price
             price_length = len(self.prices[symbol]) - 2
             while self.prices[symbol][self.price_indexes[symbol]]['time'] < self.time:
-                run_events()
                 if price_length >= self.price_indexes[symbol]:
                     self.price_indexes[symbol] += 1
                 else:
@@ -738,6 +742,12 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             # Write this new price into the interface
             self.interface.receive_price(symbol, new_price=self.prices[symbol][
                 self.price_indexes[symbol]][self.use_price])
+
+        # Check has_data here also
+        if self.time > self.user_stop:
+            self.model.has_data = False
+
+        run_events()
 
     def sleep(self, seconds: [int, float]):
         # Always evaluate limits
@@ -902,7 +912,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
         # Add an initial account row here
         if self.preferences['settings']['save_initial_account_value']:
-            available_dict, no_trade_dict = self.format_account_data(self.interface, self.initial_time)
+            available_dict, no_trade_dict = self.format_account_data(self.interface, self.user_start)
             self.traded_account_values.append(available_dict)
             self.no_trade_account_values.append(no_trade_dict)
 
