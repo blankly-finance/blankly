@@ -27,9 +27,10 @@ from blankly.utils.utils import info_print
 
 
 class Websocket(ABCExchangeWebsocket, abc.ABC):
-    def __init__(self, symbol, stream, log, log_message, url, pre_event_callback):
+    def __init__(self, symbol, stream, log, log_message, url, pre_event_callback, kwargs):
         self.symbol = symbol
         self.stream = stream
+        self.kwargs = kwargs
 
         # Initialize log file
         if log is not None:

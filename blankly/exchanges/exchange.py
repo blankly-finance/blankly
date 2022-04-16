@@ -29,6 +29,7 @@ from blankly.exchanges.interfaces.alpaca.alpaca_interface import AlpacaInterface
 from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
 from blankly.exchanges.interfaces.kucoin.kucoin_interface import KucoinInterface
 from blankly.exchanges.interfaces.kraken.kraken_interface import KrakenInterface
+from blankly.exchanges.interfaces.okx.okx_interface import OkxInterface
 
 
 class Exchange(ABCExchange, abc.ABC):
@@ -80,6 +81,8 @@ class Exchange(ABCExchange, abc.ABC):
             self.interface = OandaInterface(self.__type, calls)
         elif self.__type == "kucoin":
             self.interface = KucoinInterface(self.__type, calls)
+        elif self.__type == "okx":
+            self.interface = OkxInterface(self.__type, calls)
         elif self.__type == "kraken":
             self.interface = KrakenInterface(self.__type, calls)
 

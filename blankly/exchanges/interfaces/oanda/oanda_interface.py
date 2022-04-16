@@ -28,7 +28,7 @@ from blankly.exchanges.interfaces.oanda.oanda_api import OandaAPI
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.utils import utils as utils
-from blankly.utils.exceptions import APIException
+from blankly.utils.exceptions import APIException, InvalidOrder
 
 
 class OandaInterface(ExchangeInterface):
@@ -268,7 +268,13 @@ class OandaInterface(ExchangeInterface):
             'type': 'limit'
         }
 
-        resp['symbol'] = self.__convert_symbol_to_blankly(resp['orderCreateTransaction']['instrument'])
+        try:
+            resp['symbol'] = self.__convert_symbol_to_blankly(resp['orderCreateTransaction']['instrument'])
+        except KeyError as e:
+            if 'orderRejectTransaction' in resp:
+                raise InvalidOrder(resp['orderRejectTransaction']['rejectReason'])
+            else:
+                raise e
         resp['id'] = resp['orderCreateTransaction']['id']
         resp['created_at'] = resp['orderCreateTransaction']['time']
         resp['price'] = price
@@ -297,14 +303,18 @@ class OandaInterface(ExchangeInterface):
 
         for i in range(len(orders)):
             orders[i] = self.homogenize_order(orders[i])
+            orders[i]['symbol'] = self.__convert_symbol_to_blankly(orders[i]['symbol'])
         return orders
 
     def get_order(self, symbol, order_id) -> dict:
         # Either the Order’s OANDA-assigned OrderID or the Order’s client-provided ClientID prefixed by the “@” symbol
         order = self.calls.get_order(order_id)
-        return self.homogenize_order(order['order'])
+        homogenized = self.homogenize_order(order['order'])
+        homogenized['symbol'] = self.__convert_symbol_to_blankly(homogenized['symbol'])
+        homogenized['size'] = abs(homogenized['size'])
+        return homogenized
 
-    def get_fees(self):
+    def get_fees(self, symbol):
         return {
             'maker_fee_rate': 0.0,
             'taker_fee_rate': 0.0

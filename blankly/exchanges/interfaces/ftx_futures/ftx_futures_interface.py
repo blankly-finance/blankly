@@ -47,14 +47,6 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         return base_asset + '-USD'
 
     @staticmethod
-    def increment_to_precision(increment: float) -> int:
-        # quick maths
-        # 0.0001 -> 4
-        # 0.025 -> 1
-        # 0.25 -> 0
-        return math.floor(-math.log10(increment))
-
-    @staticmethod
     def parse_timestamp(time: str) -> int:
         return int(datetime.datetime.fromisoformat(time).timestamp())
 
@@ -290,7 +282,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         self.calls.cancel_order(str(order_id))
         return res
 
-    def get_open_orders(self, symbol: str) -> list:
+    def get_open_orders(self, symbol: str = None) -> list:
         return [
             self.parse_order_response(o) for o in self.calls.get_open_orders()
         ]

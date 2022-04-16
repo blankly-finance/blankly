@@ -136,9 +136,12 @@ def sell(interface: FuturesExchangeInterface, symbol: str, funds: int = 20, redu
 def buy(interface: FuturesExchangeInterface, symbol: str, funds: int = 20, reduce_only: bool = False):
     return place_order(interface, symbol, Side.BUY, funds, reduce_only)
 
-def close_all_positions(futures_interface: FuturesExchangeInterface):
-    for position in futures_interface.get_positions():
-        close_position(futures_interface, position.symbol)
+def close_all(futures_interface: FuturesExchangeInterface):
+    for symbol in futures_interface.get_positions():
+        close_position(futures_interface, symbol)
+
+    for order in futures_interface.get_open_orders():
+        futures_interface.cancel_order(order.symbol, order.id)
     assert len(futures_interface.get_positions()) == 0
 
 

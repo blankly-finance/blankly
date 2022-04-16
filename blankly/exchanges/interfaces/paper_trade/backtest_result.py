@@ -22,16 +22,16 @@ from blankly.utils.utils import time_interval_to_seconds as _time_interval_to_se
 
 class BacktestResult:
     def __init__(self, history_and_returns: dict, trades: dict, history: dict,
-                 start_time: float, stop_time: float, quote_currency: str, price_events: list, figures: list):
+                 start_time: float, stop_time: float, quote_currency: str, figures: list):
         # This can use a ton of memory if these attributes are not cleared
         self.history_and_returns = history_and_returns
         self.metrics = None  # Assigned after construction
         self.user_callbacks = None  # Assigned after construction
+        self.exchange = None  # Assigned after construction
         self.trades = trades
         self.history = history
 
         self.quote_currency = quote_currency
-        self.price_events = price_events
 
         self.start_time = start_time
         self.stop_time = stop_time
@@ -79,11 +79,14 @@ class BacktestResult:
                         # Must be the last one in the list
                         return search_index - 1
 
-                    if arr[search_index] <= x <= arr[search_index + 1]:
-                        # Found it in this range
-                        return search_index
+                    if len(arr) > 1:
+                        if arr[search_index] <= x <= arr[search_index + 1]:
+                            # Found it in this range
+                            return search_index
+                        else:
+                            search_index += 1
                     else:
-                        search_index += 1
+                        return 0
             try:
                 # Iterate and find the correct quote price
                 index_ = search(times, len(times), epoch)
@@ -108,15 +111,18 @@ class BacktestResult:
         epoch_start = time_array[0]
         epoch_stop = time_array[-1]
 
-        while epoch_start <= epoch_stop:
-            # Append this dict to the array
-            resampled_array.append({
-                'time': epoch_start,
-                'value': search_price(price_array, time_array, epoch_start)
-            })
+        try:
+            while epoch_start <= epoch_stop:
+                # Append this dict to the array
+                resampled_array.append({
+                    'time': epoch_start,
+                    'value': search_price(price_array, time_array, epoch_start)
+                })
 
-            # Increase the epoch value
-            epoch_start += interval
+                # Increase the epoch value
+                epoch_start += interval
+        except TypeError:
+            raise TypeError("No valid account data found, make sure to create valid account value datapoints.")
 
         # Turn that resample into a dataframe
         return DataFrame(resampled_array, columns=['time', 'value'])

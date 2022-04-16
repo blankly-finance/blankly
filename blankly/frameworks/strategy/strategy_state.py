@@ -31,8 +31,13 @@ class StrategyState:
         self.variables = variables
         self.resolution = resolution
         self.symbol = symbol
-        self.base_asset = get_base_asset(symbol)
-        self.quote_asset = get_quote_asset(symbol)
+
+        # Base & quotes are conditionally defined
+        self.base_asset = None
+        self.quote_asset = None
+        if isinstance(symbol, str):
+            self.base_asset = get_base_asset(symbol)
+            self.quote_asset = get_quote_asset(symbol)
 
     @property
     def interface(self) -> Interface:

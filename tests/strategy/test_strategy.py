@@ -52,7 +52,7 @@ class StrategyTest(unittest.TestCase):
     def bar_event(self, price, symbol, state: StrategyState):
         self.assertTrue(isinstance(price, dict))
         # Check ohlcv on bar
-        self.assertTrue(set(price.keys()) == {'open', 'high', 'low', 'close', 'volume'})
+        self.assertTrue(set(price.keys()) == {'open', 'high', 'low', 'close', 'volume', 'time'})
         self.ran_bar_event = True
 
     def test_backtest(self):
@@ -63,7 +63,7 @@ class StrategyTest(unittest.TestCase):
             blankly.Kucoin(**kwargs),
             blankly.FTX(**kwargs),
             blankly.CoinbasePro(**kwargs),
-            blankly.Binance(**kwargs),
+            blankly.Binance(**kwargs, portfolio_name='Data Key'),
             blankly.Oanda(**kwargs),
             blankly.Alpaca(**kwargs)
         ]

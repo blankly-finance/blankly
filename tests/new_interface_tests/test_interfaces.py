@@ -10,7 +10,7 @@ from blankly.enums import Side, OrderType, ContractType, OrderStatus, HedgeMode,
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.utils import utils
 from tests.new_interface_tests.test_utils import wait_till_filled, homogeneity_testing, sell, buy, cancelling_order, close_position, \
-    close_all_positions
+    close_all
 
 # TODO auto truncate
 # TODO min size/min notional api
@@ -192,21 +192,21 @@ def test_priced_orders(futures_interface: FuturesExchangeInterface,
 
 
 def test_set_hedge_mode(futures_interface: FuturesExchangeInterface):
-    close_all_positions(futures_interface)
     if futures_interface.get_exchange_type() == 'ftx_futures':
         pytest.xfail('FTX Futures does not support hedge mode')
+    close_all(futures_interface)
     futures_interface.set_hedge_mode(HedgeMode.HEDGE)
     assert futures_interface.get_hedge_mode() == HedgeMode.HEDGE
 
 
 def test_set_oneway_mode(futures_interface: FuturesExchangeInterface):
-    close_all_positions(futures_interface)
+    close_all(futures_interface)
     futures_interface.set_hedge_mode(HedgeMode.ONEWAY)
     assert futures_interface.get_hedge_mode() == HedgeMode.ONEWAY
 
 
 def test_account_leverage(futures_interface: FuturesExchangeInterface):
-    close_all_positions(futures_interface)
+    close_all(futures_interface)
     if futures_interface.get_exchange_type() == 'binance_futures':
         pytest.xfail(
             'Binance Futures does not support setting account leverage')
@@ -217,7 +217,7 @@ def test_account_leverage(futures_interface: FuturesExchangeInterface):
 def test_symbol_leverage(futures_interface: FuturesExchangeInterface,
                          symbol: str):
     if futures_interface.get_exchange_type() == 'ftx_futures':
-        close_all_positions(futures_interface)
+        close_all(futures_interface)
         futures_interface.set_leverage(3)  # set globally for ftx
         with pytest.raises(
                 Exception):  # changing for symbol should raise an exception
@@ -231,10 +231,10 @@ def test_symbol_leverage(futures_interface: FuturesExchangeInterface,
 
 def test_set_cross_margin(futures_interface: FuturesExchangeInterface,
                           symbol: str):
-    futures_interface.set_margin_type(symbol, MarginType.CROSSED)
-
     if futures_interface.get_exchange_type() == 'binance_futures':
         pytest.xfail('Binance doesn\'t have an API for this')
+    close_all(futures_interface)
+    futures_interface.set_margin_type(symbol, MarginType.CROSSED)
     assert futures_interface.get_margin_type(symbol) == MarginType.CROSSED
 
 

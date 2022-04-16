@@ -330,7 +330,7 @@ class AlpacaInterface(ExchangeInterface):
         order = utils.isolate_specific(needed, order)
         return order
 
-    def get_fees(self):
+    def get_fees(self, symbol):
         assert isinstance(self.calls, alpaca_trade_api.REST)
         return {
             'maker_fee_rate': 0.0,

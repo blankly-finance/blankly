@@ -17,6 +17,7 @@
 """
 import traceback
 import warnings
+import random
 from typing import List
 
 import requests
@@ -26,6 +27,9 @@ import blankly.utils.utils
 from blankly.exchanges.interfaces.alpaca.alpaca_websocket import Tickers as Alpaca_Websocket
 from blankly.exchanges.interfaces.binance.binance_websocket import Tickers as Binance_Orderbook
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tickers as Coinbase_Pro_Orderbook
+from blankly.exchanges.interfaces.kucoin.kucoin_websocket import Tickers as Kucoin_Orderbook
+from blankly.exchanges.interfaces.ftx.ftx_websocket import Tickers as Ftx_Orderbook
+from blankly.exchanges.interfaces.okx.okx_websocket import Tickers as Okx_Orderbook
 from blankly.exchanges.interfaces.kraken.kraken_websocket import Tickers as Kraken_Orderbook
 from blankly.exchanges.managers.websocket_manager import WebsocketManager
 
@@ -151,6 +155,7 @@ class OrderbookManager(WebsocketManager):
                 "asks": []
             }
             return websocket
+
         elif exchange_name == "kraken":
             if override_symbol is None:
                 override_symbol = self.__default_currency
@@ -172,6 +177,90 @@ class OrderbookManager(WebsocketManager):
                     "asks": []
                 }
                 return websocket
+
+        elif exchange_name == "ftx":
+            if override_symbol is None:
+                override_symbol = self.__default_currency
+
+            override_symbol = blankly.utils.to_exchange_symbol(override_symbol, "ftx")
+
+            if use_sandbox:
+                raise ValueError("Error: FTX does not have a sandbox mode")
+            else:
+                websocket = Ftx_Orderbook(override_symbol, "orderbook",
+                                          pre_event_callback=self.ftx_snapshot_update,
+                                          initially_stopped=initially_stopped,
+                                          )
+
+            websocket.append_callback(self.ftx_update)
+
+            # Store this object
+            self.__websockets['ftx'][override_symbol] = websocket
+            self.__websockets_callbacks['ftx'][override_symbol] = [callback]
+            self.__websockets_kwargs['ftx'][override_symbol] = kwargs
+            self.__orderbooks['ftx'][override_symbol] = {
+                "bids": [],
+                "asks": []
+            }
+            return websocket
+        elif exchange_name == "kucoin":
+            if override_symbol is None:
+                override_symbol = self.__default_currency
+
+            request_data = (requests.post('https://api.kucoin.com/api/v1/bullet-public').json())
+
+            if use_sandbox:
+                base_endpoint = request_data['data']['instanceServers'][0]['endpoint']
+                token = request_data['data']['token']
+                websocket = Kucoin_Orderbook(override_symbol, "level2",
+                                             pre_event_callback=self.kucoin_snapshot_update,
+                                             initially_stopped=initially_stopped,
+                                             websocket_url=f"{base_endpoint}/socket.io/?token={token}")
+            else:
+                base_endpoint = request_data['data']['instanceServers'][0]['endpoint']
+                token = request_data['data']['token']
+                websocket = Kucoin_Orderbook(override_symbol, "level2",
+                                             pre_event_callback=self.kucoin_snapshot_update,
+                                             initially_stopped=initially_stopped,
+                                             websocket_url=f"{base_endpoint}?token={token}&[connectId="
+                                                           f"{random.randint(1, 200000000) * 100000000}]"
+                                             )
+            # This is where the sorting magic happens
+            websocket.append_callback(self.kucoin_update)
+
+            # Store this object
+            self.__websockets['kucoin'][override_symbol] = websocket
+            self.__websockets_callbacks['kucoin'][override_symbol] = [callback]
+            self.__websockets_kwargs['kucoin'][override_symbol] = kwargs
+            self.__orderbooks['kucoin'][override_symbol] = {
+                "bids": [],
+                "asks": []
+            }
+
+        elif exchange_name == "okx":
+            if override_symbol is None:
+                override_symbol = self.__default_currency
+
+            if use_sandbox:
+                websocket = Okx_Orderbook(override_symbol, "books",
+                                          pre_event_callback=self.okx_snapshot_update,
+                                          initially_stopped=initially_stopped,
+                                          WEBSOCKET_URL="wss://wspap.okx.com:8443/ws/v5/public?brokerId=9999")
+            else:
+                websocket = Okx_Orderbook(override_symbol, "books",
+                                          pre_event_callback=self.okx_snapshot_update,
+                                          initially_stopped=initially_stopped
+                                          )
+
+            websocket.append_callback(self.okx_update)
+            self.__websockets['okx'][override_symbol] = websocket
+            self.__websockets_callbacks['okx'][override_symbol] = [callback]
+            self.__websockets_kwargs['okx'][override_symbol] = kwargs
+            self.__orderbooks['okx'][override_symbol] = {
+                "bids": [],
+                "asks": []
+            }
+            return websocket
 
         elif exchange_name == "binance":
             if override_symbol is None:
@@ -230,6 +319,66 @@ class OrderbookManager(WebsocketManager):
 
         else:
             print(exchange_name + " ticker not supported, skipping creation")
+
+    def ftx_update(self, update):
+        symbol = update['symbol']
+
+        book_buys = self.__orderbooks['ftx'][symbol]['bids']
+        book_sells = self.__orderbooks['ftx'][symbol]['asks']  # type: list
+
+        new_buys = update['bids'][::-1]  # type: list
+        for i in new_buys:
+            i[0] = float(i[0])
+            i[1] = float(i[1])
+            if i[1] == 0:
+                book_buys = remove_price(book_buys, i[0])
+            else:
+                book_buys.append((i[0], i[1]))
+
+        new_sells = update['asks']  # type: list
+        for i in new_sells:
+            i[0] = float(i[0])
+            i[1] = float(i[1])
+            if i[1] == 0:
+                book_sells = remove_price(book_sells, i[0])
+            else:
+                book_sells.append((i[0], i[1]))
+
+        # Now sort them
+        book_buys = sort_list_tuples(book_buys)
+        book_sells = sort_list_tuples(book_sells)
+
+        self.__orderbooks['ftx'][symbol]['bids'] = book_buys
+        self.__orderbooks['ftx'][symbol]['asks'] = book_sells
+
+        # Pass in this new updated orderbook
+        callbacks = self.__websockets_callbacks['ftx'][symbol]
+        for i in callbacks:
+            i(self.__orderbooks['ftx'][symbol],
+              **self.__websockets_kwargs['ftx'][symbol])
+
+    def ftx_snapshot_update(self, update):
+        market = update['market'].replace('/', '-')
+        print("Orderbook snapshot acquired for: " + market)
+        book = {
+            "bids": [],
+            "asks": []
+        }
+        buys = update['data']['bids']
+
+        for i in range(len(buys)):
+            buy = buys[i]
+            book['bids'].append((float(buy[0]), float(buy[1])))
+
+        sells = update['data']['asks']
+        for i in range(len(sells)):
+            sell = sells[i]
+            book['asks'].append((float(sell[0]), float(sell[1])))
+
+        book["bids"] = sort_list_tuples(book["bids"])
+        book["asks"] = sort_list_tuples(book["asks"])
+
+        self.__orderbooks['ftx'][update['market']] = book
 
     def coinbase_snapshot_update(self, update):
         print("Orderbook snapshot acquired for: " + update['product_id'])
@@ -322,6 +471,147 @@ class OrderbookManager(WebsocketManager):
         for i in callbacks:
             i(self.__orderbooks['kraken'][symbol],
               **self.__websockets_kwargs['kraken'][symbol])
+
+    def okx_update(self, update):
+
+        symbol = update['arg']['instId']
+
+        book_buys = self.__orderbooks['okx'][symbol]['bids']  # type: list
+        book_sells = self.__orderbooks['okx'][symbol]['asks']  # type: list
+
+        # Buys are b, count from low to high with reverse (which is the ::-1 thing)
+        new_buys = update['data'][0]['bids'][::-1]  # type: list
+        for i in new_buys:
+            i[0] = float(i[0])
+            i[1] = float(i[1])
+            if i[1] == 0:
+                book_buys = remove_price(book_buys, i[0])
+            else:
+                book_buys.append((i[0], i[1]))
+
+        # Asks are sells, these are also counted from low to high
+        new_sells = update['data'][0]['asks']  # type: list
+        for i in new_sells:
+            i[0] = float(i[0])
+            i[1] = float(i[1])
+            if i[1] == 0:
+                book_sells = remove_price(book_sells, i[0])
+            else:
+                book_sells.append((i[0], i[1]))
+
+        # Now sort them
+        book_buys = sort_list_tuples(book_buys)
+        book_sells = sort_list_tuples(book_sells)
+
+        self.__orderbooks['okx'][symbol]['bids'] = book_buys
+        self.__orderbooks['okx'][symbol]['asks'] = book_sells
+
+        # Pass in this new updated orderbook
+        callbacks = self.__websockets_callbacks['okx'][symbol]
+        for i in callbacks:
+            i(self.__orderbooks['okx'][symbol],
+              **self.__websockets_kwargs['okx'][symbol])
+
+    def okx_snapshot_update(self, update):
+        print("Orderbook snapshot acquired for: " + update['arg']['instId'])
+
+        book = {
+            "bids": [],
+            "asks": []
+        }
+
+        buys = update['data'][0]['bids'] # [0][:-1]
+        buys[0] = buys[0][:-1]
+        # Convert these to float and write to our order dictionaries
+        for i in range(len(buys)):
+            buy = buys[i]
+            book['bids'].append((float(buy[0]), float(buy[1])))
+
+        sells = update['data'][0]['asks'] # [0][:-1]
+        sells[0] = sells[0][:-1]
+        for i in range(len(sells)):
+            sell = sells[i]
+            book['asks'].append((float(sell[0]), float(sell[1])))
+
+        book["bids"] = sort_list_tuples(book["bids"])
+        book["asks"] = sort_list_tuples(book["asks"])
+
+        self.__orderbooks['okx'][update['arg']['instId']] = book
+
+    def kucoin_update(self, update):
+        symbol = update['data']['symbol']
+
+        # Get symbol for orderbook
+        book_buys = self.__orderbooks['kucoin'][symbol]['bids']
+        book_sells = self.__orderbooks['kucoin'][symbol]['asks']  # type: list
+
+        new_buys = update['data']['changes']['bids'][::-1]  # type: list
+        if len(new_buys) == 0:
+            pass
+        else:
+            new_buys[0] = new_buys[0][:-1]
+
+        for i in new_buys:
+            i[0] = float(i[0])  # price
+            i[1] = float(i[1])  # size
+            if i[1] == 0:
+                book_buys = remove_price(book_buys, i[1])
+            else:
+                book_buys.append((i[0], i[1]))
+
+        # Asks are sells, these are also counted from low to high
+        new_sells = update['data']['changes']['asks']  # type: list
+        if len(new_sells) == 0:
+            pass
+        else:
+            new_sells[0] = new_sells[0][:-1]
+
+        for i in new_sells:
+            i[0] = float(i[0])
+            i[1] = float(i[1])
+            if i[1] == 0:
+                book_sells = remove_price(book_sells, i[1])
+            else:
+                book_sells.append((i[0], i[1]))
+
+        # Now sort them
+        book_buys = sort_list_tuples(book_buys)
+        book_sells = sort_list_tuples(book_sells)
+
+        self.__orderbooks['kucoin'][symbol]['bids'] = book_buys
+        self.__orderbooks['kucoin'][symbol]['asks'] = book_sells
+
+        # Pass in this new updated orderbook
+        callbacks = self.__websockets_callbacks['kucoin'][symbol]
+        for i in callbacks:
+            i(self.__orderbooks['kucoin'][symbol],
+              **self.__websockets_kwargs['kucoin'][symbol])
+
+    def kucoin_snapshot_update(self, update):
+        print("Orderbook snapshot acquired for: " + update['data']['symbol'])
+        # Clear whatever book we had
+        book = {
+            "bids": [],
+            "asks": []
+        }
+        # Get all bids
+        buys = update['data']['changes']['bids']  # [0][:-1]
+        buys[0] = buys[0][:-1]
+        # Convert these to float and write to our order dictionaries
+        for i in range(len(buys)):
+            buy = buys[i]
+            book['bids'].append((float(buy[0]), float(buy[1])))
+
+        sells = update['data']['changes']['asks']  # [0][:-1]
+        sells[0] = sells[0][:-1]
+        for i in range(len(sells)):
+            sell = sells[i]
+            book['asks'].append((float(sell[0]), float(sell[1])))
+
+        book["bids"] = sort_list_tuples(book["bids"])
+        book["asks"] = sort_list_tuples(book["asks"])
+
+        self.__orderbooks['kucoin'][update['data']['symbol']] = book
 
     def binance_update(self, update):
         try:

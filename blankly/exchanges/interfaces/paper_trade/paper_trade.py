@@ -63,7 +63,7 @@ class PaperTrade(Exchange):
         Exchange state is the external properties for the exchange block
         """
         # TODO Populate this with useful information
-        return self.interface.get_fees()
+        return self.interface.get_products()
 
     def get_direct_calls(self):
         return self.calls
