@@ -437,8 +437,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                                                                    f'{symbol},'
                                                                    f'{int(j[0])},'
                                                                    f'{int(j[1]) + resolution},'  # This adds resolution 
-                                                                                                 # back to the exported
-                                                                                                 # time series
+                        # back to the exported
+                        # time series
                                                                    f'{resolution}.csv'),
                                         index=False)
 
@@ -635,7 +635,9 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             currency_pair = i
 
             # Convert to quote (this could be optimized a bit)
-            if interface.get_exchange_type() != 'alpaca':
+            is_stonks = interface.get_exchange_type() == 'alpaca'
+            is_future = currency_pair.endswith('PERP')
+            if not (is_stonks or is_future):
                 currency_pair += '-'
                 currency_pair += self.quote_currency
 
@@ -645,8 +647,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             except KeyError:
                 # Must be a currency we have no data for
                 price = 0
-            value_total += price * true_available[i]
-            no_trade_value += price * no_trade_available[i]
+            value_total += price * abs(true_available[i])
+            no_trade_value += price * abs(no_trade_available[i])
 
         # Make sure to add the time key in
         true_available['time'] = local_time
@@ -905,6 +907,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                 update_progress(1)
         except Exception:
             traceback.print_exc()
+        finally:
+            self.model.teardown()
 
         # Reset time to indicate we are no longer in a backtest
         self.time = None
@@ -1155,7 +1159,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                     'successful': True,
                     'status_summary': 'Completed',
                     'status_details': '',
-                    'time_elapsed': stop_clock-start_clock,
+                    'time_elapsed': stop_clock - start_clock,
                     'backtest_id': platform_result['backtest_id']
                 }, headers={
                     'api_key': api_key,

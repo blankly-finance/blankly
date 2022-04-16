@@ -192,9 +192,8 @@ class StrategyStructure(Model):
             i.stop_scheduler()
             kwargs = i.get_kwargs()
             teardown = kwargs['teardown']
-            state_object = kwargs['state']
             if callable(teardown):
-                teardown(state_object)
+                teardown(kwargs['symbol'], kwargs['state'])
 
         for i in self.orderbook_websockets:
             self.orderbook_manager.close_websocket(override_symbol=i[0], override_exchange=i[1])

@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import abc
 import typing
 
 from blankly.exchanges.abc_base_exchange import ABCBaseExchange
@@ -29,7 +29,7 @@ from blankly.utils.time_builder import time_interval_to_seconds
 import time
 
 
-class Model:
+class Model(abc.ABC):
     def __init__(self, exchange: ABCBaseExchange):
         self.__exchange = exchange
         self.__exchange_cache = self.__exchange
@@ -72,8 +72,12 @@ class Model:
     def run(self, args: typing.Any = None):
         self.main(args)
 
+    @abc.abstractmethod
     def main(self, args):
-        raise NotImplementedError("Add a main function to your strategy to run the model.")
+        pass
+
+    def teardown(self):
+        pass
 
     def event(self, type_: str, data: any):
         """

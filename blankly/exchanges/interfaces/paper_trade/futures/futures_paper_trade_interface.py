@@ -9,12 +9,17 @@ from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExcha
 from blankly.exchanges.interfaces.paper_trade.backtesting_wrapper import BacktestingWrapper
 from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 from blankly.utils import utils as utils
+from copy import deepcopy
 
 
 class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
     interface: FuturesExchangeInterface
     paper_account: dict
     paper_positions: dict
+
+    # mapping of contract names -> quote currency used
+    # BTC-PERP -> USDT/USD
+    _quote_map: dict
 
     # orders
     _placed_orders: dict
@@ -44,12 +49,16 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
     def market_order_execution_details(self) -> list:
         return []
 
-    def add_asset(self, symbol):
+    def add_asset(self, asset):
+        if asset not in self.traded_assets:
+            self.traded_assets.append(asset)
+
+    def add_symbol(self, symbol):
         base, quote = symbol.split('-')
-        if base not in self.traded_assets:
-            self.traded_assets.append(base)
-        if quote not in self.traded_assets:
-            self.traded_assets.append(quote)
+        contract_name = base + '-PERP'
+        self._quote_map[contract_name] = quote
+        self.add_asset(contract_name)
+        self.add_asset(quote)
 
     def __init__(self, exchange_name: str, interface: FuturesExchangeInterface, account_values: dict = None):
         super().__init__(exchange_name, interface.calls)
@@ -60,6 +69,7 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         self._executed_orders = {}
         self._canceled_orders = {}
         self._funds_held = {}
+        self._quote_map = {}
 
         # same functionality as 'real' FuturesExchangeInterface's
         self.paper_account = defaultdict(lambda: {'available': 0, 'hold': 0})
@@ -78,7 +88,7 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         return self.interface.get_products(symbol)
 
     def get_account(self, symbol: str = None) -> dict:
-        acc = self.paper_account
+        acc = deepcopy(self.paper_account)
         if symbol:
             try:
                 return acc[symbol]
@@ -99,16 +109,16 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
                      reduce_only: bool = False) -> FuturesOrder:
         return self._place_order(OrderType.MARKET, symbol, side, size, 0, position, reduce_only)
 
-    def limit_order(self, symbol: str, side: Side, price: float, size: float, position: PositionMode = None,
-                    reduce_only: bool = None, time_in_force: TimeInForce = None) -> FuturesOrder:
+    def limit_order(self, symbol: str, side: Side, price: float, size: float, position: PositionMode = PositionMode.BOTH,
+                    reduce_only: bool = False, time_in_force: TimeInForce = None) -> FuturesOrder:
         return self._place_order(OrderType.LIMIT, symbol, side, size, price, position, reduce_only)
 
     def take_profit(self, symbol: str, side: Side, price: float, size: float,
-                    position: PositionMode = None) -> FuturesOrder:
+                    position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
         return self._place_order(OrderType.TAKE_PROFIT, symbol, side, size, price, position)
 
     def stop_loss(self, symbol: str, side: Side, price: float, size: float,
-                  position: PositionMode = None) -> FuturesOrder:
+                  position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
         return self._place_order(OrderType.STOP, symbol, side, size, price, position)
 
     def should_run_order(self, order):
@@ -137,7 +147,7 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
             raise ValueError('paper trading with leverage not supported')
 
     def get_leverage(self, symbol: str = None) -> float:
-        raise NotImplementedError
+        return 1
 
     def set_margin_type(self, symbol: str, type: MarginType):
         self.margin_types[symbol] = type
@@ -146,15 +156,29 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         return self.margin_types.get(symbol, MarginType.CROSSED)
 
     def cancel_order(self, symbol: str, order_id: int) -> FuturesOrder:
-        raise NotImplementedError
+        try:
+            order = self._placed_orders[order_id][1]
+            del self._placed_orders[order_id]
+            assert order.symbol == symbol
+            return dataclasses.replace(order, status=OrderStatus.CANCELED)
+        except KeyError:
+            raise Exception('order not found')
 
     def get_open_orders(self, symbol: str = None) -> List[FuturesOrder]:
-        raise NotImplementedError
+        return [dataclasses.replace(o) for o in self._placed_orders]
 
     def get_order(self, symbol: str, order_id: int) -> FuturesOrder:
-        raise NotImplementedError
+        try:
+            order = self._placed_orders[order_id][1]
+            assert order.symbol == symbol
+            return dataclasses.replace(order, status=OrderStatus.CANCELED)
+        except KeyError:
+            raise Exception('order not found')
 
     def get_price(self, symbol: str) -> float:
+        if symbol.endswith('-PERP'):
+            quote = self._quote_map[symbol]
+            symbol = symbol.split('-')[0] + '-' + quote
         if self.backtesting:
             return self.get_backtesting_price(symbol)
         else:
@@ -177,8 +201,6 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         self.paper_account.update({
             asset: {'available': value, 'hold': 0} for asset, value in value_dictionary.items()
         })
-
-        self.traded_assets.extend(value_dictionary.keys())
 
     def evaluate_limits(self):
         # TODO reduce_only on limit order "technically" broken
@@ -211,17 +233,21 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
                 self.paper_account[quote]['hold'] -= notional
 
             # this overwrites but it's fine, we don't need to update
+            new_position = position_size + size_diff
             self.paper_positions[order.symbol] = {
                 'symbol': order.symbol,
-                'size': position_size + size_diff,
+                'size': new_position,
                 'position': PositionMode.BOTH,
                 'contract_type': ContractType.PERPETUAL,
                 'exchange_specific': {}
             }
+            self.paper_account[base + '-PERP']['available'] = new_position
+            pass
 
     def _place_order(self, type: OrderType, symbol: str, side: Side, size: float, limit_price: float = 0,
                      positionMode: PositionMode = PositionMode.BOTH, reduce_only: bool = False,
                      time_in_force: TimeInForce = TimeInForce.GTC) -> FuturesOrder:
+        self.add_symbol(symbol)
         product = self.get_products(symbol)
 
         if not product:
@@ -245,7 +271,9 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
             price = limit_price
 
         position = self.get_position(symbol)
-        is_closing = position and (position['size'] > 0) == (side == Side.SELL)
+        # close position if we are selling from >0 position or buying <0 position
+        # no position == we are never closing
+        is_closing = self.is_closing_position(position, side)
         if not position and reduce_only:
             raise Exception('reduce_only set to True but there is no position to reduce')
 
@@ -254,6 +282,13 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
 
         if reduce_only:
             size = min(size, abs(position['size']))
+
+        if is_closing and size > abs(position['size']):
+            # we need to close position and then buy/sell extra w/ the extra funds
+            # this is weird behavior but it's what binance futures does
+            # for now raise exception in backtesting, nobody is going to do this anyways
+            # and the workaround is simple, just close your position first
+            raise Exception('order size is greater than position, close your position first and then place order')
 
         base, quote = symbol.split('-')
         acc = self.paper_account[quote]
@@ -275,11 +310,20 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
 
         order = FuturesOrder(symbol=symbol, id=order_id, size=size, status=OrderStatus.OPEN, type=type,
                              contract_type=ContractType.PERPETUAL, side=side, position=PositionMode.BOTH,
-                             price=limit_price,
-                             limit_price=0, time_in_force=TimeInForce.GTC, response={}, interface=self.interface)
+                             limit_price=limit_price,
+                             price=0, time_in_force=TimeInForce.GTC, response={}, interface=self.interface)
         self._placed_orders[order_id] = (is_closing, order)
 
         self.evaluate_limits()
+
+        return order
+
+    def is_closing_position(self, position, side):
+        if not position or position['size'] == 0:
+            return False
+        if (position['size'] > 0) == (side == Side.SELL):
+            return True
+        return False
 
     def gen_order_id(self):
         return random.randrange(10 ** 4, 10 ** 5)
