@@ -1152,8 +1152,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
                 show(bokeh_columns(figures))
                 info_print(f'Make an account to take advantage of the platform backtest viewer: '
-                           f'https://app.blankly.finance/5Z9MWfnUzwIyy9Qv385a/1Ss7zybwN8aMAbWb3lSH/'
-                           f'aG3LE1LzHnY24oqtBMS3/backtest')
+                           f'https://app.blankly.finance/RETIe0J8EPSQz7wizoJX0OAFb8y1/EZkgTZMLJVaZK6kNy0mv/'
+                           f'2b2ff92c-ee41-42b3-9afb-387de9e4f894/backtest')
 
             # This is where we end the backtesting time
             stop_clock = time.time()
