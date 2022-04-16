@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import time
+from operator import itemgetter
 from typing import Optional
 
 import binance.exceptions
@@ -492,39 +493,50 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
 
     def get_funding_rate_history(self, symbol: str, epoch_start: int,
                                  epoch_stop: int) -> list:
-        symbol = self.to_exchange_symbol(symbol)
-        limit = 1000
+        if self.calls.testnet:
+            # testnet api is incredibly stupid and has cost me several hours of my life
+            resolution = self.get_funding_rate_resolution()
+            start = int(epoch_start)
+            end = int(epoch_stop)
+            start = start - (start % resolution) + resolution
+            end = end - (end % resolution) + resolution
+            return [{'rate': 0.0001, 'time': t}
+                    for t in range(start, end + 1, resolution)]
+
         history = []
-        window_start = epoch_start
-        window_end = epoch_stop
+        window = int(epoch_start)
 
-        # UNCOMMENT FOR WALRUS
-        # while response := self.calls.futures_funding_rate(
-        #         symbol=symbol,
-        #         startTime=window_start * 1000,
-        #         endTime=window_end * 1000,
-        #         limit=limit):
-
-        # WARNING! non-walrus code ahead:
         response = True
         while response:
             response = self.calls.futures_funding_rate(
                 symbol=symbol,
-                startTime=window_start * 1000,
-                endTime=window_end * 1000,
+                startTime=window,
                 limit=limit)
             # very stinky ^^
 
-            history.extend({
-                               'rate': float(e['fundingRate']),
-                               'time': e['fundingTime'] // 1000
-                           } for e in response)
+            history.extend({'rate': float(e['fundingRate']),
+                            'time': e['fundingTime'] // 1000}
+                           for e in response)
 
             if history:
-                window_start = history[-1]['time'] + 1
-                window_end = min(dt.now().timestamp(), epoch_stop)
-
+                # the (testnet) api is stupid and sometimes gives us times we don't want
+                if history[0]['time'] < window:
+                    break
+                window = history[-1]['time'] + 1
+                if epoch_stop < window:
+                    break
+        history.sort(key=itemgetter('time'))
+        while history and epoch_stop < history[-1]['time']:
+            history.pop()
+        while history and history[0]['time'] < epoch_start:
+            history.pop(0)
         return history
 
     def get_funding_rate_resolution(self) -> int:
         return time_builder.build_hour() * 8  # 8 hours
+
+    def get_funding_rate(self, symbol: str):
+        response = self.calls.futures_mark_price(symbol=symbol)
+        return response['nextFundingTime'], response['lastFundingRate']
+
+

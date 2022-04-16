@@ -16,6 +16,9 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
     interface: FuturesExchangeInterface
     paper_account: dict
     paper_positions: dict
+    next_fund: int
+
+    _funding_rate_cache: list
 
     # mapping of contract names -> quote currency used
     # BTC-PERP -> USDT/USD
@@ -64,12 +67,14 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         super().__init__(exchange_name, interface.calls)
         BacktestingWrapper.__init__(self)
         self.interface = interface
+        self.next_fund = 0
 
         self._placed_orders = {}
         self._executed_orders = {}
         self._canceled_orders = {}
         self._funds_held = {}
         self._quote_map = {}
+        self._funding_rate_cache = []
 
         # same functionality as 'real' FuturesExchangeInterface's
         self.paper_account = defaultdict(lambda: {'available': 0, 'hold': 0})
@@ -175,6 +180,27 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         except KeyError:
             raise Exception('order not found')
 
+    def get_funding_rate(self, symbol: str):
+        if self.backtesting:
+            return self.get_backtesting_funding_rate(symbol)
+        else:
+            return self.interface.get_funding_rate(symbol)
+
+    def get_backtesting_funding_rate(self, symbol: str):
+        # check if cache needs to be refreshed
+        # TODO this all need to be moved into events framework once that's done
+        time = self.time()
+        if not self._funding_rate_cache or self._funding_rate_cache[-1]['time'] < time:
+            self._funding_rate_cache = self.get_funding_rate_history(symbol, time, None)
+        for i, o in self._funding_rate_cache[:-1].enumerate():
+            if o['time'] < time:
+                last = o['rate']
+                next = self._funding_rate_cache[i+1]['time']
+                return last, next
+        print(f'failed to download funding rate at time {time}')
+        return 0.0001, time + (time % self.get_funding_rate_resolution())
+
+
     def get_price(self, symbol: str) -> float:
         if symbol.endswith('-PERP'):
             quote = self._quote_map[symbol]
@@ -202,7 +228,27 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
             asset: {'available': value, 'hold': 0} for asset, value in value_dictionary.items()
         })
 
+    def check_funding_rate(self, symbol):
+        if not self.next_fund:
+            last, self.next_fund = self.get_funding_rate(symbol)
+            return
+        if self.next_fund < self.time():
+            fund, self.next_fund = self.get_funding_rate(symbol)
+            # fund!
+            position_size = self.paper_positions[symbol]['size']
+            if not position_size:
+                return
+            value = position_size * self.get_price(symbol)
+            m = -1 if (position_size > 0) == ()
+
+
+
     def evaluate_limits(self):
+        # TODO this needs to be part of the event stuff once that's fleshed out
+        symbols = {position['symbol'] for position in self.paper_positions}
+        for symbol in symbols:
+            self.check_funding_rate(symbol)
+
         # TODO reduce_only on limit order "technically" broken
         for id, order_data in list(self._placed_orders.items()):
             is_closing, order = order_data
@@ -234,13 +280,16 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
 
             # this overwrites but it's fine, we don't need to update
             new_position = position_size + size_diff
-            self.paper_positions[order.symbol] = {
-                'symbol': order.symbol,
-                'size': new_position,
-                'position': PositionMode.BOTH,
-                'contract_type': ContractType.PERPETUAL,
-                'exchange_specific': {}
-            }
+            if new_position:
+                self.paper_positions[order.symbol] = {
+                    'symbol': order.symbol,
+                    'size': new_position,
+                    'position': PositionMode.BOTH,
+                    'contract_type': ContractType.PERPETUAL,
+                    'exchange_specific': {}
+                }
+            else:
+                del self.paper_positions[order.symbol]
             self.paper_account[base + '-PERP']['available'] = new_position
             pass
 

@@ -202,6 +202,10 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
+    def get_funding_rate(self, symbol: str) -> float:
+        pass
+
+    @abc.abstractmethod
     def get_maker_fee(self) -> float:
         pass
 
