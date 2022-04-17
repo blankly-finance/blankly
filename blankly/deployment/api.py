@@ -125,12 +125,13 @@ class API:
                                                               'description': description})
 
     def deploy(self, file_path: str, model_id: str, version_description: str,
-               python_version: float, type_: str, plan: str, schedule: str = None):
+               python_version: float, type_: str, plan: str, schedule: str = None,
+               project_id: str = None):
         file_path = r'{}'.format(file_path)
         file = {'model': open(file_path, 'rb')}
         return self.__request('post', 'model/deploy', file=file, data={'pythonVersion': python_version,
                                                                        'versionDescription': version_description,
-                                                                       'projectId': self.user_id,
+                                                                       'projectId': project_id or self.user_id,
                                                                        'modelId': model_id,
                                                                        'type': type_,
                                                                        'plan': plan,
