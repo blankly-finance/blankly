@@ -36,7 +36,7 @@ class CoinbaseProInterface(ExchangeInterface):
     def init_exchange(self):
         # This is purely an authentication check which can be disabled in settings
         # Coinbase is symbol agnostic so passing a blank here is okay
-        fees = self.calls.get_fees(None)
+        fees = self.calls.get_fees()
         try:
             if fees['message'] == "Invalid API Key":
                 raise LookupError("Invalid API Key - are you trying to use your normal exchange keys "
