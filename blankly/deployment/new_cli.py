@@ -213,6 +213,7 @@ def generate_settings_json(tld: str):
     data = {"settings": {"use_sandbox_websockets": False,
                          "websocket_buffer_size": 10000,
                          "test_connectivity_on_auth": True,
+                         "auto_truncate": True,
                          "coinbase_pro": {"cash": "USD"},
                          "binance": {"cash": "USDT",
                                      "binance_tld": tld, },

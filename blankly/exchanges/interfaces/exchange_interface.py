@@ -17,6 +17,7 @@
 """
 
 import abc
+from functools import lru_cache
 
 import blankly.utils.utils as utils
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
@@ -229,3 +230,15 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 return 'new'
 
         return status
+
+    @property
+    def should_auto_trunc(self):
+        return self.user_preferences['settings'].get('auto_truncate', False)
+
+    @lru_cache(None)
+    def get_asset_precision(self, asset):
+        try:
+            product = next(p for p in self.get_products() if p['symbol'] == asset)
+            return utils.increment_to_precision(product['base_increment'])
+        except (KeyError, StopIteration):
+            return 8  # reasonable default for symbols that don't exist
