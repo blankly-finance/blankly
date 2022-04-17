@@ -54,33 +54,45 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         ExchangeInterface.__init__(self, derived_interface.get_exchange_type(), derived_interface)
         BacktestingWrapper.__init__(self)
 
-        # Write in the accounts to our local account. This involves getting the values directly from the exchange
-        accounts = self.calls.get_account()
-
-        # If it's given an initial account value dictionary, write all the account values that we passed in to the
-        # function to the account, then default everything else to zero.
-        if initial_account_values is not None:
-            for i in accounts.keys():
-                if i in initial_account_values.keys():
-                    accounts[i] = utils.AttributeDict({
-                        'available': initial_account_values[i],
-                        'hold': 0.0
-                    })
-                else:
-                    accounts[i] = utils.AttributeDict({
-                        'available': 0.0,
-                        'hold': 0.0
-                    })
-
-        # Initialize the local account
-        self.local_account = LocalAccount(accounts)
+        self.__local_account_cache = None
+        self.__initial_account_values = initial_account_values
 
         # Initialize our traded assets list
         self.traded_assets = []
 
-        self.evaluate_traded_account_assets()
+        # self.evaluate_traded_account_assets()
 
         self.__enable_shorting = self.user_preferences['settings']['alpaca']['enable_shorting']
+
+    @property
+    def local_account(self):
+        if self.__local_account_cache is None:
+            if self.get_exchange_type() == 'keyless':
+                accounts = utils.add_all_products({}, self.get_products())
+            else:
+                # Write in the accounts to our local account. This involves getting the values directly from the
+                # exchange
+                accounts = self.calls.get_account()
+            # If it's given an initial account value dictionary, write all the account values that we passed in to the
+            # function to the account, then default everything else to zero.
+            if self.__initial_account_values is not None:
+                for i in accounts.keys():
+                    if i in self.__initial_account_values.keys():
+                        accounts[i] = utils.AttributeDict({
+                            'available': self.__initial_account_values[i],
+                            'hold': 0.0
+                        })
+                    else:
+                        accounts[i] = utils.AttributeDict({
+                            'available': 0.0,
+                            'hold': 0.0
+                        })
+
+            # Initialize the local account
+            self.__local_account_cache = LocalAccount(accounts)
+            return self.__local_account_cache
+        else:
+            return self.__local_account_cache
 
     def evaluate_traded_account_assets(self):
         # Because alpaca has so many columns we need to optimize to perform an accurate backtest
@@ -633,12 +645,26 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 return i
 
     def get_products(self):
+        def get_keyless_products():
+            symbols_ = []
+            for full_symbol in self.full_prices:
+                symbols_.append({
+                    'symbol': full_symbol
+                })
+            self.get_products_cache = symbols_
         if self.backtesting:
             if self.get_products_cache is None:
-                self.get_products_cache = self.calls.get_products()
+                if self.get_exchange_type() == 'keyless':
+                    get_keyless_products()
+                else:
+                    self.get_products_cache = self.calls.get_products()
             return self.get_products_cache
         else:
-            return self.calls.get_products()
+            if self.get_exchange_type() == 'keyless':
+                get_keyless_products()
+                return self.get_products_cache
+            else:
+                return self.calls.get_products()
 
     def get_fees(self, symbol):
         if self.backtesting:
