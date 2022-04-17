@@ -105,4 +105,8 @@ def get_datadir() -> pathlib.Path:
 
 
 def logout():
-    get_token_file().unlink(missing_ok=True)
+    # python 3.8 has a parameter for this `missing_ok` but we need to support 3.7
+    try:
+        get_token_file().unlink()
+    except FileNotFoundError:
+        pass
