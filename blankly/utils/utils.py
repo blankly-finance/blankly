@@ -46,12 +46,9 @@ default_general_settings = {
             "cash": "USDT",
             "binance_tld": "us"
         },
-        "kucoin": {
-            "cash": "USDT"
-        },
-        "ftx": {
-            "cash": "USD",
-            "ftx_tld": "us"
+        "binance_futures": {
+            "cash": "USDT",
+            "margin_type": "USDT-M"
         },
         "alpaca": {
             "websocket_stream": "iex",
@@ -62,8 +59,22 @@ default_general_settings = {
         "oanda": {
             "cash": "USD"
         },
+        "okx": {
+            "cash": "USDT"
+        },
         "keyless": {
             "cash": "USD"
+        },
+        "kucoin": {
+            "cash": "USDT"
+        },
+        "ftx": {
+            "cash": "USD",
+            "ftx_tld": "us"
+        },
+        "ftx_futures": {
+            "cash": "USD",
+            "ftx_tld": "com"
         }
     }
 }
@@ -83,7 +94,7 @@ default_backtest_settings = {
         "continuous_caching": True,
         "resample_account_value_for_metrics": "1d",
         "quote_account_value_in": "USD",
-        "ignore_user_exceptions": False,
+        "ignore_user_exceptions": True,
         "risk_free_return_rate": 0.0,
         "benchmark_symbol": None
     }
