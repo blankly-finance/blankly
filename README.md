@@ -103,7 +103,8 @@ if __name__ == "__main__":
 <div align="center">
     <a><img src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/github%2FScreen%20Shot%202022-04-17%20at%202.37.58%20PM.png?alt=media&token=d5738617-e197-4da2-850d-8fbbfda05275" style="border-radius:10px"></a>
 </div>
-**Check out the demo link [here](https://app.blankly.finance/RETIe0J8EPSQz7wizoJX0OAFb8y1/62iIMVRKV7zkcpJysYlP/75a0c190-4d8a-44e2-9310-c47d4d72b070/backtest).**
+
+Check out the demo link [here](https://app.blankly.finance/RETIe0J8EPSQz7wizoJX0OAFb8y1/62iIMVRKV7zkcpJysYlP/75a0c190-4d8a-44e2-9310-c47d4d72b070/backtest).
 
 #### Iterate & Train using your Metrics, Trades and Performance
 
