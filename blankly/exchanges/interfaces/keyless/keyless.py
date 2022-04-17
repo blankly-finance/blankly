@@ -24,12 +24,12 @@ from blankly.exchanges.interfaces.keyless.keyless_api import KeylessAPI
 
 
 class KeylessExchange(Exchange):
-    def __init__(self, dataset_path: str, initial_account_values: dict, portfolio_name=None, settings_path=None):
+    def __init__(self, maker_fee=0, taker_fee=0, portfolio_name=None, settings_path=None):
         Exchange.__init__(self, "keyless", portfolio_name, settings_path)
 
-        self.calls = KeylessAPI(dataset_path)
+        self.calls = KeylessAPI(maker_fee, taker_fee)
 
-        self.interface = PaperTradeInterface(self.calls, initial_account_values=initial_account_values)
+        self.interface = PaperTradeInterface(self.calls)
 
         # This one must be exported manually
         blankly.reporter.export_used_exchange("keyless")
@@ -51,7 +51,7 @@ class KeylessExchange(Exchange):
         Exchange state is the external properties for the exchange block
         """
         # TODO Populate this with useful information
-        return self.interface.get_fees()
+        return self.interface.get_products()
 
     def get_direct_calls(self) -> ABCExchangeInterface:
         return self.calls

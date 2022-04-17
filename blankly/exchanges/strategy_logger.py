@@ -85,14 +85,33 @@ class StrategyLogger(ABCExchangeInterface):
         out = self.interface.market_order(symbol, side, size)
 
         # Record this market order along with the arguments
-        blankly.reporter.log_market_order(out, self.__type)
+        try:
+            blankly.reporter.log_market_order({
+                'symbol': symbol,
+                'exchange': self.__type,
+                'size': size,
+                'id': out.get_id(),
+                'side': side
+            }, self.__type)
+        except Exception:
+            pass
         return out
     
     def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
         out = self.interface.limit_order(symbol, side, price, size)
 
         # Record limit order along with the arguments
-        blankly.reporter.log_limit_order(out, self.__type)
+        try:
+            blankly.reporter.log_limit_order({
+                'symbol': symbol,
+                'exchange': self.__type,
+                'size': size,
+                'id': out.get_id(),
+                'side': side,
+                'price': price
+            }, self.__type)
+        except Exception:
+            pass
         return out
     
     def cancel_order(self, symbol: str, order_id: str) -> dict:
@@ -114,14 +133,20 @@ class StrategyLogger(ABCExchangeInterface):
         out = self.interface.get_order(symbol, order_id)
 
         # Record the arguments
-        blankly.reporter.update_order(out, self.__type)
+        try:
+            blankly.reporter.update_order({
+                'id': order_id,
+                'status': out['status']
+            }, self.__type)
+        except Exception:
+            pass
         return out
 
-    def get_fees(self) -> dict:
+    def get_fees(self, symbol) -> dict:
         """
         No logging implemented
         """
-        return self.interface.get_fees()
+        return self.interface.get_fees(symbol)
 
     def get_order_filter(self, symbol: str):
         """

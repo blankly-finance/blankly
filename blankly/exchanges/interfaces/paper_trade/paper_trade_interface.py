@@ -43,10 +43,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         self.market_order_execution_details = []
 
         self.get_products_cache = None
-        self.get_fees_cache = None
+        self.get_fees_cache = {}
         self.get_order_filter_cache = {}
-
-        self.__exchange_properties = None
 
         self.__run_watchdog = True
 
@@ -56,37 +54,48 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         ExchangeInterface.__init__(self, derived_interface.get_exchange_type(), derived_interface)
         BacktestingWrapper.__init__(self)
 
-        # Write in the accounts to our local account. This involves getting the values directly from the exchange
-        accounts = self.calls.get_account()
-
-        # If it's given an initial account value dictionary, write all the account values that we passed in to the
-        # function to the account, then default everything else to zero.
-        if initial_account_values is not None:
-            for i in accounts.keys():
-                if i in initial_account_values.keys():
-                    accounts[i] = utils.AttributeDict({
-                        'available': initial_account_values[i],
-                        'hold': 0.0
-                    })
-                else:
-                    accounts[i] = utils.AttributeDict({
-                        'available': 0.0,
-                        'hold': 0.0
-                    })
-
-        # Initialize the local account
-        self.local_account = LocalAccount(accounts)
+        self.__local_account_cache = None
+        self.__initial_account_values = initial_account_values
 
         # Initialize our traded assets list
         self.traded_assets = []
 
-        self.evaluate_traded_account_assets()
+        # self.evaluate_traded_account_assets()
 
         self.__enable_shorting = self.user_preferences['settings']['alpaca']['enable_shorting']
 
+    @property
+    def local_account(self):
+        if self.__local_account_cache is None:
+            if self.get_exchange_type() == 'keyless':
+                accounts = utils.add_all_products({}, self.get_products())
+            else:
+                # Write in the accounts to our local account. This involves getting the values directly from the
+                # exchange
+                accounts = self.calls.get_account()
+            # If it's given an initial account value dictionary, write all the account values that we passed in to the
+            # function to the account, then default everything else to zero.
+            if self.__initial_account_values is not None:
+                for i in accounts.keys():
+                    if i in self.__initial_account_values.keys():
+                        accounts[i] = utils.AttributeDict({
+                            'available': self.__initial_account_values[i],
+                            'hold': 0.0
+                        })
+                    else:
+                        accounts[i] = utils.AttributeDict({
+                            'available': 0.0,
+                            'hold': 0.0
+                        })
+
+            # Initialize the local account
+            self.__local_account_cache = LocalAccount(accounts)
+            return self.__local_account_cache
+        else:
+            return self.__local_account_cache
+
     def evaluate_traded_account_assets(self):
         # Because alpaca has so many columns we need to optimize to perform an accurate backtest
-        self.traded_assets = []
         accounts = self.get_account()
 
         for i in accounts.keys():
@@ -122,18 +131,10 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
     def init_exchange(self):
         try:
-            fees = self.calls.get_fees()
+            self.calls.get_exchange_type()
         except AttributeError:
             traceback.print_exc()
             raise AttributeError("Are you passing a non-exchange object into the paper trade constructor?")
-
-        try:
-            self.__exchange_properties = {
-                "maker_fee_rate": fees['maker_fee_rate'],
-                "taker_fee_rate": fees['taker_fee_rate']
-            }
-        except KeyError:
-            raise KeyError(f'Invalid exchange response: {fees}')
 
     """ Needs to be overridden here """
 
@@ -312,20 +313,14 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             order (dict): Order dictionary to derive the order attributes
             current_price (float): The current price of the currency pair the limit order was created on
         """
-        if self.__exchange_properties is None:
-            self.init_exchange()
-
         funds = order['size'] * current_price
-        executed_value = funds - funds * float((self.__exchange_properties["maker_fee_rate"]))
-        fill_fees = funds * float((self.__exchange_properties["maker_fee_rate"]))
-        fill_size = order['size'] - order['size'] * float((self.__exchange_properties["maker_fee_rate"]))
-
-        # order['executed_value'] = str(executed_value)
-        # order['fill_fees'] = str(fill_fees)
-        # order['filled_size'] = str(fill_size)
+        executed_value = funds - funds * float((self.get_fees(order['symbol'])["maker_fee_rate"]))
+        fill_fees = funds * float((self.get_fees(order['symbol'])["maker_fee_rate"]))
+        fill_size = order['size'] - order['size'] * float((self.get_fees(order['symbol'])["maker_fee_rate"]))
 
         return order, funds, executed_value, fill_fees, fill_size
 
+    @utils.enforce_base_asset
     def get_account(self, symbol=None) -> utils.AttributeDict:
         if symbol is None:
             return self.local_account.get_accounts()
@@ -419,16 +414,16 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
-
-        if self.__exchange_properties is None:
-            self.init_exchange()
+        # Identify the trade also by exchange
+        if self.backtesting:
+            self.paper_trade_orders[-1]['exchange'] = self.get_exchange_type()
 
         if side == "buy":
             self.local_account.trade_local(symbol=symbol,
                                            side=side,
                                            base_delta=utils.trunc(qty -
                                                                   qty *
-                                                                  float((self.__exchange_properties["taker_fee_rate"])),
+                                                                  float((self.get_fees(symbol)["taker_fee_rate"])),
                                                                   quantity_decimals),
                                            # Gain filled size after fees
                                            quote_delta=utils.trunc(funds * -1,
@@ -440,7 +435,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                                            base_delta=utils.trunc(float(qty * -1), quantity_decimals),
                                            # Loose size before any fees
                                            quote_delta=utils.trunc(funds - funds *
-                                                                   float((self.__exchange_properties[
+                                                                   float((self.get_fees(symbol)[
                                                                        "taker_fee_rate"])),
                                                                    base_decimals),  # Gain executed value after fees
                                            quote_resolution=base_decimals, base_resolution=quantity_decimals)
@@ -558,6 +553,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         }
         response = utils.isolate_specific(needed, response)
         self.paper_trade_orders.append(response)
+        # Identify the trade also by exchange
+        self.paper_trade_orders[-1]['exchange'] = self.get_exchange_type()
 
         base = utils.get_base_asset(symbol)
         quote = utils.get_quote_asset(symbol)
@@ -578,12 +575,15 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             # Gain size on hold when selling
             hold = self.local_account.get_account(base)['hold']
             self.local_account.update_hold(base, hold + size)
+        else:
+            raise APIException(f"Invalid side {side}")
         return LimitOrder(order, response, self)
 
     def cancel_order(self, symbol, order_id) -> dict:
         """
         This block could potentially work for both exchanges
         """
+        del symbol
         order_index = None
         for i in range(len(self.paper_trade_orders)):
             index = self.paper_trade_orders[i]
@@ -592,7 +592,34 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 break
 
         if order_index is not None:
-            order_id = self.paper_trade_orders[order_index]['id']
+            # Now that we found it make sure that we move the funds back on available
+            order = self.paper_trade_orders[order_index]
+            side = order['side']
+            size = order['size']
+            symbol = order['symbol']
+            price = order['price']
+            base_asset = utils.get_base_asset(symbol)
+            quote_asset = utils.get_quote_asset(symbol)
+
+            if side == 'buy':
+                # When you cancel on the buy side you get those funds back in available
+                available = self.local_account.get_account(quote_asset)['available']
+                self.local_account.update_available(quote_asset, available + (size * price))
+
+                # And loose them on hold
+                hold = self.local_account.get_account(quote_asset)['hold']
+                self.local_account.update_hold(quote_asset, hold - (size * price))
+            elif side == 'sell':
+                # Canceling a sell you gain the size back into available
+                available = self.local_account.get_account(base_asset)['available']
+                self.local_account.update_available(base_asset, available + size)
+
+                # And you loose it in the hold
+                hold = self.local_account.get_account(base_asset)['hold']
+                self.local_account.update_hold(base_asset, hold - size)
+
+            # This saves the order
+            order_id = order['id']
             # Make sure to save this as a canceled order just before closing it
             # Make sure to write in the time also
             self.canceled_orders.append({
@@ -602,6 +629,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
             del self.paper_trade_orders[order_index]
             return {"order_id": order_id}
+        else:
+            raise APIException("Order ID not found.")
 
     def get_open_orders(self, symbol=None):
         open_orders = []
@@ -616,23 +645,60 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 return i
 
     def get_products(self):
+        def get_keyless_products():
+            symbols_ = []
+            for full_symbol in self.full_prices:
+                symbols_.append({
+                    'symbol': full_symbol
+                })
+            self.get_products_cache = symbols_
         if self.backtesting:
             if self.get_products_cache is None:
-                self.get_products_cache = self.calls.get_products()
+                if self.get_exchange_type() == 'keyless':
+                    get_keyless_products()
+                else:
+                    self.get_products_cache = self.calls.get_products()
             return self.get_products_cache
         else:
-            return self.calls.get_products()
+            if self.get_exchange_type() == 'keyless':
+                get_keyless_products()
+                return self.get_products_cache
+            else:
+                return self.calls.get_products()
 
-    def get_fees(self):
+    def get_fees(self, symbol):
         if self.backtesting:
-            if self.get_fees_cache is None:
-                self.get_fees_cache = self.calls.get_fees()
-            return self.get_fees_cache
+            # Add exchanges that actually require a symbol
+            type_ = self.get_exchange_type()
+            if type_ == 'okx' or type_ == 'binance':
+                if symbol not in self.get_fees_cache:
+                    self.get_fees_cache[symbol] = self.calls.get_fees(symbol)
+                    return self.get_fees_cache[symbol]
+                else:
+                    return self.get_fees_cache[symbol]
+            # If it doesn't require a symbol just store it in the root
+            else:
+                if self.get_fees_cache == {}:
+                    self.get_fees_cache = self.calls.get_fees(symbol)
+                    return self.get_fees_cache
+                else:
+                    return self.get_fees_cache
         else:
-            return self.calls.get_fees()
+            return self.calls.get_fees(symbol)
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
-        return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        if self.backtesting:
+            if symbol in self.full_prices:
+                if resolution in self.full_prices[symbol]:
+                    price_set = self.full_prices[symbol][resolution]
+                else:
+                    raise LookupError(f"The resolution {resolution} not found or downloaded for {symbol}.")
+            else:
+                raise LookupError(f"Prices for this symbol ({symbol}) not found")
+
+            return utils.trim_df_time_column(price_set, epoch_start - resolution, epoch_stop)
+        else:
+            return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
     def get_order_filter(self, symbol):
         # Don't re-query order filter if its cached

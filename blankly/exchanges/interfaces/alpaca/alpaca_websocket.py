@@ -91,7 +91,7 @@ def create_ticker_connection(symbol, url, channel):
 class Tickers(ABCExchangeWebsocket):
     def __init__(self, symbol, stream, log=None,
                  pre_event_callback=None, initially_stopped=False,
-                 WEBSOCKET_URL="wss://stream.data.alpaca.markets/v2/iex/"):
+                 websocket_url="wss://stream.data.alpaca.markets/v2/iex/", **kwargs):
         """
         Create and initialize the ticker
         Args:
@@ -99,11 +99,12 @@ class Tickers(ABCExchangeWebsocket):
             stream: Valid exchange stream to attach to, these are:
                 trades, quotes, bars, dailyBars, statuses, lulds
             log: Fill this with a path to a log file that should be created
-            WEBSOCKET_URL: Default websocket URL feed.
+            websocket_url: Default websocket URL feed.
         """
         self.__symbol = symbol
         self.__stream = stream
         self.__logging_callback, self.__interface_callback, log_message = switch_type(stream)
+        self.__kwargs = kwargs
 
         # Initialize log file
         if log is not None:
@@ -117,7 +118,7 @@ class Tickers(ABCExchangeWebsocket):
         else:
             self.__log = False
 
-        self.URL = WEBSOCKET_URL
+        self.URL = websocket_url
         self.ws = None
         self.__response = None
         self.__subscription_response = None
@@ -190,7 +191,7 @@ class Tickers(ABCExchangeWebsocket):
 
                 try:
                     for i in self.__callbacks:
-                        i(interface_message)
+                        i(interface_message, **self.__kwargs)
                 except Exception:
                     traceback.print_exc()
 

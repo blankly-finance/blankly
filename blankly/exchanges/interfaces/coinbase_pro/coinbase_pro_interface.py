@@ -35,7 +35,8 @@ class CoinbaseProInterface(ExchangeInterface):
 
     def init_exchange(self):
         # This is purely an authentication check which can be disabled in settings
-        fees = self.calls.get_fees()
+        # Coinbase is symbol agnostic so passing a blank here is okay
+        fees = self.calls.get_fees(None)
         try:
             if fees['message'] == "Invalid API Key":
                 raise LookupError("Invalid API Key - are you trying to use your normal exchange keys "
@@ -79,6 +80,7 @@ class CoinbaseProInterface(ExchangeInterface):
             products[i] = utils.isolate_specific(needed, products[i])
         return products
 
+    @utils.enforce_base_asset
     def get_account(self, symbol=None) -> utils.AttributeDict:
         """
         Get all currencies in an account, or sort by symbol/account_id
@@ -403,7 +405,7 @@ class CoinbaseProInterface(ExchangeInterface):
     binance: get_trade_fee
     """
 
-    def get_fees(self) -> dict:
+    def get_fees(self, symbol) -> dict:
         needed = self.needed['get_fees']
         """
         {

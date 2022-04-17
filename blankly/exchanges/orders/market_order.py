@@ -59,7 +59,6 @@ class MarketOrder(Order):
         ]
         """
         self.Interface = interface
-        self.__exchange = self.Interface.get_exchange_type()
         self.__order = order
         self.__response = response
         self.__homogenized_result = None
