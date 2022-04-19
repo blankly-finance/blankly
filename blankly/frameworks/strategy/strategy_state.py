@@ -39,6 +39,15 @@ class StrategyState:
             self.base_asset = get_base_asset(symbol)
             self.quote_asset = get_quote_asset(symbol)
 
+    @staticmethod
+    def append_bar(history_reference, new_bar: dict):
+        history_reference['open'].append(new_bar['open'])
+        history_reference['high'].append(new_bar['high'])
+        history_reference['low'].append(new_bar['low'])
+        history_reference['close'].append(new_bar['close'])
+        history_reference['volume'].append(new_bar['volume'])
+        history_reference['time'].append(new_bar['time'])
+
     @property
     def interface(self) -> Interface:
         """
