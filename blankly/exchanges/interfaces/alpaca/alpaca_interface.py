@@ -267,15 +267,15 @@ class AlpacaInterface(ExchangeInterface):
         return TakeProfitOrder(order, response, self)
 
     @utils.order_protection
-    def stop_loss_order(self, symbol: str, side: str, price: float, size: float) -> StopLossOrder:
+    def stop_loss_order(self, symbol: str, price: float, size: float) -> StopLossOrder:
         needed = self.needed['stop_loss']
+        side = 'sell'
 
         renames = [
             ['limit_price', 'price'],
             ['qty', 'size']
         ]
 
-        side = 'sell'
         order = {
             'quantity': size,
             'side': side,
