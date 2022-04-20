@@ -209,7 +209,6 @@ class KrakenInterface(ExchangeInterface):
 
         return MarketOrder(order, order_info, self)
 
-    #private function
     def limit_order(self, symbol: str, side: str, price: float, size: float):
         #symbol = interface_utils(symbol)
         response = self.kraken_request('/0/private/AddOrder', {
@@ -250,64 +249,40 @@ class KrakenInterface(ExchangeInterface):
                     "txid": order_id
                 })
 
-    #private function
     def get_open_orders(self, symbol: str = None) -> list:
         """
         List open orders.
         Args:
             symbol (optional) (str): Asset such as BTC-USD
         """
-        response = self.get_calls().open_orders()
+        response = self.kraken_request('/0/private/OpenOrders', {
+                    "nonce": str(int(1000*time.time())),
+                    "trades": True #default is false, dk bout this
+                })
 
         response_needed_fulfilled = []
         if len(response) == 0:
             return []
 
-        for open_order_id, open_order_info in response.items():
-            utils.pretty_print_JSON(f"json: {response}", actually_print=True)
+        for open_order_id in response['result']['open']:
+            for open_order_info in response['result']['open'][open_order_id]:
+                needed = self.choose_order_specificity(open_order_info['type'])
 
-            # Needed:
-            # 'get_open_orders': [  # Key specificity changes based on order type
-            #     ["id", str],
-            #     ["price", float],
-            #     ["size", float],
-            #     ["type", str],
-            #     ["side", str],
-            #     ["status", str],
-            #     ["product_id", str]
-            # ],
+                open_order_info['id'] = open_order_info['trades'][0]
+                open_order_info["symbol"] = open_order_info["descr"]["pair"]
+                open_order_info["size"] = open_order_info['vol']
+                open_order_info["type"] = open_order_info["descr"]["ordertype"]
+                open_order_info["side"] = open_order_info["descr"]["type"]
+                open_order_info["status"] = None #no status given
+                open_order_info["price"] = open_order_info["descr"]["price"]
+                open_order_info["time_in_force"] = "GTC"
+                open_order_info['created_at'] = open_order_info['opentm']
 
-            open_order_info['id'] = open_order_id
-            open_order_info["size"] = open_order_info.pop("vol")
-            open_order_info["type"] = open_order_info["descr"].pop("ordertype")
-            open_order_info["side"] = open_order_info["descr"].pop("type")
-            open_order_info['product_id'] = interface_utils.kraken_symbol_to_blankly_symbol(
-                open_order_info["descr"].pop('pair'))
-            open_order_info['created_at'] = open_order_info.pop('opentm')
+                open_order_info = utils.isolate_specific(needed, open_order_info)
 
-            if open_order_info["type"] == "limit":
-                needed = self.choose_order_specificity("limit")
-                open_order_info['time_in_force'] = "GTC"
-                open_order_info['price'] = float(open_order_info["descr"].pop("price"))
-            elif open_order_info["type"] == "market":
-                needed = self.choose_order_specificity("market")
-
-            open_order_info = utils.isolate_specific(needed, open_order_info)
-
-            response_needed_fulfilled.append(open_order_info)
+                response_needed_fulfilled.append(open_order_info)
 
         return response_needed_fulfilled
-
-    # 'get_order': [
-    #     ["product_id", str],
-    #     ["id", str],
-    #     ["price", float],
-    #     ["size", float],
-    #     ["type", str],
-    #     ["side", str],
-    #     ["status", str],
-    #     ["funds", float]
-    # ],
 
     #https://docs.kraken.com/rest/#operation/getOrdersInfo
     #private function
@@ -318,7 +293,11 @@ class KrakenInterface(ExchangeInterface):
             symbol: Asset that the order is under
             order_id: The unique ID of the order.
         """
-        response = self.get_calls().query_orders(txid=order_id)[order_id]
+        response = self.kraken_request('/0/private/QueryOrders', {
+                    "nonce": str(int(1000*time.time())),
+                    "txid": order_id,
+                    "trades": True
+                })
         utils.pretty_print_JSON(response, actually_print=True)
 
         order_type = response["descr"].pop("ordertype")
@@ -442,16 +421,13 @@ class KrakenInterface(ExchangeInterface):
 
     def get_order_filter(self, symbol: str) -> dict:
 
-        symbol = "XBTUSDT"
+        symbol = {"pair": "XBTUSDT"}
         kraken_symbol = symbol
         # kraken_symbol = interface_utils.blankly_symbol_to_kraken_symbol(symbol)
 
-        asset_info = self.get_calls().asset_pairs(pairs=kraken_symbol)
+        asset_info = self.get_calls().query_public('AssetPairs', kraken_symbol)
 
-        price = self.get_calls().ticker(kraken_symbol)[kraken_symbol]["c"][0]
-
-        # max_orders = self.account_levels_to_max_open_orders[
-        #                                                       self.user_preferences["settings"]["kraken"]["account_type"]]
+        price = self.get_calls().query_public('Ticker', kraken_symbol)["result"][symbol['pair']]['p'][0]
 
         return {
             "symbol": symbol,
