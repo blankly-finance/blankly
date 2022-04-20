@@ -16,9 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 from blankly.exchanges.exchange import Exchange
-from blankly.exchanges.interfaces.kraken.kraken_api import API as KrakenAPI
 from blankly.exchanges.auth.auth_constructor import AuthConstructor
 from blankly.utils import info_print
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
@@ -33,9 +31,17 @@ class Kraken(Exchange):
         auth = AuthConstructor(keys_path, portfolio_name, 'kraken', ['API_KEY', 'API_SECRET', 'sandbox'])
 
         keys = auth.keys
+
         sandbox = super().evaluate_sandbox(auth)
 
-        calls = KrakenAPI(keys['API_KEY'], keys['API_SECRET'])
+        try:
+            import krakenex
+        except ImportError:
+            raise ImportError("Please \"pip install krakenex\" to use kraken with blankly.")
+
+        calls = krakenex.API()
+        #calls.load_key('tests/config/keys.json')
+        calls.__init__(keys['API_KEY'], keys['API_SECRET'])
 
         # Always finish the method with this function
         super().construct_interface_and_cache(calls)
@@ -65,5 +71,5 @@ class Kraken(Exchange):
         # TODO Populate this with useful information
         return self.interface.get_fees()
 
-    def get_direct_calls(self) -> KrakenAPI:
+    def get_direct_calls(self) -> dict:
         return self.calls

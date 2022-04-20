@@ -1,12 +1,13 @@
-# import time
+import time
 
+import requests
 import pandas as pd
-from blankly.exchanges.interfaces.kraken.kraken_api import API as KrakenAPI
 from typing import List
 import warnings
 
 # import blankly.utils.time_builder
 import blankly.utils.utils as utils
+from blankly.exchanges.auth.utils import load_auth
 import blankly.exchanges.interfaces.kraken.kraken_interface_utils as interface_utils
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.limit_order import LimitOrder
@@ -53,86 +54,97 @@ class KrakenInterface(ExchangeInterface):
         
         """
 
+    def kraken_request(self, path, data):
+        api_url = "https://api.kraken.com"
+        auth = load_auth('kraken')
+        headers = {}
+        headers['API-Key'] = auth[1]['API_KEY']
+        headers['API-Sign'] = self.get_calls()._sign(data, path)
+        req = requests.post((api_url + path), headers=headers, data=data).json()
+        return req
+
     def get_products(self) -> list:
 
         needed_asset_pairs = []
+        symbol = {"pair": "XXBTZUSD"}
         needed = self.needed["get_products"]
-        asset_pairs: List[dict] = self.get_calls().asset_pairs()
-        for asset_id, asset_pair in asset_pairs.items():
-            asset_pair["symbol"] = asset_pair["wsname"].replace('/', '-')
-            asset_pair["base_asset"] = asset_pair.pop("base")
-            asset_pair["quote_asset"] = asset_pair.pop("quote")
-            asset_pair["base_min_size"] = asset_pair.pop("ordermin")
-            asset_pair["base_max_size"] = 99999999999
-            asset_pair["base_increment"] = 10 ** (-1 * float(asset_pair.pop("lot_decimals")))
-            asset_pair["kraken_id"] = asset_id
-            needed_asset_pairs.append(utils.isolate_specific(needed, asset_pair))
+        asset_pairs = self.get_calls().query_public('AssetPairs', symbol)
+
+        asset_pairs["symbol"] = asset_pairs['result'][symbol['pair']]["wsname"].replace('/', '-')
+        asset_pairs["base_asset"] = asset_pairs['result'][symbol['pair']]["base"]
+        asset_pairs["quote_asset"] = asset_pairs['result'][symbol['pair']]["quote"]
+        asset_pairs["base_min_size"] = asset_pairs['result'][symbol['pair']]["ordermin"]
+        asset_pairs["base_max_size"] = 99999999999
+        asset_pairs["base_increment"] = 10 ** (-1 * float(asset_pairs['result'][symbol['pair']]["lot_decimals"]))
+        asset_pairs["kraken_id"] = None
+        needed_asset_pairs.append(utils.isolate_specific(needed, asset_pairs))
 
         return needed_asset_pairs
 
-    # NOTE: implement this
     def get_account(self, symbol=None):
         symbol = super().get_account(symbol)
 
-        positions = self.get_open_orders()
+        positions = self.kraken_request('/0/private/Balance', {
+            "nonce": str(int(1000 * time.time()))
+        })
+
         positions_dict = utils.AttributeDict({})
 
-        for position in positions:
-            curr_symbol = position["result"]["open"]["desc"]["pair"]
-            positions_dict[curr_symbol] = utils.AttributeDict({
-                'available': float(position.pop('vol')),
+        for position in positions['result']:
+            positions_dict[position] = utils.AttributeDict({
+                'available': float(positions['result'][position]),
                 'hold': 0.0
             })
 
-        symbols = list(positions_dict.keys())
+        # symbols = list(positions_dict.keys())
         # Catch an edge case bug that if there are no positions it won't try to snapshot
-        if len(symbols) != 0:
-            open_orders = self.get_open_orders(symbol=symbols)
-                #calls.list_orders(status='open', symbols=symbols)
-            snapshot_price = self.get_open_orders(symbol=symbols)["result"]["open"]["desc"]["price"]
-        else:
-            open_orders = []
-            snapshot_price = {}
-
-        for order in open_orders:
-            curr_symbol = order['symbol']
-            if order['side'] == 'buy':  # buy orders only affect USD holds
-                if order['qty']:  # this case handles qty market buy and limit buy
-                    if order['type'] == 'limit':
-                        dollar_amt = float(order['qty']) * float(order['limit_price'])
-                    elif order['type'] == 'market':
-                        dollar_amt = float(order['qty']) * snapshot_price[curr_symbol]['latestTrade']['p']
-                    else:  # we don't have support for stop_order, stop_limit_order
-                        dollar_amt = 0.0
-                else:  # this is the case for notional market buy
-                    dollar_amt = float(order['notional'])
-
-                # In this case we don't have to subtract because the buying power is the available money already
-                # we just need to add to figure out how much is actually on limits
-                # positions_dict['USD']['available'] -= dollar_amt
-
-                # So just add to our hold
-                positions_dict['USD']['hold'] += dollar_amt
-
-            else:
-                if order['qty']:  # this case handles qty market sell and limit sell
-                    qty = float(order['qty'])
-                else:  # this is the case for notional market sell, calculate the qty with cash/price
-                    qty = float(order['notional']) / snapshot_price[curr_symbol]['latestTrade']['p']
-
-                positions_dict[curr_symbol]['available'] -= qty
-                positions_dict[curr_symbol]['hold'] += qty
-
-        # Note that now __unique assets could be uninitialized:
-        if self.__unique_assets is None:
-            self.init_exchange()
-
-        for i in self.__unique_assets:
-            if i not in positions_dict:
-                positions_dict[i] = utils.AttributeDict({
-                    'available': 0.0,
-                    'hold': 0.0
-                })
+        # if len(symbols) != 0:
+        #     open_orders = self.get_open_orders(symbol=symbols)
+        #         #calls.list_orders(status='open', symbols=symbols)
+        #     snapshot_price = self.get_open_orders(symbol=symbols)["result"]["open"]["desc"]["price"]
+        # else:
+        #     open_orders = []
+        #     snapshot_price = {}
+        #
+        # for order in open_orders:
+        #     curr_symbol = order['symbol']
+        #     if order['side'] == 'buy':  # buy orders only affect USD holds
+        #         if order['qty']:  # this case handles qty market buy and limit buy
+        #             if order['type'] == 'limit':
+        #                 dollar_amt = float(order['qty']) * float(order['limit_price'])
+        #             elif order['type'] == 'market':
+        #                 dollar_amt = float(order['qty']) * snapshot_price[curr_symbol]['latestTrade']['p']
+        #             else:  # we don't have support for stop_order, stop_limit_order
+        #                 dollar_amt = 0.0
+        #         else:  # this is the case for notional market buy
+        #             dollar_amt = float(order['notional'])
+        #
+        #         # In this case we don't have to subtract because the buying power is the available money already
+        #         # we just need to add to figure out how much is actually on limits
+        #         # positions_dict['USD']['available'] -= dollar_amt
+        #
+        #         # So just add to our hold
+        #         positions_dict['USD']['hold'] += dollar_amt
+        #
+        #     else:
+        #         if order['qty']:  # this case handles qty market sell and limit sell
+        #             qty = float(order['qty'])
+        #         else:  # this is the case for notional market sell, calculate the qty with cash/price
+        #             qty = float(order['notional']) / snapshot_price[curr_symbol]['latestTrade']['p']
+        #
+        #         positions_dict[curr_symbol]['available'] -= qty
+        #         positions_dict[curr_symbol]['hold'] += qty
+        #
+        # # Note that now __unique assets could be uninitialized:
+        # if self.__unique_assets is None:
+        #     self.init_exchange()
+        #
+        # for i in self.__unique_assets:
+        #     if i not in positions_dict:
+        #         positions_dict[i] = utils.AttributeDict({
+        #             'available': 0.0,
+        #             'hold': 0.0
+        #         })
 
         if symbol is not None:
             if symbol in positions_dict:
@@ -164,18 +176,29 @@ class KrakenInterface(ExchangeInterface):
                 ["side", str]
             ],
         """
-        symbol = interface_utils.blankly_symbol_to_kraken_symbol(symbol)
-        response = self.get_calls().add_order(symbol, side, "market", 0, size)
+        #symbol = interface_utils.blankly_symbol_to_kraken_symbol(symbol)
+        symbol = 'XBTUSD'
+        response = self.kraken_request('/0/private/AddOrder', {
+                    "nonce": str(int(1000*time.time())),
+                    "ordertype": "market",
+                    "type": side,
+                    "volume": size,
+                    "pair": symbol,
+                })
 
         txid = response["txid"]
-        order_info = self.get_calls().query_orders(txid=txid)
+        order_info = self.kraken_request('/0/private/QueryOrders', {
+                    "nonce": str(int(1000*time.time())),
+                    "txid": txid,
+                    "trades": True #default is false, so dk bout this
+                })
 
         order_info["symbol"] = symbol
         order_info["id"] = txid
-        order_info["created_at"] = order_info.pop("opentm")
+        order_info["created_at"] = order_info['result'][txid]['opentim']
         order_info["size"] = size
         order_info["type"] = "market"
-        order_info["side"] = order_info["descr"]["type"]
+        order_info["side"] = side
 
         order = {
             'size': size,
@@ -186,18 +209,31 @@ class KrakenInterface(ExchangeInterface):
 
         return MarketOrder(order, order_info, self)
 
+    #private function
     def limit_order(self, symbol: str, side: str, price: float, size: float):
-        symbol = interface_utils(symbol)
-        response = self.get_calls().add_order(symbol, side, "market", price, size)
+        #symbol = interface_utils(symbol)
+        response = self.kraken_request('/0/private/AddOrder', {
+                    "nonce": str(int(1000*time.time())),
+                    "ordertype": "limit",
+                    "type": side,
+                    "volume": size,
+                    "pair": symbol,
+                    "price": price
+                })
         txid = response["txid"]
-        order_info = self.get_calls().query_orders(txid=txid)
+
+        order_info = self.kraken_request('/0/private/QueryOrders', {
+                    "nonce": str(int(1000*time.time())),
+                    "txid": txid,
+                    "trades": True #default is false, so dk bout this
+                })
 
         order_info["symbol"] = symbol
         order_info["id"] = txid
-        order_info["created_at"] = order_info.pop("opentm")
+        order_info["created_at"] = order_info['result'][txid]['opentim']
         order_info["size"] = size
         order_info["type"] = "market"
-        order_info["side"] = order_info["descr"]["type"]
+        order_info["side"] = side
 
         order = {
             'size': size,
@@ -209,9 +245,12 @@ class KrakenInterface(ExchangeInterface):
         return LimitOrder(order, order_info, self)
 
     def cancel_order(self, symbol: str, order_id: str):
-        return self.get_calls().cancel_order(order_id)
+        return self.kraken_request('/0/private/CancelOrder', {
+                    "nonce": str(int(1000*time.time())),
+                    "txid": order_id
+                })
 
-    #EAPI:Invalid key error for open orders
+    #private function
     def get_open_orders(self, symbol: str = None) -> list:
         """
         List open orders.
@@ -270,6 +309,8 @@ class KrakenInterface(ExchangeInterface):
     #     ["funds", float]
     # ],
 
+    #https://docs.kraken.com/rest/#operation/getOrdersInfo
+    #private function
     def get_order(self, symbol: str, order_id: str) -> dict:
         """
         Get a certain order
@@ -301,12 +342,12 @@ class KrakenInterface(ExchangeInterface):
 
     # NOTE fees are dependent on asset pair, so this is a required parameter to call the function
     def get_fees(self) -> dict:
-        asset_symbol = "XBTUSDT"
-        size = 1
-        asset_pair_info = self.get_calls().asset_pairs()
+        asset_symbol = {"pair": "XBTUSDT"}
+        assets_pair_info = self.get_calls().query_public('AssetPairs', asset_symbol)
+        asset_pair_info = assets_pair_info['result'][asset_symbol['pair']]
 
-        fees_maker: List[List[float]] = asset_pair_info[(asset_symbol)]["fees_maker"]
-        fees_taker: List[List[float]] = asset_pair_info[(asset_symbol)]["fees"]
+        fees_maker: List[List[float]] = asset_pair_info["fees_maker"]
+        fees_taker: List[List[float]] = asset_pair_info["fees"]
 
         # fees_maker: List[List[float]] = asset_pair_info[interface_utils.blankly_symbol_to_kraken_symbol(asset_symbol)]["fees_maker"]
         # fees_taker: List[List[float]] = asset_pair_info[interface_utils.blankly_symbol_to_kraken_symbol(asset_symbol)]["fees"]
@@ -341,7 +382,6 @@ class KrakenInterface(ExchangeInterface):
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution)-> pd.DataFrame:
 
         # symbol = interface_utils.blankly_symbol_to_kraken_symbol(symbol)
-        symbol = "XBTUSD"
 
         # epoch_start = int(utils.convert_epochs(epoch_start))
         # epoch_stop = int(utils.convert_epochs(epoch_stop))
@@ -353,14 +393,16 @@ class KrakenInterface(ExchangeInterface):
             resolution = accepted_grans[min(range(len(accepted_grans)),
                                             key=lambda i: abs(accepted_grans[i] - resolution))]
 
+        param_dict = {"pair": "XBTUSDT", "interval": resolution/60, "since":epoch_start}
+
         # resolution = int(resolution)
         #
         # epoch_start -= resolution
 
         # kraken processes resolution in seconds, so the granularity must be divided by 60
-        product_history = self.get_calls().ohlc(symbol, interval=(resolution / 60), since=epoch_start)
-        symbol = "XXBTZUSD"
-        historical_data_raw = product_history[symbol]
+        product_history = self.get_calls().query_public('OHLC', param_dict)
+        #symbol = "XXBTZUSD"
+        historical_data_raw = product_history['result'][param_dict['pair']]
         historical_data_block = []
         num_intervals = len(historical_data_raw)
 
@@ -378,14 +420,13 @@ class KrakenInterface(ExchangeInterface):
 
             historical_data_block.append([time, open_, close, high, low, volume])
 
-            utils.update_progress(i / num_intervals)
+        utils.update_progress(i / num_intervals)
 
-        print("\n")
         df = pd.DataFrame(historical_data_block, columns=['time', 'open', 'close', 'high', 'low', 'volume'])
         df[['time']] = df[['time']].astype(int)
         # df_start = df["time"][0]
 
-        if df["time"][0] > epoch_start:
+        if df["time"][0] > epoch_start or df is None: #error here. fix this
             warnings.warn(
                 f"Due to kraken's API limitations, we could only collect OHLC data as far back as unix epoch {df['time'][0]}")
 
@@ -451,13 +492,14 @@ class KrakenInterface(ExchangeInterface):
         Args:
             symbol: The asset such as (BTC-USD, or MSFT)
         """
-        symbol = "XBTUSDT"
+        symbol = {"pair": "XBTUSD"} #needs symbol
+        response_symbol = 'XXBTZUSD'
         # symbol = interface_utils.blankly_symbol_to_kraken_symbol(symbol)
 
-        resp = self.get_calls().ticker(symbol)
+        response = self.get_calls().query_public('Ticker', symbol)
 
-        opening_price = float(resp[symbol]["o"])
-        volume_weighted_average_price = float(resp[symbol]["p"][0])
-        last_price = float(resp[symbol]["c"][0])
+        opening_price = float(response['result'][response_symbol]["o"])
+        volume_weighted_average_price = float(response[response_symbol]["p"][0])
+        last_price = float(response[response_symbol]["c"][0])
 
         return volume_weighted_average_price
