@@ -328,7 +328,7 @@ class FTXInterface(ExchangeInterface):
         return StopLossOrder(order, response, self)
 
     @utils.order_protection
-    def take_profit(self,
+    def take_profit_order(self,
                     symbol: str,
                     price: float,
                     size: float) -> LimitOrder:

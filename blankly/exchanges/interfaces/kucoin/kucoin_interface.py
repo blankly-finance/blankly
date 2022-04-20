@@ -382,7 +382,7 @@ class KucoinInterface(ExchangeInterface):
         return StopLossOrder(order, response_details, self)
 
     @utils.order_protection
-    def take_profit(self, symbol, price, size) -> TakeProfitOrder:
+    def take_profit_order(self, symbol, price, size) -> TakeProfitOrder:
         """
             Used for take profit order
             Args:

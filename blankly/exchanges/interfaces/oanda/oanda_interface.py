@@ -291,7 +291,7 @@ class OandaInterface(ExchangeInterface):
         return StopLossOrder(order, resp, self)
 
     @utils.order_protection
-    def take_profit(self, symbol: str, price: float, size: float) -> TakeProfitOrder:
+    def take_profit_order(self, symbol: str, price: float, size: float) -> TakeProfitOrder:
         symbol = self.__convert_blankly_to_oanda(symbol)
         side = 'sell'
         if side == "buy":

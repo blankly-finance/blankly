@@ -211,7 +211,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
                                      ioc=ioc)
         return self.parse_order_response(res)
 
-    def take_profit(
+    def take_profit_order(
             self,
             symbol: str,
             side: Side,

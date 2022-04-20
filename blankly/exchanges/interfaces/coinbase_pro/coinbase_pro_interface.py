@@ -221,7 +221,7 @@ class CoinbaseProInterface(ExchangeInterface):
         return LimitOrder(order, response, self)
 
     @utils.order_protection
-    def take_profit(self, symbol, price, size) -> TakeProfitOrder:
+    def take_profit_order(self, symbol, price, size) -> TakeProfitOrder:
         """
         Used for placing a take-profit orders
         Args:
@@ -255,10 +255,10 @@ class CoinbaseProInterface(ExchangeInterface):
             'side': side,
             'price': price,
             'symbol': symbol,
-            'type': 'limit',
+            'type': 'take_profit',
             'stop': 'entry'
         }
-        response = self.calls.place_order(symbol, side, price, size=size)
+        response = self.calls.place_limit_order(symbol, side, price, size=size)
         if "message" in response:
             raise InvalidOrder("Invalid Order: " + response["message"])
         response["created_at"] = utils.epoch_from_iso8601(response["created_at"])
@@ -301,10 +301,10 @@ class CoinbaseProInterface(ExchangeInterface):
             'side': side,
             'price': price,
             'symbol': symbol,
-            'type': 'limit',
+            'type': 'stop_loss',
             'stop': 'loss'
         }
-        response = self.calls.place_order(symbol, side, price, size=size)
+        response = self.calls.place_stop_order(symbol, side, price=price, size=size)
         if "message" in response:
             raise InvalidOrder("Invalid Order: " + response["message"])
         response["created_at"] = utils.epoch_from_iso8601(response["created_at"])

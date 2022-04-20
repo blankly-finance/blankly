@@ -399,7 +399,7 @@ class BinanceInterface(ExchangeInterface):
         return LimitOrder(order, response, self)
 
     @utils.order_protection
-    def take_profit(self, symbol, price, size) -> TakeProfitOrder:
+    def take_profit_order(self, symbol, price, size) -> TakeProfitOrder:
         """
         Used for sending take profit orders
         Args:
@@ -441,7 +441,7 @@ class BinanceInterface(ExchangeInterface):
 
         """
         side = 'sell'
-        type = 'take_profit'
+        type = 'TAKE_PROFIT'
         order = {
             'size': size,
             'side': side,
@@ -450,7 +450,7 @@ class BinanceInterface(ExchangeInterface):
             'type': type
         }
         modified_symbol = utils.to_exchange_symbol(symbol, 'binance')
-        response = self.calls.create_order(symbol=modified_symbol, side=side, price=price, quantity=size, type=type)
+        response = self.calls.create_order(symbol=modified_symbol, side=side, stopPrice=price, quantity=size, type=type)
         renames = [
             ["orderId", "id"],
             ["transactTime", "created_at"],
@@ -508,7 +508,7 @@ class BinanceInterface(ExchangeInterface):
 
         """
         side = 'sell'
-        type = 'stop_loss'
+        type = 'STOP_LOSS'
         order = {
             'size': size,
             'side': side,
@@ -517,7 +517,7 @@ class BinanceInterface(ExchangeInterface):
             'type': type
         }
         modified_symbol = utils.to_exchange_symbol(symbol, 'binance')
-        response = self.calls.create_order(symbol=modified_symbol, side=side, price=price, quantity=size, type=type)
+        response = self.calls.create_order(symbol=modified_symbol, side=side, stopPrice=price, quantity=size, type=type)
         renames = [
             ["orderId", "id"],
             ["transactTime", "created_at"],

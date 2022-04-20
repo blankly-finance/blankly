@@ -236,7 +236,7 @@ class AlpacaInterface(ExchangeInterface):
         return MarketOrder(order, response, self)
 
     @utils.order_protection
-    def take_profit(self, symbol: str, price: float, size: float) -> TakeProfitOrder:
+    def take_profit_order(self, symbol: str, price: float, size: float) -> TakeProfitOrder:
         needed = self.needed['take_profit']
 
         renames = [

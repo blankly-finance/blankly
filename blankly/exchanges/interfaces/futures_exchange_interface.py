@@ -109,7 +109,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def take_profit(self,
+    def take_profit_order(self,
                     symbol: str,
                     side: Side,
                     price: float,

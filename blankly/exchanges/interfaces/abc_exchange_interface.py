@@ -116,7 +116,7 @@ class ABCExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def take_profit(self,
+    def take_profit_order(self,
                     symbol: str,
                     price: float,
                     size: float) -> LimitOrder:
