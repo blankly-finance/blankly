@@ -229,7 +229,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
                                                  trigger_price=price)
         return self.parse_order_response(res)
 
-    def stop_loss(self,
+    def stop_loss_order(self,
                   symbol: str,
                   side: Side,
                   price: float,

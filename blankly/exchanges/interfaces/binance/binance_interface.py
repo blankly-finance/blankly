@@ -466,7 +466,7 @@ class BinanceInterface(ExchangeInterface):
         return TakeProfitOrder(order, response, self)
 
     @utils.order_protection
-    def stop_loss(self, symbol, price, size) -> StopLossOrder:
+    def stop_loss_order(self, symbol, price, size) -> StopLossOrder:
         """
         Used for sending stop loss orders
         Args:

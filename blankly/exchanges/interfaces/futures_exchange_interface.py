@@ -119,7 +119,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def stop_loss(self,
+    def stop_loss_order(self,
                   symbol: str,
                   side: Side,
                   price: float,

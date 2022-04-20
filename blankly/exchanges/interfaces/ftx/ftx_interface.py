@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import pandas as pd
 import time
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
@@ -26,6 +25,9 @@ from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
 import blankly.utils.utils as utils
 import copy
 from typing import List
+
+from blankly.exchanges.orders.stop_loss import StopLossOrder
+from blankly.exchanges.orders.take_profit import TakeProfitOrder
 
 
 class FTXInterface(ExchangeInterface):
@@ -275,7 +277,7 @@ class FTXInterface(ExchangeInterface):
             price: price to set limit order
             size: amount of asset (like BTC) for the limit to be valued
         """
-        needed = self.needed['limit_order']
+        needed = self.needed['take_profit']
         response = self.get_calls().place_order(symbol, side, price, size, order_type="limit")
 
         order = {
@@ -292,6 +294,70 @@ class FTXInterface(ExchangeInterface):
         response = utils.isolate_specific(needed, response)
 
         return LimitOrder(order, response, self)
+
+    @utils.order_protection
+    def stop_loss_order(self,
+                  symbol: str,
+                  price: float,
+                  size: float) -> StopLossOrder:
+        """
+        Used for placing a stop-loss order
+        Args:
+            symbol: asset to buy
+            price: price to sell at
+            size: amount of asset (like BTC)
+        """
+        needed = self.needed['stop_loss']
+        side = 'sell'
+        response = self.get_calls().place_conditional_order(symbol, side, size, order_type="stop",
+                                                            trigger_price=price)
+
+        order = {
+            'size': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': 'limit'
+        }
+
+        response["symbol"] = utils.to_blankly_symbol(response.pop("market"), 'ftx')
+        response["created_at"] = utils.epoch_from_iso8601(response.pop("createdAt"))
+        response["time_in_force"] = "GTC"
+        response = utils.isolate_specific(needed, response)
+
+        return StopLossOrder(order, response, self)
+
+    @utils.order_protection
+    def take_profit(self,
+                    symbol: str,
+                    price: float,
+                    size: float) -> LimitOrder:
+        """
+        Used for placing a take-profit order
+        Args:
+            symbol: asset to buy
+            price: price to sell at
+            size: amount of asset (like BTC)
+        """
+        needed = self.needed['limit_order']
+        side = 'sell'
+        response = self.get_calls().place_conditional_order(symbol, side, size, order_type="takeProfit",
+                                                            trigger_price=price)
+
+        order = {
+            'size': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': 'limit'
+        }
+
+        response["symbol"] = utils.to_blankly_symbol(response.pop("market"), 'ftx')
+        response["created_at"] = utils.epoch_from_iso8601(response.pop("createdAt"))
+        response["time_in_force"] = "GTC"
+        response = utils.isolate_specific(needed, response)
+
+        return TakeProfitOrder(order, response, self)
 
     def cancel_order(self, symbol: str, order_id: str) -> dict:
         """
@@ -534,7 +600,7 @@ class FTXInterface(ExchangeInterface):
 
         return {
             "symbol": utils.to_blankly_symbol(market_info["name"], 'ftx'),  # make function in utils (or static)
-                                                                            # to switch slash to dash
+            # to switch slash to dash
             "base_asset": market_info["baseCurrency"],
             "quote_asset": market_info["quoteCurrency"],
             "max_orders": 99999999,

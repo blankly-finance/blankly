@@ -26,6 +26,8 @@ from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.exchanges.orders.stop_limit import StopLimit
+from blankly.exchanges.orders.stop_loss import StopLossOrder
+from blankly.exchanges.orders.take_profit import TakeProfitOrder
 from blankly.utils.exceptions import APIException, InvalidOrder
 
 
@@ -217,6 +219,98 @@ class CoinbaseProInterface(ExchangeInterface):
         response["symbol"] = response.pop('product_id')
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
+
+    @utils.order_protection
+    def take_profit(self, symbol, price, size) -> TakeProfitOrder:
+        """
+        Used for placing a take-profit orders
+        Args:
+            symbol: currency to sell
+            price: price to sell at
+            size: amount of currency (like BTC)
+        """
+        needed = self.needed['take_profit']
+        """
+        {
+            "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
+            "price": "0.10000000",
+            "size": "0.01000000",
+            "product_id": "BTC-USD",
+            "side": "buy",
+            "stp": "dc",
+            "type": "limit",
+            "time_in_force": "GTC",
+            "post_only": false,
+            "created_at": "2016-12-08T20:02:28.53864Z",
+            "fill_fees": "0.0000000000000000",
+            "filled_size": "0.00000000",
+            "executed_value": "0.0000000000000000",
+            "status": "pending",
+            "settled": false
+        }
+        """
+        side = 'sell'
+        order = {
+            'size': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': 'limit',
+            'stop': 'entry'
+        }
+        response = self.calls.place_order(symbol, side, price, size=size)
+        if "message" in response:
+            raise InvalidOrder("Invalid Order: " + response["message"])
+        response["created_at"] = utils.epoch_from_iso8601(response["created_at"])
+        response["symbol"] = response.pop('product_id')
+        response = utils.isolate_specific(needed, response)
+        return TakeProfitOrder(order, response, self)
+
+    @utils.order_protection
+    def stop_loss_order(self, symbol, price, size) -> StopLossOrder:
+        """
+        Used for placing a stop-loss order
+        Args:
+            symbol: currency to sell
+            price: price to sell at
+            size: amount of currency (like BTC)
+        """
+        needed = self.needed['stop_loss']
+        """
+        {
+            "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
+            "price": "0.10000000",
+            "size": "0.01000000",
+            "product_id": "BTC-USD",
+            "side": "buy",
+            "stp": "dc",
+            "type": "limit",
+            "time_in_force": "GTC",
+            "post_only": false,
+            "created_at": "2016-12-08T20:02:28.53864Z",
+            "fill_fees": "0.0000000000000000",
+            "filled_size": "0.00000000",
+            "executed_value": "0.0000000000000000",
+            "status": "pending",
+            "settled": false
+        }
+        """
+        side = 'sell'
+        order = {
+            'size': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': 'limit',
+            'stop': 'loss'
+        }
+        response = self.calls.place_order(symbol, side, price, size=size)
+        if "message" in response:
+            raise InvalidOrder("Invalid Order: " + response["message"])
+        response["created_at"] = utils.epoch_from_iso8601(response["created_at"])
+        response["symbol"] = response.pop('product_id')
+        response = utils.isolate_specific(needed, response)
+        return StopLossOrder(order, response, self)
 
     """
     Stop limit isn't added to the abstract class because the binance version is barely supported.

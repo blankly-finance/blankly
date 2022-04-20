@@ -170,7 +170,7 @@ def test_priced_orders(futures_interface: FuturesExchangeInterface,
     elif type == OrderType.TAKE_PROFIT:
         order = futures_interface.take_profit(symbol, side, limit_price, size)
     elif type == OrderType.STOP:
-        order = futures_interface.stop_loss(symbol, side, limit_price, size)
+        order = futures_interface.stop_loss_order(symbol, side, limit_price, size)
 
     assert order.symbol == symbol
     assert 0 <= order.id

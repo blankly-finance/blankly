@@ -328,7 +328,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         return self.parse_order_response(response)
 
     @utils.order_protection
-    def stop_loss(
+    def stop_loss_order(
             self,
             symbol: str,
             side: Side,
