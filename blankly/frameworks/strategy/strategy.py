@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import copy
 import threading
 import time
 import traceback
@@ -161,6 +162,8 @@ class StrategyStructure(Model):
         self.run_price_events(kwargs_list)
 
     def __run_init(self):
+        if self.is_backtesting:
+            self.interface.backtesting = False
         for i in self.schedulers:
             kwargs = i.get_kwargs()
             if kwargs['init'] is not None:
@@ -168,6 +171,8 @@ class StrategyStructure(Model):
                     kwargs['init'](kwargs['symbol'], kwargs['state'])
                 else:
                     kwargs['init'](kwargs['state'])
+
+        self.interface.backtesting = self.is_backtesting
 
     def run_live(self):
         self.__run_init()
