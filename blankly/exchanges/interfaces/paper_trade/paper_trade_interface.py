@@ -698,7 +698,14 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
             return utils.trim_df_time_column(price_set, epoch_start - resolution, epoch_stop)
         else:
-            return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+            if self.get_exchange_type() == 'keyless':
+                # If it is in keyless just requery with backtesting enabled
+                self.backtesting = True
+                result = self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+                self.backtesting = False
+                return result
+            else:
+                return self.calls.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
     def get_order_filter(self, symbol):
         # Don't re-query order filter if its cached

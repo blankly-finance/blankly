@@ -15,15 +15,36 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import pandas as pd
 
 
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
-from blankly.utils.utils import AttributeDict, get_base_asset, get_quote_asset
+from blankly.utils.utils import AttributeDict, get_base_asset, get_quote_asset, aggregate_prices_by_resolution
 
 
 # This just happens to also inherit from the exchange interface
 class KeylessAPI(ExchangeInterface):
-    def __init__(self, maker_fee, taker_fee):
+    def __init__(self, maker_fee, taker_fee, price_readers):
+        if not isinstance(price_readers, list):
+            price_readers = [price_readers]
+
+        self.__final_prices = {}
+        prices = {}
+
+        for price_reader in price_readers:
+            data = price_reader.data
+            for symbol in data:
+                symbol_info = price_reader.prices_info[symbol]
+                resolution = symbol_info['resolution']
+
+                # Add each symbol to the final prices without doing any processing
+                if symbol in prices:
+                    prices[symbol] = pd.concat([prices[symbol], data[symbol]])
+                else:
+                    prices[symbol] = data[symbol]
+
+                self.__final_prices = aggregate_prices_by_resolution(self.__final_prices, symbol, resolution,
+                                                                     data[symbol])
 
         self.__products = None
         self.__accounts = None

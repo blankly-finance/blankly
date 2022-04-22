@@ -844,3 +844,14 @@ def trim_df_time_column(df, epoch_start: [int, float], epoch_stop: [int, float])
 
     return df
 
+
+def aggregate_prices_by_resolution(price_dict, symbol_, resolution_, data_) -> dict:
+    if symbol_ not in price_dict:
+        price_dict[symbol_] = {}
+    # Concat after the resolution check here
+    if resolution_ not in price_dict[symbol_]:
+        price_dict[symbol_][resolution_] = data_
+    else:
+        price_dict[symbol_][resolution_] = pd.concat([price_dict[symbol_][resolution_],
+                                                      data_])
+    return price_dict
