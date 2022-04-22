@@ -58,6 +58,7 @@ class Model:
                                          backtest_settings_path=settings_path,
                                          **kwargs
                                          )
+
         self.is_backtesting = False
         self.__exchange = self.__exchange_cache
         self.has_data = True

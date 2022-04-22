@@ -199,8 +199,9 @@ class StrategyStructure(Model):
             kwargs = i.get_kwargs()
             teardown = kwargs['teardown']
             state_object = kwargs['state']
+            symbol = kwargs['symbol']
             if callable(teardown):
-                teardown(state_object)
+                teardown(symbol, state_object)
 
         for i in self.orderbook_websockets:
             self.orderbook_manager.close_websocket(override_symbol=i[0], override_exchange=i[1])
@@ -301,7 +302,9 @@ class Strategy(StrategyBase):
                        "event based data")
 
         self.__add_prices(to, start_date, end_date)
-        return self.model.backtest(args={}, initial_values=initial_values, settings_path=settings_path, kwargs=kwargs)
+        res = self.model.backtest(args={}, initial_values=initial_values, settings_path=settings_path, kwargs=kwargs)
+        self.model.teardown()
+        return res
 
     def __add_prices(self, to, start_date, end_date):
         for scheduler in self.schedulers:
@@ -357,6 +360,7 @@ class Strategy(StrategyBase):
             warnings.warn("Aborted attempt to start a live strategy a backtest configuration")
             return
         self.model.run()
+        self.model.teardown()
 
     def time(self) -> float:
         return self.model.time
