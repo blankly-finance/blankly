@@ -114,7 +114,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                 symbol=symbol)[0]['leverage'])
 
     @utils.order_protection
-    def set_leverage(self, leverage: int, symbol: str = None):
+    def set_leverage(self, leverage: float, symbol: str = None):
         if not symbol:
             raise Exception(
                 'Binance Futures does not support account wide leverage. Use interface.set_leverage(leverage, '
@@ -211,11 +211,16 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             if size == 0:
                 continue  # don't show empty positions
             symbol = self.to_blankly_symbol(symbol)
+            base, quote = symbol.split('-')
             margin = MarginType.ISOLATED \
                 if position['isolated'] else MarginType.CROSSED
             positions[symbol] = {
                 'symbol': symbol,
+                'base_asset': base,
+                'quote_asset': quote,
                 'size': size,
+                'leverage': float(position['leverage']),
+                'margin_type': MarginType.ISOLATED if position.get('isolated', False) else MarginType.CROSSED,
                 'position': PositionMode(position['positionSide'].lower()),
                 'contract_type': ContractType.PERPETUAL,
                 'exchange_specific': position

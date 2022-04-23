@@ -135,7 +135,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def set_leverage(self, leverage: int, symbol: str = None):
+    def set_leverage(self, leverage: float, symbol: str = None):
         pass
 
     @abc.abstractmethod

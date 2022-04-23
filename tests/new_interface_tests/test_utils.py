@@ -3,6 +3,7 @@ from blankly.exchanges.interfaces.binance_futures.binance_futures import Binance
 from blankly.exchanges.interfaces.ftx_futures.ftx_futures import FTXFutures
 from blankly.exchanges.futures.futures_exchange import FuturesExchange
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
+from blankly.exchanges.interfaces.paper_trade.futures.futures_paper_trade_interface import FuturesPaperTradeInterface
 from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 from blankly.utils import utils
 
@@ -16,17 +17,21 @@ from _pytest.python_api import approx
 
 from contextlib import contextmanager
 
+binance = BinanceFutures(keys_path="./tests/config/keys.json",
+                         preferences_path="./tests/config/settings.json",
+                         portfolio_name="Futures Test Key")
+ftx = FTXFutures(keys_path="./tests/config/keys.json",
+                 preferences_path="./tests/config/settings.json",
+                 portfolio_name="Dotcom Test Account")
 FUTURES_EXCHANGES = [
-    BinanceFutures(keys_path="./tests/config/keys.json",
-                   preferences_path="./tests/config/settings.json",
-                   portfolio_name="Futures Test Key"),
-    # FTXFutures(keys_path="./tests/config/keys.json",
-    #            preferences_path="./tests/config/settings.json",
-    #            portfolio_name="Dotcom Test Account"),
+    FuturesPaperTradeInterface('futures_paper_trade', binance.interface, {'USDT': 1000}),
+    binance,
+    # ftx,
 ]
 SYMBOLS = {
     'ftx_futures': ['SOL-USD', 'ETH-USD'],
-    'binance_futures': ['BCH-USDT', 'ETH-USDT']
+    'binance_futures': ['BCH-USDT', 'ETH-USDT'],
+    'futures_paper_trade': ['BTC-USDT', 'ETH-USDT']
 }
 
 
@@ -94,7 +99,7 @@ def wait_till_filled(interface: FuturesExchangeInterface, order: FuturesOrder):
 def place_order(interface: FuturesExchangeInterface, symbol: str, side: Side, funds: int, reduce_only: bool = False):
     product = interface.get_products(symbol)
     price = interface.get_price(symbol)
-    order_size = utils.trunc(funds / price, product.size_precision)
+    order_size = utils.trunc(funds / price, product['size_precision'])
 
     order = interface.market_order(symbol, side, order_size, reduce_only=reduce_only)
     assert order.symbol == symbol
@@ -136,6 +141,7 @@ def sell(interface: FuturesExchangeInterface, symbol: str, funds: int = 20, redu
 def buy(interface: FuturesExchangeInterface, symbol: str, funds: int = 20, reduce_only: bool = False):
     return place_order(interface, symbol, Side.BUY, funds, reduce_only)
 
+
 def close_all(futures_interface: FuturesExchangeInterface):
     for symbol in futures_interface.get_position():
         close_position(futures_interface, symbol)
@@ -155,15 +161,15 @@ def close_position(interface: FuturesExchangeInterface, symbol: str):
     position = interface.get_position(symbol)
     if not position:
         return
-    if position.size < 0:
+    if position['size'] < 0:
         order = interface.market_order(symbol,
                                        Side.BUY,
-                                       position.size * -2,
+                                       position['size'] * -2,
                                        reduce_only=True)
-    elif position.size > 0:
+    elif position['size'] > 0:
         order = interface.market_order(symbol,
                                        Side.SELL,
-                                       position.size * 2,
+                                       position['size'] * 2,
                                        reduce_only=True)
     else:
         pytest.fail('position size is zero')
@@ -186,8 +192,8 @@ def cancelling_order(interface: FuturesExchangeInterface, symbol: str):
     price = interface.get_price(symbol)
 
     # place our limit order
-    order_size = utils.trunc(100 / price, product.size_precision)  # $1 order
-    limit_price = utils.trunc(price * 0.95, product.price_precision)
+    order_size = utils.trunc(100 / price, product['size_precision'])  # $1 order
+    limit_price = utils.trunc(price * 0.95, product['price_precision'])
     order = interface.limit_order(symbol, Side.BUY, limit_price, order_size)
     assert order.symbol == symbol
     assert 0 <= order.id

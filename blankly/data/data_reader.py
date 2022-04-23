@@ -21,6 +21,7 @@ import pandas as pd
 from enum import Enum
 
 from . import DataTypes
+from ..exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 
 """
 This class seeks to solve these problems:
@@ -35,7 +36,7 @@ class FileTypes(Enum):
     json = 'json'
 
 
-class __DataReader:
+class DataReader:
     @staticmethod
     def _check_length(df: pd.DataFrame, identifier: str):
         try:
@@ -65,7 +66,7 @@ class __DataReader:
         self.price_data: bool = self.__is_price_data(data_type)
 
 
-class __FormatReader(__DataReader):
+class __FormatReader(DataReader):
     def __init__(self, data_type):
         super().__init__(data_type)
 
@@ -178,7 +179,7 @@ class PriceReader(__FormatReader):
         self.prices_info = {}
 
         try:
-            assert(len(symbols) == len(set(symbols)))
+            assert (len(symbols) == len(set(symbols)))
         except AssertionError:
             raise AssertionError("Cannot use duplicate symbols for one price reader. Please use multiple price readers"
                                  " to read in different datasets of the same symbol.")
@@ -197,7 +198,14 @@ class PriceReader(__FormatReader):
         self._guess_resolutions()
 
 
-class EventReader(__DataReader):
+class EventReader(DataReader):
+    def __init__(self, event_type: str, events: dict):
+        super().__init__(DataTypes.event_json)
+        time, data = zip(*events.items())
+        self._write_dataset({'time': time, 'data': data}, event_type, ('time', 'data'))
+
+
+class JsonEventReader(DataReader):
     def __parse_json_events(self, file_path):
         contents = json.loads(open(file_path).read())
 
@@ -212,6 +220,13 @@ class EventReader(__DataReader):
             raise AssertionError(f"The filepath did not have a \'json\' ending - got: {file_path[-4:]}")
 
         self.__parse_json_events(file_path)
+
+
+class FundingRateEventReader(EventReader):
+    def __init__(self, symbol: str, start: int, stop: int, interface: FuturesExchangeInterface):
+        history = interface.get_funding_rate_history(symbol, start, stop)
+        history = {ev['time']: {'symbol': symbol, 'rate': ev['rate']} for ev in history}
+        super().__init__('funding_rate', history)
 
 
 class TickReader(__FormatReader):

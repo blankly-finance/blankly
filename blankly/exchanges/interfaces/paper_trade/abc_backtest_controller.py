@@ -17,7 +17,7 @@
 """
 import abc
 import typing
-from blankly.data.data_reader import PriceReader, EventReader, TickReader
+from blankly.data.data_reader import PriceReader, JsonEventReader, TickReader, DataReader
 
 
 class ABCBacktestController(abc.ABC):
@@ -40,7 +40,7 @@ class ABCBacktestController(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def add_custom_events(self, event_reader: EventReader):
+    def add_custom_events(self, event_reader: DataReader):
         pass
 
     @abc.abstractmethod

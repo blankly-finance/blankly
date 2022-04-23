@@ -260,7 +260,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         return HedgeMode.ONEWAY
 
     @utils.order_protection
-    def set_leverage(self, leverage: int, symbol: str = None):
+    def set_leverage(self, leverage: float, symbol: str = None):
         if symbol:
             raise Exception(
                 'FTX Futures does not allow setting leverage per symbol. Use interface.set_leverage(leverage) to set '
@@ -342,5 +342,6 @@ class FTXFuturesInterface(FuturesExchangeInterface):
     def get_taker_fee(self) -> float:
         raise NotImplementedError
 
-
+    def get_funding_rate(self, symbol: str) -> float:
+        raise NotImplementedError
 
