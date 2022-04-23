@@ -159,7 +159,7 @@ class PriceReader(__FormatReader):
             self.prices_info[symbol]['start_time'] = time_series.iloc[0]
             self.prices_info[symbol]['stop_time'] = time_series.iloc[-1]
 
-    def __init__(self, file_path: [str, list], symbol: [str, list] = None):
+    def __init__(self, file_path: [str, list], symbol: [str, list]):
         """
         Read in a new custom price dataset in either json or csv format
 

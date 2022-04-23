@@ -19,7 +19,8 @@ import pandas as pd
 
 
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
-from blankly.utils.utils import AttributeDict, get_base_asset, get_quote_asset, aggregate_prices_by_resolution
+from blankly.utils.utils import AttributeDict, get_base_asset, get_quote_asset, aggregate_prices_by_resolution, \
+    extract_price_by_resolution
 
 
 # This just happens to also inherit from the exchange interface
@@ -29,7 +30,7 @@ class KeylessAPI(ExchangeInterface):
             price_readers = [price_readers]
 
         self.__final_prices = {}
-        prices = {}
+        prices: dict = {}
 
         for price_reader in price_readers:
             data = price_reader.data
@@ -70,7 +71,7 @@ class KeylessAPI(ExchangeInterface):
         return AttributeDict(self.__accounts)
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
-        self.__invalid_live()
+        return extract_price_by_resolution(self.__final_prices, symbol, epoch_start, epoch_stop, resolution)
 
     def get_products(self):
         self.__invalid_live()
@@ -100,30 +101,30 @@ class KeylessAPI(ExchangeInterface):
             "quote_asset": get_quote_asset(symbol),
             "max_orders": 1000000000000000,
             "limit_order": {
-                "base_min_size": 0,  # Minimum size to buy
+                "base_min_size": 0.000000001,  # Minimum size to buy
                 "base_max_size": 1000000000000000,  # Maximum size to buy
-                "base_increment": 0,  # Specifies the minimum increment
+                "base_increment": 0.000000001,  # Specifies the minimum increment
                 # for the base_asset.
-                "price_increment": 0,
+                "price_increment": 0.000000001,
 
-                "min_price": 0,
+                "min_price": 0.000000001,
                 "max_price": 1000000000000000,
             },
             'market_order': {
                 "fractionable": True,
 
-                "base_min_size": 0,  # Minimum size to buy
+                "base_min_size": 0.000000001,  # Minimum size to buy
                 "base_max_size": 1000000000000000,  # Maximum size to buy
-                "base_increment": 0,  # Specifies the minimum increment
+                "base_increment": 0.000000001,  # Specifies the minimum increment
 
-                "quote_increment": 0,  # Specifies the min order price as well
+                "quote_increment": 0.000000001,  # Specifies the min order price as well
                 # as the price increment.
                 "buy": {
-                    "min_funds": 0,
+                    "min_funds": 0.000000001,
                     "max_funds": 1000000000000000,
                 },
                 "sell": {
-                    "min_funds": 0,
+                    "min_funds": 0.000000001,
                     "max_funds": 1000000000000000,
                 },
             },

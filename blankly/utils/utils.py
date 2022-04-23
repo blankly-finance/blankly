@@ -855,3 +855,15 @@ def aggregate_prices_by_resolution(price_dict, symbol_, resolution_, data_) -> d
         price_dict[symbol_][resolution_] = pd.concat([price_dict[symbol_][resolution_],
                                                       data_])
     return price_dict
+
+
+def extract_price_by_resolution(prices, symbol, epoch_start, epoch_stop, resolution,):
+    if symbol in prices:
+        if resolution in prices[symbol]:
+            price_set = prices[symbol][resolution]
+        else:
+            raise LookupError(f"The resolution {resolution} not found or downloaded for {symbol}.")
+    else:
+        raise LookupError(f"Prices for this symbol ({symbol}) not found")
+
+    return trim_df_time_column(price_set, epoch_start - resolution, epoch_stop)
