@@ -30,29 +30,15 @@ class KrakenInterface(ExchangeInterface):
         }
 
     def init_exchange(self):
-        pass
-
-        """
-        'get_products': [
-                ["symbol", str],
-                ["base_asset", str],
-                ["quote_asset", str],
-                ["base_min_size", float],
-                ["base_max_size", float],
-                ["base_increment", float]
-            ],
-        """
-
-        """
-        
-        NOTE:
-        This method might behave incorrectly as it sets the symbol as 
-        wsname (returned by Kraken API). This was chosen as it most
-        closely fits in with the symbol names used by the rest of the 
-        package, but may be less stable as it may or may not be 
-        intended to be fully relied upon.
-        
-        """
+        try:
+            position = self.kraken_request('/0/private/Balance', {
+                "nonce": str(int(1000 * time.time()))
+            })
+        except Exception as e:
+            if position['error'] == 'EAPI:Invalid key':
+                raise KeyError('Wrong Keys')
+            else:
+                raise e
 
     def kraken_request(self, path, data):
         api_url = "https://api.kraken.com"
@@ -82,7 +68,7 @@ class KrakenInterface(ExchangeInterface):
         return needed_asset_pairs
 
     def get_account(self, symbol=None):
-        symbol = super().get_account(symbol)
+        symbol = 'XXBT'
 
         positions = self.kraken_request('/0/private/Balance', {
             "nonce": str(int(1000 * time.time()))
@@ -95,56 +81,6 @@ class KrakenInterface(ExchangeInterface):
                 'available': float(positions['result'][position]),
                 'hold': 0.0
             })
-
-        # symbols = list(positions_dict.keys())
-        # Catch an edge case bug that if there are no positions it won't try to snapshot
-        # if len(symbols) != 0:
-        #     open_orders = self.get_open_orders(symbol=symbols)
-        #         #calls.list_orders(status='open', symbols=symbols)
-        #     snapshot_price = self.get_open_orders(symbol=symbols)["result"]["open"]["desc"]["price"]
-        # else:
-        #     open_orders = []
-        #     snapshot_price = {}
-        #
-        # for order in open_orders:
-        #     curr_symbol = order['symbol']
-        #     if order['side'] == 'buy':  # buy orders only affect USD holds
-        #         if order['qty']:  # this case handles qty market buy and limit buy
-        #             if order['type'] == 'limit':
-        #                 dollar_amt = float(order['qty']) * float(order['limit_price'])
-        #             elif order['type'] == 'market':
-        #                 dollar_amt = float(order['qty']) * snapshot_price[curr_symbol]['latestTrade']['p']
-        #             else:  # we don't have support for stop_order, stop_limit_order
-        #                 dollar_amt = 0.0
-        #         else:  # this is the case for notional market buy
-        #             dollar_amt = float(order['notional'])
-        #
-        #         # In this case we don't have to subtract because the buying power is the available money already
-        #         # we just need to add to figure out how much is actually on limits
-        #         # positions_dict['USD']['available'] -= dollar_amt
-        #
-        #         # So just add to our hold
-        #         positions_dict['USD']['hold'] += dollar_amt
-        #
-        #     else:
-        #         if order['qty']:  # this case handles qty market sell and limit sell
-        #             qty = float(order['qty'])
-        #         else:  # this is the case for notional market sell, calculate the qty with cash/price
-        #             qty = float(order['notional']) / snapshot_price[curr_symbol]['latestTrade']['p']
-        #
-        #         positions_dict[curr_symbol]['available'] -= qty
-        #         positions_dict[curr_symbol]['hold'] += qty
-        #
-        # # Note that now __unique assets could be uninitialized:
-        # if self.__unique_assets is None:
-        #     self.init_exchange()
-        #
-        # for i in self.__unique_assets:
-        #     if i not in positions_dict:
-        #         positions_dict[i] = utils.AttributeDict({
-        #             'available': 0.0,
-        #             'hold': 0.0
-        #         })
 
         if symbol is not None:
             if symbol in positions_dict:
@@ -320,8 +256,9 @@ class KrakenInterface(ExchangeInterface):
         return response
 
     # NOTE fees are dependent on asset pair, so this is a required parameter to call the function
-    def get_fees(self) -> dict:
+    def get_fees(self, symbol) -> dict:
         asset_symbol = {"pair": "XBTUSDT"}
+        size = 1
         assets_pair_info = self.get_calls().query_public('AssetPairs', asset_symbol)
         asset_pair_info = assets_pair_info['result'][asset_symbol['pair']]
 
@@ -394,10 +331,10 @@ class KrakenInterface(ExchangeInterface):
             close = interval[4]
             volume = interval[5]
 
+            historical_data_block.append([time, open_, close, high, low, volume])
+
             if time > epoch_stop:
                 break
-
-            historical_data_block.append([time, open_, close, high, low, volume])
 
         utils.update_progress(i / num_intervals)
 
@@ -405,9 +342,10 @@ class KrakenInterface(ExchangeInterface):
         df[['time']] = df[['time']].astype(int)
         # df_start = df["time"][0]
 
-        if df["time"][0] > epoch_start or df is None: #error here. fix this
-            warnings.warn(
-                f"Due to kraken's API limitations, we could only collect OHLC data as far back as unix epoch {df['time'][0]}")
+        if df is not None:
+            if df["time"][0] > epoch_start:
+                warnings.warn(
+                    f"Due to kraken's API limitations, we could only collect OHLC data as far back as unix epoch {df['time'][0]}")
 
         df = df.astype({
             'open': float,
@@ -430,24 +368,24 @@ class KrakenInterface(ExchangeInterface):
         price = self.get_calls().query_public('Ticker', kraken_symbol)["result"][symbol['pair']]['p'][0]
 
         return {
-            "symbol": symbol,
-            "base_asset": asset_info[kraken_symbol]["wsname"].split("/")[0],
-            "quote_asset": asset_info[kraken_symbol]["wsname"].split("/")[1],
+            "symbol": symbol['pair'],
+            "base_asset": asset_info['result'][kraken_symbol['pair']]["wsname"].split("/")[0],
+            "quote_asset": asset_info['result'][kraken_symbol['pair']]["wsname"].split("/")[1],
             "max_orders": self.account_levels_to_max_open_orders[
                 self.user_preferences["settings"]["kraken"]["account_type"]],
             "limit_order": {
-                "base_min_size": asset_info[kraken_symbol]["ordermin"],
+                "base_min_size": asset_info['result'][kraken_symbol['pair']]["ordermin"],
                 "base_max_size": 999999999,
-                "base_increment": asset_info[kraken_symbol]["lot_decimals"],
-                "price_increment": asset_info[kraken_symbol]["pair_decimals"],
-                "min_price": float(asset_info[kraken_symbol]["ordermin"]) * float(price),
+                "base_increment": asset_info['result'][kraken_symbol['pair']]["lot_decimals"],
+                "price_increment": asset_info['result'][kraken_symbol['pair']]["pair_decimals"],
+                "min_price": float(asset_info['result'][kraken_symbol['pair']]["ordermin"]) * float(price),
                 "max_price": 999999999,
             },
             "market_order": {
-                "base_min_size": asset_info[kraken_symbol]["ordermin"],
+                "base_min_size": asset_info['result'][kraken_symbol['pair']]["ordermin"],
                 "base_max_size": 999999999,
-                "base_increment": asset_info[kraken_symbol]["lot_decimals"],
-                "quote_increment": asset_info[kraken_symbol]["pair_decimals"],
+                "base_increment": asset_info['result'][kraken_symbol['pair']]["lot_decimals"],
+                "quote_increment": asset_info['result'][kraken_symbol['pair']]["pair_decimals"],
                 "buy": {
                     "min_funds": 0,
                     "max_funds": 999999999,
@@ -474,8 +412,6 @@ class KrakenInterface(ExchangeInterface):
 
         response = self.get_calls().query_public('Ticker', symbol)
 
-        opening_price = float(response['result'][response_symbol]["o"])
-        volume_weighted_average_price = float(response[response_symbol]["p"][0])
-        last_price = float(response[response_symbol]["c"][0])
+        volume_weighted_average_price = float(response['result'][response_symbol]["p"][0])
 
         return volume_weighted_average_price
