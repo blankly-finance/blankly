@@ -12,7 +12,7 @@
     "cache_location": "./price_caches",
     "continuous_caching": true,
     "resample_account_value_for_metrics": "1d",
-    "quote_account_value_in": "USDT",
+    "quote_account_value_in": "USD",
     "ignore_user_exceptions": true,
     "risk_free_return_rate": 0.0,
     "benchmark_symbol" : null
