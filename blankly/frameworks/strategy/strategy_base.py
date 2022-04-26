@@ -200,11 +200,12 @@ class StrategyBase:
         )
 
         # Export a new symbol to the backend
-        if isinstance(symbol, list):
-            for i in symbol:
-                blankly.reporter.export_used_symbol(i)
-        else:
-            blankly.reporter.export_used_symbol(i)
+        if symbol is not None:
+            if isinstance(symbol, list):
+                for i in symbol:
+                    blankly.reporter.export_used_symbol(i)
+            else:
+                blankly.reporter.export_used_symbol(symbol)
 
     @staticmethod
     def __websocket_callback(tick, symbol, user_callback, state_object):
