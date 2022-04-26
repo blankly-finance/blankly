@@ -29,7 +29,10 @@ from blankly.exchanges.orders.market_order import MarketOrder
 
 
 class BinanceInterface(ExchangeInterface):
+    _asset_precision: dict
+
     def __init__(self, exchange_name, authenticated_api):
+        self._asset_precision = {}
         # Initialize this as None so that it can be filled & cached when needed
         self.__available_currencies = None
         super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 180, 300, 900, 1800, 3600, 7200,
@@ -303,6 +306,8 @@ class BinanceInterface(ExchangeInterface):
             ]
         }
         """
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         renames = [
             ["orderId", "id"],
             ["transactTime", "created_at"],
@@ -373,6 +378,8 @@ class BinanceInterface(ExchangeInterface):
         BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
 
         """
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         order = {
             'size': size,
             'side': side,

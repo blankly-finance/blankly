@@ -101,6 +101,8 @@ class OkxInterface(ExchangeInterface):
                 "error_code": "0"
             }
         """
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         order = {
             'symbol': symbol,
             'size': size,
@@ -133,7 +135,8 @@ class OkxInterface(ExchangeInterface):
                size: amount of currency (like BTC) for the limit to be valued
         """
         needed = self.needed['limit_order']
-
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         order = {
             'symbol': symbol,
             'side': side,

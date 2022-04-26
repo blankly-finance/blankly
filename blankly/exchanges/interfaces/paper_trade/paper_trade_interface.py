@@ -341,12 +341,6 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         if not self.backtesting:
             print("Paper Trading...")
         needed = self.needed['market_order']
-        order = {
-            'size': size,
-            'side': side,
-            'symbol': symbol,
-            'type': 'market'
-        }
         creation_time = self.time()
         price = self.get_price(symbol)
         funds = price*size
@@ -367,7 +361,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         base_decimals = self.__get_decimals(base_increment)
 
         # Test if funds has more decimals than the increment. The increment is the maximum resolution of the quote.
-        if self.__get_decimals(size) > base_decimals:
+        if self.should_auto_trunc:
+            size = utils.trunc(size, base_decimals)
+        elif self.__get_decimals(size) > base_decimals:
             raise InvalidOrder("Size resolution is too high, the highest resolution allowed for this symbol is: " +
                                str(base_increment) + ". You specified " + str(size) +
                                ". Try using blankly.trunc(size, decimal_number) to match the exchange resolution.")
@@ -380,6 +376,12 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             shortable = False
             quantity_decimals = self.__get_decimals(market_limits['limit_order']['base_increment'])
 
+        order = {
+            'size': size,
+            'side': side,
+            'symbol': symbol,
+            'type': 'market'
+        }
         qty = size
 
         # Test the purchase
@@ -479,13 +481,6 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             "settled": false
         }
         """
-        order = {
-            'size': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': 'limit'
-        }
         creation_time = self.time()
 
         order_filter = self.get_order_filter(symbol)
@@ -520,9 +515,19 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         base_increment = order_filter['limit_order']['base_increment']
         base_decimals = self.__get_decimals(base_increment)
 
-        if self.__get_decimals(size) > base_decimals:
+        if self.should_auto_trunc:
+            size = utils.trunc(size, base_decimals)
+        elif self.__get_decimals(size) > base_decimals:
             raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(base_increment) +
                                '. Try using blankly.trunc(size, decimal_number) to match the exchange resolution.')
+
+        order = {
+            'size': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': 'limit'
+        }
 
         # Test the trade
         self.local_account.test_trade(symbol, side, size, price, quote_resolution=price_increment_decimals,
