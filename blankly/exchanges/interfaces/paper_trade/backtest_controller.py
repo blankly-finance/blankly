@@ -38,7 +38,7 @@ from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestRes
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import load_backtest_preferences, write_backtest_preferences, info_print, update_progress, \
-    get_base_asset, get_quote_asset
+    get_base_asset, get_quote_asset, aggregate_prices_by_resolution
 from blankly.exchanges.interfaces.paper_trade.backtest.format_platform_result import \
     format_platform_result
 
@@ -290,17 +290,6 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                     price_dict[symbol_][resolution_] = price_dict[symbol_][resolution_].sort_values(by=['time'],
                                                                                                     ignore_index=True)
 
-            return price_dict
-
-        def aggregate_prices_by_resolution(price_dict, symbol_, resolution_, data_) -> dict:
-            if symbol_ not in price_dict:
-                price_dict[symbol_] = {}
-            # Concat after the resolution check here
-            if resolution_ not in price_dict[symbol_]:
-                price_dict[symbol_][resolution_] = data_
-            else:
-                price_dict[symbol_][resolution_] = pd.concat([price_dict[symbol_][resolution_],
-                                                              data_])
             return price_dict
 
         def parse_identifiers() -> list:

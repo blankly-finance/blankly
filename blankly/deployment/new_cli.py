@@ -59,6 +59,7 @@ def create_model(api, name, description, model_type, project_id=None):
             spinner.fail('Failed to create model')
             raise
         spinner.ok('Created model')
+
     return model
 
 
@@ -148,6 +149,7 @@ def blankly_init(args):
                    'You can do this later at any time by running `blankly key add`').unsafe_ask():
             tld = add_key_interactive(exchange)
 
+    api = None
     model = None
     if args.prompt_login and confirm('Would you like to connect this model to the Blankly Platform?').unsafe_ask():
         api = ensure_login()
@@ -159,7 +161,7 @@ def blankly_init(args):
             ('backtest.json', generate_backtest_json(exchange), False),
             ('requirements.txt', 'blankly\n', False),
             ('keys.json', generate_keys_json(), True),
-            ('blankly.json', generate_blankly_json(model, model_type), False),
+            ('blankly.json', generate_blankly_json(api, model, model_type), False),
             ('settings.json', generate_settings_json(tld or 'com'), False)
         ]
         spinner.ok('Generated files')
@@ -175,7 +177,6 @@ def blankly_init(args):
 
     print_success('Done! Your model was created. Run `python bot.py` to run a backtest and get started.')
 
-
 def get_model_interactive(api, model_type):
     create = select('Would you like to create a new model or attach to an existing one?',
                     [Choice('Create new model', True), Choice('Attach to existing model', False)]).unsafe_ask()
@@ -189,7 +190,7 @@ def get_model_interactive(api, model_type):
             team_choices = [Choice('Create on my personal account', False)] \
                            + [Choice(team.get('name', team['id']), team['id']) for team in teams]
             team_id = select('What team would you like to create this model under?', team_choices).unsafe_ask()
-            return create_model(api, name, description, model_type, team_id or None)
+        return create_model(api, name, description, model_type, team_id)
 
     with show_spinner('Loading models...') as spinner:
         models = api.list_all_models()
@@ -235,14 +236,21 @@ def generate_keys_json():
     return json.dumps(keys, indent=4)
 
 
-def generate_blankly_json(model: Optional[dict], model_type):
+def generate_blankly_json(api: Optional[API], model: Optional[dict], model_type):
     data = load_deployment_settings()
 
     data['type'] = model_type
     data['python_version'] = get_python_version()
+    
     if model:
         data['model_id'] = model['id']
         data['project_id'] = model['projectId']
+
+    if api:
+        project_id = model['projectId'] if model else api.user_id
+        keys = api.generate_keys(project_id)
+        data['api_key'] = keys['apiKey']
+        data['api_pass'] = keys['apiPass']
     return json.dumps(data, indent=4)
 
 
@@ -304,6 +312,11 @@ def ensure_model(api: API):
         model = get_model_interactive(api, data['type'])
         data['model_id'] = model['modelId']
         data['project_id'] = model['projectId']
+
+    if 'api_key' not in data or 'api_pass' not in data:
+        keys = api.generate_keys(data['project_id'])
+        data['api_key'] = keys['apiKey']
+        data['api_pass'] = keys['apiPass']
 
     # save model_id and plan back into blankly.json
     with open('blankly.json', 'w') as file:

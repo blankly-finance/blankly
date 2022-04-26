@@ -9,6 +9,7 @@
 - Pass epoch to start_date end_date in .backtest()
 - Modified __init__ headers in strategy to remove the symbol arg
 - Add that ACCOUNT_ID for oanda ca only by obtained by doing `curl -H "Authorization: Bearer AUTH_TOKEN" https://api-fxpractice.oanda.com/v3/accounts`
+- More info about using the keyless exchange
 
 
 
