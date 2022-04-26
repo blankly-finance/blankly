@@ -123,7 +123,6 @@ class OkxInterface(ExchangeInterface):
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
-
     @utils.order_protection
     def limit_order(self, symbol, side, price, size) -> LimitOrder:
         """
@@ -136,7 +135,9 @@ class OkxInterface(ExchangeInterface):
         """
         needed = self.needed['limit_order']
         if self.should_auto_trunc:
-            size = utils.trunc(size, self.get_asset_precision(symbol))
+            result = utils.trunc(size, self.get_asset_precision(symbol))
+            if result != 0:
+                size = result
         order = {
             'symbol': symbol,
             'side': side,
