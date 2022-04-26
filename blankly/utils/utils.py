@@ -38,6 +38,7 @@ default_general_settings = {
         "use_sandbox_websockets": False,
         "websocket_buffer_size": 10000,
         "test_connectivity_on_auth": True,
+        "auto_truncate": False,
 
         "coinbase_pro": {
             "cash": "USD"
@@ -119,7 +120,7 @@ default_deploy_settings = {
     "python_version": '3.7',
     "requirements": "./requirements.txt",
     "working_directory": ".",
-    "ignore_files": ['price_caches'],
+    "ignore_files": ['price_caches', '.git', '.idea', '.vscode'],
     "backtest_args": {
         'to': '1y'
     },
