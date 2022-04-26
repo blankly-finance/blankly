@@ -154,7 +154,7 @@ class ABCExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_fees(self) -> dict:
+    def get_fees(self, symbol: str) -> dict:
         """
         Get market fees
         TODO add return example

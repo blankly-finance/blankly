@@ -63,7 +63,7 @@ class CoinbasePro(Exchange):
         Exchange state is the external properties for the exchange block
         """
         # TODO Populate this with useful information
-        return self.interface.get_fees()
+        return self.interface.get_products()
 
     def get_direct_calls(self) -> CoinbaseProAPI:
         return self.calls
@@ -73,7 +73,7 @@ class CoinbasePro(Exchange):
     """
 
     def get_indicators(self):
-        return self.calls.get_fees()
+        return self.calls.get_products()
 
     def filter_relevant(self, dict):
         """

@@ -251,6 +251,6 @@ def test_get_cash(alpaca_mock_interface) -> None:
 
 
 def test_get_fees(alpaca_mock_interface) -> None:
-    fee_response = alpaca_mock_interface.get_fees()
+    fee_response = alpaca_mock_interface.get_fees('AAPL')
     assert fee_response['maker_fee_rate'] == 0
     assert fee_response['taker_fee_rate'] == 0

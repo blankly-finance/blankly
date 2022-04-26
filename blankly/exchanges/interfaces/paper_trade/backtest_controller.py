@@ -39,7 +39,7 @@ from blankly.exchanges.interfaces.paper_trade.futures.futures_paper_trade_interf
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import load_backtest_preferences, write_backtest_preferences, info_print, update_progress, \
-    get_base_asset, get_quote_asset
+    get_base_asset, get_quote_asset, aggregate_prices_by_resolution
 from blankly.exchanges.interfaces.paper_trade.backtest.format_platform_result import \
     format_platform_result
 
@@ -236,6 +236,9 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             # Get the data as dict of dataframes
             data = reader.data
             for event_type in data:
+                self.__check_user_time_bounds(reader.data[event_type]['time'].iloc[0],
+                                              reader.data[event_type]['time'].iloc[-1],
+                                              60)
                 # Get the dataframe in each one
                 event_df: pd.DataFrame = data[event_type]
                 # Now turn it into a set of records
@@ -246,17 +249,24 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
                 self.events += records
 
-        # for tick_reader in self.__tick_readers:
-        #     data = tick_reader.data
-        #     for symbol in data:
-        #         symbol_df: pd.DataFrame = data[symbol]
-        #
-        #         records = symbol_df.to_dict(orient='records')
-        #         for record_index in range(len(records)):
-        #             records[record_index]['type'] = ['__blankly__tick']
-        #             records[record_index]['__symbol'] = symbol
-        #
-        #         self.events += records
+        for tick_reader in self.__tick_readers:
+            data = tick_reader.data
+            for symbol in data:
+                self.__check_user_time_bounds(tick_reader.data[symbol]['time'].iloc[0],
+                                              tick_reader.data[symbol]['time'].iloc[-1],
+                                              60)
+                symbol_df: pd.DataFrame = data[symbol]
+
+                records = symbol_df.to_dict(orient='records')
+                data_formatted_records = []
+                for record_index in range(len(records)):
+                    data_formatted_records.append({
+                        'type': '__blankly__tick',
+                        'data': records[record_index],
+                        'time': records[record_index]['time']
+                    })
+
+                self.events += data_formatted_records
 
         # Now we just need to sort by time
         self.events = sorted(self.events, key=lambda d: d['time'])
@@ -281,17 +291,6 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                     price_dict[symbol_][resolution_] = price_dict[symbol_][resolution_].sort_values(by=['time'],
                                                                                                     ignore_index=True)
 
-            return price_dict
-
-        def aggregate_prices_by_resolution(price_dict, symbol_, resolution_, data_) -> dict:
-            if symbol_ not in price_dict:
-                price_dict[symbol_] = {}
-            # Concat after the resolution check here
-            if resolution_ not in price_dict[symbol_]:
-                price_dict[symbol_][resolution_] = data_
-            else:
-                price_dict[symbol_][resolution_] = pd.concat([price_dict[symbol_][resolution_],
-                                                              data_])
             return price_dict
 
         def parse_identifiers() -> list:
@@ -686,6 +685,10 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             return next(self.__color_generator)
 
     def advance_time_and_price_index(self):
+        def handle_blankly_tick(type_: str, data):
+            if type_ == 'tick':
+                self.model.websocket_update(data)
+
         def run_events():
             # Ensure that we don't index error here
             events_length = len(self.events)
@@ -699,7 +702,10 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                 # Set time to something different here
                 event = self.events[self.event_index]
                 self.time = event['time']
-                self.model.event(event['type'], event['data'])
+                if event['type'][0:11] != '__blankly__':
+                    self.model.event(event['type'], event['data'])
+                else:
+                    handle_blankly_tick(event['type'][11:], event['data'])
                 # Fired some event, go to the next one
                 self.event_index += 1
 
@@ -719,7 +725,6 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             #  it's less than the length of the price
             price_length = len(self.prices[symbol]) - 2
             while self.prices[symbol][self.price_indexes[symbol]]['time'] < self.time:
-                run_events()
                 if price_length >= self.price_indexes[symbol]:
                     self.price_indexes[symbol] += 1
                 else:
@@ -729,6 +734,12 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             # Write this new price into the interface
             self.interface.receive_price(symbol, new_price=self.prices[symbol][
                 self.price_indexes[symbol]][self.use_price])
+
+        # Check has_data here also
+        if self.time > self.user_stop:
+            self.model.has_data = False
+
+        run_events()
 
     def sleep(self, seconds: [int, float]):
         # Always evaluate limits
@@ -860,10 +871,9 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             self.price_indexes[frame_symbol] = 0
 
             # Find the first time in the list
-            if self.initial_time is None or first_time < self.initial_time:
-                self.initial_time = first_time
+            self.initial_time = copy.copy(self.user_start)
 
-        if self.prices == {}:
+        if self.prices == {} and self.events == []:
             raise ValueError("No data given. "
                              "Try setting an argument such as to='1y' in the .backtest() command.\n"
                              "Example: strategy.backtest(to='1y')")
@@ -875,7 +885,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         self.initial_account = self.interface.get_account()
 
         # Initialize this before the callbacks, so it works in the initialization functions
-        self.time = self.initial_time
+        self.time = copy.copy(self.user_start)
 
         # Turn on backtesting immediately after setting the time
         self.interface.set_backtesting(True)
@@ -898,7 +908,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
         # Add an initial account row here
         if self.preferences['settings']['save_initial_account_value']:
-            available_dict, no_trade_dict = self.format_account_data(self.interface, self.initial_time)
+            available_dict, no_trade_dict = self.format_account_data(self.interface, self.user_start)
             self.traded_account_values.append(available_dict)
             self.no_trade_account_values.append(no_trade_dict)
 
@@ -1140,8 +1150,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
                 show(bokeh_columns(figures))
                 info_print(f'Make an account to take advantage of the platform backtest viewer: '
-                           f'https://app.blankly.finance/5Z9MWfnUzwIyy9Qv385a/1Ss7zybwN8aMAbWb3lSH/'
-                           f'aG3LE1LzHnY24oqtBMS3/backtest')
+                           f'https://app.blankly.finance/RETIe0J8EPSQz7wizoJX0OAFb8y1/EZkgTZMLJVaZK6kNy0mv/'
+                           f'2b2ff92c-ee41-42b3-9afb-387de9e4f894/backtest')
 
             # This is where we end the backtesting time
             stop_clock = time.time()

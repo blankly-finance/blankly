@@ -12,7 +12,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import math
 
 import blankly
 
@@ -38,6 +38,7 @@ default_general_settings = {
         "use_sandbox_websockets": False,
         "websocket_buffer_size": 10000,
         "test_connectivity_on_auth": True,
+        "auto_truncate": False,
 
         "coinbase_pro": {
             "cash": "USD"
@@ -46,12 +47,9 @@ default_general_settings = {
             "cash": "USDT",
             "binance_tld": "us"
         },
-        "kucoin": {
-            "cash": "USDT"
-        },
-        "ftx": {
-            "cash": "USD",
-            "ftx_tld": "us"
+        "binance_futures": {
+            "cash": "USDT",
+            "margin_type": "USDT-M"
         },
         "alpaca": {
             "websocket_stream": "iex",
@@ -62,8 +60,22 @@ default_general_settings = {
         "oanda": {
             "cash": "USD"
         },
+        "okx": {
+            "cash": "USDT"
+        },
         "keyless": {
             "cash": "USD"
+        },
+        "kucoin": {
+            "cash": "USDT"
+        },
+        "ftx": {
+            "cash": "USD",
+            "ftx_tld": "us"
+        },
+        "ftx_futures": {
+            "cash": "USD",
+            "ftx_tld": "com"
         }
     }
 }
@@ -83,7 +95,7 @@ default_backtest_settings = {
         "continuous_caching": True,
         "resample_account_value_for_metrics": "1d",
         "quote_account_value_in": "USD",
-        "ignore_user_exceptions": False,
+        "ignore_user_exceptions": True,
         "risk_free_return_rate": 0.0,
         "benchmark_symbol": None
     }
@@ -108,7 +120,7 @@ default_deploy_settings = {
     "python_version": '3.7',
     "requirements": "./requirements.txt",
     "working_directory": ".",
-    "ignore_files": ['price_caches'],
+    "ignore_files": ['price_caches', '.git', '.idea', '.vscode'],
     "backtest_args": {
         'to': '1y'
     },
@@ -819,8 +831,40 @@ def add_all_products(nonzero_products: dict, all_products: list):
     return nonzero_products
 
 
+def increment_to_precision(increment: float) -> int:
+    # quick maths
+    # 0.0001 -> 4
+    # 0.025 -> 1
+    # 0.25 -> 0
+    return math.floor(-math.log10(increment))
+
+
 def trim_df_time_column(df, epoch_start: [int, float], epoch_stop: [int, float]):
     df = df[df['time'] >= epoch_start]
     df = df[df['time'] <= epoch_stop]
 
     return df
+
+
+def aggregate_prices_by_resolution(price_dict, symbol_, resolution_, data_) -> dict:
+    if symbol_ not in price_dict:
+        price_dict[symbol_] = {}
+    # Concat after the resolution check here
+    if resolution_ not in price_dict[symbol_]:
+        price_dict[symbol_][resolution_] = data_
+    else:
+        price_dict[symbol_][resolution_] = pd.concat([price_dict[symbol_][resolution_],
+                                                      data_])
+    return price_dict
+
+
+def extract_price_by_resolution(prices, symbol, epoch_start, epoch_stop, resolution,):
+    if symbol in prices:
+        if resolution in prices[symbol]:
+            price_set = prices[symbol][resolution]
+        else:
+            raise LookupError(f"The resolution {resolution} not found or downloaded for {symbol}.")
+    else:
+        raise LookupError(f"Prices for this symbol ({symbol}) not found")
+
+    return trim_df_time_column(price_set, epoch_start - resolution, epoch_stop)

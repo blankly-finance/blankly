@@ -44,6 +44,7 @@ class KucoinInterface(ExchangeInterface):
         self._trade: KucoinAPI.Trade = self.calls['trade']
         self._user: KucoinAPI.User = self.calls['user']
 
+
     def init_exchange(self):
         fees = self.calls['user'].get_base_fee()
         try:
@@ -183,6 +184,8 @@ class KucoinInterface(ExchangeInterface):
             "orderId": "5bd6e9286d99522a52e458de"
         }
         """
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         order = {
             'symbol': symbol,
             'side': side,
@@ -248,6 +251,8 @@ class KucoinInterface(ExchangeInterface):
         """
         needed = self.needed['limit_order']
 
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         order = {
             'symbol': symbol,
             'side': side,
@@ -447,7 +452,7 @@ class KucoinInterface(ExchangeInterface):
 
         return utils.isolate_specific(needed, response)
 
-    def get_fees(self) -> dict:
+    def get_fees(self, symbol) -> dict:
         needed = self.needed['get_fees']
         """
             {

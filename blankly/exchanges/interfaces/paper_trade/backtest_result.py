@@ -111,15 +111,18 @@ class BacktestResult:
         epoch_start = time_array[0]
         epoch_stop = time_array[-1]
 
-        while epoch_start <= epoch_stop:
-            # Append this dict to the array
-            resampled_array.append({
-                'time': epoch_start,
-                'value': search_price(price_array, time_array, epoch_start)
-            })
+        try:
+            while epoch_start <= epoch_stop:
+                # Append this dict to the array
+                resampled_array.append({
+                    'time': epoch_start,
+                    'value': search_price(price_array, time_array, epoch_start)
+                })
 
-            # Increase the epoch value
-            epoch_start += interval
+                # Increase the epoch value
+                epoch_start += interval
+        except TypeError:
+            raise TypeError("No valid account data found, make sure to create valid account value datapoints.")
 
         # Turn that resample into a dataframe
         return DataFrame(resampled_array, columns=['time', 'value'])

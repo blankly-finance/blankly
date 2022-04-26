@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import threading
 import abc
 import typing
 
@@ -61,7 +62,8 @@ class Model(abc.ABC):
                                          initial_account_values=initial_values,
                                          exchange=self.__exchange,
                                          backtest_settings_path=settings_path,
-                                         **kwargs)
+                                         **kwargs
+                                         )
 
         self.is_backtesting = False
         self.__exchange = self.__exchange_cache
@@ -69,8 +71,10 @@ class Model(abc.ABC):
 
         return backtest
 
-    def run(self, args: typing.Any = None):
-        self.main(args)
+    def run(self, args: typing.Any = None) -> threading.Thread:
+        thread = threading.Thread(target=self.main, args=(args,))
+        thread.start()
+        return thread
 
     @abc.abstractmethod
     def main(self, args):
@@ -83,6 +87,9 @@ class Model(abc.ABC):
         """
         Override this to gain access to any custom events passed in
         """
+        pass
+
+    def websocket_update(self, data):
         pass
 
     @property

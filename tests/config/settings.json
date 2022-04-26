@@ -3,11 +3,15 @@
     "use_sandbox_websockets": false,
     "websocket_buffer_size": 10000,
     "test_connectivity_on_auth": false,
+    "auto_truncate": true,
 
     "coinbase_pro": {
       "cash": "USD"
     },
     "kucoin": {
+      "cash": "USDT"
+    },
+    "okex": {
       "cash": "USDT"
     },
     "binance": {
@@ -16,6 +20,9 @@
     },
     "binance_futures": {
       "cash": "USDT"
+    },
+    "ftx": {
+      "ftx_tld": "us"
     },
     "alpaca": {
       "websocket_stream": "iex",

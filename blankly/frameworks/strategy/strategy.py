@@ -169,6 +169,9 @@ class StrategyStructure(Model):
         self.run_price_events(kwargs_list)
 
     def __run_init(self):
+        # Switch to live mode for the inits
+        if self.is_backtesting:
+            self.interface.backtesting = False
         for i in self.schedulers:
             kwargs = i.get_kwargs()
             if kwargs['init'] is not None:
@@ -176,6 +179,9 @@ class StrategyStructure(Model):
                     kwargs['init'](kwargs['symbol'], kwargs['state'])
                 else:
                     kwargs['init'](kwargs['state'])
+
+        # Switch back to the backtesting status
+        self.interface.backtesting = self.is_backtesting
 
     def run_live(self):
         self.__run_init()
@@ -200,8 +206,10 @@ class StrategyStructure(Model):
             i.stop_scheduler()
             kwargs = i.get_kwargs()
             teardown = kwargs['teardown']
+            state_object = kwargs['state']
+            symbol = kwargs['symbol']
             if callable(teardown):
-                teardown(kwargs['symbol'], kwargs['state'])
+                teardown(symbol, state_object)
 
         for i in self.orderbook_websockets:
             self.orderbook_manager.close_websocket(override_symbol=i[0], override_exchange=i[1])
@@ -302,7 +310,9 @@ class Strategy(StrategyBase):
                        "event based data")
 
         self.__add_prices(to, start_date, end_date)
-        return self.model.backtest(args={}, initial_values=initial_values, settings_path=settings_path, kwargs=kwargs)
+        res = self.model.backtest(args={}, initial_values=initial_values, settings_path=settings_path, kwargs=kwargs)
+        self.model.teardown()
+        return res
 
     def __add_prices(self, to, start_date, end_date):
         for scheduler in self.schedulers:
