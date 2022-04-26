@@ -27,7 +27,7 @@ class DataTypes(__Enum):
     event_json = 3
 
 
-from .data_reader import PriceReader, EventReader, TickReader
+from .data_reader import PriceReader, JsonEventReader, TickReader
 
 
 """
