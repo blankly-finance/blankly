@@ -176,6 +176,7 @@ def blankly_init(args):
 
     print_success('Done! Your model was created. Run `python bot.py` to run a backtest and get started.')
 
+
 def get_model_interactive(api, model_type):
     create = select('Would you like to create a new model or attach to an existing one?',
                     [Choice('Create new model', True), Choice('Attach to existing model', False)]).unsafe_ask()
@@ -437,6 +438,7 @@ def main():
     subparsers = parser.add_subparsers(required=True)
 
     init_parser = subparsers.add_parser('init', help='Initialize a new model in the current directory')
+    init_parser.add_argument('model', nargs='?', help='select a starter model')
     init_parser.add_argument('-n', '--no-login', action='store_false', dest='prompt_login',
                              help='don\'t prompt to connect to Blankly Platform')
     init_parser.set_defaults(func=blankly_init)
