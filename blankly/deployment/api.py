@@ -189,15 +189,8 @@ class API:
                        for model in self.list_models(team['id'])]
         return models
 
-    def list_starter_models(self):
-        models = self.__request('post', 'model/list',
-                                data={
-                                    'projectId': self.user_id
-                                })
-        for model in models:
-            model['modelId'] = model['id']
-            model['projectId'] = self.user_id
-        return models
+    def get_starter_models(self):
+        return self.__request('get', 'model/starter-models')
 
     def list_teams(self):
         return self.__request('get', 'project/teams')

@@ -19,20 +19,24 @@
 import argparse
 import json
 import os.path
+import shutil
+import subprocess
 import sys
+import tempfile
 import traceback
 import webbrowser
 from pathlib import Path
 from typing import Optional
 import pkgutil
 
+import questionary
 from questionary import Choice
 
 from blankly.deployment.api import API, blankly_deployment_url
 from blankly.deployment.deploy import zip_dir, get_python_version
 from blankly.deployment.keys import add_key, load_keys, write_keys
 from blankly.deployment.login import logout, poll_login, get_token
-from blankly.deployment.ui import text, confirm, print_work, print_failure, print_success, select, show_spinner
+from blankly.deployment.ui import text, confirm, print_work, print_failure, print_success, select, show_spinner, path
 from blankly.deployment.exchange_data import EXCHANGES, Exchange, EXCHANGE_CHOICES, exc_display_name, \
     EXCHANGE_CHOICES_NO_KEYLESS
 
@@ -124,11 +128,53 @@ def add_key_interactive(exchange: Exchange):
     return False
 
 
+def init_starter_model(model):
+    path = model['path']
+    url = model['url']
+    with tempfile.TemporaryDirectory() as dir:
+        with show_spinner('Downloading files') as spinner:
+            ret = subprocess.run(['git', 'clone', url, dir],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode
+            if ret != 0:
+                spinner.fail('Failed to download starter model. Make sure you have `git` installed.')
+                return
+            for file in os.listdir(os.path.join(dir, path)):
+                shutil.move(os.path.join(dir, path, file), './')
+            spinner.ok('Downloaded files')
+
+    clean_blankly_json()
+    print_success('Done!')
+    print_success('To add exchange keys to your model, do `blankly key`')
+    print_success('To deploy this model, do `blankly deploy`.')
+
+
+def clean_blankly_json():
+    with open('blankly.json', 'r') as file:
+        data = json.load(file)
+    del data['model_id']
+    del data['project_id']
+    del data['api_key']
+    del data['api_pass']
+    with open('blankly.json', 'w') as file:
+        json.dump(data, file, indent=4)
+
+
 def blankly_init(args):
     # warn nonempty dir
-    dir_is_empty = len([f for f in os.listdir() if not f.startswith('.')]) == 0
-    if not dir_is_empty \
+    files = [f for f in os.listdir() if not f.startswith('.')]
+    if files \
             and not confirm('This directory is not empty. Would you like to continue anyways?').unsafe_ask():
+        return
+
+    api = None
+    if args.model:
+        api = ensure_login()
+        starters = api.get_starter_models()
+        model = next((m for m in starters if m['shortName'] == args.model), None)
+        if not model:
+            print_failure('That starter model doesn\'t exist. Make sure you are typing the name properly.')
+            return
+        init_starter_model(model)
         return
 
     exchange = select('What exchange would you like to connect to?', EXCHANGE_CHOICES).unsafe_ask()
@@ -151,7 +197,8 @@ def blankly_init(args):
     api = None
     model = None
     if args.prompt_login and confirm('Would you like to connect this model to the Blankly Platform?').unsafe_ask():
-        api = ensure_login()
+        if not api:
+            api = ensure_login()
         model = get_model_interactive(api, model_type)
 
     with show_spinner('Generating files') as spinner:
@@ -195,6 +242,10 @@ def get_model_interactive(api, model_type):
     with show_spinner('Loading models...') as spinner:
         models = api.list_all_models()
         spinner.ok('Loaded')
+
+    if not models:
+        print_failure('You have no models on the platform. Are you logged into the right account?')
+        sys.exit()
 
     model = select('Select an existing model to attach to:',
                    [Choice(get_model_repr(model), model) for model in models]).unsafe_ask()
@@ -248,7 +299,7 @@ def generate_keys_json():
     return json.dumps(keys, indent=4)
 
 
-def generate_blankly_json(api: Optional[API], model: Optional[dict], model_type):
+def generate_blankly_json(api: Optional[API], model: Optional[dict], model_type, main_script):
     data = {'main_script': './bot.py',
             'python_version': get_python_version(),
             'requirements': './requirements.txt',
@@ -346,6 +397,19 @@ def ensure_model(api: API):
         data['api_key'] = keys['apiKey']
         data['api_pass'] = keys['apiPass']
 
+    files = [f for f in os.listdir() if not f.startswith('.')]
+    if 'main_script' not in data or data['main_script'] not in files:
+        if 'bot.py' in files:
+            data['main_script'] = 'bot.py'
+        else:
+            data['main_script'] = path(
+                'What is the path to your main script/entry point? (Usually bot.py)').unsafe_ask()
+
+    if data['main_script'] not in files:
+        print_failure(
+            f'The file {data["main_script"]} could not be found. Please create it or set a different entry point.')
+        sys.exit()
+
     # save model_id and plan back into blankly.json
     with open('blankly.json', 'w') as file:
         json.dump(data, file, indent=4)
@@ -354,7 +418,7 @@ def ensure_model(api: API):
 
 
 def missing_deployment_files() -> list:
-    paths = ['bot.py', 'blankly.json', 'keys.json', 'backtest.json', 'requirements.txt', 'settings.json']
+    paths = ['blankly.json', 'keys.json', 'backtest.json', 'requirements.txt', 'settings.json']
     return [path for path in paths if not Path(path).is_file()]
 
 
