@@ -226,7 +226,7 @@ class FundingRateEventReader(EventReader):
     def __init__(self, symbol: str, start: int, stop: int, interface: FuturesExchangeInterface):
         history = interface.get_funding_rate_history(symbol, start, stop)
         history = {ev['time']: {'symbol': symbol, 'rate': ev['rate']} for ev in history}
-        super().__init__('funding_rate', history)
+        super().__init__('__blankly__funding_rate', history)
 
 
 class TickReader(__FormatReader):

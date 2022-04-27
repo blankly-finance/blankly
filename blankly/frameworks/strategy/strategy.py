@@ -146,14 +146,6 @@ class StrategyStructure(Model):
         else:
             self.run_live()
 
-    def event(self, type_: str, data: any):
-        if type_ == 'funding_rate':
-            symbol = data['symbol']
-            rate = data['rate']
-            if self.is_backtesting:
-                self.interface.do_funding(symbol, rate)
-        super().event(type_, data)
-
     def run_backtest(self):
         # Write in the new interface, no matter which type it is
         for scheduler in self.schedulers:

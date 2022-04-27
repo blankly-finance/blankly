@@ -688,6 +688,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         def handle_blankly_tick(type_: str, data):
             if type_ == 'tick':
                 self.model.websocket_update(data)
+            elif type_ == "funding_rate":
+                self.interface.do_funding(data['symbol'], data['rate'])
 
         def run_events():
             # Ensure that we don't index error here
