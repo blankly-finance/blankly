@@ -29,6 +29,8 @@ import dateutil.parser as dp
 import numpy as np
 import pandas as pd
 
+from blankly.utils.time_builder import time_interval_to_seconds
+
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
