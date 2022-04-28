@@ -159,6 +159,8 @@ class CoinbaseProInterface(ExchangeInterface):
             'settled': False
         }
         """
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         order = {
             'size': size,
             'side': side,
@@ -203,6 +205,8 @@ class CoinbaseProInterface(ExchangeInterface):
             "settled": false
         }
         """
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         order = {
             'size': size,
             'side': side,

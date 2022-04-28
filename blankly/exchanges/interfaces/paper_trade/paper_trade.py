@@ -28,7 +28,7 @@ class PaperTrade(Exchange):
         # This construction is unique because it doesn't make the interface super call for construction
         self.interface = PaperTradeInterface(authenticated_exchange.get_interface(),
                                              initial_account_values)
-        self.calls = authenticated_exchange.get_direct_calls()
+        self.calls = authenticated_exchange.calls
 
     def start_limit_order_watch(self):
         """

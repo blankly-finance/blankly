@@ -101,6 +101,8 @@ class OkxInterface(ExchangeInterface):
                 "error_code": "0"
             }
         """
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         order = {
             'symbol': symbol,
             'size': size,
@@ -121,7 +123,6 @@ class OkxInterface(ExchangeInterface):
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
-
     @utils.order_protection
     def limit_order(self, symbol, side, price, size) -> LimitOrder:
         """
@@ -133,7 +134,10 @@ class OkxInterface(ExchangeInterface):
                size: amount of currency (like BTC) for the limit to be valued
         """
         needed = self.needed['limit_order']
-
+        if self.should_auto_trunc:
+            result = utils.trunc(size, self.get_asset_precision(symbol))
+            if result != 0:
+                size = result
         order = {
             'symbol': symbol,
             'side': side,

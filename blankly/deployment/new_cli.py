@@ -32,13 +32,14 @@ import pkgutil
 import questionary
 from questionary import Choice
 
-from blankly.deployment.api import API, blankly_deployment_url
+from blankly.deployment.api import API
 from blankly.deployment.deploy import zip_dir, get_python_version
 from blankly.deployment.keys import add_key, load_keys, write_keys
 from blankly.deployment.login import logout, poll_login, get_token
 from blankly.deployment.ui import text, confirm, print_work, print_failure, print_success, select, show_spinner, path
 from blankly.deployment.exchange_data import EXCHANGES, Exchange, EXCHANGE_CHOICES, exc_display_name, \
     EXCHANGE_CHOICES_NO_KEYLESS
+from blankly.utils.utils import load_deployment_settings, load_user_preferences, load_backtest_preferences
 
 TEMPLATES = {'strategy': {'none': 'none.py',
                           'rsi_bot': 'rsi_bot.py'},
@@ -278,23 +279,11 @@ def get_model_repr(model: dict) -> str:
 
 
 def generate_settings_json(tld: str):
-    data = {"settings": {"use_sandbox_websockets": False,
-                         "websocket_buffer_size": 10000,
-                         "test_connectivity_on_auth": True,
-                         "coinbase_pro": {"cash": "USD"},
-                         "binance": {"cash": "USDT",
-                                     "binance_tld": tld, },
-                         "alpaca": {"websocket_stream": "iex",
-                                    "cash": "USD",
-                                    "enable_shorting": True,
-                                    "use_yfinance": False},
-                         "oanda": {"cash": "USD"},
-                         "keyless": {"cash": "USD"},
-                         "ftx": {"cash": "USD",
-                                 "ftx_tld": tld, },
-                         "ftx_futures": {"cash": "USD",
-                                         "ftx_tld": tld},
-                         "kucoin": {"cash": "USDT"}}}
+    data = load_user_preferences()
+
+    data['settings']['binance']['binance_tld'] = tld
+    data['settings']['ftx']['ftx_tld'] = tld
+    data['settings']['ftx_futures']['ftx_tld'] = tld
     return json.dumps(data, indent=4)
 
 
@@ -313,18 +302,13 @@ def generate_keys_json():
             portfolio['sandbox'] = portfolio.get('sandbox', False)
     return json.dumps(keys, indent=4)
 
-
+  
 def generate_blankly_json(api: Optional[API], model: Optional[dict], model_type: str, main_script: str = 'bot.py'):
-    data = {'main_script': main_script,
-            'python_version': get_python_version(),
-            'requirements': './requirements.txt',
-            'working_directory': '.',
-            'ignore_files': ['price_caches', '.git', '.idea', '.vscode'],
-            'backtest_args': {'to': '1y'},
-            'type': model_type,
-            'screener': {'schedule': '30 14 * * 1-5'}
-            }
-
+    data = load_deployment_settings()
+    data['main_script'] = main_script
+    data['type'] = model_type
+    data['python_version'] = get_python_version()
+    
     if model:
         data['model_id'] = model['id']
         data['project_id'] = model['projectId']
@@ -339,20 +323,9 @@ def generate_blankly_json(api: Optional[API], model: Optional[dict], model_type:
 
 def generate_backtest_json(exchange: Optional[Exchange]) -> str:
     currency = exchange.currency if exchange else 'USD'
-    data = {'price_data': {'assets': []},
-            'settings': {'use_price': 'close',
-                         'smooth_prices': False,
-                         'GUI_output': True,
-                         'show_tickers_with_zero_delta': False,
-                         'save_initial_account_value': True,
-                         'show_progress_during_backtest': True,
-                         'cache_location': './price_caches',
-                         'continuous_caching': True,
-                         'resample_account_value_for_metrics': '1d',
-                         'quote_account_value_in': currency,
-                         'ignore_user_exceptions': True,
-                         'risk_free_return_rate': 0.0,
-                         'benchmark_symbol': None}}
+    data = load_backtest_preferences()
+
+    data['settings']['quote_account_value_in'] = currency
     return json.dumps(data, indent=4)
 
 

@@ -360,7 +360,6 @@ class Strategy(StrategyBase):
             warnings.warn("Aborted attempt to start a live strategy a backtest configuration")
             return
         self.model.run()
-        self.model.teardown()
 
     def time(self) -> float:
         return self.model.time
