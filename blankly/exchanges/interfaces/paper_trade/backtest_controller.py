@@ -622,7 +622,11 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         no_trade_value = 0
 
         # Save this up front so that it can be removed from the price calculation (it's always a value of 1 anyway)
-        quote_value = true_account[self.quote_currency]['available'] + true_account[self.quote_currency]['hold']
+        try:
+            quote_value = true_account[self.quote_currency]['available'] + true_account[self.quote_currency]['hold']
+        except KeyError as e:
+            raise KeyError(f"Failed looking up {e}. Try changing your quote_account_value_in in backtest.json to be "
+                           f"{e}.")
         try:
             del true_account[self.quote_currency]
         except KeyError:
