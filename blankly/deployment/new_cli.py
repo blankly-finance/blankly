@@ -129,8 +129,11 @@ def add_key_interactive(exchange: Exchange):
 
 
 def init_starter_model(model):
-    path = model['path']
-    url = model['url']
+    path = model.get('path', '.')
+    url = model.get('url', 'https://github.com/blankly-finance/examples')
+    exchange_name = model.get('exchange', 'alpaca')
+    model_type = model.get('modelType', 'strategy')
+
     with tempfile.TemporaryDirectory() as dir:
         with show_spinner('Downloading files') as spinner:
             ret = subprocess.run(['git', 'clone', url, dir],
@@ -139,13 +142,25 @@ def init_starter_model(model):
                 spinner.fail('Failed to download starter model. Make sure you have `git` installed.')
                 return
             for file in os.listdir(os.path.join(dir, path)):
-                shutil.move(os.path.join(dir, path, file), './')
+                try:
+                    shutil.move(os.path.join(dir, path, file), './')
+                except OSError as e:
+                    spinner.fail(f'Failed while copying files: {e}. Try again in an empty directory.')
+                    return
             spinner.ok('Downloaded files')
 
     clean_blankly_json()
+
+    exchange = next((e for e in EXCHANGES if e.name == exchange_name), None)
+
+    if exchange and confirm(f'Would you like to add {exchange.display_name} keys to your model?').unsafe_ask():
+        add_key_interactive(exchange)
+
+    if confirm('Would you like to connect this model to the Blankly Platform?').unsafe_ask():
+        api = ensure_login()
+        ensure_model(api)
+
     print_success('Done!')
-    print_success('To add exchange keys to your model, do `blankly key`')
-    print_success('To deploy this model, do `blankly deploy`.')
 
 
 def clean_blankly_json():
@@ -299,8 +314,8 @@ def generate_keys_json():
     return json.dumps(keys, indent=4)
 
 
-def generate_blankly_json(api: Optional[API], model: Optional[dict], model_type, main_script):
-    data = {'main_script': './bot.py',
+def generate_blankly_json(api: Optional[API], model: Optional[dict], model_type: str, main_script: str = 'bot.py'):
+    data = {'main_script': main_script,
             'python_version': get_python_version(),
             'requirements': './requirements.txt',
             'working_directory': '.',
@@ -388,7 +403,7 @@ def ensure_model(api: API):
                                                  for name, info in api.get_plans('live').items()]).unsafe_ask()
 
     if 'model_id' not in data or 'project_id' not in data:
-        model = get_model_interactive(api, data['type'])
+        model = get_model_interactive(api, data.get('type', 'strategy'))
         data['model_id'] = model['modelId']
         data['project_id'] = model['projectId']
 
@@ -398,14 +413,14 @@ def ensure_model(api: API):
         data['api_pass'] = keys['apiPass']
 
     files = [f for f in os.listdir() if not f.startswith('.')]
-    if 'main_script' not in data or data['main_script'] not in files:
+    if 'main_script' not in data or data['main_script'].lstrip('./') not in files:
         if 'bot.py' in files:
             data['main_script'] = 'bot.py'
         else:
             data['main_script'] = path(
                 'What is the path to your main script/entry point? (Usually bot.py)').unsafe_ask()
 
-    if data['main_script'] not in files:
+    if data['main_script'].lstrip('./') not in files:
         print_failure(
             f'The file {data["main_script"]} could not be found. Please create it or set a different entry point.')
         sys.exit()
