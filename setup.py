@@ -38,7 +38,6 @@ setup(
         'newtulipy >= 0.4.6',
         'numpy >= 1.21.4',
         'pandas >= 1.1.5',
-        'pandas_market_calendars >= 3.2',
         'python-binance >= 1.0.15',
         'requests >= 2.26.0',
         'websocket-client >= 1.2.1',

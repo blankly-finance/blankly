@@ -28,7 +28,6 @@ from typing import Union
 import dateutil.parser as dp
 import numpy as np
 import pandas as pd
-import pandas_market_calendars as mcal
 
 from blankly.utils.time_builder import time_interval_to_seconds
 
@@ -655,39 +654,6 @@ def get_ohlcv_from_list(tick_list: list, last_price: float):
 def ceil_date(date, **kwargs):
     secs = datetime.timedelta(**kwargs).total_seconds()
     return dt.fromtimestamp(date.timestamp() + secs - date.timestamp() % secs)
-
-
-OVERESTIMATE_CONSTANT = 1.5
-
-
-def get_estimated_start_from_limit(limit, end_epoch, resolution_str, resolution_multiplier):
-
-    nyse = mcal.get_calendar('NYSE')
-    required_length = ceil(limit * OVERESTIMATE_CONSTANT)
-    resolution = time_interval_to_seconds(resolution_str)
-
-    if resolution == 60 and limit < (1440 / resolution_multiplier):
-        return end_epoch - 4 * 86400  # worst case is three day weekend at 9:30am open
-
-    if resolution == 3600 and limit < (24 / resolution_multiplier):
-        return end_epoch - 4 * 86400  # worst case is three day weekend at 9:30am open
-
-    temp_start = end_epoch - limit * resolution * resolution_multiplier
-    end_date = dt.fromtimestamp(end_epoch, tz=timezone.utc)
-    start_date = dt.fromtimestamp(temp_start, tz=timezone.utc)
-
-    schedule = nyse.schedule(start_date=start_date, end_date=end_date)
-    date_range = mcal.date_range(schedule, frequency='1D')
-
-    count = 1
-    while len(date_range) < required_length:
-        temp_start -= 3600 * OVERESTIMATE_CONSTANT * count
-        start_date = dt.fromtimestamp(temp_start)
-        schedule = nyse.schedule(start_date=start_date, end_date=end_date)
-        date_range = mcal.date_range(schedule, frequency='1D')
-        count += 1
-
-    return temp_start
 
 
 class AttributeDict(dict):
