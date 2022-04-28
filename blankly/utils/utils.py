@@ -21,15 +21,13 @@ import json
 import sys
 import decimal
 import os
-from datetime import datetime as dt, timezone
-from math import ceil, trunc as math_trunc
+from datetime import datetime as dt
+from math import trunc as math_trunc
 from typing import Union
 
 import dateutil.parser as dp
 import numpy as np
 import pandas as pd
-
-from blankly.utils.time_builder import time_interval_to_seconds
 
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {

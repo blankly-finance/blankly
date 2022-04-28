@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import json
 import os
 import time
@@ -45,7 +46,7 @@ from blankly.exchanges.interfaces.paper_trade.backtest.format_platform_result im
 
 from blankly.exchanges.interfaces.paper_trade.abc_backtest_controller import ABCBacktestController
 from blankly.exchanges.exchange import ABCExchange
-from blankly.data.data_reader import PriceReader, JsonEventReader, TickReader, DataReader, FundingRateEventReader
+from blankly.data.data_reader import PriceReader, TickReader, DataReader, FundingRateEventReader
 
 
 def to_string_key(separated_list):
@@ -608,8 +609,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                                  int, typing.Any]]]:
 
         # This is done so that only traded assets are evaluated.
-        true_available = {}
-        true_account = {}
+        true_available: dict = {}
+        true_account: dict = {}
         for i in interface.traded_assets:
             # Grab the account status
             true_account[i] = interface.get_account(i)
@@ -996,11 +997,11 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         except ZeroDivisionError as e_:
             metrics_indicators['Cumulative Returns (%)'] = f'failed: {e_}'
 
-        def attempt(math_callable: typing.Callable, dict_of_dataframes: dict, kwargs: dict = None):
+        def attempt(math_callable: typing.Callable, dict_of_dataframes: dict, kwargs_: dict = None):
             try:
-                if kwargs is None:
-                    kwargs = {}
-                result = math_callable(dict_of_dataframes, **kwargs)
+                if kwargs_ is None:
+                    kwargs_ = {}
+                result = math_callable(dict_of_dataframes, **kwargs_)
                 if result == np.NAN:
                     result = None
                 return result
