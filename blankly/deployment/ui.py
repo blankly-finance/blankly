@@ -28,7 +28,7 @@ STYLE = questionary.Style(
 )
 questionary.constants.DEFAULT_STYLE = STYLE
 
-from questionary import confirm, text, select
+from questionary import confirm, text, select, path
 
 
 def fprint(text, **kwargs):
