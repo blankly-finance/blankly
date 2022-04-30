@@ -25,6 +25,8 @@ import blankly.utils.utils as utils
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
+from blankly.exchanges.orders.stop_loss import StopLossOrder
+from blankly.exchanges.orders.take_profit import TakeProfitOrder
 from blankly.utils.exceptions import APIException, InvalidOrder
 
 
@@ -311,6 +313,148 @@ class KucoinInterface(ExchangeInterface):
             response_details["status"] = 'done'
         response_details = utils.isolate_specific(needed, response_details)
         return LimitOrder(order, response_details, self)
+
+    @utils.order_protection
+    def stop_loss_order(self, symbol, price, size) -> StopLossOrder:
+        """
+            Used for take profit order
+            Args:
+                symbol: currency to buy
+                price: price to set limit order
+                size: amount of currency (like BTC)
+        """
+        needed = self.needed['stop_loss']
+
+        side = 'sell'
+        order = {
+            'symbol': symbol,
+            'side': side,
+            'size': size,
+            'price': price,
+            'type': 'market',
+        }
+        response = self._trade.create_market_stop_order(symbol, side, price, size, stop='loss')
+        response = self.__correct_api_call(response)
+        if "msg" in response:
+            raise InvalidOrder("Invalid Order: " + response["msg"])
+
+        response_details = self._trade.get_order_details(response['orderId'])
+        response_details = self.__correct_api_call(response_details)
+        """
+               {
+                   "id": "5c35c02703aa673ceec2a168", //
+                   "symbol": "BTC-USDT", //
+                   "opType": "DEAL",
+                   "type": "limit", //
+                   "side": "buy", //
+                   "price": "10",
+                   "size": "2", //
+                   "funds": "0",
+                   "dealFunds": "0.166",
+                   "dealSize": "2",
+                   "fee": "0",
+                   "feeCurrency": "USDT",
+                   "stp": "",
+                   "stop": "",
+                   "stopTriggered": false,
+                   "stopPrice": "0",
+                   "timeInForce": "GTC", //
+                   "postOnly": false,
+                   "hidden": false,
+                   "iceberg": false,
+                   "visibleSize": "0",
+                   "cancelAfter": 0,
+                   "channel": "IOS",
+                   "clientOid": "",
+                   "remark": "",
+                   "tags": "",
+                   "isActive": false, //
+                   "cancelExist": false,
+                   "createdAt": 1547026471000, //
+                   "tradeType": "TRADE"
+               }
+               """
+
+        response_details["created_at"] = response_details.pop('createdAt')
+        response_details["time_in_force"] = response_details.pop('timeInForce')
+        response_details["status"] = response_details.pop('isActive')
+        if response_details["status"]:
+            response_details["status"] = 'pending'
+        else:
+            response_details["status"] = 'done'
+        response_details = utils.isolate_specific(needed, response_details)
+        return StopLossOrder(order, response_details, self)
+
+    @utils.order_protection
+    def take_profit_order(self, symbol, price, size) -> TakeProfitOrder:
+        """
+            Used for take profit order
+            Args:
+                symbol: currency to buy
+                price: price to set limit order
+                size: amount of currency (like BTC)
+        """
+        needed = self.needed['take_profit']
+
+        side = 'sell'
+        order = {
+            'symbol': symbol,
+            'side': side,
+            'size': size,
+            'price': price,
+            'type': 'market',
+        }
+        response = self._trade.create_market_stop_order(symbol, side, price, size, stop='entry')
+        response = self.__correct_api_call(response)
+        if "msg" in response:
+            raise InvalidOrder("Invalid Order: " + response["msg"])
+
+        response_details = self._trade.get_order_details(response['orderId'])
+        response_details = self.__correct_api_call(response_details)
+        """
+               {
+                   "id": "5c35c02703aa673ceec2a168", //
+                   "symbol": "BTC-USDT", //
+                   "opType": "DEAL",
+                   "type": "limit", //
+                   "side": "buy", //
+                   "price": "10",
+                   "size": "2", //
+                   "funds": "0",
+                   "dealFunds": "0.166",
+                   "dealSize": "2",
+                   "fee": "0",
+                   "feeCurrency": "USDT",
+                   "stp": "",
+                   "stop": "",
+                   "stopTriggered": false,
+                   "stopPrice": "0",
+                   "timeInForce": "GTC", //
+                   "postOnly": false,
+                   "hidden": false,
+                   "iceberg": false,
+                   "visibleSize": "0",
+                   "cancelAfter": 0,
+                   "channel": "IOS",
+                   "clientOid": "",
+                   "remark": "",
+                   "tags": "",
+                   "isActive": false, //
+                   "cancelExist": false,
+                   "createdAt": 1547026471000, //
+                   "tradeType": "TRADE"
+               }
+               """
+
+        response_details["created_at"] = response_details.pop('createdAt')
+        response_details["time_in_force"] = response_details.pop('timeInForce')
+        response_details["status"] = response_details.pop('isActive')
+        if response_details["status"]:
+            response_details["status"] = 'pending'
+        else:
+            response_details["status"] = 'done'
+        response_details = utils.isolate_specific(needed, response_details)
+        return TakeProfitOrder(order, response_details, self)
 
     def cancel_order(self, symbol, order_id) -> dict:
         """

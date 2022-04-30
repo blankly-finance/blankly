@@ -73,6 +73,30 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 ["type", str],
                 ["side", str]
             ],
+            'take_profit': [
+                ["symbol", str],
+                ["id", str],
+                ["created_at", float],
+                ["stop_price", float],
+                ["stop", str],
+                ["size", float],
+                ["status", str],
+                ["time_in_force", str],
+                ["type", str],
+                ["side", str]
+            ],
+            'stop_loss': [
+                ["symbol", str],
+                ["id", str],
+                ["created_at", float],
+                ["stop_price", float],
+                ["stop", str],
+                ["size", float],
+                ["status", str],
+                ["time_in_force", str],
+                ["type", str],
+                ["side", str]
+            ],
             'stop_limit': [
                 ["symbol", str],
                 ["id", str],

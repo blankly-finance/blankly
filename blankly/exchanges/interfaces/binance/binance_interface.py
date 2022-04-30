@@ -26,6 +26,8 @@ import blankly.utils.utils as utils
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
+from blankly.exchanges.orders.stop_loss import StopLossOrder
+from blankly.exchanges.orders.take_profit import TakeProfitOrder
 
 
 class BinanceInterface(ExchangeInterface):
@@ -402,6 +404,140 @@ class BinanceInterface(ExchangeInterface):
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
         return LimitOrder(order, response, self)
+
+    @utils.order_protection
+    def take_profit_order(self, symbol, price, size) -> TakeProfitOrder:
+        """
+        Used for sending take profit orders
+        Args:
+            symbol: currency to sell
+            price: price to sell at
+            size: amount of currency (like BTC)
+        """
+        needed = self.needed['take_profit']
+        """Send in a new take-profit order
+
+        Any order with an icebergQty MUST have timeInForce set to GTC.
+
+        :param symbol: required
+        :type symbol: str
+        :param side: required
+        :type side: str
+        :param quantity: required
+        :type quantity: decimal
+        :param price: required
+        :type price: str
+        :param timeInForce: default Good till cancelled
+        :type timeInForce: str
+        :param newClientOrderId: A unique id for the order. Automatically generated if not sent.
+        :type newClientOrderId: str
+        :param icebergQty: Used with LIMIT, STOP_LOSS_LIMIT, and TAKE_PROFIT_LIMIT to create an iceberg order.
+        :type icebergQty: decimal
+        :param newOrderRespType: Set the response JSON. ACK, RESULT, or FULL; default: RESULT.
+        :type newOrderRespType: str
+        :param recvWindow: the number of milliseconds the request is valid for
+        :type recvWindow: int
+
+        :returns: API response
+
+        See order endpoint for full response options
+
+        :raises: BinanceRequestException, BinanceAPIException, BinanceOrderException, BinanceOrderMinAmountException,
+        BinanceOrderMinPriceException, BinanceOrderMinTotalException,
+        BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
+
+        """
+        side = 'sell'
+        type = 'TAKE_PROFIT'
+        order = {
+            'size': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': type
+        }
+        modified_symbol = utils.to_exchange_symbol(symbol, 'binance')
+        response = self.calls.create_order(symbol=modified_symbol, side=side, stopPrice=price, quantity=size, type=type)
+        renames = [
+            ["orderId", "id"],
+            ["transactTime", "created_at"],
+            ["origQty", "size"],
+            ["timeInForce", "time_in_force"],
+        ]
+        response['side'] = response['side'].lower()
+        response['type'] = response['type'].lower()
+        response['status'] = super().homogenize_order_status('binance', response['status'].lower())
+        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance')
+        response = utils.rename_to(renames, response)
+        response = utils.isolate_specific(needed, response)
+        return TakeProfitOrder(order, response, self)
+
+    @utils.order_protection
+    def stop_loss_order(self, symbol, price, size) -> StopLossOrder:
+        """
+        Used for sending stop loss orders
+        Args:
+            symbol: currency to sell
+            price: price to sell at
+            size: amount of currency (like BTC)
+        """
+        needed = self.needed['stop_loss']
+        """Send in a new stop-loss order
+
+        Any order with an icebergQty MUST have timeInForce set to GTC.
+
+        :param symbol: required
+        :type symbol: str
+        :param side: required
+        :type side: str
+        :param quantity: required
+        :type quantity: decimal
+        :param price: required
+        :type price: str
+        :param timeInForce: default Good till cancelled
+        :type timeInForce: str
+        :param newClientOrderId: A unique id for the order. Automatically generated if not sent.
+        :type newClientOrderId: str
+        :param icebergQty: Used with LIMIT, STOP_LOSS_LIMIT, and TAKE_PROFIT_LIMIT to create an iceberg order.
+        :type icebergQty: decimal
+        :param newOrderRespType: Set the response JSON. ACK, RESULT, or FULL; default: RESULT.
+        :type newOrderRespType: str
+        :param recvWindow: the number of milliseconds the request is valid for
+        :type recvWindow: int
+
+        :returns: API response
+
+        See order endpoint for full response options
+
+        :raises: BinanceRequestException, BinanceAPIException, BinanceOrderException, BinanceOrderMinAmountException,
+        BinanceOrderMinPriceException, BinanceOrderMinTotalException,
+        BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
+
+        """
+        side = 'sell'
+        type = 'STOP_LOSS'
+        order = {
+            'size': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': type
+        }
+        modified_symbol = utils.to_exchange_symbol(symbol, 'binance')
+        response = self.calls.create_order(symbol=modified_symbol, side=side, stopPrice=price, quantity=size, type=type)
+        renames = [
+            ["orderId", "id"],
+            ["transactTime", "created_at"],
+            ["origQty", "size"],
+            ["timeInForce", "time_in_force"],
+        ]
+        response['side'] = response['side'].lower()
+        response['type'] = response['type'].lower()
+        response['status'] = super().homogenize_order_status('binance', response['status'].lower())
+        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance')
+        response = utils.rename_to(renames, response)
+        response = utils.isolate_specific(needed, response)
+        return StopLossOrder(order, response, self)
 
     def cancel_order(self, symbol, order_id) -> dict:
         """Cancel an active order. Either orderId or origClientOrderId must be sent.
