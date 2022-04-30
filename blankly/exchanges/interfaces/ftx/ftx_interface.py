@@ -207,7 +207,10 @@ class FTXInterface(ExchangeInterface):
             size: desired amount of base asset to use
         """
         needed = self.needed['market_order']
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
 
+        # TODO pretty sure this needs to convert the symbol to an 'FTX' symbol before sending it off to the api
         response = self.get_calls().place_order(symbol, side, None, size, order_type="market")
 
         response["symbol"] = utils.to_blankly_symbol(response.pop("market"), 'ftx')
@@ -279,7 +282,8 @@ class FTXInterface(ExchangeInterface):
         """
         needed = self.needed['take_profit']
         response = self.get_calls().place_order(symbol, side, price, size, order_type="limit")
-
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         order = {
             'size': size,
             'side': side,

@@ -186,6 +186,8 @@ class KucoinInterface(ExchangeInterface):
             "orderId": "5bd6e9286d99522a52e458de"
         }
         """
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         order = {
             'symbol': symbol,
             'side': side,
@@ -251,6 +253,8 @@ class KucoinInterface(ExchangeInterface):
         """
         needed = self.needed['limit_order']
 
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         order = {
             'symbol': symbol,
             'side': side,

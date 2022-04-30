@@ -212,6 +212,9 @@ class OandaInterface(ExchangeInterface):
     def market_order(self, symbol: str, side: str, size: float) -> MarketOrder:
         symbol = self.__convert_blankly_to_oanda(symbol)
 
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
+
         # Make sure that default trunc has been established - init may have been skipped
         if self.default_trunc is None:
             self.init_exchange()
