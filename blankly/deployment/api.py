@@ -189,6 +189,9 @@ class API:
                        for model in self.list_models(team['id'])]
         return models
 
+    def get_starter_models(self):
+        return self.__request('get', 'model/starter-models')
+
     def list_teams(self):
         return self.__request('get', 'project/teams')
 

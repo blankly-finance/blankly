@@ -1,21 +1,3 @@
-"""
-    Futures RSI Example.
-    Copyright (C) 2022 Matias Kotlik
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
-
 import blankly
 from blankly import Side
 from blankly.exchanges.interfaces.binance_futures.binance_futures import BinanceFutures
@@ -24,36 +6,19 @@ from blankly.futures import FuturesStrategyState, FTXFutures, FuturesStrategy, M
 
 def price_event(price, symbol, state: FuturesStrategyState):
     state.variables['history'].append(price)
-
-    rsi = blankly.indicators.rsi(state.variables['history'])
-
     position = state.interface.get_position('BTC-USDT')
     position_size = position['size'] if position else 0
-
     precision = state.variables['precision']
-
-    if rsi[-1] < 30:
-        # rsi < 30 indicates the asset is undervalued or will rise in price
-        # we want to go long.
-        side = Side.BUY
-    elif rsi[-1] > 70:
-        # rsi < 70 indicates the asset is overvalued or will drop in price
-        # we want to short the asset.
-        side = Side.SELL
-    else:
-        close_position(symbol, state)
-        return
-
-    if (position_size != 0) and (side == Side.BUY) == (position_size > 0):
-        return
 
     order_size = (state.interface.cash / price) * 0.99
     order_size = blankly.trunc(order_size, precision)
 
-    if order_size <= 0:
-        return
-
-    state.interface.market_order(symbol, side=side, size=order_size)
+    if not state.variables['order_id']:
+        state.variables['order_id'] = state.interface.limit_order(symbol, side=Side.BUY, price=37000,
+                                                                  size=order_size).id
+    elif not state.variables['canceled']:
+        state.interface.cancel_order(symbol, state.variables['order_id'])
+        state.variables['canceled'] = True
 
 
 def close_position(symbol, state: FuturesStrategyState):
@@ -78,13 +43,21 @@ def init(symbol, state: FuturesStrategyState):
 
     # Set initial leverage and margin type
     state.interface.set_leverage(1, symbol)
-    state.interface.set_margin_type(symbol, MarginType.CROSSED)
+
+    state.interface.set_margin_type(symbol, MarginType.ISOLATED)
 
     state.variables['history'] = state.interface.history(
         symbol, to=150, return_as='deque',
         resolution=state.resolution)['close']
 
     state.variables['precision'] = state.interface.get_products(symbol)['size_precision']
+    state.variables['order_id'] = None
+    state.variables['canceled'] = False
+
+
+def teardown(symbol, state):
+    close_position(symbol, state)
+
 
 if __name__ == "__main__":
     exchange = BinanceFutures(keys_path="./tests/config/keys.json",
@@ -94,7 +67,7 @@ if __name__ == "__main__":
     strategy = FuturesStrategy(exchange)
     strategy.add_price_event(price_event,
                              init=init,
-                             teardown=close_position,
+                             teardown=teardown,
                              symbol='BTC-USDT',
                              resolution='1m')
 

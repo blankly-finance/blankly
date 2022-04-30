@@ -116,6 +116,34 @@ class ABCExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
+    def take_profit_order(self,
+                    symbol: str,
+                    price: float,
+                    size: float) -> LimitOrder:
+        """
+        Take profit order
+        Args:
+            symbol: asset to buy
+            price: price to sell at
+            size: amount of asset (like BTC)
+        """
+        pass
+
+    @abc.abstractmethod
+    def stop_loss_order(self,
+                  symbol: str,
+                  price: float,
+                  size: float) -> LimitOrder:
+        """
+        Stop loss order
+        Args:
+            symbol: asset to buy
+            price: price to sell at
+            size: amount of asset (like BTC)
+        """
+        pass
+
+    @abc.abstractmethod
     def cancel_order(self,
                      symbol: str,
                      order_id: str) -> dict:

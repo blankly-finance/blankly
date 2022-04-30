@@ -6,6 +6,7 @@ from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.interfaces.okx.okx_api import MarketAPI, AccountAPI, TradeAPI, ConvertAPI, FundingAPI, PublicAPI
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
+from blankly.exchanges.orders.take_profit import TakeProfitOrder
 from blankly.utils.exceptions import APIException, InvalidOrder
 
 
@@ -47,7 +48,6 @@ class OkxInterface(ExchangeInterface):
             products['data'][i] = utils.isolate_specific(needed, products['data'][i])
         return products['data']
 
-
     def get_account(self, symbol=None) -> utils.AttributeDict:
         """
            Get all currencies in an account, or sort by symbol
@@ -61,7 +61,7 @@ class OkxInterface(ExchangeInterface):
         accounts = self._account.get_account()
 
         parsed_dictionary = utils.AttributeDict({})
-        #We have to sort through it if the accounts are none
+        # We have to sort through it if the accounts are none
         if symbol is not None:
             accounts_specific = self._account.get_account(symbol)
             if accounts_specific['code'] == 51000 or accounts_specific['code'] == 51001:
@@ -69,7 +69,8 @@ class OkxInterface(ExchangeInterface):
             for i in accounts_specific['data']:
                 parsed_value = utils.isolate_specific(needed, i)
                 dictionary = utils.AttributeDict({
-                    'available': float(parsed_value['exchange_specific']['details'][0]['availBal']), # accounts_specific['data'][0]['details'][0]['availBal'],
+                    'available': float(parsed_value['exchange_specific']['details'][0]['availBal']),
+                    # accounts_specific['data'][0]['details'][0]['availBal'],
                     'hold': float(parsed_value['exchange_specific']['details'][0]['frozenBal'])
                 })
                 return dictionary
@@ -101,6 +102,8 @@ class OkxInterface(ExchangeInterface):
                 "error_code": "0"
             }
         """
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         order = {
             'symbol': symbol,
             'size': size,
@@ -121,6 +124,85 @@ class OkxInterface(ExchangeInterface):
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
 
+    @utils.order_protection
+    def stop_loss_order(self, symbol, price, size) -> TakeProfitOrder:
+        """
+           Used for stop-loss orders
+           Args:
+               symbol: currency to buy
+               price: price to set limit order
+               size: amount of currency (like BTC)
+        """
+        needed = self.needed['stop_loss']
+
+        side = 'sell'
+        order = {
+            'symbol': symbol,
+            'side': side,
+            'size': size,
+            'price': price,
+            'type': 'conditional',
+        }
+
+        response = self._trade.place_algo_order(symbol, 'cash', side, 'conditional', sz=size, slTriggerPx=price,
+                                                slOrdPx=-1)
+        if len(response['data'][0]['sMsg']) != 0:
+            raise InvalidOrder("Invalid Order: " + response['data'][0]["sMsg"])
+
+        response_details = self._trade.get_orders(symbol, ordId=response['data'][0]['ordId'])
+
+        response_details["created_at"] = response_details['data'][0]['cTime']
+        response_details["id"] = response_details['data'][0]['ordId']
+        response_details["status"] = response_details['data'][0]['state']
+        response_details["symbol"] = response_details['data'][0]['instId']
+        response_details["size"] = response_details['data'][0]['sz']
+        response_details["side"] = response_details['data'][0]['side']
+        response_details["price"] = response_details['data'][0]['px']
+        response_details["type"] = response_details['data'][0]['ordType']
+        response_details["time_in_force"] = 'GTC'
+
+        response_details = utils.isolate_specific(needed, response_details)
+        return TakeProfitOrder(order, response_details, self)
+
+    @utils.order_protection
+    def take_profit_order(self, symbol, price, size) -> TakeProfitOrder:
+        """
+           Used for take-profit orders
+           Args:
+               symbol: currency to buy
+               price: price to set limit order
+               size: amount of currency (like BTC)
+        """
+        needed = self.needed['take_profit']
+
+        side = 'sell'
+        order = {
+            'symbol': symbol,
+            'side': side,
+            'size': size,
+            'price': price,
+            'type': 'conditional',
+        }
+
+        response = self._trade.place_algo_order(symbol, 'cash', side, 'conditional', sz=size, tpTriggerPx=price,
+                                                tpOrdPx=-1)
+        if len(response['data'][0]['sMsg']) != 0:
+            raise InvalidOrder("Invalid Order: " + response['data'][0]["sMsg"])
+
+        response_details = self._trade.get_orders(symbol, ordId=response['data'][0]['ordId'])
+
+        response_details["created_at"] = response_details['data'][0]['cTime']
+        response_details["id"] = response_details['data'][0]['ordId']
+        response_details["status"] = response_details['data'][0]['state']
+        response_details["symbol"] = response_details['data'][0]['instId']
+        response_details["size"] = response_details['data'][0]['sz']
+        response_details["side"] = response_details['data'][0]['side']
+        response_details["price"] = response_details['data'][0]['px']
+        response_details["type"] = response_details['data'][0]['ordType']
+        response_details["time_in_force"] = 'GTC'
+
+        response_details = utils.isolate_specific(needed, response_details)
+        return TakeProfitOrder(order, response_details, self)
 
     @utils.order_protection
     def limit_order(self, symbol, side, price, size) -> LimitOrder:
@@ -133,7 +215,10 @@ class OkxInterface(ExchangeInterface):
                size: amount of currency (like BTC) for the limit to be valued
         """
         needed = self.needed['limit_order']
-
+        if self.should_auto_trunc:
+            result = utils.trunc(size, self.get_asset_precision(symbol))
+            if result != 0:
+                size = result
         order = {
             'symbol': symbol,
             'side': side,
@@ -292,7 +377,8 @@ class OkxInterface(ExchangeInterface):
         init_epoch_start = int(epoch_start * 1000)
         init_epoch_stop = int(epoch_stop * 1000)
 
-        accepted_grans = [60, 180, 300, 1800, 3600, 7200, 14400, 21600, 43200, 86400, 604800, 2629746, 7889238, 15778476, 31556952]
+        accepted_grans = [60, 180, 300, 1800, 3600, 7200, 14400, 21600, 43200, 86400, 604800, 2629746, 7889238,
+                          15778476, 31556952]
 
         if resolution not in accepted_grans:
             utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
@@ -398,5 +484,3 @@ class OkxInterface(ExchangeInterface):
         if len(response['msg']) != 0:
             raise APIException("Error: " + response['msg'])
         return float(response['data'][0]['idxPx'])
-
-

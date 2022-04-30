@@ -16,6 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import time
+from operator import itemgetter
 from typing import Optional
 
 import binance.exceptions
@@ -25,9 +26,9 @@ try:
 except ImportError:  # emerson is "too cool" for py3.8
     from functools import lru_cache
 
+
     def cached_property(func):
         return property(lru_cache(maxsize=None)(func))
-
 
 from datetime import datetime as dt
 import pandas as pd
@@ -41,16 +42,16 @@ from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExcha
 from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 
 BINANCE_FUTURES_FEES = [
-    (0.020, 0.040),
-    (0.016, 0.040),
-    (0.014, 0.035),
-    (0.012, 0.032),
-    (0.010, 0.030),
-    (0.008, 0.027),
-    (0.006, 0.025),
-    (0.004, 0.022),
-    (0.002, 0.020),
-    (0.000, 0.017),
+    (0.00020, 0.00040),
+    (0.00016, 0.00040),
+    (0.00014, 0.00035),
+    (0.00012, 0.00032),
+    (0.00010, 0.00030),
+    (0.00008, 0.00027),
+    (0.00006, 0.00025),
+    (0.00004, 0.00022),
+    (0.00002, 0.00020),
+    (0.00000, 0.00017),
 ]
 
 
@@ -87,8 +88,8 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         try:
             # force oneway mode
             self.calls.futures_change_position_mode(dualSidePosition=False)
-        except binance.error.ClientError as e:
-            if e.error_code != -4059:  # re raise anything other than "already set"
+        except binance.exceptions.BinanceAPIException as e:
+            if e.code != -4059:  # re raise anything other than "already set"
                 raise e
 
     def set_hedge_mode(self, hedge_mode: HedgeMode):
@@ -113,7 +114,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                 symbol=symbol)[0]['leverage'])
 
     @utils.order_protection
-    def set_leverage(self, leverage: int, symbol: str = None):
+    def set_leverage(self, leverage: float, symbol: str = None):
         if not symbol:
             raise Exception(
                 'Binance Futures does not support account wide leverage. Use interface.set_leverage(leverage, '
@@ -168,7 +169,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             if '_' in prod['symbol']:
                 continue  # don't support expiring contracts
             symbol = prod['baseAsset'] + '-' + prod['quoteAsset']
-            products[symbol] = utils.AttributeDict({
+            products[symbol] = {
                 'symbol': symbol,
                 'base_asset': prod['baseAsset'],
                 'quote_asset': prod['quoteAsset'],
@@ -176,28 +177,29 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
                 'price_precision': int(prod['pricePrecision']),
                 'size_precision': int(prod['quantityPrecision']),
                 'exchange_specific': prod
-            })
+            }
 
         if filter:
             return products[filter]
         return products
 
-    def get_account(self, filter=None) -> utils.AttributeDict:
+    def get_account(self, filter=None) -> dict:
         res = self.calls.futures_account()
 
-        accounts = utils.AttributeDict()
+        accounts = {}
         for asset in res['assets']:
             symbol = asset['asset']
-            accounts[symbol] = utils.AttributeDict({
+            accounts[symbol] = {
                 'available': float(asset['availableBalance']),
+                'hold': 0.0,  # TODO
                 'exchange_specific': asset,
-            })
+            }
 
         if filter:
             return accounts[filter]
         return accounts
 
-    def get_positions(self, filter: str = None) -> Optional[dict]:
+    def get_position(self, filter: str = None) -> Optional[dict]:
         account = self.calls.futures_account()
 
         positions = {}
@@ -209,21 +211,20 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             if size == 0:
                 continue  # don't show empty positions
             symbol = self.to_blankly_symbol(symbol)
+            base, quote = symbol.split('-')
             margin = MarginType.ISOLATED \
                 if position['isolated'] else MarginType.CROSSED
-            positions[symbol] = utils.AttributeDict({
+            positions[symbol] = {
                 'symbol': symbol,
-                'base_asset': utils.get_base_asset(symbol),
-                'quote_asset': utils.get_quote_asset(symbol),
+                'base_asset': base,
+                'quote_asset': quote,
                 'size': size,
-                'position': PositionMode(position['positionSide'].lower()),
-                'entry_price': float(position['entryPrice']),
-                'contract_type': ContractType.PERPETUAL,
                 'leverage': float(position['leverage']),
-                'margin_type': margin,
-                'unrealized_pnl': float(position['unrealizedProfit']),
+                'margin_type': MarginType.ISOLATED if position.get('isolated', False) else MarginType.CROSSED,
+                'position': PositionMode(position['positionSide'].lower()),
+                'contract_type': ContractType.PERPETUAL,
                 'exchange_specific': position
-            })
+            }
 
         if filter:
             return positions.get(filter, None)
@@ -304,7 +305,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
 
         return self.parse_order_response(response)
 
-    def take_profit(
+    def take_profit_order(
             self,
             symbol: str,
             side: Side,
@@ -328,7 +329,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         return self.parse_order_response(response)
 
     @utils.order_protection
-    def stop_loss(
+    def stop_loss_order(
             self,
             symbol: str,
             side: Side,
@@ -375,14 +376,20 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         symbol = self.to_exchange_symbol(symbol)
         return float(self.calls.futures_mark_price(symbol=symbol)['markPrice'])
 
-    def get_fees(self) -> utils.AttributeDict:
+    def get_fees(self) -> dict:
         # https://www.binance.com/en/blog/futures/trade-crypto-futures-how-much-does-it-cost-421499824684902239
         tier = int(self.calls.futures_account()['feeTier'])
         maker, taker = BINANCE_FUTURES_FEES[tier]
-        return utils.AttributeDict({'maker': maker, 'taker': taker})
+        return {'maker': maker, 'taker': taker}
+
+    def get_maker_fee(self) -> float:
+        return self.get_fees()['maker']
+
+    def get_taker_fee(self) -> float:
+        return self.get_fees()['taker']
 
     @property
-    def account(self) -> utils.AttributeDict:
+    def account(self) -> dict:
         return self.get_account()
 
     @property
@@ -491,39 +498,50 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
 
     def get_funding_rate_history(self, symbol: str, epoch_start: int,
                                  epoch_stop: int) -> list:
-        symbol = self.to_exchange_symbol(symbol)
-        limit = 1000
+        if self.calls.testnet:
+            # testnet api is incredibly stupid and has cost me several hours of my life
+            resolution = self.get_funding_rate_resolution()
+            start = int(epoch_start)
+            end = int(epoch_stop)
+            start = start - (start % resolution) + resolution
+            end = end - (end % resolution) + resolution
+            return [{'rate': 0.0001, 'time': t}
+                    for t in range(start, end + 1, resolution)]
+
         history = []
-        window_start = epoch_start
-        window_end = epoch_stop
+        window = int(epoch_start)
 
-        # UNCOMMENT FOR WALRUS
-        # while response := self.calls.futures_funding_rate(
-        #         symbol=symbol,
-        #         startTime=window_start * 1000,
-        #         endTime=window_end * 1000,
-        #         limit=limit):
-
-        # WARNING! non-walrus code ahead:
         response = True
         while response:
             response = self.calls.futures_funding_rate(
                 symbol=symbol,
-                startTime=window_start * 1000,
-                endTime=window_end * 1000,
+                startTime=window,
                 limit=limit)
             # very stinky ^^
 
-            history.extend({
-                'rate': float(e['fundingRate']),
-                'time': e['fundingTime'] // 1000
-            } for e in response)
+            history.extend({'rate': float(e['fundingRate']),
+                            'time': e['fundingTime'] // 1000}
+                           for e in response)
 
             if history:
-                window_start = history[-1]['time'] + 1
-                window_end = min(dt.now().timestamp(), epoch_stop)
-
+                # the (testnet) api is stupid and sometimes gives us times we don't want
+                if history[0]['time'] < window:
+                    break
+                window = history[-1]['time'] + 1
+                if epoch_stop < window:
+                    break
+        history.sort(key=itemgetter('time'))
+        while history and epoch_stop < history[-1]['time']:
+            history.pop()
+        while history and history[0]['time'] < epoch_start:
+            history.pop(0)
         return history
 
     def get_funding_rate_resolution(self) -> int:
         return time_builder.build_hour() * 8  # 8 hours
+
+    def get_funding_rate(self, symbol: str):
+        response = self.calls.futures_mark_price(symbol=symbol)
+        return response['nextFundingTime'], response['lastFundingRate']
+
+

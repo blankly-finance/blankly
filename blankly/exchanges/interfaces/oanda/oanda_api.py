@@ -242,6 +242,42 @@ class OandaAPI:
 
         return self._send_request('post', self.__api_url + endpoint, data=data)
 
+    def place_stop_loss(self, instrument: str, units: float, price: float, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
+        assert isinstance(accountid, str)
+        endpoint = f'/v3/accounts/{accountid}/orders'
+
+        order_request = {
+            "type": "STOP",
+            "instrument": instrument,
+            "units": units,
+            "price": price,
+            "timeInForce": "GTC"
+        }
+        data = OrderedDict()
+        data["order"] = order_request
+
+        return self._send_request('post', self.__api_url + endpoint, data=data)
+
+    def place_take_profit(self, instrument: str, units: float, price: float, accountid: str = None):
+        if accountid is None:
+            accountid = self.default_account
+        assert isinstance(accountid, str)
+        endpoint = f'/v3/accounts/{accountid}/orders'
+
+        order_request = {
+            "type": "TAKE_PROFIT",
+            "instrument": instrument,
+            "units": units,
+            "price": price,
+            "timeInForce": "GTC"
+        }
+        data = OrderedDict()
+        data["order"] = order_request
+
+        return self._send_request('post', self.__api_url + endpoint, data=data)
+
     """
     Trade Endpoints
     """

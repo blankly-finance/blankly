@@ -29,6 +29,8 @@ from dateutil import parser
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
+from blankly.exchanges.orders.stop_loss import StopLossOrder
+from blankly.exchanges.orders.take_profit import TakeProfitOrder
 from blankly.utils import utils as utils
 from blankly.utils.exceptions import APIException
 from blankly.utils.time_builder import build_minute, time_interval_to_seconds, number_interval_to_string
@@ -232,6 +234,68 @@ class AlpacaInterface(ExchangeInterface):
         response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
         return MarketOrder(order, response, self)
+
+    @utils.order_protection
+    def take_profit_order(self, symbol: str, price: float, size: float) -> TakeProfitOrder:
+        needed = self.needed['take_profit']
+
+        renames = [
+            ['limit_price', 'price'],
+            ['qty', 'size']
+        ]
+
+        side = 'sell'
+        order = {
+            'quantity': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': 'limit'
+        }
+        response = self.calls.submit_order(symbol,
+                                           side=side,
+                                           type='limit',
+                                           time_in_force='gtc',
+                                           qty=size,
+                                           limit_price=price)
+
+        response = self.__parse_iso(response)
+
+        response = utils.rename_to(renames, response)
+        response = utils.isolate_specific(needed, response)
+        response['time_in_force'] = response['time_in_force'].upper()
+        return TakeProfitOrder(order, response, self)
+
+    @utils.order_protection
+    def stop_loss_order(self, symbol: str, price: float, size: float) -> StopLossOrder:
+        needed = self.needed['stop_loss']
+        side = 'sell'
+
+        renames = [
+            ['limit_price', 'price'],
+            ['qty', 'size']
+        ]
+
+        order = {
+            'quantity': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': 'stop'
+        }
+        response = self.calls.submit_order(symbol,
+                                           side=side,
+                                           type='stop',
+                                           time_in_force='gtc',
+                                           qty=size,
+                                           stop_price=price)
+
+        response = self.__parse_iso(response)
+
+        response = utils.rename_to(renames, response)
+        response = utils.isolate_specific(needed, response)
+        response['time_in_force'] = response['time_in_force'].upper()
+        return StopLossOrder(order, response, self)
 
     @utils.order_protection
     def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:

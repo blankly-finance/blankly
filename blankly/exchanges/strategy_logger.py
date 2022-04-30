@@ -80,7 +80,18 @@ class StrategyLogger(ABCExchangeInterface):
         return self.interface.history(symbol, to=to,
                                       resolution=resolution, start_date=start_date,
                                       end_date=end_date, return_as=return_as)
-    
+
+
+
+
+    # no logging for these on platform yet
+    def take_profit_order(self, symbol: str, price: float, size: float) -> LimitOrder:
+        pass
+
+    # no logging for these on platform yet
+    def stop_loss_order(self, symbol: str, price: float, size: float) -> LimitOrder:
+        pass
+
     def market_order(self, symbol: str, side: str, size: float) -> MarketOrder:
         out = self.interface.market_order(symbol, side, size)
 
@@ -163,6 +174,7 @@ class StrategyLogger(ABCExchangeInterface):
     """
     No logging implemented for these properties
     """
+
     @property
     def account(self) -> AttributeDict:
         """
@@ -183,4 +195,5 @@ class StrategyLogger(ABCExchangeInterface):
         No logging implemented
         """
         return self.interface.cash
-    
+
+

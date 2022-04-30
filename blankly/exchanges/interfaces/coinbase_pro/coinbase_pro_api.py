@@ -621,8 +621,10 @@ class API:
         """
         params = {'product_id': product_id,
                   'side': side,
+                  'stop_price': price,
                   'price': price,
-                  'order_type': 'stop',
+                  'order_type': 'limit',
+                  'stop': 'loss',
                   'size': size,
                   'funds': funds,
                   'client_oid': client_oid,

@@ -27,6 +27,8 @@ from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.interfaces.oanda.oanda_api import OandaAPI
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
+from blankly.exchanges.orders.stop_loss import StopLossOrder
+from blankly.exchanges.orders.take_profit import TakeProfitOrder
 from blankly.utils import utils as utils
 from blankly.utils.exceptions import APIException, InvalidOrder
 
@@ -210,6 +212,9 @@ class OandaInterface(ExchangeInterface):
     def market_order(self, symbol: str, side: str, size: float) -> MarketOrder:
         symbol = self.__convert_blankly_to_oanda(symbol)
 
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
+
         # Make sure that default trunc has been established - init may have been skipped
         if self.default_trunc is None:
             self.init_exchange()
@@ -247,6 +252,86 @@ class OandaInterface(ExchangeInterface):
 
         resp = utils.isolate_specific(needed, resp)
         return MarketOrder(order, resp, self)
+
+    @utils.order_protection
+    def stop_loss_order(self, symbol: str, price: float, size: float) -> StopLossOrder:
+        symbol = self.__convert_blankly_to_oanda(symbol)
+        side = 'sell'
+        if side == "buy":
+            pass
+        elif side == "sell":
+            size *= -1
+        else:
+            raise ValueError("side needs to be either sell or buy")
+
+        resp = self.calls.place_stop_loss(symbol, size, price)
+        needed = self.needed['stop_loss']
+        order = {
+            'size': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': 'limit'
+        }
+
+        try:
+            resp['symbol'] = self.__convert_symbol_to_blankly(resp['orderCreateTransaction']['instrument'])
+        except KeyError as e:
+            if 'orderRejectTransaction' in resp:
+                raise InvalidOrder(resp['orderRejectTransaction']['rejectReason'])
+            else:
+                raise e
+        resp['id'] = resp['orderCreateTransaction']['id']
+        resp['created_at'] = resp['orderCreateTransaction']['time']
+        resp['price'] = price
+        resp['size'] = abs(size)
+        resp['status'] = "active"
+        resp['time_in_force'] = 'GTC'
+        resp['type'] = 'limit'
+        resp['side'] = side
+
+        resp = utils.isolate_specific(needed, resp)
+        return StopLossOrder(order, resp, self)
+
+    @utils.order_protection
+    def take_profit_order(self, symbol: str, price: float, size: float) -> TakeProfitOrder:
+        symbol = self.__convert_blankly_to_oanda(symbol)
+        side = 'sell'
+        if side == "buy":
+            pass
+        elif side == "sell":
+            size *= -1
+        else:
+            raise ValueError("side needs to be either sell or buy")
+
+        resp = self.calls.place_take_profit(symbol, size, price)
+        needed = self.needed['take_profit']
+        order = {
+            'size': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': 'limit'
+        }
+
+        try:
+            resp['symbol'] = self.__convert_symbol_to_blankly(resp['orderCreateTransaction']['instrument'])
+        except KeyError as e:
+            if 'orderRejectTransaction' in resp:
+                raise InvalidOrder(resp['orderRejectTransaction']['rejectReason'])
+            else:
+                raise e
+        resp['id'] = resp['orderCreateTransaction']['id']
+        resp['created_at'] = resp['orderCreateTransaction']['time']
+        resp['price'] = price
+        resp['size'] = abs(size)
+        resp['status'] = "active"
+        resp['time_in_force'] = 'GTC'
+        resp['type'] = 'limit'
+        resp['side'] = side
+
+        resp = utils.isolate_specific(needed, resp)
+        return TakeProfitOrder(order, resp, self)
 
     @utils.order_protection
     def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
