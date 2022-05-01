@@ -93,7 +93,7 @@ class ABCBaseExchangeInterface(abc.ABC):
         if isinstance(to, int):
             point_count = to
         else:
-            point_count = (stop-start)/res_seconds + 1
+            point_count = int((stop-start)/res_seconds + 1)
         # response.index = pd.to_datetime(response['time'], unit='s')
         return self.cast_type(response, return_as, point_count)
 
