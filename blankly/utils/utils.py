@@ -29,7 +29,6 @@ import dateutil.parser as dp
 import numpy as np
 import pandas as pd
 
-from blankly.utils.time_builder import time_interval_to_seconds
 
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
@@ -175,7 +174,7 @@ class __BlanklySettings:
                     user_settings[k] = v
         return user_settings
 
-    def load(self, override_path=None) -> dict:
+    def load(self, override_path=None, override_allow_nonexistent=False) -> dict:
         # Make overrides sticky by changing how the default is set. This is cool because the user can put settings in
         # obscure locations and then continue to load from them
         if override_path is not None:
@@ -185,7 +184,7 @@ class __BlanklySettings:
             try:
                 preferences = load_json_file(self.__default_path)
             except FileNotFoundError:
-                if self.__allow_nonexistent:
+                if self.__allow_nonexistent or override_allow_nonexistent:
                     return self.__default_settings
                     # self.write(self.__default_settings)
                     # # Recursively run this
@@ -208,7 +207,6 @@ class __BlanklySettings:
             f = open(override_path, "w")
         f.write(json.dumps(json_information, indent=2))
 
-
 general_settings = __BlanklySettings('./settings.json', default_general_settings,
                                      "Make sure a settings.json file is placed in the same folder as the project "
                                      "working directory!")
@@ -227,12 +225,12 @@ deployment_settings = __BlanklySettings('./blankly.json', default_deploy_setting
                                         "working directory!", allow_nonexistent=True)
 
 
-def load_user_preferences(override_path=None) -> dict:
-    return general_settings.load(override_path)
+def load_user_preferences(override_path=None, override_allow_nonexistent=False) -> dict:
+    return general_settings.load(override_path, override_allow_nonexistent=override_allow_nonexistent)
 
 
-def load_backtest_preferences(override_path=None) -> dict:
-    return backtest_settings.load(override_path)
+def load_backtest_preferences(override_path=None, override_allow_nonexistent=False) -> dict:
+    return backtest_settings.load(override_path, override_allow_nonexistent=override_allow_nonexistent)
 
 
 def load_deployment_settings() -> dict:

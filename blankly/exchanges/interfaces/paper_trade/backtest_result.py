@@ -17,7 +17,7 @@
 """
 
 from pandas import DataFrame, to_datetime, Timestamp
-from blankly.utils.utils import time_interval_to_seconds as _time_interval_to_seconds, info_print
+from blankly.utils import time_interval_to_seconds as _time_interval_to_seconds, info_print
 
 
 class BacktestResult:

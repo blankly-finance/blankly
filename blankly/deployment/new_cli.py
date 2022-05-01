@@ -279,7 +279,7 @@ def get_model_repr(model: dict) -> str:
 
 
 def generate_settings_json(tld: str):
-    data = load_user_preferences()
+    data = load_user_preferences(override_allow_nonexistent=True)
 
     data['settings']['binance']['binance_tld'] = tld
     data['settings']['ftx']['ftx_tld'] = tld
@@ -323,7 +323,7 @@ def generate_blankly_json(api: Optional[API], model: Optional[dict], model_type:
 
 def generate_backtest_json(exchange: Optional[Exchange]) -> str:
     currency = exchange.currency if exchange else 'USD'
-    data = load_backtest_preferences()
+    data = load_backtest_preferences(override_allow_nonexistent=True)
 
     data['settings']['quote_account_value_in'] = currency
     return json.dumps(data, indent=4)
