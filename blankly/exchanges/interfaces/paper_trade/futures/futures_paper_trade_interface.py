@@ -127,11 +127,11 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
                     reduce_only: bool = False, time_in_force: TimeInForce = None) -> FuturesOrder:
         return self._place_order(OrderType.LIMIT, symbol, side, size, price, position, reduce_only)
 
-    def take_profit(self, symbol: str, side: Side, price: float, size: float,
+    def take_profit_order(self, symbol: str, side: Side, price: float, size: float,
                     position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
         return self._place_order(OrderType.TAKE_PROFIT, symbol, side, size, price, position)
 
-    def stop_loss(self, symbol: str, side: Side, price: float, size: float,
+    def stop_loss_order(self, symbol: str, side: Side, price: float, size: float,
                   position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
         return self._place_order(OrderType.STOP, symbol, side, size, price, position)
 
@@ -428,3 +428,4 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
     @functools.lru_cache(None)
     def get_taker_fee(self) -> float:
         return self.interface.get_taker_fee()
+
