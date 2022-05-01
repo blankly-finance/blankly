@@ -486,7 +486,7 @@ def blankly_key(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Blankly CLI & deployment tool')
+    parser = argparse.ArgumentParser(prog='blankly', description='Blankly CLI & deployment tool')
     subparsers = parser.add_subparsers(required=True)
 
     init_parser = subparsers.add_parser('init', help='Initialize a new model in the current directory')
