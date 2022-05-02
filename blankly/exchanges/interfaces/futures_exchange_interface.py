@@ -20,13 +20,6 @@
 import abc
 from typing import Union, Optional, List
 
-import numpy
-import pandas
-
-from datetime import datetime as dt
-
-from dateutil.parser import parser
-
 import blankly.utils.utils as utils
 from blankly.enums import MarginType, HedgeMode, PositionMode, OrderType, Side, TimeInForce, ContractType
 from blankly.exchanges.interfaces.abc_base_exchange_interface import ABCBaseExchangeInterface
@@ -108,21 +101,21 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
 
     @abc.abstractmethod
     def take_profit_order(self,
-                    symbol: str,
-                    side: Side,
-                    price: float,
-                    size: float,
-                    position: PositionMode = None) -> FuturesOrder:
+                          symbol: str,
+                          side: Side,
+                          price: float,
+                          size: float,
+                          position: PositionMode = None) -> FuturesOrder:
         """Place a take-profit order for a position"""
         pass
 
     @abc.abstractmethod
     def stop_loss_order(self,
-                  symbol: str,
-                  side: Side,
-                  price: float,
-                  size: float,
-                  position: PositionMode = None) -> FuturesOrder:
+                        symbol: str,
+                        side: Side,
+                        price: float,
+                        size: float,
+                        position: PositionMode = None) -> FuturesOrder:
         """Place a stop-loss order for a position"""
         pass
 
@@ -216,3 +209,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
     @abc.abstractmethod
     def get_funding_rate_resolution(self) -> int:
         pass
+
+    @property
+    def should_auto_trunc(self):
+        return self.user_preferences['settings'].get('auto_truncate', False)

@@ -226,11 +226,11 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         return self.parse_order_response(res)
 
     def stop_loss_order(self,
-                  symbol: str,
-                  side: Side,
-                  price: float,
-                  size: float,
-                  position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
+                        symbol: str,
+                        side: Side,
+                        price: float,
+                        size: float,
+                        position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
         symbol = self.to_exchange_symbol(symbol)
         if position != PositionMode.BOTH:
             raise ValueError(
@@ -302,9 +302,9 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         # TODO dedup binance_futures_exchange maybe?
         history = []
         resolution = self.get_funding_rate_resolution()
-        LIMIT = 500
+        limit = 500
         window_start = epoch_start
-        window_end = epoch_start + LIMIT * resolution
+        window_end = epoch_start + limit * resolution
 
         response = True
         while response:
@@ -312,13 +312,13 @@ class FTXFuturesInterface(FuturesExchangeInterface):
                                                     symbol)
 
             history.extend({
-                'rate': float(e['rate']),
-                'time': self.parse_timestamp(e['time'])
-            } for e in response)
+                               'rate': float(e['rate']),
+                               'time': self.parse_timestamp(e['time'])
+                           } for e in response)
 
             if response:
                 window_start = window_end
-                window_end = min(epoch_stop, window_start + LIMIT * resolution)
+                window_end = min(epoch_stop, window_start + limit * resolution)
 
         return sorted(history, key=operator.itemgetter('time'))
 
@@ -336,4 +336,3 @@ class FTXFuturesInterface(FuturesExchangeInterface):
 
     def get_funding_rate(self, symbol: str) -> float:
         raise NotImplementedError
-

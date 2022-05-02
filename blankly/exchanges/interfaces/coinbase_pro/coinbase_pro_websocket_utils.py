@@ -40,11 +40,19 @@ def no_callback(message):
 
 
 def trade(received):
-    line = str(received["time"]) + "," + str(time.time()) + "," + received["price"] + "," + received[
-        "open_24h"] + "," + received["volume_24h"] + "," + received["low_24h"] + "," + received[
-               "high_24h"] + "," + received["volume_30d"] + "," + received["best_bid"] + "," + received[
-               "best_ask"] + "," + received["last_size"] + "\n"
-    return line
+    return ', '.join([
+        received['time'],
+        time.time(),
+        received['price'],
+        received['open_24h'],
+        received['volume_24h'],
+        received['low_24h'],
+        received['high_24h'],
+        received['volume_24h'],
+        received['best_bid'],
+        received['best_ask'],
+        received['last_size'],
+    ]) + '\n'
 
 
 def trade_interface(message):

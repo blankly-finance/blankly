@@ -21,6 +21,8 @@ from typing import Optional
 
 import binance.exceptions
 
+from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterface
+
 try:
     from functools import cached_property
 except ImportError:  # emerson is "too cool" for py3.8
@@ -398,103 +400,8 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
 
     def get_product_history(self, symbol, epoch_start, epoch_stop,
                             resolution) -> pd.DataFrame:
-        resolution = blankly.time_builder.time_interval_to_seconds(resolution)
-
-        epoch_start = int(utils.convert_epochs(epoch_start))
-        epoch_stop = int(utils.convert_epochs(epoch_stop))
-
-        # TODO dedup this from (non-futures) binance interface
-        granularities = {
-            60: "1m",
-            180: "3m",
-            300: "5m",
-            900: "15m",
-            1800: "30m",
-            3600: "1h",
-            7200: "2h",
-            14400: "4h",
-            21600: "6h",
-            28800: "8h",
-            43200: "12h",
-            86400: "1d",
-            259200: "3d",
-            604800: "1w",
-            2592000: "1M"
-        }
-
-        if resolution not in granularities:
-            utils.info_print(
-                "Granularity is not an accepted granularity...rounding to nearest valid value."
-            )
-            resolution = min(granularities,
-                             key=lambda gran: abs(resolution - gran))
-        gran_string = granularities[resolution]
-
-        # Figure out how many points are needed
-        need = int((epoch_stop - epoch_start) / resolution)
-        initial_need = need
-        window_open = epoch_start
-        history = []
-
-        # Convert coin id to binance coin
-        symbol = self.to_exchange_symbol(symbol)
-        while need > 1000:
-            # Close is always 300 points ahead
-            window_close = int(window_open + 1000 * resolution)
-            history = history + self.calls.futures_klines(
-                symbol=symbol,
-                startTime=window_open * 1000,
-                endTime=window_close * 1000,
-                interval=gran_string,
-                limit=1000)
-
-            window_open = window_close
-            need -= 1000
-            time.sleep(.2)
-            utils.update_progress((initial_need - need) / initial_need)
-
-        # Fill the remainder
-        history_block = history + self.calls.futures_klines(
-            symbol=symbol,
-            startTime=window_open * 1000,
-            endTime=epoch_stop * 1000,
-            interval=gran_string,
-            limit=1000)
-
-        data_frame = pd.DataFrame(history_block,
-                                  columns=[
-                                      'time', 'open', 'high', 'low', 'close',
-                                      'volume', 'close time',
-                                      'quote asset volume', 'number of trades',
-                                      'taker buy base asset volume',
-                                      'taker buy quote asset volume', 'ignore'
-                                  ],
-                                  dtype=None)
-        # Clear the ignore column, why is that there binance?
-        del data_frame['ignore']
-
-        # Want them in this order: ['time (epoch)', 'low', 'high', 'open', 'close', 'volume']
-
-        # Time is so big it has to be cast separately for windows
-        data_frame['time'] = data_frame['time'].div(1000).astype(int)
-
-        # Cast dataframe
-        data_frame = data_frame.astype({
-            'open': float,
-            'high': float,
-            'low': float,
-            'close': float,
-            'volume': float,
-            'close time': int,
-            'quote asset volume': float,
-            'number of trades': int,
-            'taker buy base asset volume': float,
-            'taker buy quote asset volume': float
-        })
-
-        # Convert time to seconds
-        return data_frame.reindex(
-            columns=['time', 'low', 'high', 'open', 'close', 'volume'])
+        # reuse impl from SPOT interface, it's the same thing
+        return BinanceInterface._binance_get_product_history(self.calls, symbol, epoch_start, epoch_stop, resolution)
 
     def get_funding_rate_history(self, symbol: str, epoch_start: int,
                                  epoch_stop: int) -> list:
@@ -516,7 +423,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
             response = self.calls.futures_funding_rate(
                 symbol=symbol,
                 startTime=window,
-                limit=limit)
+                limit=1000)
             # very stinky ^^
 
             history.extend({'rate': float(e['fundingRate']),

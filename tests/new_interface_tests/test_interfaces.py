@@ -321,6 +321,7 @@ def test_funding_rate_history(futures_interface: FuturesExchangeInterface,
 def test_taker_fee(futures_interface: FuturesExchangeInterface):
     return futures_interface.get_taker_fee()
 
+
 @homogeneity_testing
 def test_maker_fee(futures_interface: FuturesExchangeInterface):
     return futures_interface.get_maker_fee()

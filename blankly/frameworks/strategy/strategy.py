@@ -225,6 +225,9 @@ class Strategy(StrategyBase):
         self._paper_trade_exchange = blankly.PaperTrade(exchange)
         self.__prices_added = False
 
+    def teardown(self):
+        pass
+
     def backtest(self,
                  to: str = None,
                  initial_values: dict = None,

@@ -163,18 +163,9 @@ class CoinbaseProInterface(ExchangeInterface):
         """
         if self.should_auto_trunc:
             size = utils.trunc(size, self.get_asset_precision(symbol))
-        order = {
-            'size': size,
-            'side': side,
-            'symbol': symbol,
-            'type': 'market'
-        }
+        order = utils.build_order_info(0, side, size, symbol, 'market')
         response = self.calls.place_market_order(symbol, side, size=size)
-        if "message" in response:
-            raise InvalidOrder("Invalid Order: " + response["message"])
-        response["created_at"] = utils.epoch_from_iso8601(response["created_at"])
-        response["symbol"] = response.pop('product_id')
-        response = utils.isolate_specific(needed, response)
+        response = self._fix_response(needed, response)
         return MarketOrder(order, response, self)
 
     @utils.order_protection
@@ -209,20 +200,19 @@ class CoinbaseProInterface(ExchangeInterface):
         """
         if self.should_auto_trunc:
             size = utils.trunc(size, self.get_asset_precision(symbol))
-        order = {
-            'size': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': 'limit'
-        }
+        order = utils.build_order_info(price, side, size, symbol, 'limit')
         response = self.calls.place_limit_order(symbol, side, price, size=size)
+        response = self._fix_response(needed, response)
+        return LimitOrder(order, response, self)
+
+    @staticmethod
+    def _fix_response(needed, response):
         if "message" in response:
             raise InvalidOrder("Invalid Order: " + response["message"])
         response["created_at"] = utils.epoch_from_iso8601(response["created_at"])
         response["symbol"] = response.pop('product_id')
         response = utils.isolate_specific(needed, response)
-        return LimitOrder(order, response, self)
+        return response
 
     @utils.order_protection
     def take_profit_order(self, symbol, price, size) -> TakeProfitOrder:
@@ -254,20 +244,9 @@ class CoinbaseProInterface(ExchangeInterface):
         }
         """
         side = 'sell'
-        order = {
-            'size': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': 'take_profit',
-            'stop': 'entry'
-        }
+        order = utils.build_order_info(price, side, size, symbol, 'take_profit')
         response = self.calls.place_limit_order(symbol, side, price, size=size)
-        if "message" in response:
-            raise InvalidOrder("Invalid Order: " + response["message"])
-        response["created_at"] = utils.epoch_from_iso8601(response["created_at"])
-        response["symbol"] = response.pop('product_id')
-        response = utils.isolate_specific(needed, response)
+        response = self._fix_response(needed, response)
         return TakeProfitOrder(order, response, self)
 
     @utils.order_protection
@@ -300,20 +279,9 @@ class CoinbaseProInterface(ExchangeInterface):
         }
         """
         side = 'sell'
-        order = {
-            'size': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': 'stop_loss',
-            'stop': 'loss'
-        }
+        order = utils.build_order_info(price, side, size, symbol, 'stop_loss')
         response = self.calls.place_stop_order(symbol, side, price=price, size=size)
-        if "message" in response:
-            raise InvalidOrder("Invalid Order: " + response["message"])
-        response["created_at"] = utils.epoch_from_iso8601(response["created_at"])
-        response["symbol"] = response.pop('product_id')
-        response = utils.isolate_specific(needed, response)
+        response = self._fix_response(needed, response)
         return StopLossOrder(order, response, self)
 
     """

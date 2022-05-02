@@ -26,7 +26,7 @@ from blankly.utils.utils import info_print
 
 class Tickers(Websocket):
     def __init__(self, symbol, stream, log=None,
-                 pre_event_callback=None, initially_stopped=False, WEBSOCKET_URL="wss://ws.okx.com:8443/ws/v5/public",
+                 pre_event_callback=None, initially_stopped=False, websocket_url="wss://ws.okx.com:8443/ws/v5/public",
                  **kwargs):
         """
         Create and initialize the ticker
@@ -37,7 +37,7 @@ class Tickers(Websocket):
         """
         self.__logging_callback, self.__interface_callback, log_message = websocket_utils.switch_type(stream)
 
-        super().__init__(symbol, stream, log, log_message, WEBSOCKET_URL, pre_event_callback, kwargs)
+        super().__init__(symbol, stream, log, log_message, websocket_url, pre_event_callback, kwargs)
 
         self.__pre_event_callback_filled = False
 
@@ -81,7 +81,7 @@ class Tickers(Websocket):
         # Manage price events and fire for each manager attached
         if self.stream == "books":
             interface_message = self.__interface_callback(received_dict)
-        else: # self.stream == 'tickers':
+        else:  # self.stream == 'tickers':
             interface_message = self.__interface_callback(received_dict['data'][0])
         self.ticker_feed.append(interface_message)
         self.most_recent_tick = interface_message
@@ -108,8 +108,8 @@ class Tickers(Websocket):
             'args': [{
                 'channel': self.stream,
                 'instId': self.symbol,
-                }]
-            })
+            }]
+        })
         ws.send(request)
 
     def restart_ticker(self):

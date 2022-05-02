@@ -46,7 +46,6 @@ class KucoinInterface(ExchangeInterface):
         self._trade: KucoinAPI.Trade = self.calls['trade']
         self._user: KucoinAPI.User = self.calls['user']
 
-
     def init_exchange(self):
         fees = self.calls['user'].get_base_fee()
         try:
@@ -188,57 +187,10 @@ class KucoinInterface(ExchangeInterface):
         """
         if self.should_auto_trunc:
             size = utils.trunc(size, self.get_asset_precision(symbol))
-        order = {
-            'symbol': symbol,
-            'side': side,
-            'size': size,
-            'type': 'market',
-        }
+        order = utils.build_order_info(0, side, size, symbol, 'market')
 
         response = self._trade.create_market_order(symbol, side, size=size)
-        response = self.__correct_api_call(response)
-        if "msg" in response:
-            raise InvalidOrder("Invalid Order: " + response["msg"])
-
-        response_details = self._trade.get_order_details(response['orderId'])
-        """
-        {
-            "id": "5c35c02703aa673ceec2a168", //
-            "symbol": "BTC-USDT", //
-            "opType": "DEAL",
-            "type": "limit", //
-            "side": "buy", //
-            "price": "10",
-            "size": "2", //
-            "funds": "0",
-            "dealFunds": "0.166",
-            "dealSize": "2",
-            "fee": "0",
-            "feeCurrency": "USDT",
-            "stp": "",
-            "stop": "",
-            "stopTriggered": false,
-            "stopPrice": "0",
-            "timeInForce": "GTC",
-            "postOnly": false,
-            "hidden": false,
-            "iceberg": false,
-            "visibleSize": "0",
-            "cancelAfter": 0,
-            "channel": "IOS",
-            "clientOid": "",
-            "remark": "",
-            "tags": "",
-            "isActive": false, //
-            "cancelExist": false,
-            "createdAt": 1547026471000, //
-            "tradeType": "TRADE"
-        }
-        """
-
-        response_details["created_at"] = response_details.pop('createdAt')
-        response_details["status"] = response_details.pop('isActive')
-        response_details = utils.isolate_specific(needed, response_details)
+        response_details = self._fetch_response_details(needed, response)
         return MarketOrder(order, response_details, self)
 
     @utils.order_protection
@@ -255,64 +207,23 @@ class KucoinInterface(ExchangeInterface):
 
         if self.should_auto_trunc:
             size = utils.trunc(size, self.get_asset_precision(symbol))
-        order = {
-            'symbol': symbol,
-            'side': side,
-            'size': size,
-            'price': price,
-            'type': 'limit',
-        }
+        order = utils.build_order_info(price, side, size, symbol, 'limit')
         response = self._trade.create_limit_order(symbol, side, size, price)
+        response_details = self._fetch_response_details(needed, response)
+        return LimitOrder(order, response_details, self)
+
+    def _fetch_response_details(self, needed, response):
         response = self.__correct_api_call(response)
         if "msg" in response:
             raise InvalidOrder("Invalid Order: " + response["msg"])
-
         response_details = self._trade.get_order_details(response['orderId'])
         response_details = self.__correct_api_call(response_details)
-        """
-               {
-                   "id": "5c35c02703aa673ceec2a168", //
-                   "symbol": "BTC-USDT", //
-                   "opType": "DEAL",
-                   "type": "limit", //
-                   "side": "buy", //
-                   "price": "10",
-                   "size": "2", //
-                   "funds": "0",
-                   "dealFunds": "0.166",
-                   "dealSize": "2",
-                   "fee": "0",
-                   "feeCurrency": "USDT",
-                   "stp": "",
-                   "stop": "",
-                   "stopTriggered": false,
-                   "stopPrice": "0",
-                   "timeInForce": "GTC", //
-                   "postOnly": false,
-                   "hidden": false,
-                   "iceberg": false,
-                   "visibleSize": "0",
-                   "cancelAfter": 0,
-                   "channel": "IOS",
-                   "clientOid": "",
-                   "remark": "",
-                   "tags": "",
-                   "isActive": false, //
-                   "cancelExist": false,
-                   "createdAt": 1547026471000, //
-                   "tradeType": "TRADE"
-               }
-               """
-
         response_details["created_at"] = response_details.pop('createdAt')
-        response_details["time_in_force"] = response_details.pop('timeInForce')
-        response_details["status"] = response_details.pop('isActive')
-        if response_details["status"]:
-            response_details["status"] = 'pending'
-        else:
-            response_details["status"] = 'done'
+        if 'timeInForce' in response_details:
+            response_details["time_in_force"] = response_details.pop('timeInForce')
+        response_details["status"] = 'pending' if response_details.pop('isActive') else 'done'
         response_details = utils.isolate_specific(needed, response_details)
-        return LimitOrder(order, response_details, self)
+        return response_details
 
     @utils.order_protection
     def stop_loss_order(self, symbol, price, size) -> StopLossOrder:
@@ -326,63 +237,9 @@ class KucoinInterface(ExchangeInterface):
         needed = self.needed['stop_loss']
 
         side = 'sell'
-        order = {
-            'symbol': symbol,
-            'side': side,
-            'size': size,
-            'price': price,
-            'type': 'market',
-        }
+        order = utils.build_order_info(price, side, size, symbol, 'stop_loss')
         response = self._trade.create_market_stop_order(symbol, side, price, size, stop='loss')
-        response = self.__correct_api_call(response)
-        if "msg" in response:
-            raise InvalidOrder("Invalid Order: " + response["msg"])
-
-        response_details = self._trade.get_order_details(response['orderId'])
-        response_details = self.__correct_api_call(response_details)
-        """
-               {
-                   "id": "5c35c02703aa673ceec2a168", //
-                   "symbol": "BTC-USDT", //
-                   "opType": "DEAL",
-                   "type": "limit", //
-                   "side": "buy", //
-                   "price": "10",
-                   "size": "2", //
-                   "funds": "0",
-                   "dealFunds": "0.166",
-                   "dealSize": "2",
-                   "fee": "0",
-                   "feeCurrency": "USDT",
-                   "stp": "",
-                   "stop": "",
-                   "stopTriggered": false,
-                   "stopPrice": "0",
-                   "timeInForce": "GTC", //
-                   "postOnly": false,
-                   "hidden": false,
-                   "iceberg": false,
-                   "visibleSize": "0",
-                   "cancelAfter": 0,
-                   "channel": "IOS",
-                   "clientOid": "",
-                   "remark": "",
-                   "tags": "",
-                   "isActive": false, //
-                   "cancelExist": false,
-                   "createdAt": 1547026471000, //
-                   "tradeType": "TRADE"
-               }
-               """
-
-        response_details["created_at"] = response_details.pop('createdAt')
-        response_details["time_in_force"] = response_details.pop('timeInForce')
-        response_details["status"] = response_details.pop('isActive')
-        if response_details["status"]:
-            response_details["status"] = 'pending'
-        else:
-            response_details["status"] = 'done'
-        response_details = utils.isolate_specific(needed, response_details)
+        response_details = self._fetch_response_details(needed, response)
         return StopLossOrder(order, response_details, self)
 
     @utils.order_protection
@@ -397,63 +254,9 @@ class KucoinInterface(ExchangeInterface):
         needed = self.needed['take_profit']
 
         side = 'sell'
-        order = {
-            'symbol': symbol,
-            'side': side,
-            'size': size,
-            'price': price,
-            'type': 'market',
-        }
+        order = utils.build_order_info(price, side, size, symbol, 'take_profit')
         response = self._trade.create_market_stop_order(symbol, side, price, size, stop='entry')
-        response = self.__correct_api_call(response)
-        if "msg" in response:
-            raise InvalidOrder("Invalid Order: " + response["msg"])
-
-        response_details = self._trade.get_order_details(response['orderId'])
-        response_details = self.__correct_api_call(response_details)
-        """
-               {
-                   "id": "5c35c02703aa673ceec2a168", //
-                   "symbol": "BTC-USDT", //
-                   "opType": "DEAL",
-                   "type": "limit", //
-                   "side": "buy", //
-                   "price": "10",
-                   "size": "2", //
-                   "funds": "0",
-                   "dealFunds": "0.166",
-                   "dealSize": "2",
-                   "fee": "0",
-                   "feeCurrency": "USDT",
-                   "stp": "",
-                   "stop": "",
-                   "stopTriggered": false,
-                   "stopPrice": "0",
-                   "timeInForce": "GTC", //
-                   "postOnly": false,
-                   "hidden": false,
-                   "iceberg": false,
-                   "visibleSize": "0",
-                   "cancelAfter": 0,
-                   "channel": "IOS",
-                   "clientOid": "",
-                   "remark": "",
-                   "tags": "",
-                   "isActive": false, //
-                   "cancelExist": false,
-                   "createdAt": 1547026471000, //
-                   "tradeType": "TRADE"
-               }
-               """
-
-        response_details["created_at"] = response_details.pop('createdAt')
-        response_details["time_in_force"] = response_details.pop('timeInForce')
-        response_details["status"] = response_details.pop('isActive')
-        if response_details["status"]:
-            response_details["status"] = 'pending'
-        else:
-            response_details["status"] = 'done'
-        response_details = utils.isolate_specific(needed, response_details)
+        response_details = self._fetch_response_details(needed, response)
         return TakeProfitOrder(order, response_details, self)
 
     def cancel_order(self, symbol, order_id) -> dict:
@@ -513,7 +316,8 @@ class KucoinInterface(ExchangeInterface):
         if symbol is None:
             open_orders = list(self.__correct_api_call(self._trade.get_order_list(status='active')["items"]))
         else:
-            open_orders = list(self.__correct_api_call(self._trade.get_order_list(status='active', symbol=symbol)["items"]))
+            open_orders = list(
+                self.__correct_api_call(self._trade.get_order_list(status='active', symbol=symbol)["items"]))
 
         if len(open_orders) == 0:
             return []
@@ -712,7 +516,7 @@ class KucoinInterface(ExchangeInterface):
 
         try:
             epoch_start += resolution
-            df = (df.iloc[int(-(epoch_stop-epoch_start)/resolution):]).reset_index(drop=True)
+            df = (df.iloc[int(-(epoch_stop - epoch_start) / resolution):]).reset_index(drop=True)
         except Exception:
             pass
 
