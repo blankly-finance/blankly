@@ -26,7 +26,6 @@ from typing import Union
 import numpy
 import pandas
 import pandas as pd
-from dateutil import parser
 
 from blankly import utils
 from blankly.utils import time_interval_to_seconds
@@ -119,6 +118,7 @@ class ABCBaseExchangeInterface(abc.ABC):
             count_from = most_recent_valid_resolution
         else:
             if isinstance(end_date, str):
+                from dateutil import parser
                 parsed_date = parser.parse(end_date)
             elif isinstance(end_date, float) or isinstance(end_date, numpy.int64) or isinstance(end_date, int) or \
                     isinstance(end_date, numpy.int32):

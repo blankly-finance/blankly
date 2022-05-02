@@ -21,10 +21,8 @@ import warnings
 from datetime import datetime as dt, timezone
 
 import alpaca_trade_api
-import dateparser
 import pandas as pd
 from alpaca_trade_api.rest import APIError as AlpacaAPIError, TimeFrame
-from dateutil import parser
 
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.limit_order import LimitOrder
@@ -202,6 +200,7 @@ class AlpacaInterface(ExchangeInterface):
 
     @staticmethod
     def __parse_iso(response):
+        from dateutil import parser
         try:
             response['created_at'] = parser.isoparse(response['created_at']).timestamp()
         except ValueError as e:
@@ -502,6 +501,7 @@ class AlpacaInterface(ExchangeInterface):
     def __convert_times(date):  # There aren't any usages of this
         # convert start_date to datetime object
         if isinstance(date, str):
+            import dateparser
             date = dateparser.parse(date)
         elif isinstance(date, float):
             date = dt.fromtimestamp(date)

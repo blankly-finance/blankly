@@ -17,7 +17,6 @@
 """
 
 import time
-import dateparser as dp
 from datetime import datetime as dt
 from typing import Union
 
@@ -492,6 +491,7 @@ class OandaInterface(ExchangeInterface):
         if isinstance(date, float):
             pass
         elif isinstance(date, str):
+            import dateparser as dp
             date = dp.parse(date).timestamp()
         elif isinstance(date, dt):
             date = date.timestamp()

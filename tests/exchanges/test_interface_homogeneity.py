@@ -20,7 +20,6 @@ import time
 import unittest
 from datetime import datetime as dt
 
-import dateparser
 import numpy
 import pandas as pd
 
@@ -742,6 +741,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.check_product_history_types(response)
 
     def test_point_with_end_history(self):
+        import dateparser
         responses = []
 
         arbitrary_date: dt = dateparser.parse("8/23/21")
@@ -772,6 +772,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.check_product_history_types(i[0])
 
     def test_start_with_end_history(self):
+        import dateparser
         responses = []
 
         # This initial selection could fail because of the slightly random day that they delete their data

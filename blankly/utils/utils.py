@@ -25,7 +25,6 @@ from datetime import datetime as dt
 from math import trunc as math_trunc
 from typing import Union
 
-import dateutil.parser as dp
 import numpy as np
 import pandas as pd
 
@@ -256,6 +255,7 @@ def pretty_print_json(json_object, actually_print=True):
 
 
 def epoch_from_iso8601(iso8601: str) -> float:
+    import dateutil.parser as dp
     return dp.parse(iso8601).timestamp()
 
 

@@ -22,8 +22,6 @@ from datetime import datetime as dt
 from pathlib import Path
 
 import alpaca_trade_api
-import dateparser
-import dateparser as dp
 import pytest
 import pytz
 
@@ -127,16 +125,18 @@ def test_get_product_history(alpaca_interface: AlpacaInterface) -> None:
 
 
 def test_get_product_history_est_timezone(alpaca_interface: AlpacaInterface) -> None:
+    import dateparser
     start = dateparser.parse("2021-02-04 9:30AM EST").timestamp()
     end = dateparser.parse("2021-02-04 9:35AM EST").timestamp()
 
     return_df = alpaca_interface.get_product_history("AAPL", start, end, 60)
-    desired_timestamp = dp.parse("2021-02-04 14:30:00+00:00").timestamp()
+    desired_timestamp = dateparser.parse("2021-02-04 14:30:00+00:00").timestamp()
     assert return_df.iloc[0]['time'] == desired_timestamp
     assert (len(return_df) == 6)
 
 
 def test_get_product_history_custom(alpaca_interface: AlpacaInterface) -> None:
+    import dateparser
     assert isinstance(alpaca_interface.calls, alpaca_trade_api.REST)
     end = dateparser.parse("2021-02-04 9:35AM EST")
 

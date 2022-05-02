@@ -17,7 +17,6 @@
 """
 import time
 
-import binance.exceptions
 import pandas as pd
 
 import blankly.utils.exceptions as exceptions
@@ -42,6 +41,7 @@ class BinanceInterface(ExchangeInterface):
                                                                               604800, 2592000])
 
     def init_exchange(self):
+        import binance.exceptions
         try:
             self.calls.get_account()
         except binance.exceptions.BinanceAPIException:
