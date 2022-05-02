@@ -41,8 +41,6 @@ from blankly.deployment.exchange_data import EXCHANGES, Exchange, EXCHANGE_CHOIC
     EXCHANGE_CHOICES_NO_KEYLESS
 from blankly.utils.utils import load_deployment_settings, load_user_preferences, load_backtest_preferences
 
-sys.exit(1)
-
 TEMPLATES = {'strategy': {'none': 'none.py',
                           'rsi_bot': 'rsi_bot.py'},
              'screener': {'none': 'none_screener.py',
