@@ -216,3 +216,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
     @abc.abstractmethod
     def get_funding_rate_resolution(self) -> int:
         pass
+
+    @property
+    def should_auto_trunc(self):
+        return self.user_preferences['settings'].get('auto_truncate', False)

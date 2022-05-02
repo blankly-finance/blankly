@@ -68,9 +68,9 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         self.add_asset(quote)
 
     def __init__(self, exchange_name: str, interface: FuturesExchangeInterface, account_values: dict = None):
+        self.interface = interface
         super().__init__(exchange_name, interface.calls)
         BacktestingWrapper.__init__(self)
-        self.interface = interface
         self.next_fund = 0
 
         self._placed_orders = {}
@@ -280,6 +280,7 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
             if not self.should_run_order(order):
                 continue
 
+            product = self.get_products(order.symbol)
             base, quote = order.symbol.split('-')
 
             asset_price = order.limit_price or self.get_price(order.symbol)
@@ -307,7 +308,10 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
 
             # this overwrites but it's fine, we don't need to update
             new_position = position_size + size_diff
-            if new_position:
+
+            # minimum possible position size you can buy, times two
+            # TODO improve this to just take minimum position size from exchange
+            if abs(new_position) >= 2 * utils.precision_to_increment(product['size_precision']):
                 self.paper_positions[order.symbol] = {
                     'symbol': order.symbol,
                     'base_asset': base,
@@ -342,6 +346,9 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
                      time_in_force: TimeInForce = TimeInForce.GTC) -> FuturesOrder:
         self.add_symbol(symbol)
         product = self.get_products(symbol)
+
+        if self.should_auto_trunc:
+            size = utils.trunc(size, product['size_precision'])
 
         if not product:
             raise ValueError(f'invalid symbol {symbol}')

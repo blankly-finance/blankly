@@ -812,6 +812,10 @@ def increment_to_precision(increment: float) -> int:
     return math.floor(-math.log10(increment))
 
 
+def precision_to_increment(precision: int) -> float:
+    return 10 ** (-precision)
+
+
 def trim_df_time_column(df, epoch_start: [int, float], epoch_stop: [int, float]):
     df = df[df['time'] >= epoch_start]
     df = df[df['time'] <= epoch_stop]
