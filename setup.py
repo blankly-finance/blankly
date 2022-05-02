@@ -1,3 +1,5 @@
+import platform
+
 from setuptools import find_packages, setup
 from os import path
 this_directory = path.abspath(path.dirname(__file__))
@@ -35,7 +37,7 @@ setup(
         'alpaca-trade-api >= 1.4.2',
         'bokeh >= 2.4.2',
         'dateparser >= 1.1.0',
-        'newnewtulipy >= 0.4.6',
+        ('newnewtulipy' if platform.system() == 'Windows' else 'newtulipy') + ' >= 0.4.6',
         'numpy >= 1.21.4',
         'pandas >= 1.1.5',
         'python-binance >= 1.0.15',
