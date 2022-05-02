@@ -86,6 +86,7 @@ def init(symbol, state: FuturesStrategyState):
 
     state.variables['precision'] = state.interface.get_products(symbol)['size_precision']
 
+
 if __name__ == "__main__":
     exchange = BinanceFutures(keys_path="./tests/config/keys.json",
                               preferences_path="./tests/config/settings.json",

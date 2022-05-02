@@ -20,7 +20,7 @@ import blankly.metrics as metrics
 from blankly.utils.time_builder import build_year
 
 
-def periods_per_year(period : int) -> float:
+def periods_per_year(period: int) -> float:
     """
     Find how many trading periods occur within a trading year
 
@@ -34,7 +34,7 @@ def periods_per_year(period : int) -> float:
     # 24 hours becomes 6.5 (hours the market is open) AND the risk_free_rate
     # goes to zero
     trading_seconds_per_year = 252.0 * 24.0 * 60.0 * 60.0
-    ppy = trading_seconds_per_year/period
+    ppy = trading_seconds_per_year / period
     return ppy
 
 

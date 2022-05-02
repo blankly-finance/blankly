@@ -205,7 +205,8 @@ class CoinbaseProInterface(ExchangeInterface):
         response = self._fix_response(needed, response)
         return LimitOrder(order, response, self)
 
-    def _fix_response(self, needed, response):
+    @staticmethod
+    def _fix_response(needed, response):
         if "message" in response:
             raise InvalidOrder("Invalid Order: " + response["message"])
         response["created_at"] = utils.epoch_from_iso8601(response["created_at"])
@@ -282,15 +283,6 @@ class CoinbaseProInterface(ExchangeInterface):
         response = self.calls.place_stop_order(symbol, side, price=price, size=size)
         response = self._fix_response(needed, response)
         return StopLossOrder(order, response, self)
-
-    def _build_order_info(self, price, side, size, symbol, type):
-        return {
-            'size': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': type
-        }
 
     """
     Stop limit isn't added to the abstract class because the binance version is barely supported.

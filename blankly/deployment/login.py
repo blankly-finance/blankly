@@ -30,7 +30,6 @@ SUCCESS_URL = 'https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot
 FAILURE_URL = 'https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/login_failure.html?alt=media&token=b2d9f6dc-aa54-4da2-aa6f-1f75a4025634'
 
 
-
 def write_token(token):
     token_file = get_token_file()
     token_file.parent.mkdir(parents=True, exist_ok=True)
@@ -65,8 +64,6 @@ def poll_login() -> Optional[API]:
         api = API(token)
         write_token(token)
         return api
-
-
 
 
 def get_token() -> Optional[str]:

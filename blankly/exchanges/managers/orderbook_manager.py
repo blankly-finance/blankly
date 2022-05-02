@@ -458,14 +458,14 @@ class OrderbookManager(WebsocketManager):
             "asks": []
         }
 
-        buys = update['data'][0]['bids'] # [0][:-1]
+        buys = update['data'][0]['bids']  # [0][:-1]
         buys[0] = buys[0][:-1]
         # Convert these to float and write to our order dictionaries
         for i in range(len(buys)):
             buy = buys[i]
             book['bids'].append((float(buy[0]), float(buy[1])))
 
-        sells = update['data'][0]['asks'] # [0][:-1]
+        sells = update['data'][0]['asks']  # [0][:-1]
         sells[0] = sells[0][:-1]
         for i in range(len(sells)):
             sell = sells[i]

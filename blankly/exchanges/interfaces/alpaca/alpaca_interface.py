@@ -281,16 +281,6 @@ class AlpacaInterface(ExchangeInterface):
         response['time_in_force'] = response['time_in_force'].upper()
         return response
 
-    def _build_order_info(self, price, side, size, symbol, type):
-        order = {
-            'quantity': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': type
-        }
-        return order
-
     def cancel_order(self, symbol, order_id) -> dict:
         assert isinstance(self.calls, alpaca_trade_api.REST)
         self.calls.cancel_order(order_id)

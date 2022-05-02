@@ -108,21 +108,21 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
 
     @abc.abstractmethod
     def take_profit_order(self,
-                    symbol: str,
-                    side: Side,
-                    price: float,
-                    size: float,
-                    position: PositionMode = None) -> FuturesOrder:
+                          symbol: str,
+                          side: Side,
+                          price: float,
+                          size: float,
+                          position: PositionMode = None) -> FuturesOrder:
         """Place a take-profit order for a position"""
         pass
 
     @abc.abstractmethod
     def stop_loss_order(self,
-                  symbol: str,
-                  side: Side,
-                  price: float,
-                  size: float,
-                  position: PositionMode = None) -> FuturesOrder:
+                        symbol: str,
+                        side: Side,
+                        price: float,
+                        size: float,
+                        position: PositionMode = None) -> FuturesOrder:
         """Place a stop-loss order for a position"""
         pass
 

@@ -46,7 +46,6 @@ class KucoinInterface(ExchangeInterface):
         self._trade: KucoinAPI.Trade = self.calls['trade']
         self._user: KucoinAPI.User = self.calls['user']
 
-
     def init_exchange(self):
         fees = self.calls['user'].get_base_fee()
         try:
@@ -317,7 +316,8 @@ class KucoinInterface(ExchangeInterface):
         if symbol is None:
             open_orders = list(self.__correct_api_call(self._trade.get_order_list(status='active')["items"]))
         else:
-            open_orders = list(self.__correct_api_call(self._trade.get_order_list(status='active', symbol=symbol)["items"]))
+            open_orders = list(
+                self.__correct_api_call(self._trade.get_order_list(status='active', symbol=symbol)["items"]))
 
         if len(open_orders) == 0:
             return []
@@ -516,7 +516,7 @@ class KucoinInterface(ExchangeInterface):
 
         try:
             epoch_start += resolution
-            df = (df.iloc[int(-(epoch_stop-epoch_start)/resolution):]).reset_index(drop=True)
+            df = (df.iloc[int(-(epoch_stop - epoch_start) / resolution):]).reset_index(drop=True)
         except Exception:
             pass
 

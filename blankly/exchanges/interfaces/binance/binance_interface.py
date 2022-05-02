@@ -700,10 +700,10 @@ class BinanceInterface(ExchangeInterface):
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
         """
-        self._binance_get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        self._binance_get_product_history(self.calls, symbol, epoch_start, epoch_stop, resolution)
 
     @staticmethod
-    def _binance_get_product_history(symbol, epoch_start, epoch_stop, resolution):
+    def _binance_get_product_history(calls, symbol, epoch_start, epoch_stop, resolution):
         resolution = blankly.time_builder.time_interval_to_seconds(resolution)
 
         # epoch_start, epoch_stop = super().get_product_history(symbol, epoch_start, epoch_stop, resolution)
@@ -749,9 +749,9 @@ class BinanceInterface(ExchangeInterface):
         while need > 1000:
             # Close is always 300 points ahead
             window_close = int(window_open + 1000 * resolution)
-            history = history + self.calls.get_klines(symbol=symbol, startTime=window_open * 1000,
-                                                      endTime=window_close * 1000, interval=gran_string,
-                                                      limit=1000)
+            history = history + calls.get_klines(symbol=symbol, startTime=window_open * 1000,
+                                                 endTime=window_close * 1000, interval=gran_string,
+                                                 limit=1000)
 
             window_open = window_close
             need -= 1000
@@ -759,9 +759,9 @@ class BinanceInterface(ExchangeInterface):
             utils.update_progress((initial_need - need) / initial_need)
 
         # Fill the remainder
-        history_block = history + self.calls.get_klines(symbol=symbol, startTime=window_open * 1000,
-                                                        endTime=epoch_stop * 1000, interval=gran_string,
-                                                        limit=1000)
+        history_block = history + calls.get_klines(symbol=symbol, startTime=window_open * 1000,
+                                                   endTime=epoch_stop * 1000, interval=gran_string,
+                                                   limit=1000)
 
         data_frame = pd.DataFrame(history_block, columns=['time', 'open', 'high', 'low', 'close', 'volume',
                                                           'close time', 'quote asset volume', 'number of trades',

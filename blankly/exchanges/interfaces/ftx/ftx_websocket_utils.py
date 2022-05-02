@@ -48,14 +48,13 @@ Homogenizes response with uhh coinbase and binance
 
 def process_trades(response: dict) -> Dict[str, Union[float, Any]]:
     output = {
-              'trade_id': response.pop('id'),
-              'time': utils.epoch_from_iso8601(response['time']),
-              'size': response['size'],
-              'price': response['price']
-              }
+        'trade_id': response.pop('id'),
+        'time': utils.epoch_from_iso8601(response['time']),
+        'size': response['size'],
+        'price': response['price']
+    }
 
     return output
-
 
 
 def trade(received):

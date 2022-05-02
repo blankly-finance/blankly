@@ -282,7 +282,8 @@ class FTXInterface(ExchangeInterface):
 
         return LimitOrder(order, response, self)
 
-    def _fix_response(self, needed, response, set_tif = True):
+    @staticmethod
+    def _fix_response(needed, response, set_tif=True):
         response["symbol"] = utils.to_blankly_symbol(response.pop("market"), 'ftx')
         response["created_at"] = utils.epoch_from_iso8601(response.pop("createdAt"))
         if set_tif:
@@ -292,9 +293,9 @@ class FTXInterface(ExchangeInterface):
 
     @utils.order_protection
     def stop_loss_order(self,
-                  symbol: str,
-                  price: float,
-                  size: float) -> StopLossOrder:
+                        symbol: str,
+                        price: float,
+                        size: float) -> StopLossOrder:
         """
         Used for placing a stop-loss order
         Args:
@@ -315,9 +316,9 @@ class FTXInterface(ExchangeInterface):
 
     @utils.order_protection
     def take_profit_order(self,
-                    symbol: str,
-                    price: float,
-                    size: float) -> LimitOrder:
+                          symbol: str,
+                          price: float,
+                          size: float) -> TakeProfitOrder:
         """
         Used for placing a take-profit order
         Args:

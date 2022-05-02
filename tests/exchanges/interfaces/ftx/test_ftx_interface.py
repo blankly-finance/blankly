@@ -38,8 +38,8 @@ def ftx_interface() -> FTXInterface:
     settings_file_path = Path("../../../config/settings.json").resolve()
 
     ftx = blankly.FTX(keys_path=keys_file_path,
-                               settings_path=settings_file_path,
-                               portfolio_name='Main Account')
+                      settings_path=settings_file_path,
+                      portfolio_name='Main Account')
 
     # auth_obj = FTXAuth(str(keys_file_path), "Main Account")
     # _, ftx_interface = DirectCallsFactory.create("ftx", auth_obj, str(settings_file_path))

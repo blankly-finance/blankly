@@ -25,7 +25,6 @@ import requests
 from requests.auth import AuthBase
 
 # Create custom authentication for Exchange
-from blankly.exchanges.interfaces.binance.binance_auth import BinanceAuth
 
 
 class BinanceExchangeAuth(AuthBase):
@@ -49,7 +48,7 @@ class API:
     API_URL = 'https://api.binance.{}/api'
     API_TESTNET_URL = 'https://testnet.binance.vision/api'
 
-    def __init__(self, auth: BinanceAuth, tld: str = '.us', testnet: bool = False):
+    def __init__(self, auth, tld: str = '.us', testnet: bool = False):
         self.api_key = auth.keys['API_KEY']
         self.secret_key = auth.keys['API_SECRET']
 

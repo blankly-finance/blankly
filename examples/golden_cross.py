@@ -29,8 +29,8 @@ def price_event(price, symbol, state: StrategyState):
     slope_sma50 = (sma50[-1] - sma50[-5]) / 5  # get the slope of the last 5 SMA50 Data Points
     prev_diff = diff[-2]
     curr_diff = diff[-1]
-    is_cross_up = slope_sma50 > 0 and curr_diff >= 0 and prev_diff < 0
-    is_cross_down = slope_sma50 < 0 and curr_diff <= 0 and prev_diff > 0
+    is_cross_up = slope_sma50 > 0 > prev_diff and curr_diff >= 0
+    is_cross_down = slope_sma50 < 0 < prev_diff and curr_diff <= 0
     # comparing prev diff with current diff will show a cross
     if is_cross_up and not variables['owns_position']:
         interface.market_order(symbol, 'buy', int(interface.cash/price))

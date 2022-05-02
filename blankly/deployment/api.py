@@ -171,7 +171,7 @@ class API:
         model['projectId'] = project_id or self.user_id
         return model
 
-    def list_models(self, project_id: str):
+    def list_models(self, project_id: str = None):
         models = self.__request('post', 'model/list',
                                 data={
                                     'projectId': project_id or self.user_id

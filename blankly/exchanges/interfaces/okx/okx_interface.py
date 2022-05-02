@@ -129,7 +129,7 @@ class OkxInterface(ExchangeInterface):
         response_details = self._fetch_response_details(needed, response, symbol)
         return TakeProfitOrder(order, response_details, self)
 
-    def _fetch_response_details(self, needed, response, symbol, set_tif = True):
+    def _fetch_response_details(self, needed, response, symbol, set_tif=True):
         if len(response['data'][0]['sMsg']) != 0:
             raise InvalidOrder("Invalid Order: " + response['data'][0]["sMsg"])
         response_details = self._trade.get_orders(symbol, ordId=response['data'][0]['ordId'])

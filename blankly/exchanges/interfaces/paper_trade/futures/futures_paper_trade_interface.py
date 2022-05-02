@@ -128,11 +128,11 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         return self._place_order(OrderType.LIMIT, symbol, side, size, price, position, reduce_only)
 
     def take_profit_order(self, symbol: str, side: Side, price: float, size: float,
-                    position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
+                          position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
         return self._place_order(OrderType.TAKE_PROFIT, symbol, side, size, price, position)
 
     def stop_loss_order(self, symbol: str, side: Side, price: float, size: float,
-                  position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
+                        position: PositionMode = PositionMode.BOTH) -> FuturesOrder:
         return self._place_order(OrderType.STOP, symbol, side, size, price, position)
 
     def should_run_order(self, order):
@@ -338,7 +338,7 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
                               reduce_only=True)
 
     def _place_order(self, type: OrderType, symbol: str, side: Side, size: float, limit_price: float = 0,
-                     positionMode: PositionMode = PositionMode.BOTH, reduce_only: bool = False,
+                     position_mode: PositionMode = PositionMode.BOTH, reduce_only: bool = False,
                      time_in_force: TimeInForce = TimeInForce.GTC) -> FuturesOrder:
         self.add_symbol(symbol)
         product = self.get_products(symbol)
@@ -346,7 +346,7 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         if not product:
             raise ValueError(f'invalid symbol {symbol}')
 
-        if positionMode != PositionMode.BOTH:
+        if position_mode != PositionMode.BOTH:
             raise ValueError(f'only PositionMode.BOTH is supported for paper trading at this time')
 
         if size <= 0:
@@ -411,14 +411,16 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
 
         return order
 
-    def is_closing_position(self, position, side):
+    @staticmethod
+    def is_closing_position(position, side):
         if not position or position['size'] == 0:
             return False
         if (position['size'] > 0) == (side == Side.SELL):
             return True
         return False
 
-    def gen_order_id(self):
+    @staticmethod
+    def gen_order_id():
         return random.randrange(10 ** 4, 10 ** 5)
 
     @functools.lru_cache(None)
@@ -428,4 +430,3 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
     @functools.lru_cache(None)
     def get_taker_fee(self) -> float:
         return self.interface.get_taker_fee()
-

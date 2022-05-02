@@ -31,7 +31,7 @@ class Order:
         if self.amount <= 0:
             raise ValueError("Size must be greater than zero, but was given: {}".format(size))
         self.amount = amount
-        if self.type == 'limit' and price == None:
+        if self.type == 'limit' and price is None:
             raise ValueError("Limit orders require a price but None was given")
 
         if price <= 0:

@@ -401,7 +401,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
     def get_product_history(self, symbol, epoch_start, epoch_stop,
                             resolution) -> pd.DataFrame:
         # reuse impl from SPOT interface, it's the same thing
-        return BinanceInterface._binance_get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        return BinanceInterface._binance_get_product_history(self.calls, symbol, epoch_start, epoch_stop, resolution)
 
     def get_funding_rate_history(self, symbol: str, epoch_start: int,
                                  epoch_stop: int) -> list:

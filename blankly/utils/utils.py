@@ -29,7 +29,6 @@ import dateutil.parser as dp
 import numpy as np
 import pandas as pd
 
-
 # Copy of settings to compare defaults vs overrides
 default_general_settings = {
     "settings": {
@@ -100,17 +99,17 @@ default_backtest_settings = {
 }
 
 default_notify_settings = {
-  "email": {
-    "port": 465,
-    "smtp_server": "smtp.website.com",
-    "sender_email": "email_attached_to_smtp_account@web.com",
-    "receiver_email": "email_to_send_to@web.com",
-    "password": "my_password"
-  },
-  "text": {
-    "phone_number": "1234567683",
-    "provider": "verizon"
-  }
+    "email": {
+        "port": 465,
+        "smtp_server": "smtp.website.com",
+        "sender_email": "email_attached_to_smtp_account@web.com",
+        "receiver_email": "email_to_send_to@web.com",
+        "password": "my_password"
+    },
+    "text": {
+        "phone_number": "1234567683",
+        "provider": "verizon"
+    }
 }
 
 default_deploy_settings = {
@@ -207,6 +206,7 @@ class __BlanklySettings:
             f = open(override_path, "w")
         f.write(json.dumps(json_information, indent=2))
 
+
 general_settings = __BlanklySettings('./settings.json', default_general_settings,
                                      "Make sure a settings.json file is placed in the same folder as the project "
                                      "working directory!")
@@ -271,6 +271,7 @@ def convert_input_to_epoch(value: Union[str, dt]) -> float:
 
 def iso8601_from_epoch(epoch) -> str:
     return dt.utcfromtimestamp(epoch).isoformat() + 'Z'
+
 
 # Removed due to sklearn dependency
 # def get_price_derivative(ticker, point_number):
@@ -665,6 +666,7 @@ class AttributeDict(dict):
     Basically you can get and set attributes with a dot instead of [] - like dict.available rather than
      dict['available']
     """
+
     def __getattr__(self, attr):
         # Try catch is wrapped to support copying objects
         try:
@@ -710,6 +712,7 @@ class Email:
     Object wrapper for simplifying interaction with SMTP servers & the blankly.reporter.email function.
     Alternatively a notify.json can be created which automatically integrates with blankly.reporter.email()
     """
+
     def __init__(self, smtp_server: str, sender_email: str, password: str, port: int = 465):
         """
         Create the email wrapper:
@@ -761,11 +764,13 @@ def enforce_base_asset(func):
     Used for get_account functions, this enforces that the user is always getting the base asset which is probably
     what the user meant
     """
+
     def wrapper(self, symbol=None):
         # Get the base asset if it was defined
         if symbol is not None:
             symbol = get_base_asset(symbol)
         return func(self, symbol=symbol)
+
     return wrapper
 
 
@@ -773,10 +778,12 @@ def order_protection(func):
     """
     Decorator to provide protection against live orders inside backtest environment
     """
+
     def wrapper(*args, **kwargs):
         if blankly._backtesting:
             raise Exception("Blocked attempt at live order inside backtesting environment")
         return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -824,7 +831,7 @@ def aggregate_prices_by_resolution(price_dict, symbol_, resolution_, data_) -> d
     return price_dict
 
 
-def extract_price_by_resolution(prices, symbol, epoch_start, epoch_stop, resolution,):
+def extract_price_by_resolution(prices, symbol, epoch_start, epoch_stop, resolution, ):
     if symbol in prices:
         if resolution in prices[symbol]:
             price_set = prices[symbol][resolution]

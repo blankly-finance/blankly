@@ -157,6 +157,7 @@ def test_get_price(alpaca_interface: AlpacaInterface) -> None:
     price = alpaca_interface.get_price("AAPL")
     assert isinstance(price, float)
 
+
 def test_get_open_orders(alpaca_interface: AlpacaInterface) -> None:
     orders = alpaca_interface.get_open_orders()
     print(orders)
