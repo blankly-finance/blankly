@@ -26,12 +26,12 @@ from blankly.data.data_reader import PriceReader
 
 class KeylessExchange(Exchange):
     def __init__(self, maker_fee=0, taker_fee=0, portfolio_name=None, settings_path=None,
-                 price_reader: [PriceReader, list] = None):
+                 price_reader: [PriceReader, list] = None, initial_account_values: dict = None):
         Exchange.__init__(self, "keyless", portfolio_name, settings_path)
 
         self.calls = KeylessAPI(maker_fee, taker_fee, price_reader)
 
-        self.interface = PaperTradeInterface(self.calls)
+        self.interface = PaperTradeInterface(self.calls, initial_account_values)
 
         # This one must be exported manually
         blankly.reporter.export_used_exchange("keyless")
