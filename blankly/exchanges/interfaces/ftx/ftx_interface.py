@@ -213,17 +213,9 @@ class FTXInterface(ExchangeInterface):
         # TODO pretty sure this needs to convert the symbol to an 'FTX' symbol before sending it off to the api
         response = self.get_calls().place_order(symbol, side, None, size, order_type="market")
 
-        response["symbol"] = utils.to_blankly_symbol(response.pop("market"), 'ftx')
-        response["created_at"] = utils.epoch_from_iso8601(response.pop("createdAt"))
+        response = self._fix_response(needed, response, False)
 
-        response = utils.isolate_specific(needed, response)
-
-        order = {
-            'size': size,
-            'side': side,
-            'symbol': symbol,
-            'type': 'market'
-        }
+        order = utils.build_order_info(0, side, size, symbol, 'market')
 
         return MarketOrder(order, response, self)
 
@@ -284,20 +276,19 @@ class FTXInterface(ExchangeInterface):
         response = self.get_calls().place_order(symbol, side, price, size, order_type="limit")
         if self.should_auto_trunc:
             size = utils.trunc(size, self.get_asset_precision(symbol))
-        order = {
-            'size': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': 'limit'
-        }
+        order = utils.build_order_info(price, side, size, symbol, 'take_profit')
 
-        response["symbol"] = utils.to_blankly_symbol(response.pop("market"), 'ftx')
-        response["created_at"] = utils.epoch_from_iso8601(response.pop("createdAt"))
-        response["time_in_force"] = "GTC"
-        response = utils.isolate_specific(needed, response)
+        response = self._fix_response(needed, response)
 
         return LimitOrder(order, response, self)
+
+    def _fix_response(self, needed, response, set_tif = True):
+        response["symbol"] = utils.to_blankly_symbol(response.pop("market"), 'ftx')
+        response["created_at"] = utils.epoch_from_iso8601(response.pop("createdAt"))
+        if set_tif:
+            response["time_in_force"] = "GTC"
+        response = utils.isolate_specific(needed, response)
+        return response
 
     @utils.order_protection
     def stop_loss_order(self,
@@ -316,18 +307,9 @@ class FTXInterface(ExchangeInterface):
         response = self.get_calls().place_conditional_order(symbol, side, size, order_type="stop",
                                                             trigger_price=price)
 
-        order = {
-            'size': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': 'limit'
-        }
+        order = utils.build_order_info(price, side, size, symbol, 'stop_loss')
 
-        response["symbol"] = utils.to_blankly_symbol(response.pop("market"), 'ftx')
-        response["created_at"] = utils.epoch_from_iso8601(response.pop("createdAt"))
-        response["time_in_force"] = "GTC"
-        response = utils.isolate_specific(needed, response)
+        response = self._fix_response(needed, response)
 
         return StopLossOrder(order, response, self)
 
@@ -348,18 +330,9 @@ class FTXInterface(ExchangeInterface):
         response = self.get_calls().place_conditional_order(symbol, side, size, order_type="takeProfit",
                                                             trigger_price=price)
 
-        order = {
-            'size': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': 'limit'
-        }
+        order = utils.build_order_info(price, side, size, symbol, 'limit')
 
-        response["symbol"] = utils.to_blankly_symbol(response.pop("market"), 'ftx')
-        response["created_at"] = utils.epoch_from_iso8601(response.pop("createdAt"))
-        response["time_in_force"] = "GTC"
-        response = utils.isolate_specific(needed, response)
+        response = self._fix_response(needed, response)
 
         return TakeProfitOrder(order, response, self)
 

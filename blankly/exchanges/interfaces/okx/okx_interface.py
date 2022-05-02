@@ -104,25 +104,11 @@ class OkxInterface(ExchangeInterface):
         """
         if self.should_auto_trunc:
             size = utils.trunc(size, self.get_asset_precision(symbol))
-        order = {
-            'symbol': symbol,
-            'size': size,
-            'side': side,
-            'type': 'market'
-        }
+        order = utils.build_order_info(0, side, size, symbol, 'market')
 
         response = self._trade.place_order(symbol, 'cash', side, 'market', size)
-        if len(response['data'][0]['sMsg']) != 0:
-            raise InvalidOrder("Invalid Order: " + response['data'][0]["sMsg"])
-        response["created_at"] = time.time()
-        response["id"] = response['data'][0]['ordId']
-        response["status"] = response['data'][0]['sCode']
-        response["symbol"] = symbol
-        response["size"] = size
-        response["side"] = side
-        response["type"] = 'market'
-        response = utils.isolate_specific(needed, response)
-        return MarketOrder(order, response, self)
+        response_details = self._fetch_response_details(needed, response, symbol, False)
+        return MarketOrder(order, response_details, self)
 
     @utils.order_protection
     def stop_loss_order(self, symbol, price, size) -> TakeProfitOrder:
@@ -136,21 +122,17 @@ class OkxInterface(ExchangeInterface):
         needed = self.needed['stop_loss']
 
         side = 'sell'
-        order = {
-            'symbol': symbol,
-            'side': side,
-            'size': size,
-            'price': price,
-            'type': 'conditional',
-        }
+        order = utils.build_order_info(price, side, size, symbol, 'stop_loss')
 
         response = self._trade.place_algo_order(symbol, 'cash', side, 'conditional', sz=size, slTriggerPx=price,
                                                 slOrdPx=-1)
+        response_details = self._fetch_response_details(needed, response, symbol)
+        return TakeProfitOrder(order, response_details, self)
+
+    def _fetch_response_details(self, needed, response, symbol, set_tif = True):
         if len(response['data'][0]['sMsg']) != 0:
             raise InvalidOrder("Invalid Order: " + response['data'][0]["sMsg"])
-
         response_details = self._trade.get_orders(symbol, ordId=response['data'][0]['ordId'])
-
         response_details["created_at"] = response_details['data'][0]['cTime']
         response_details["id"] = response_details['data'][0]['ordId']
         response_details["status"] = response_details['data'][0]['state']
@@ -159,10 +141,10 @@ class OkxInterface(ExchangeInterface):
         response_details["side"] = response_details['data'][0]['side']
         response_details["price"] = response_details['data'][0]['px']
         response_details["type"] = response_details['data'][0]['ordType']
-        response_details["time_in_force"] = 'GTC'
-
+        if set_tif:
+            response_details["time_in_force"] = 'GTC'
         response_details = utils.isolate_specific(needed, response_details)
-        return TakeProfitOrder(order, response_details, self)
+        return response_details
 
     @utils.order_protection
     def take_profit_order(self, symbol, price, size) -> TakeProfitOrder:
@@ -176,32 +158,11 @@ class OkxInterface(ExchangeInterface):
         needed = self.needed['take_profit']
 
         side = 'sell'
-        order = {
-            'symbol': symbol,
-            'side': side,
-            'size': size,
-            'price': price,
-            'type': 'conditional',
-        }
+        order = utils.build_order_info(price, side, size, symbol, 'take_profit')
 
         response = self._trade.place_algo_order(symbol, 'cash', side, 'conditional', sz=size, tpTriggerPx=price,
                                                 tpOrdPx=-1)
-        if len(response['data'][0]['sMsg']) != 0:
-            raise InvalidOrder("Invalid Order: " + response['data'][0]["sMsg"])
-
-        response_details = self._trade.get_orders(symbol, ordId=response['data'][0]['ordId'])
-
-        response_details["created_at"] = response_details['data'][0]['cTime']
-        response_details["id"] = response_details['data'][0]['ordId']
-        response_details["status"] = response_details['data'][0]['state']
-        response_details["symbol"] = response_details['data'][0]['instId']
-        response_details["size"] = response_details['data'][0]['sz']
-        response_details["side"] = response_details['data'][0]['side']
-        response_details["price"] = response_details['data'][0]['px']
-        response_details["type"] = response_details['data'][0]['ordType']
-        response_details["time_in_force"] = 'GTC'
-
-        response_details = utils.isolate_specific(needed, response_details)
+        response_details = self._fetch_response_details(needed, response, symbol)
         return TakeProfitOrder(order, response_details, self)
 
     @utils.order_protection
@@ -219,31 +180,10 @@ class OkxInterface(ExchangeInterface):
             result = utils.trunc(size, self.get_asset_precision(symbol))
             if result != 0:
                 size = result
-        order = {
-            'symbol': symbol,
-            'side': side,
-            'size': size,
-            'price': price,
-            'type': 'limit',
-        }
+        order = utils.build_order_info(price, side, size, symbol, 'limit')
 
         response = self._trade.place_order(symbol, 'cash', side, 'limit', size, px=price)
-        if len(response['data'][0]['sMsg']) != 0:
-            raise InvalidOrder("Invalid Order: " + response['data'][0]["sMsg"])
-
-        response_details = self._trade.get_orders(symbol, ordId=response['data'][0]['ordId'])
-
-        response_details["created_at"] = response_details['data'][0]['cTime']
-        response_details["id"] = response_details['data'][0]['ordId']
-        response_details["status"] = response_details['data'][0]['state']
-        response_details["symbol"] = response_details['data'][0]['instId']
-        response_details["size"] = response_details['data'][0]['sz']
-        response_details["side"] = response_details['data'][0]['side']
-        response_details["price"] = response_details['data'][0]['px']
-        response_details["type"] = response_details['data'][0]['ordType']
-        response_details["time_in_force"] = 'GTC'
-
-        response_details = utils.isolate_specific(needed, response_details)
+        response_details = self._fetch_response_details(needed, response, symbol)
         return LimitOrder(order, response_details, self)
 
     def cancel_order(self, symbol: str, order_id: str) -> dict:

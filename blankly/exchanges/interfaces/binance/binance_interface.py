@@ -253,6 +253,23 @@ class BinanceInterface(ExchangeInterface):
                 })
         return utils.AttributeDict(parsed_dictionary)
 
+    def _fix_response(self, needed, response):
+        response['side'] = response['side'].lower()
+        response['type'] = response['type'].lower()
+        response['status'] = super().homogenize_order_status('binance', response['status'].lower())
+        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance')
+        if 'transactTime' in response:
+            response["transactTime"] /= 1000
+        response = utils.rename_to([
+            ["orderId", "id"],
+            ["transactTime", "created_at"],
+            ["origQty", "size"],
+            ["timeInForce", "time_in_force"],
+            ["cummulativeQuoteQty", "funds"]
+        ], response)
+        response = utils.isolate_specific(needed, response)
+        return response
+
     @utils.order_protection
     def market_order(self, symbol, side, size) -> MarketOrder:
         """
@@ -310,13 +327,6 @@ class BinanceInterface(ExchangeInterface):
         """
         if self.should_auto_trunc:
             size = utils.trunc(size, self.get_asset_precision(symbol))
-        renames = [
-            ["orderId", "id"],
-            ["transactTime", "created_at"],
-            ["origQty", "size"],
-            ["timeInForce", "time_in_force"],
-            ["cummulativeQuoteQty", "funds"]
-        ]
         order = {
             'size': size,
             'side': side,
@@ -327,14 +337,8 @@ class BinanceInterface(ExchangeInterface):
         # The interface here will be the query of order status from this object, because orders are dynamic
         # creatures
         response = self.calls.order_market(symbol=modified_symbol, side=side, quantity=size)
-        response['side'] = response['side'].lower()
-        response['type'] = response['type'].lower()
-        response['status'] = super().homogenize_order_status('binance', response['status'].lower())
-        response["transactTime"] = response["transactTime"] / 1000
-        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance',
-                                                     quote_guess=utils.get_quote_asset(symbol))
-        response = utils.rename_to(renames, response)
         response = utils.isolate_specific(needed, response)
+        response = self._fix_response(needed, response)
         return MarketOrder(order, response, self)
 
     @utils.order_protection
@@ -391,18 +395,7 @@ class BinanceInterface(ExchangeInterface):
         }
         modified_symbol = utils.to_exchange_symbol(symbol, 'binance')
         response = self.calls.order_limit(symbol=modified_symbol, side=side, price=price, quantity=size)
-        renames = [
-            ["orderId", "id"],
-            ["transactTime", "created_at"],
-            ["origQty", "size"],
-            ["timeInForce", "time_in_force"],
-        ]
-        response['side'] = response['side'].lower()
-        response['type'] = response['type'].lower()
-        response['status'] = super().homogenize_order_status('binance', response['status'].lower())
-        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance')
-        response = utils.rename_to(renames, response)
-        response = utils.isolate_specific(needed, response)
+        response = self._fix_response(needed, response)
         return LimitOrder(order, response, self)
 
     @utils.order_protection
@@ -458,18 +451,7 @@ class BinanceInterface(ExchangeInterface):
         }
         modified_symbol = utils.to_exchange_symbol(symbol, 'binance')
         response = self.calls.create_order(symbol=modified_symbol, side=side, stopPrice=price, quantity=size, type=type)
-        renames = [
-            ["orderId", "id"],
-            ["transactTime", "created_at"],
-            ["origQty", "size"],
-            ["timeInForce", "time_in_force"],
-        ]
-        response['side'] = response['side'].lower()
-        response['type'] = response['type'].lower()
-        response['status'] = super().homogenize_order_status('binance', response['status'].lower())
-        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance')
-        response = utils.rename_to(renames, response)
-        response = utils.isolate_specific(needed, response)
+        response = self._fix_response(needed, response)
         return TakeProfitOrder(order, response, self)
 
     @utils.order_protection
@@ -525,18 +507,7 @@ class BinanceInterface(ExchangeInterface):
         }
         modified_symbol = utils.to_exchange_symbol(symbol, 'binance')
         response = self.calls.create_order(symbol=modified_symbol, side=side, stopPrice=price, quantity=size, type=type)
-        renames = [
-            ["orderId", "id"],
-            ["transactTime", "created_at"],
-            ["origQty", "size"],
-            ["timeInForce", "time_in_force"],
-        ]
-        response['side'] = response['side'].lower()
-        response['type'] = response['type'].lower()
-        response['status'] = super().homogenize_order_status('binance', response['status'].lower())
-        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance')
-        response = utils.rename_to(renames, response)
-        response = utils.isolate_specific(needed, response)
+        response = self._fix_response(needed, response)
         return StopLossOrder(order, response, self)
 
     def cancel_order(self, symbol, order_id) -> dict:
@@ -729,7 +700,10 @@ class BinanceInterface(ExchangeInterface):
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
         """
+        self._binance_get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
+    @staticmethod
+    def _binance_get_product_history(symbol, epoch_start, epoch_stop, resolution):
         resolution = blankly.time_builder.time_interval_to_seconds(resolution)
 
         # epoch_start, epoch_stop = super().get_product_history(symbol, epoch_start, epoch_stop, resolution)

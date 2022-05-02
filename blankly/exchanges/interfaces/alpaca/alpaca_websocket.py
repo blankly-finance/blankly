@@ -174,12 +174,7 @@ class Tickers(ABCExchangeWebsocket):
                 else:
                     recent_time = time.time()
 
-                if self.__log:
-                    if counter % 100 == 0:
-                        self.__file.close()
-                        self.__file = open(self.__filePath, 'a')
-                    line = self.__logging_callback(received)
-                    self.__file.write(line)
+                self.log_response(self.__logging_callback, received)
 
                 # Manage price events and fire for each manager attached
                 interface_message = self.__interface_callback(received)

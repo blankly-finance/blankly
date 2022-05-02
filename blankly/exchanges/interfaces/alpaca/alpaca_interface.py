@@ -39,8 +39,8 @@ from blankly.utils.time_builder import build_minute, time_interval_to_seconds, n
 class AlpacaInterface(ExchangeInterface):
     def __init__(self, exchange_name, authenticated_api):
         self.__unique_assets = None
-        super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 60*5, 60*15,
-                                                                              60*60*24])
+        super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 60 * 5, 60 * 15,
+                                                                              60 * 60 * 24])
         assert isinstance(self.calls, alpaca_trade_api.REST)
 
     def init_exchange(self):
@@ -48,9 +48,9 @@ class AlpacaInterface(ExchangeInterface):
             account_info = self.calls.get_account()
         except alpaca_trade_api.rest.APIError as e:
             raise APIException(e.__str__() + ". Are you trying to use your normal exchange keys "
-                               "while in sandbox mode? \nTry toggling the \'sandbox\' setting "
-                               "in your keys.json or check if the keys were input correctly into your "
-                               "keys.json.")
+                                             "while in sandbox mode? \nTry toggling the \'sandbox\' setting "
+                                             "in your keys.json or check if the keys were input correctly into your "
+                                             "keys.json.")
         try:
             if account_info['account_blocked']:
                 warnings.warn('Your alpaca account is indicated as blocked for trading....')
@@ -215,43 +215,20 @@ class AlpacaInterface(ExchangeInterface):
     @utils.order_protection
     def market_order(self, symbol, side, size) -> MarketOrder:
         assert isinstance(self.calls, alpaca_trade_api.REST)
+
         needed = self.needed['market_order']
+        order = utils.build_order_info(0, side, size, symbol, 'market')
 
-        renames = [
-            ['qty', 'size']
-        ]
-
-        order = {
-            'size': size,
-            'side': side,
-            'symbol': symbol,
-            'type': 'market'
-        }
         response = self.calls.submit_order(symbol, side=side, type='market', time_in_force='day', qty=size)
 
-        response = self.__parse_iso(response)
-
-        response = utils.rename_to(renames, response)
-        response = utils.isolate_specific(needed, response)
+        response = self._fix_response(needed, response)
         return MarketOrder(order, response, self)
 
     @utils.order_protection
-    def take_profit_order(self, symbol: str, price: float, size: float) -> TakeProfitOrder:
-        needed = self.needed['take_profit']
+    def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
+        needed = self.needed['limit_order']
+        order = utils.build_order_info(price, side, size, symbol, 'limit')
 
-        renames = [
-            ['limit_price', 'price'],
-            ['qty', 'size']
-        ]
-
-        side = 'sell'
-        order = {
-            'quantity': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': 'limit'
-        }
         response = self.calls.submit_order(symbol,
                                            side=side,
                                            type='limit',
@@ -259,30 +236,31 @@ class AlpacaInterface(ExchangeInterface):
                                            qty=size,
                                            limit_price=price)
 
-        response = self.__parse_iso(response)
+        response = self._fix_response(needed, response)
+        return LimitOrder(order, response, self)
 
-        response = utils.rename_to(renames, response)
-        response = utils.isolate_specific(needed, response)
-        response['time_in_force'] = response['time_in_force'].upper()
+    @utils.order_protection
+    def take_profit_order(self, symbol: str, price: float, size: float) -> TakeProfitOrder:
+        side = 'sell'
+        needed = self.needed['take_profit']
+        order = utils.build_order_info(price, side, size, symbol, 'take_profit')
+
+        response = self.calls.submit_order(symbol,
+                                           side=side,
+                                           type='limit',
+                                           time_in_force='gtc',
+                                           qty=size,
+                                           limit_price=price)
+
+        response = self._fix_response(needed, response)
         return TakeProfitOrder(order, response, self)
 
     @utils.order_protection
     def stop_loss_order(self, symbol: str, price: float, size: float) -> StopLossOrder:
-        needed = self.needed['stop_loss']
         side = 'sell'
+        needed = self.needed['stop_loss']
+        order = utils.build_order_info(price, side, size, symbol, 'stop_loss')
 
-        renames = [
-            ['limit_price', 'price'],
-            ['qty', 'size']
-        ]
-
-        order = {
-            'quantity': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': 'stop'
-        }
         response = self.calls.submit_order(symbol,
                                            side=side,
                                            type='stop',
@@ -290,42 +268,28 @@ class AlpacaInterface(ExchangeInterface):
                                            qty=size,
                                            stop_price=price)
 
-        response = self.__parse_iso(response)
-
-        response = utils.rename_to(renames, response)
-        response = utils.isolate_specific(needed, response)
-        response['time_in_force'] = response['time_in_force'].upper()
+        response = self._fix_response(needed, response)
         return StopLossOrder(order, response, self)
 
-    @utils.order_protection
-    def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
-        needed = self.needed['limit_order']
-
-        renames = [
+    def _fix_response(self, needed, response):
+        response = self.__parse_iso(response)
+        response = utils.rename_to([
             ['limit_price', 'price'],
             ['qty', 'size']
-        ]
+        ], response)
+        response = utils.isolate_specific(needed, response)
+        response['time_in_force'] = response['time_in_force'].upper()
+        return response
 
+    def _build_order_info(self, price, side, size, symbol, type):
         order = {
             'quantity': size,
             'side': side,
             'price': price,
             'symbol': symbol,
-            'type': 'limit'
+            'type': type
         }
-        response = self.calls.submit_order(symbol,
-                                           side=side,
-                                           type='limit',
-                                           time_in_force='gtc',
-                                           qty=size,
-                                           limit_price=price)
-
-        response = self.__parse_iso(response)
-
-        response = utils.rename_to(renames, response)
-        response = utils.isolate_specific(needed, response)
-        response['time_in_force'] = response['time_in_force'].upper()
-        return LimitOrder(order, response, self)
+        return order
 
     def cancel_order(self, symbol, order_id) -> dict:
         assert isinstance(self.calls, alpaca_trade_api.REST)
@@ -411,7 +375,7 @@ class AlpacaInterface(ExchangeInterface):
             if resolution not in supported_multiples:
                 utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
                 resolution = supported_multiples[min(range(len(supported_multiples)),
-                                                 key=lambda i: abs(supported_multiples[i] - resolution))]
+                                                     key=lambda i: abs(supported_multiples[i] - resolution))]
 
             found_multiple, row_divisor = super().evaluate_multiples(supported_multiples, resolution)
 

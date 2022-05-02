@@ -234,103 +234,34 @@ class OandaInterface(ExchangeInterface):
         resp = self.calls.place_market_order(symbol, qty_to_buy)
 
         needed = self.needed['market_order']
-        order = {
-            'size': qty_to_buy,
-            'side': side,
-            'symbol': symbol,
-            'type': 'market'
-        }
-        if 'orderRejectTransaction' in resp:
-            raise APIException(resp['errorMessage'])
-        resp['symbol'] = self.__convert_symbol_to_blankly(resp['orderCreateTransaction']['instrument'])
-        resp['id'] = resp['orderCreateTransaction']['id']
-        resp['created_at'] = resp['orderCreateTransaction']['time']
-        resp['size'] = abs(qty_to_buy)
-        resp['status'] = "active"
-        resp['type'] = 'market'
-        resp['side'] = side
-
-        resp = utils.isolate_specific(needed, resp)
+        order = utils.build_order_info(0, side, qty_to_buy, symbol, 'market')
+        resp = self._fix_response(needed, 0, resp, side, qty_to_buy, 'market', False)
         return MarketOrder(order, resp, self)
 
     @utils.order_protection
     def stop_loss_order(self, symbol: str, price: float, size: float) -> StopLossOrder:
         symbol = self.__convert_blankly_to_oanda(symbol)
         side = 'sell'
-        if side == "buy":
-            pass
-        elif side == "sell":
-            size *= -1
-        else:
-            raise ValueError("side needs to be either sell or buy")
+        size *= -1
 
         resp = self.calls.place_stop_loss(symbol, size, price)
         needed = self.needed['stop_loss']
-        order = {
-            'size': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': 'limit'
-        }
+        order = utils.build_order_info(0, side, size, symbol, 'stop_loss')
 
-        try:
-            resp['symbol'] = self.__convert_symbol_to_blankly(resp['orderCreateTransaction']['instrument'])
-        except KeyError as e:
-            if 'orderRejectTransaction' in resp:
-                raise InvalidOrder(resp['orderRejectTransaction']['rejectReason'])
-            else:
-                raise e
-        resp['id'] = resp['orderCreateTransaction']['id']
-        resp['created_at'] = resp['orderCreateTransaction']['time']
-        resp['price'] = price
-        resp['size'] = abs(size)
-        resp['status'] = "active"
-        resp['time_in_force'] = 'GTC'
-        resp['type'] = 'limit'
-        resp['side'] = side
-
-        resp = utils.isolate_specific(needed, resp)
+        resp = self._fix_response(needed, price, resp, side, size, 'stop_loss')
         return StopLossOrder(order, resp, self)
 
     @utils.order_protection
     def take_profit_order(self, symbol: str, price: float, size: float) -> TakeProfitOrder:
         symbol = self.__convert_blankly_to_oanda(symbol)
         side = 'sell'
-        if side == "buy":
-            pass
-        elif side == "sell":
-            size *= -1
-        else:
-            raise ValueError("side needs to be either sell or buy")
+        size *= -1
 
         resp = self.calls.place_take_profit(symbol, size, price)
         needed = self.needed['take_profit']
-        order = {
-            'size': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': 'limit'
-        }
+        order = utils.build_order_info(0, side, size, symbol, 'take_profit')
 
-        try:
-            resp['symbol'] = self.__convert_symbol_to_blankly(resp['orderCreateTransaction']['instrument'])
-        except KeyError as e:
-            if 'orderRejectTransaction' in resp:
-                raise InvalidOrder(resp['orderRejectTransaction']['rejectReason'])
-            else:
-                raise e
-        resp['id'] = resp['orderCreateTransaction']['id']
-        resp['created_at'] = resp['orderCreateTransaction']['time']
-        resp['price'] = price
-        resp['size'] = abs(size)
-        resp['status'] = "active"
-        resp['time_in_force'] = 'GTC'
-        resp['type'] = 'limit'
-        resp['side'] = side
-
-        resp = utils.isolate_specific(needed, resp)
+        resp = self._fix_response(needed, price, resp, side, size, 'take_profit')
         return TakeProfitOrder(order, resp, self)
 
     @utils.order_protection
@@ -345,14 +276,12 @@ class OandaInterface(ExchangeInterface):
 
         resp = self.calls.place_limit_order(symbol, size, price)
         needed = self.needed['limit_order']
-        order = {
-            'size': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': 'limit'
-        }
+        order = utils.build_order_info(0, side, size, symbol, 'limit')
 
+        resp = self._fix_response(needed, price, resp, side, size, 'limit')
+        return LimitOrder(order, resp, self)
+
+    def _fix_response(self, needed, price, resp, side, size, type, set_tif=True):
         try:
             resp['symbol'] = self.__convert_symbol_to_blankly(resp['orderCreateTransaction']['instrument'])
         except KeyError as e:
@@ -362,15 +291,16 @@ class OandaInterface(ExchangeInterface):
                 raise e
         resp['id'] = resp['orderCreateTransaction']['id']
         resp['created_at'] = resp['orderCreateTransaction']['time']
-        resp['price'] = price
+        if price:
+            resp['price'] = price
         resp['size'] = abs(size)
         resp['status'] = "active"
-        resp['time_in_force'] = 'GTC'
-        resp['type'] = 'limit'
+        if set_tif:
+            resp['time_in_force'] = 'GTC'
+        resp['type'] = type
         resp['side'] = side
-
         resp = utils.isolate_specific(needed, resp)
-        return LimitOrder(order, resp, self)
+        return resp
 
     def cancel_order(self, symbol, order_id) -> dict:
         # Either the Order’s OANDA-assigned OrderID or the Order’s client-provided ClientID prefixed by the “@” symbol
@@ -521,6 +451,7 @@ class OandaInterface(ExchangeInterface):
                         ['state', 'status'],  # TODO: handle status
                         ['units', 'size']]
             return utils.rename_to(renames_, order_)
+
         if order['type'] == "MARKET":
             order['type'] = 'market'
             order = add_details(order)

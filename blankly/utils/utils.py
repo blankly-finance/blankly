@@ -388,6 +388,8 @@ def rename_to(keys_array, renaming_dictionary):
         mutated_dictionary["exchange_specific"] = {}
 
     for i in keys_array:
+        if i[0] not in renaming_dictionary:
+            continue
         if i[1] in renaming_dictionary:
             # If we're here this key has already been defined, push it to the specific
             mutated_dictionary["exchange_specific"][i[1]] = renaming_dictionary[i[1]]
@@ -832,3 +834,15 @@ def extract_price_by_resolution(prices, symbol, epoch_start, epoch_stop, resolut
         raise LookupError(f"Prices for this symbol ({symbol}) not found")
 
     return trim_df_time_column(price_set, epoch_start - resolution, epoch_stop)
+
+
+def build_order_info(price, side, size, symbol, type) -> dict:
+    order = {
+        'size': size,
+        'side': side,
+        'symbol': symbol,
+        'type': type
+    }
+    if price:
+        order['price'] = price
+    return order
