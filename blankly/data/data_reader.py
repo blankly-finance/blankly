@@ -20,8 +20,15 @@ import json
 import pandas as pd
 from enum import Enum
 
-from . import DataTypes
-from ..exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
+from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
+
+
+class DataTypes(Enum):
+    ohlcv_csv = 0
+    tick_csv = 1
+    ohlcv_json = 2
+    event_json = 3
+
 
 """
 This class seeks to solve these problems:
