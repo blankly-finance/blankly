@@ -1,4 +1,4 @@
-from blankly import Screener, Alpaca, ScreenerState
+from blankly import Screener, EXCHANGE_CLASS, ScreenerState
 from blankly.indicators import rsi
 
 tickers = SYMBOL_LIST  # any stocks that you may want

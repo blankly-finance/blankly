@@ -1,4 +1,4 @@
-from blankly import Screener, ScreenerState
+from blankly import Screener, EXCHANGE_CLASS, ScreenerState
 
 
 def evaluator(symbol, state: ScreenerState):
