@@ -36,7 +36,7 @@ class CoinbasePro(Exchange):
             calls = CoinbaseProAPI(api_key=keys['API_KEY'],
                                    api_secret=keys['API_SECRET'],
                                    api_pass=keys['API_PASS'],
-                                   API_URL="https://api-public.sandbox.pro.coinbase.com/")
+                                   api_url="https://api-public.sandbox.pro.coinbase.com/")
         else:
             # Create the authenticated object
             calls = CoinbaseProAPI(api_key=keys['API_KEY'],

@@ -7,6 +7,8 @@ import pytest
 from _pytest.python_api import approx
 
 from blankly.enums import Side, OrderType, ContractType, OrderStatus, HedgeMode, MarginType, PositionMode, TimeInForce
+from blankly.exchanges.interfaces.abc_base_exchange_interface import ABCBaseExchangeInterface
+from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.utils import utils
 from tests.new_interface_tests.test_utils import wait_till_filled, homogeneity_testing, sell, buy, cancelling_order, \
@@ -18,18 +20,31 @@ from tests.new_interface_tests.test_utils import wait_till_filled, homogeneity_t
 # TODO min size/min notional api
 
 
-def valid_product_helper(futures_interface: FuturesExchangeInterface, product):
+def valid_product_helper(interface: ABCBaseExchangeInterface, product):
     base = product['base_asset']
     quote = product['quote_asset']
     symbol = product['symbol']
     assert symbol == base + '-' + quote
-    exc = futures_interface.to_exchange_symbol(symbol)
-    assert futures_interface.to_blankly_symbol(exc) == symbol
+    if isinstance(interface, FuturesExchangeInterface):
+        exc = interface.to_exchange_symbol(symbol)
+        bly = interface.to_blankly_symbol(exc)
+    else:
+        exc = utils.to_exchange_symbol(symbol, interface.get_exchange_type())
+        bly = utils.to_blankly_symbol(exc, interface.get_exchange_type(), quote)
+    assert bly == symbol
 
 
-def test_valid_symbols(futures_interface: FuturesExchangeInterface):
-    for product in futures_interface.get_products().values():
-        valid_product_helper(futures_interface, product)
+def test_valid_symbols(interface: ABCBaseExchangeInterface):
+    if interface.get_exchange_type().startswith('alpaca'):
+        pytest.skip('stonk symbols can be whatever they wanna be')
+
+    if isinstance(interface, FuturesExchangeInterface):
+        products = interface.get_products().values()
+    else:
+        products = interface.get_products()
+
+    for product in products:
+        valid_product_helper(interface, product)
 
 
 def test_valid_symbol_from_position(
@@ -41,19 +56,29 @@ def test_valid_symbol_from_position(
 
 
 @homogeneity_testing
-def test_get_products(futures_interface: FuturesExchangeInterface):
+def test_get_products_futures(futures_interface: FuturesExchangeInterface):
     return list(futures_interface.get_products().values())
 
 
 @homogeneity_testing
-def test_get_products_symbol(futures_interface: FuturesExchangeInterface,
-                             symbol: str):
+def test_get_products_spot(spot_interface: ExchangeInterface):
+    return spot_interface.get_products()
+
+
+@homogeneity_testing
+def test_get_products_symbol_futures(futures_interface: FuturesExchangeInterface,
+                                     symbol: str):
     return futures_interface.get_products(symbol)
 
 
 @homogeneity_testing
-def test_get_account(futures_interface: FuturesExchangeInterface):
+def test_get_account_futures(futures_interface: FuturesExchangeInterface):
     return list(futures_interface.get_account().values())
+
+
+@homogeneity_testing
+def test_get_account_spot(spot_interface: FuturesExchangeInterface):
+    return list(spot_interface.get_account().values())
 
 
 @homogeneity_testing
@@ -87,21 +112,27 @@ def test_get_positions(futures_interface: FuturesExchangeInterface,
     return position
 
 
-def test_simple_open_close(futures_interface: FuturesExchangeInterface,
+def test_simple_open_close(interface: ABCBaseExchangeInterface,
                            symbol: str) -> None:
-    close_position(futures_interface, symbol)
+    close_position(interface, symbol)
 
     # buy
-    size = buy(futures_interface, symbol).size
-    assert futures_interface.get_position(symbol)['size'] == approx(size)
+    if isinstance(interface, FuturesExchangeInterface):
+        size = buy(interface, symbol).size
+        assert interface.get_position(symbol)['size'] == approx(size)
+    else:
+        size = buy(interface, symbol).get_size()
+        base = utils.get_base_asset(symbol)
+        assert interface.get_account(base)['available'] == approx(size)
 
-    close_position(futures_interface, symbol)
+    close_position(interface, symbol)
 
-    # sell
-    size = sell(futures_interface, symbol).size
-    assert futures_interface.get_position(symbol)['size'] == approx(-size)
+    if isinstance(interface, FuturesExchangeInterface):
+        # sell/short
+        size = sell(interface, symbol).size
+        assert interface.get_position(symbol)['size'] == approx(-size)
 
-    close_position(futures_interface, symbol)
+        close_position(interface, symbol)
 
 
 @homogeneity_testing
