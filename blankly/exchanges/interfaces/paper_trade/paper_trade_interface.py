@@ -527,7 +527,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         price_increment = order_filter['limit_order']['price_increment']
         price_increment_decimals = self.__get_decimals(price_increment)
 
-        if self.__get_decimals(price) > price_increment_decimals:
+        if self.should_auto_trunc:
+            price = utils.trunc(price, price_increment_decimals)
+        elif self.__get_decimals(price) > price_increment_decimals:
             raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(price_increment) +
                                ". Try using blankly.trunc(size, decimal_number) to match the exchange resolution.")
 

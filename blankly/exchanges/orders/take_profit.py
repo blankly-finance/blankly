@@ -25,54 +25,6 @@ class TakeProfitOrder(Order):
     """
 
     def __init__(self, order, response, interface):
-        """
-        Coinbase Response:
-        {
-            "id": "d0c5340b-6d6c-49d9-b567-48c4bfca13d2",
-            "price": "0.10000000",
-            "size": "0.01000000",
-            "product_id": "BTC-USD",
-            "side": "buy",
-            "stp": "dc",
-            "type": "limit",
-            "time_in_force": "GTC",
-            "post_only": false,
-            "created_at": "2016-12-08T20:02:28.53864Z",
-            "fill_fees": "0.0000000000000000",
-            "filled_size": "0.00000000",
-            "executed_value": "0.0000000000000000",
-            "status": "pending",
-            "settled": false
-        }
-
-        binance Response:
-        {
-            "symbol": "BTCUSDT",
-            "orderId": 28,
-            "clientOrderId": "6gCrw2kRUAF9CvJDGP16IP",
-            "transactTime": 1507725176595,
-            "price": "0.00000000",
-            "origQty": "10.00000000",
-            "executedQty": "10.00000000",
-            "status": "FILLED",
-            "timeInForce": "GTC",
-            "type": "MARKET",
-            "side": "SELL"
-        }
-
-        Guaranteed:
-        needed = [
-            ["symbol", str],
-            ["id", str],
-            ["created_at", float],
-            ["price", float],
-            ["size", float],
-            ["status", str],
-            ["time_in_force", str],
-            ["type", str],
-            ["side", str]
-        ]
-        """
         self.Interface = interface
         self.__exchange = self.Interface.get_exchange_type()
         self.__order = order

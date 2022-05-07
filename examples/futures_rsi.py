@@ -18,8 +18,9 @@
 
 import blankly
 from blankly import Side
-from blankly.exchanges.interfaces.binance_futures.binance_futures import BinanceFutures
-from blankly.futures import FuturesStrategyState, FTXFutures, FuturesStrategy, MarginType
+from blankly.futures import FuturesStrategyState, FuturesStrategy, BinanceFutures
+
+from blankly.futures.utils import close_position
 
 
 def price_event(price, symbol, state: FuturesStrategyState):
@@ -29,8 +30,6 @@ def price_event(price, symbol, state: FuturesStrategyState):
 
     position = state.interface.get_position('BTC-USDT')
     position_size = position['size'] if position else 0
-
-    precision = state.variables['precision']
 
     if rsi[-1] < 30:
         # rsi < 30 indicates the asset is undervalued or will rise in price
@@ -48,7 +47,6 @@ def price_event(price, symbol, state: FuturesStrategyState):
         return
 
     order_size = (state.interface.cash / price) * 0.99
-    order_size = blankly.trunc(order_size, precision)
 
     if order_size <= 0:
         return
@@ -56,47 +54,22 @@ def price_event(price, symbol, state: FuturesStrategyState):
     state.interface.market_order(symbol, side=side, size=order_size)
 
 
-def close_position(symbol, state: FuturesStrategyState):
-    position = state.interface.get_position(symbol)
-    if not position:
-        return
-    size = position['size']
-    if size < 0:
-        state.interface.market_order(symbol,
-                                     Side.BUY,
-                                     abs(size),
-                                     reduce_only=True)
-    elif size > 0:
-        state.interface.market_order(symbol,
-                                     Side.SELL,
-                                     abs(size),
-                                     reduce_only=True)
-
-
 def init(symbol, state: FuturesStrategyState):
     close_position(symbol, state)
-
-    # Set initial leverage and margin type
-    state.interface.set_leverage(1, symbol)
-    state.interface.set_margin_type(symbol, MarginType.CROSSED)
 
     state.variables['history'] = state.interface.history(
         symbol, to=150, return_as='deque',
         resolution=state.resolution)['close']
 
-    state.variables['precision'] = state.interface.get_products(symbol)['size_precision']
-
 
 if __name__ == "__main__":
-    exchange = BinanceFutures(keys_path="./tests/config/keys.json",
-                              preferences_path="./tests/config/settings.json",
-                              portfolio_name="Futures Test Key")
+    exchange = BinanceFutures()
 
     strategy = FuturesStrategy(exchange)
     strategy.add_price_event(price_event,
                              init=init,
                              teardown=close_position,
                              symbol='BTC-USDT',
-                             resolution='1m')
+                             resolution='5m')
 
-    strategy.backtest(to='1mo', initial_values={'USDT': 10000}, settings_path='./tests/config/usdt_backtest.json')
+    strategy.backtest(to='1mo', initial_values={'USDT': 10000})

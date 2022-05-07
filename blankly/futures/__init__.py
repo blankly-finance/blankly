@@ -4,3 +4,4 @@ from blankly.frameworks.strategy import FuturesStrategy
 from blankly.frameworks.strategy import FuturesStrategyState
 
 from blankly.enums import MarginType, HedgeMode
+

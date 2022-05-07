@@ -1,6 +1,7 @@
 import blankly
 from blankly import futures, Side
 from blankly.futures import FuturesStrategyState
+from blankly.futures.utils import close_position
 
 
 def price_event(price, symbol, state: FuturesStrategyState):
@@ -20,27 +21,9 @@ def price_event(price, symbol, state: FuturesStrategyState):
     state.variables['prev_price'] = price
 
 
-# Helper function to close out a position
-def close_position(symbol, state: FuturesStrategyState):
-    position = state.interface.get_position(symbol)
-    if not position:
-        return
-    size = position['size']
-    if size < 0:
-        state.interface.market_order(symbol,
-                                     Side.BUY,
-                                     abs(size),
-                                     reduce_only=True)
-    elif size > 0:
-        state.interface.market_order(symbol,
-                                     Side.SELL,
-                                     abs(size),
-                                     reduce_only=True)
-
-
 # This function will be run before our algorithm starts
 def init(symbol, state: FuturesStrategyState):
-    # Sanity check to make sure we don't have any open positions
+    # Close any open positions
     close_position(symbol, state)
 
     # Give the algo the previous price as context
@@ -48,20 +31,13 @@ def init(symbol, state: FuturesStrategyState):
     state.variables['prev_price'] = last_price
 
 
-# After our backtest is finished, close all our open positions
-def teardown(symbol, state):
-    close_position(symbol, state)
-
-
 if __name__ == "__main__":
     exchange = futures.BinanceFutures()
     strategy = futures.FuturesStrategy(exchange)
 
-    # This line is new!
-    strategy.add_price_event(price_event, init=init, teardown=teardown, symbol='BTC-USDT', resolution='1d')
+    strategy.add_price_event(price_event, init=init, teardown=close_position, symbol='BTC-USDT', resolution='1d')
 
     if blankly.is_deployed:
         strategy.start()
     else:
-        strategy.backtest(to='1y',
-                          initial_values={'USDT': 10000})  # This is USDT and not USD because we are trading on Binance
+        strategy.backtest(to='1y', initial_values={'USDT': 10000})
