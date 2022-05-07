@@ -19,7 +19,9 @@
 import blankly
 from blankly import Side
 from blankly.exchanges.interfaces.binance_futures.binance_futures import BinanceFutures
-from blankly.futures import FuturesStrategyState, FTXFutures, FuturesStrategy, MarginType
+from blankly.futures import FuturesStrategyState, FuturesStrategy, MarginType
+
+from blankly.futures.utils import close_position
 
 
 def price_event(price, symbol, state: FuturesStrategyState):
@@ -56,23 +58,6 @@ def price_event(price, symbol, state: FuturesStrategyState):
     state.interface.market_order(symbol, side=side, size=order_size)
 
 
-def close_position(symbol, state: FuturesStrategyState):
-    position = state.interface.get_position(symbol)
-    if not position:
-        return
-    size = position['size']
-    if size < 0:
-        state.interface.market_order(symbol,
-                                     Side.BUY,
-                                     abs(size),
-                                     reduce_only=True)
-    elif size > 0:
-        state.interface.market_order(symbol,
-                                     Side.SELL,
-                                     abs(size),
-                                     reduce_only=True)
-
-
 def init(symbol, state: FuturesStrategyState):
     close_position(symbol, state)
 
@@ -88,9 +73,7 @@ def init(symbol, state: FuturesStrategyState):
 
 
 if __name__ == "__main__":
-    exchange = BinanceFutures(keys_path="./tests/config/keys.json",
-                              preferences_path="./tests/config/settings.json",
-                              portfolio_name="Futures Test Key")
+    exchange = BinanceFutures()
 
     strategy = FuturesStrategy(exchange)
     strategy.add_price_event(price_event,

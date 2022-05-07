@@ -1,6 +1,7 @@
 import blankly
 from blankly import futures, Side
 from blankly.futures import FuturesStrategyState
+from blankly.futures.utils import close_position
 
 
 def price_event(price, symbol, state: FuturesStrategyState):
