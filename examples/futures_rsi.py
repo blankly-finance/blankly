@@ -18,8 +18,7 @@
 
 import blankly
 from blankly import Side
-from blankly.exchanges.interfaces.binance_futures.binance_futures import BinanceFutures
-from blankly.futures import FuturesStrategyState, FuturesStrategy
+from blankly.futures import FuturesStrategyState, FuturesStrategy, BinanceFutures
 
 from blankly.futures.utils import close_position
 
