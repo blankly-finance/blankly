@@ -27,3 +27,7 @@ class APIException(Exception):
 
 class AuthError(Exception):
     pass
+
+
+class BacktestingException(Exception):
+    pass

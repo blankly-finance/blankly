@@ -11,6 +11,8 @@ from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 from blankly.utils import utils as utils
 from copy import deepcopy
 
+from blankly.utils.exceptions import InvalidOrder, BacktestingException
+
 
 class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
     interface: FuturesExchangeInterface
@@ -147,7 +149,7 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
             elif order.side == Side.SELL:
                 return price >= order.limit_price
 
-        raise Exception(f'invalid order')
+        raise InvalidOrder()
 
     def set_hedge_mode(self, hedge_mode: HedgeMode):
         if hedge_mode == HedgeMode.HEDGE:
@@ -158,7 +160,7 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
 
     def set_leverage(self, leverage: float, symbol: str = None):
         if len(self.paper_positions):
-            raise Exception('can\'t set leverage with open positions')
+            raise BacktestingException('can\'t set leverage with open positions')
         if symbol:
             self.leverage[symbol] = leverage
         else:
@@ -169,9 +171,9 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
 
     def set_margin_type(self, symbol: str, type: MarginType):
         if len(self.paper_positions):
-            raise Exception('can\'t set margin type with open positions')
+            raise BacktestingException('can\'t set margin type with open positions')
         if type == MarginType.ISOLATED:
-            raise Exception('isolated margin not supported')
+            raise BacktestingException('isolated margin not supported')
         self.margin_type[symbol] = type
 
     def get_margin_type(self, symbol: str) -> MarginType:
@@ -184,7 +186,7 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
             assert order.symbol == symbol
             return dataclasses.replace(order, status=OrderStatus.CANCELED)
         except KeyError:
-            raise Exception('order not found')
+            raise BacktestingException('order not found')
 
     def get_open_orders(self, symbol: str = None) -> List[FuturesOrder]:
         return [dataclasses.replace(o) for o in self._placed_orders]
