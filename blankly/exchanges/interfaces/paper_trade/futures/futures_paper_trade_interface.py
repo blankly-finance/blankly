@@ -390,7 +390,8 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
             # this is weird behavior but it's what binance futures does
             # for now raise exception in backtesting, nobody is going to do this anyways
             # and the workaround is simple, just close your position first
-            raise Exception('order size is greater than position, close your position first and then place order')
+            raise Exception(f'order size ({size}) is greater than position ({abs(position["size"])}), '
+                            'close your position first and then place order')
 
         base, quote = symbol.split('-')
         acc = self.paper_account[quote]
