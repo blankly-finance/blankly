@@ -879,6 +879,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
             # Find the first time in the list
             self.initial_time = copy.copy(self.user_start)
+            self.interface.initial_time = self.initial_time
 
         if self.prices == {} and self.events == []:
             raise ValueError("No data given. "

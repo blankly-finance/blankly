@@ -109,6 +109,10 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         Return the backtest time if we're backtesting, if not just return None. If it's None the caller
          assumes no backtesting. The function being overridden always returns None
         """
+        # This is for the inits because it happens with both live calls and in the past
+        if self.initial_time is not None and not self.backtesting:
+            return self.initial_time
+        # This is for the actual price loops
         if self.backtesting:
             return self.time()
         else:
