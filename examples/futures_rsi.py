@@ -19,7 +19,7 @@
 import blankly
 from blankly import Side
 from blankly.exchanges.interfaces.binance_futures.binance_futures import BinanceFutures
-from blankly.futures import FuturesStrategyState, FuturesStrategy, MarginType
+from blankly.futures import FuturesStrategyState, FuturesStrategy
 
 from blankly.futures.utils import close_position
 
@@ -31,8 +31,6 @@ def price_event(price, symbol, state: FuturesStrategyState):
 
     position = state.interface.get_position('BTC-USDT')
     position_size = position['size'] if position else 0
-
-    precision = state.variables['precision']
 
     if rsi[-1] < 30:
         # rsi < 30 indicates the asset is undervalued or will rise in price
@@ -50,7 +48,6 @@ def price_event(price, symbol, state: FuturesStrategyState):
         return
 
     order_size = (state.interface.cash / price) * 0.99
-    order_size = blankly.trunc(order_size, precision)
 
     if order_size <= 0:
         return
@@ -61,15 +58,9 @@ def price_event(price, symbol, state: FuturesStrategyState):
 def init(symbol, state: FuturesStrategyState):
     close_position(symbol, state)
 
-    # Set initial leverage and margin type
-    state.interface.set_leverage(1, symbol)
-    state.interface.set_margin_type(symbol, MarginType.CROSSED)
-
     state.variables['history'] = state.interface.history(
         symbol, to=150, return_as='deque',
         resolution=state.resolution)['close']
-
-    state.variables['precision'] = state.interface.get_products(symbol)['size_precision']
 
 
 if __name__ == "__main__":
@@ -80,6 +71,6 @@ if __name__ == "__main__":
                              init=init,
                              teardown=close_position,
                              symbol='BTC-USDT',
-                             resolution='1m')
+                             resolution='5m')
 
-    strategy.backtest(to='1mo', initial_values={'USDT': 10000}, settings_path='./tests/config/usdt_backtest.json')
+    strategy.backtest(to='1mo', initial_values={'USDT': 10000})
