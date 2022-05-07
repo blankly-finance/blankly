@@ -1,8 +1,5 @@
-import sys
-
 import blankly
 from blankly import Side
-from blankly.utils import time
 
 
 def price_event(price, symbol, state: blankly.StrategyState):
