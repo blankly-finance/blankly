@@ -108,9 +108,9 @@ class FTXFuturesInterface(FuturesExchangeInterface):
                 'base_asset': prod['underlying'],
                 'quote_asset': 'USD',
                 'contract_type': ContractType.PERPETUAL,
-                'price_precision': self.increment_to_precision(
+                'price_precision': utils.increment_to_precision(
                     prod['priceIncrement']),
-                'size_precision': self.increment_to_precision(
+                'size_precision': utils.increment_to_precision(
                     prod['sizeIncrement']),
                 'exchange_specific': prod
             }

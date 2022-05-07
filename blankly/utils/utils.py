@@ -341,6 +341,8 @@ def to_blankly_symbol(symbol, exchange, quote_guess=None) -> str:
     if exchange == "ftx":
         return symbol.replace("/", "-")
 
+    return symbol
+
 
 def __check_ending(full_string, checked_ending) -> bool:
     check_length = len(checked_ending)
@@ -356,6 +358,7 @@ def to_exchange_symbol(blankly_symbol, exchange):
         return blankly_symbol
     if exchange == 'ftx':
         return blankly_symbol.replace("-", "/")
+    return blankly_symbol
 
 
 def get_base_asset(symbol):
