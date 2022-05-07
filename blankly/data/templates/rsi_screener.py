@@ -1,3 +1,4 @@
+import blankly
 from blankly import Screener, EXCHANGE_CLASS, ScreenerState
 from blankly.indicators import rsi
 
