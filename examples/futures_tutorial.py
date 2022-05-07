@@ -23,7 +23,7 @@ def price_event(price, symbol, state: FuturesStrategyState):
 
 # This function will be run before our algorithm starts
 def init(symbol, state: FuturesStrategyState):
-    # Sanity check to make sure we don't have any open positions
+    # Close any open positions
     close_position(symbol, state)
 
     # Give the algo the previous price as context
@@ -35,11 +35,9 @@ if __name__ == "__main__":
     exchange = futures.BinanceFutures()
     strategy = futures.FuturesStrategy(exchange)
 
-    # This line is new!
     strategy.add_price_event(price_event, init=init, teardown=close_position, symbol='BTC-USDT', resolution='1d')
 
     if blankly.is_deployed:
         strategy.start()
     else:
-        strategy.backtest(to='1y',
-                          initial_values={'USDT': 10000})  # This is USDT and not USD because we are trading on Binance
+        strategy.backtest(to='1y', initial_values={'USDT': 10000})
