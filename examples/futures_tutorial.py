@@ -21,24 +21,6 @@ def price_event(price, symbol, state: FuturesStrategyState):
     state.variables['prev_price'] = price
 
 
-# Helper function to close out a position
-def close_position(symbol, state: FuturesStrategyState):
-    position = state.interface.get_position(symbol)
-    if not position:
-        return
-    size = position['size']
-    if size < 0:
-        state.interface.market_order(symbol,
-                                     Side.BUY,
-                                     abs(size),
-                                     reduce_only=True)
-    elif size > 0:
-        state.interface.market_order(symbol,
-                                     Side.SELL,
-                                     abs(size),
-                                     reduce_only=True)
-
-
 # This function will be run before our algorithm starts
 def init(symbol, state: FuturesStrategyState):
     # Sanity check to make sure we don't have any open positions
@@ -49,17 +31,12 @@ def init(symbol, state: FuturesStrategyState):
     state.variables['prev_price'] = last_price
 
 
-# After our backtest is finished, close all our open positions
-def teardown(symbol, state):
-    close_position(symbol, state)
-
-
 if __name__ == "__main__":
     exchange = futures.BinanceFutures()
     strategy = futures.FuturesStrategy(exchange)
 
     # This line is new!
-    strategy.add_price_event(price_event, init=init, teardown=teardown, symbol='BTC-USDT', resolution='1d')
+    strategy.add_price_event(price_event, init=init, teardown=close_position, symbol='BTC-USDT', resolution='1d')
 
     if blankly.is_deployed:
         strategy.start()
