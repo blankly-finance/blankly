@@ -186,7 +186,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         using_setting = self.user_preferences['settings'][self.exchange_name]['cash']
         return self.get_account(using_setting)['available']
 
-    def is_backtesting(self):
+    def backtesting_time(self):
         """
         Overridden by interfaces which have a valid backtesting boolean value
         """

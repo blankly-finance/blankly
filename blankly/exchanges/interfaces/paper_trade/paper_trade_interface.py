@@ -104,7 +104,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             if (accounts[i]['available'] + accounts[i]['hold']) != 0 and i not in self.traded_assets:
                 self.traded_assets.append(i)
 
-    def is_backtesting(self):
+    def backtesting_time(self):
         """
         Return the backtest time if we're backtesting, if not just return None. If it's None the caller
          assumes no backtesting. The function being overridden always returns None

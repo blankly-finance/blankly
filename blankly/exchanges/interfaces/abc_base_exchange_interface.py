@@ -97,7 +97,7 @@ class ABCBaseExchangeInterface(abc.ABC):
         return self.cast_type(response, return_as, point_count)
 
     def calculate_epochs(self, start_date, end_date, resolution, to):
-        is_backtesting = self.is_backtesting()
+        is_backtesting = self.backtesting_time()
         if is_backtesting is not None and end_date is None:
             # is_backtesting can only return a non None value if a function overrides the is_backtesting function
             #  and says its backtesting by returning a valid time
@@ -127,7 +127,9 @@ class ABCBaseExchangeInterface(abc.ABC):
                 parsed_date = end_date
             valid_time_in_past = utils.ceil_date(parsed_date,
                                                  seconds=resolution_seconds).timestamp() - resolution_seconds
-            epoch_stop = valid_time_in_past - resolution_seconds
+            epoch_stop = valid_time_in_past
+            if is_backtesting is None:
+                epoch_stop -= resolution_seconds
             count_from = valid_time_in_past
         if start_date is None and end_date is None:
             if isinstance(to, int):
@@ -147,7 +149,7 @@ class ABCBaseExchangeInterface(abc.ABC):
     def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
         return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
-    def is_backtesting(self):
+    def backtesting_time(self):
         return None
 
     @staticmethod

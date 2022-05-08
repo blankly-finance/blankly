@@ -86,6 +86,9 @@ class StrategyStructure(Model):
                 except IndexError:
                     warnings.warn("No bar found for this time range")
                     return
+                threshold = 10
+                if data['time'] + threshold < self.time:
+                    return data['time'] + resolution
             args = [data, symbol, state]
         elif type_ == EventType.price_event:
             data = self.interface.get_price(symbol)
@@ -124,22 +127,28 @@ class StrategyStructure(Model):
         except Exception:
             traceback.print_exc()
 
-    def run_price_events(self, kwargs_list: list):
-        for events_definition in kwargs_list:
-            events_definition['next_run'] = self.backtester.initial_time
+    def run_price_events(self, events: list):
+        # run all events once at start
+        for event in events:
+            event['next_run'] = self.backtester.initial_time
+
         while self.has_data:
-            kwargs_list = sorted(kwargs_list, key=lambda d: d['next_run'])
-            next_event = kwargs_list[0]
+            events.sort(key=lambda d: d['next_run'])
+            event = events[0]
 
             # Sleep the difference
-            self.sleep(next_event['next_run'] - self.time)
+            self.sleep(event['next_run'] - self.time)
 
             # Run the event
-            self.rest_event(**next_event)
-
-            # Value the account after each run
-            self.backtester.value_account()
-            kwargs_list[0]['next_run'] += kwargs_list[0]['resolution']
+            next_run = self.rest_event(**event)
+            if next_run:
+                # if rest_event returns something, run this event again at that time
+                # this implies the event did *not* run
+                event['next_run'] = next_run
+            else:
+                # otherwise, the event ran. we can revalue account and re-run normally @ `resolution` intervals
+                self.backtester.value_account()
+                event['next_run'] += event['resolution']
 
     def main(self, args):
         if self.is_backtesting:
@@ -155,11 +164,11 @@ class StrategyStructure(Model):
             kwargs['state'].strategy.interface = self.interface
         self.__run_init()
 
-        kwargs_list = []
+        events = []
         for scheduler in self.schedulers:
-            kwargs_list.append(scheduler.get_kwargs())
+            events.append(scheduler.get_kwargs())
 
-        self.run_price_events(kwargs_list)
+        self.run_price_events(events)
 
     def __run_init(self):
         # Switch to live mode for the inits

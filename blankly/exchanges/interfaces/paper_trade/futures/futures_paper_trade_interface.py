@@ -235,7 +235,10 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         return self.interface.get_funding_rate_resolution()
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
-        return self.interface.get_product_history(symbol, epoch_start, epoch_stop, resolution)
+        if self.backtesting:
+            return utils.extract_price_by_resolution(self.full_prices, symbol, epoch_start, epoch_stop, resolution)
+        else:
+            return self.interface.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
     def evaluate_traded_account_assets(self):
         pass
