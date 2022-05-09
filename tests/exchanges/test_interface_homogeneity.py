@@ -217,17 +217,6 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertEqual(order.get_type(), 'market')
 
     def test_market_order(self):
-        def check_account_delta(before: dict, after: dict, order: MarketOrder) -> None:
-            # A market order should not have changed the funds on hold
-            self.assertAlmostEqual(before['hold'], after['hold'], places=1)
-
-            # The symbol should have gained less than the size on the buy if there were fees
-            # Before + requested size >= the filled size
-            before['available'] = int(float(before['available']))  # added this and line below
-            after['available'] = int(float(after['available']))
-
-            self.assertGreaterEqual(blankly.trunc(before['available'], 2) + order.get_size(),
-                                    blankly.trunc(after['available'], 2))
 
         # Make sure to buy back the funds we're loosing from fees - minimum balance of .1 bitcoin
         btc_account = self.Binance_Interface.get_account(symbol="BTC")['available']
@@ -270,7 +259,7 @@ class InterfaceHomogeneity(unittest.TestCase):
 
             # Grab them after
             after_value = i.get_account(get_base_asset(get_valid_symbol(type_)))
-            check_account_delta(initial_value, after_value, order_responses[-1]['order'])
+            self.check_account_delta_market(initial_value, after_value, order_responses[-1]['order'])
 
             order_responses.append({
                 'order': i.market_order(get_valid_symbol(type_), 'sell', size),
@@ -308,42 +297,18 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertEqual(limit_order.get_symbol(), product_id)
 
     def test_limit_order(self):
-        """
-        This function tests a few components of market orders:
-        - Opening market orders
-        - Monitoring market orders using the order status function
-        - Comparing with open orders
-        - Canceling orders
-        """
         limits = []
         sorted_orders = {}
 
         def evaluate_limit_order(interface: ABCExchangeInterface, symbol: str, buy_price: [float, int],
                                  sell_price: [float, int], size: [float, int]):
-            def check_account_delta(before: dict, after: dict, order: LimitOrder) -> None:
-                # On a buy the quote asset should get moved to hold
-
-                before['available'] = float(before['available'])  # added this and line below
-                after['available'] = float(after['available'])
-
-                before['hold'] = float(before['hold'])  # added this and line below
-                after['hold'] = float(after['hold'])
-
-                self.assertAlmostEqual(before['available'], after['available'] + (order.get_price() * order.get_size()),
-                                       places=1)
-
-                # The symbol should have gained less than the size on the buy if there were fees
-                # Before + requested size >= the filled size
-                self.assertAlmostEqual(before['hold'], after['hold'] - (order.get_price() * order.get_size()),
-                                       places=1)
-
             initial_account = interface.get_account(get_quote_asset(symbol))
             buy = interface.limit_order(symbol, 'buy', buy_price, size)
             after_buy_account = interface.get_account(get_quote_asset(symbol))
             # Buying power is always moving on alpaca, so it can't really be compared in this way
             # need a larger range
             if buy.exchange != 'alpaca':
-                check_account_delta(initial_account, after_buy_account, buy)
+                self.check_account_delta_limit(initial_account, after_buy_account, buy)
 
             sell = interface.limit_order(symbol, 'sell', sell_price, size)
             self.check_limit_order(sell, 'sell', size, symbol)
@@ -444,62 +409,29 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         self.assertTrue(compare_responses(cancels, force_exchange_specific=False))
 
+    def evaluate_tp_sl_order(self, sorted_orders: dict, order_func, symbol: str, sell_price: [float, int],
+                             size: [float, int]) -> list:
+        sell = order_func(symbol, sell_price, size)
+        self.check_limit_order(sell, 'sell', size, symbol)
+        sorted_orders[sell.exchange] = {'sell': sell}
+        return [sell]
+
     def test_take_profit_order(self):
-        """
-        This function tests a few components of market orders:
-        - Opening market orders
-        - Monitoring market orders using the order status function
-        - Comparing with open orders
-        - Canceling orders
-        """
         limits = []
         sorted_orders = {}
 
-        def evaluate_limit_order(interface: ABCExchangeInterface, symbol: str, buy_price: [float, int],
-                                 sell_price: [float, int], size: [float, int]):
-            def check_account_delta(before: dict, after: dict, order: LimitOrder) -> None:
-                # On a buy the quote asset should get moved to hold
-
-                before['available'] = float(before['available'])  # added this and line below
-                after['available'] = float(after['available'])
-
-                before['hold'] = float(before['hold'])  # added this and line below
-                after['hold'] = float(after['hold'])
-
-                self.assertAlmostEqual(before['available'], after['available'] + (order.get_price() * order.get_size()),
-                                       places=1)
-
-                # The symbol should have gained less than the size on the buy if there were fees
-                # Before + requested size >= the filled size
-                self.assertAlmostEqual(before['hold'], after['hold'] - (order.get_price() * order.get_size()),
-                                       places=1)
-
-            initial_account = interface.get_account(get_quote_asset(symbol))
-            sell = interface.take_profit_order(symbol, sell_price, size)
-            self.check_limit_order(sell, 'sell', size, symbol)
-
-            if sell.exchange not in sorted_orders:
-                sorted_orders[sell.exchange] = {}
-
-            sorted_orders[sell.exchange] = {
-                'sell': sell
-            }
-
-            return [sell]
-
-        limits += evaluate_limit_order(self.Alpaca_Interface, 'AAPL', 10, 100000, 1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Alpaca_Interface.take_profit_order, 'AAPL', 100000, 1)
 
         binance_limits = self.Binance_Interface.get_order_filter('BTC-USDT')["limit_order"]
-        limits += evaluate_limit_order(self.Binance_Interface, 'BTC-USDT', int(binance_limits['min_price'] + 100),
-                                       int(binance_limits['max_price'] - 100), .01)
-
-        limits += evaluate_limit_order(self.Coinbase_Pro_Interface, 'BTC-USD', .01, 100000, 1)
-
-        limits += evaluate_limit_order(self.Kucoin_Interface, 'ETH-USDT', .01, 100000, 1)
-
-        limits += evaluate_limit_order(self.Oanda_Interface, 'EUR-USD', .01, 100000, 1)
-
-        limits += evaluate_limit_order(self.Okx_Interface, 'BTC-USDT', 0.50, 100000, .01)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Binance_Interface.take_profit_order, 'BTC-USDT',
+                                            int(binance_limits['max_price'] - 100), .01)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Coinbase_Pro_Interface.take_profit_order, 'BTC-USD',
+                                            100000, 1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Kucoin_Interface.take_profit_order, 'ETH-USDT', 100000,
+                                            1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Oanda_Interface.take_profit_order, 'EUR-USD', 100000, 1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Okx_Interface.take_profit_order, 'BTC-USDT', 100000,
+                                            .01)
 
         responses = []
         status = []
@@ -565,62 +497,49 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         self.assertTrue(compare_responses(cancels, force_exchange_specific=False))
 
+    def check_account_delta_market(self, before: dict, after: dict, order: MarketOrder) -> None:
+        # A market order should not have changed the funds on hold
+        self.assertAlmostEqual(before['hold'], after['hold'], places=1)
+
+        # The symbol should have gained less than the size on the buy if there were fees
+        # Before + requested size >= the filled size
+        before['available'] = int(float(before['available']))  # added this and line below
+        after['available'] = int(float(after['available']))
+
+        self.assertGreaterEqual(blankly.trunc(before['available'], 2) + order.get_size(),
+                                blankly.trunc(after['available'], 2))
+
+    def check_account_delta_limit(self, before: dict, after: dict, order: LimitOrder) -> None:
+        # On a buy the quote asset should get moved to hold
+
+        before['available'] = float(before['available'])  # added this and line below
+        after['available'] = float(after['available'])
+
+        before['hold'] = float(before['hold'])  # added this and line below
+        after['hold'] = float(after['hold'])
+
+        self.assertAlmostEqual(before['available'], after['available'] + (order.get_price() * order.get_size()),
+                               places=1)
+
+        # The symbol should have gained less than the size on the buy if there were fees
+        # Before + requested size >= the filled size
+        self.assertAlmostEqual(before['hold'], after['hold'] - (order.get_price() * order.get_size()),
+                               places=1)
+
     def test_stop_loss_order(self):
-        """
-        This function tests a few components of market orders:
-        - Opening market orders
-        - Monitoring market orders using the order status function
-        - Comparing with open orders
-        - Canceling orders
-        """
         limits = []
         sorted_orders = {}
 
-        def evaluate_limit_order(interface: ABCExchangeInterface, symbol: str, buy_price: [float, int],
-                                 sell_price: [float, int], size: [float, int]):
-            def check_account_delta(before: dict, after: dict, order: LimitOrder) -> None:
-                # On a buy the quote asset should get moved to hold
-
-                before['available'] = float(before['available'])  # added this and line below
-                after['available'] = float(after['available'])
-
-                before['hold'] = float(before['hold'])  # added this and line below
-                after['hold'] = float(after['hold'])
-
-                self.assertAlmostEqual(before['available'], after['available'] + (order.get_price() * order.get_size()),
-                                       places=1)
-
-                # The symbol should have gained less than the size on the buy if there were fees
-                # Before + requested size >= the filled size
-                self.assertAlmostEqual(before['hold'], after['hold'] - (order.get_price() * order.get_size()),
-                                       places=1)
-
-            initial_account = interface.get_account(get_quote_asset(symbol))
-            sell = interface.stop_loss_order(symbol, sell_price, size)
-            self.check_limit_order(sell, 'sell', size, symbol)
-
-            if sell.exchange not in sorted_orders:
-                sorted_orders[sell.exchange] = {}
-
-            sorted_orders[sell.exchange] = {
-                'sell': sell
-            }
-
-            return [sell]
-
-        limits += evaluate_limit_order(self.Alpaca_Interface, 'AAPL', 10, 100000, 1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Alpaca_Interface.take_profit_order, 'AAPL', 100000, 1)
 
         binance_limits = self.Binance_Interface.get_order_filter('BTC-USDT')["limit_order"]
-        limits += evaluate_limit_order(self.Binance_Interface, 'BTC-USDT', int(binance_limits['min_price'] + 100),
-                                       int(binance_limits['max_price'] - 100), .01)
-
-        limits += evaluate_limit_order(self.Coinbase_Pro_Interface, 'BTC-USD', .01, 100000, 1)
-
-        limits += evaluate_limit_order(self.Kucoin_Interface, 'ETH-USDT', .01, 100000, 1)
-
-        limits += evaluate_limit_order(self.Oanda_Interface, 'EUR-USD', .01, 100000, 1)
-
-        limits += evaluate_limit_order(self.Okx_Interface, 'BTC-USDT', 0.50, 100000, .01)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Binance_Interface.stop_loss_order, 'BTC-USDT',
+                                            int(binance_limits['min_price'] + 100), .01)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Coinbase_Pro_Interface.stop_loss_order, 'BTC-USD', 0.01,
+                                            1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Kucoin_Interface.stop_loss_order, 'ETH-USDT', 0.01, 1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Oanda_Interface.stop_loss_order, 'EUR-USD', 0.01, 1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Okx_Interface.stop_loss_order, 'BTC-USDT', 0.5, .01)
 
         responses = []
         status = []
