@@ -89,7 +89,7 @@ SPOT_EXCHANGES = [
 for exchange in FUTURES_EXCHANGES + SPOT_EXCHANGES:
     # override auto trunc for new tests
     # old tests use the default if auto_truncate is not set, which is False
-    exchange.user_preferences['settings']['auto_truncate'] = True
+    exchange.interface.user_preferences['settings']['auto_truncate'] = True
 
 
 def get_symbols(exchange: ABCBaseExchangeInterface):
