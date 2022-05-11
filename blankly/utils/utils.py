@@ -441,7 +441,8 @@ def isolate_specific(needed, compare_dictionary):
 
     # Now we need to remove the keys that we appended to exchange_specific
     for k, v in exchange_specific.items():
-        del compare_dictionary[k]
+        if k in compare_dictionary:
+            del compare_dictionary[k]
 
     # If there exists the exchange specific dict in the compare dictionary
     # This is done because after renaming, if there are naming conflicts they will already have been pushed here

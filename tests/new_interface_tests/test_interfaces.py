@@ -16,10 +16,6 @@ from tests.new_interface_tests.test_utils import wait_till_filled, homogeneity_t
     close_all
 
 
-# TODO auto truncate
-# TODO min size/min notional api
-
-
 def valid_product_helper(interface: ABCBaseExchangeInterface, product):
     base = product['base_asset']
     quote = product['quote_asset']

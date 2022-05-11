@@ -327,7 +327,7 @@ class CoinbaseProInterface(ExchangeInterface):
         order = {
             'symbol': symbol,
             'side': side,
-            'type': 'stop',
+            'type': 'stop_loss',
             'stop': stop,
             'stop_price': stop_price,
             'size': size,

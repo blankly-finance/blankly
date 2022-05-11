@@ -57,3 +57,7 @@ class StopLossOrder(Order):
         return_string = self.add_new_line(return_string, self.get_price())
 
         return return_string
+
+    # override this here to homogenize these strings
+    def get_type(self) -> str:
+        return 'stop_loss'

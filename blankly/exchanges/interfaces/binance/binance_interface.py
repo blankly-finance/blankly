@@ -441,16 +441,16 @@ class BinanceInterface(ExchangeInterface):
 
         """
         side = 'sell'
-        type = 'TAKE_PROFIT'
         order = {
             'size': size,
             'side': side,
             'price': price,
             'symbol': symbol,
-            'type': type
+            'type': 'take_profit'
         }
         modified_symbol = utils.to_exchange_symbol(symbol, 'binance')
-        response = self.calls.create_order(symbol=modified_symbol, side=side, stopPrice=price, quantity=size, type=type)
+        response = self.calls.create_order(symbol=modified_symbol, side=side, stopPrice=price, quantity=size,
+                                           type='TAKE_PROFIT')
         response = self._fix_response(needed, response)
         return TakeProfitOrder(order, response, self)
 
@@ -497,16 +497,16 @@ class BinanceInterface(ExchangeInterface):
 
         """
         side = 'sell'
-        type = 'STOP_LOSS'
         order = {
             'size': size,
             'side': side,
             'price': price,
             'symbol': symbol,
-            'type': type
+            'type': 'stop_loss'
         }
         modified_symbol = utils.to_exchange_symbol(symbol, 'binance')
-        response = self.calls.create_order(symbol=modified_symbol, side=side, stopPrice=price, quantity=size, type=type)
+        response = self.calls.create_order(symbol=modified_symbol, side=side, stopPrice=price, quantity=size,
+                                           type='STOP_LOSS')
         response = self._fix_response(needed, response)
         return StopLossOrder(order, response, self)
 
@@ -700,7 +700,7 @@ class BinanceInterface(ExchangeInterface):
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
         """
-        self._binance_get_product_history(self.calls, symbol, epoch_start, epoch_stop, resolution)
+        return self._binance_get_product_history(self.calls, symbol, epoch_start, epoch_stop, resolution)
 
     @staticmethod
     def _binance_get_product_history(calls, symbol, epoch_start, epoch_stop, resolution):

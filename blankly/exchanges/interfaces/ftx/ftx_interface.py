@@ -331,7 +331,7 @@ class FTXInterface(ExchangeInterface):
         response = self.get_calls().place_conditional_order(symbol, side, size, order_type="takeProfit",
                                                             trigger_price=price)
 
-        order = utils.build_order_info(price, side, size, symbol, 'limit')
+        order = utils.build_order_info(price, side, size, symbol, 'take_profit')
 
         response = self._fix_response(needed, response)
 

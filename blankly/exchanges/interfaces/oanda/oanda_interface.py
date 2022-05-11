@@ -28,7 +28,7 @@ from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
 from blankly.exchanges.orders.stop_loss import StopLossOrder
 from blankly.exchanges.orders.take_profit import TakeProfitOrder
-from blankly.utils import utils as utils
+from blankly.utils import utils, time_builder
 from blankly.utils.exceptions import APIException, InvalidOrder
 
 
@@ -361,7 +361,7 @@ class OandaInterface(ExchangeInterface):
     def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution: int):
         symbol = self.__convert_blankly_to_oanda(symbol)
 
-        resolution = int(utils.time_interval_to_seconds(resolution))
+        resolution = int(time_builder.time_interval_to_seconds(resolution))
 
         if resolution not in self.multiples_keys:
             utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")

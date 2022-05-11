@@ -287,9 +287,9 @@ class InterfaceHomogeneity(unittest.TestCase):
                 except Exception as e:
                     print(f"Failed canceling order for reason {e} - may have already executed")
 
-    def check_limit_order(self, limit_order: LimitOrder, expected_side: str, size, product_id):
+    def check_limit_order(self, limit_order: LimitOrder, expected_side: str, size, product_id, type_='limit'):
         self.assertEqual(limit_order.get_side(), expected_side)
-        self.assertEqual(limit_order.get_type(), 'limit')
+        self.assertEqual(limit_order.get_type(), type_)
         self.assertEqual(limit_order.get_time_in_force(), 'GTC')
         # TODO fix status homogeneity
         # self.assertEqual(limit_order.get_status(), {'status': 'new'})
@@ -409,10 +409,16 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         self.assertTrue(compare_responses(cancels, force_exchange_specific=False))
 
-    def evaluate_tp_sl_order(self, sorted_orders: dict, order_func, symbol: str, sell_price: [float, int],
+    def evaluate_tp_sl_order(self, sorted_orders: dict, interface, type_, symbol: str, sell_price: [float, int],
                              size: [float, int]) -> list:
+        if type_ == 'stop_loss':
+            order_func = interface.stop_loss_order
+        elif type_ == 'take_profit':
+            order_func = interface.take_profit_order
+        else:
+            raise ValueError('order type must be take_profit or stop_loss')
         sell = order_func(symbol, sell_price, size)
-        self.check_limit_order(sell, 'sell', size, symbol)
+        self.check_limit_order(sell, 'sell', size, symbol, type_)
         sorted_orders[sell.exchange] = {'sell': sell}
         return [sell]
 
@@ -420,17 +426,14 @@ class InterfaceHomogeneity(unittest.TestCase):
         limits = []
         sorted_orders = {}
 
-        limits += self.evaluate_tp_sl_order(sorted_orders, self.Alpaca_Interface.take_profit_order, 'AAPL', 100000, 1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Alpaca_Interface, 'take_profit', 'AAPL', 100000, 1)
 
-        binance_limits = self.Binance_Interface.get_order_filter('BTC-USDT')["limit_order"]
-        limits += self.evaluate_tp_sl_order(sorted_orders, self.Binance_Interface.take_profit_order, 'BTC-USDT',
-                                            int(binance_limits['max_price'] - 100), .01)
-        limits += self.evaluate_tp_sl_order(sorted_orders, self.Coinbase_Pro_Interface.take_profit_order, 'BTC-USD',
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Coinbase_Pro_Interface, 'take_profit', 'BTC-USD',
                                             100000, 1)
-        limits += self.evaluate_tp_sl_order(sorted_orders, self.Kucoin_Interface.take_profit_order, 'ETH-USDT', 100000,
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Kucoin_Interface, 'take_profit', 'ETH-USDT', 100000,
                                             1)
-        limits += self.evaluate_tp_sl_order(sorted_orders, self.Oanda_Interface.take_profit_order, 'EUR-USD', 100000, 1)
-        limits += self.evaluate_tp_sl_order(sorted_orders, self.Okx_Interface.take_profit_order, 'BTC-USDT', 100000,
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Oanda_Interface, 'take_profit', 'EUR-USD', 100000, 1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Okx_Interface, 'take_profit', 'BTC-USDT', 100000,
                                             .01)
 
         responses = []
@@ -439,7 +442,6 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         open_orders = {
             'coinbase_pro': self.Coinbase_Pro_Interface.get_open_orders('BTC-USD'),
-            'binance': self.Binance_Interface.get_open_orders('BTC-USDT'),
             'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
             'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
             'oanda': self.Oanda_Interface.get_open_orders('EUR-USD'),
@@ -452,7 +454,6 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         # Just scan through both simultaneously to reduce code copying
         all_orders = open_orders['coinbase_pro']
-        all_orders = all_orders + open_orders['binance']
         all_orders = all_orders + open_orders['okx']
         all_orders = all_orders + open_orders['kucoin']
         all_orders = all_orders + open_orders['alpaca']
@@ -483,8 +484,6 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertTrue(compare_responses(responses))
         self.assertTrue(compare_responses(status))
 
-        cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', sorted_orders['binance']['sell'].get_id()))
-
         cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', sorted_orders['kucoin']['sell'].get_id()))
         cancels.append(self.Okx_Interface.cancel_order('BTC-USDT', sorted_orders['okx']['sell'].get_id()))
 
@@ -503,11 +502,11 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         # The symbol should have gained less than the size on the buy if there were fees
         # Before + requested size >= the filled size
-        before['available'] = int(float(before['available']))  # added this and line below
-        after['available'] = int(float(after['available']))
+        before['available'] = float(before['available'])
+        after['available'] = float(after['available'])
 
-        self.assertGreaterEqual(blankly.trunc(before['available'], 2) + order.get_size(),
-                                blankly.trunc(after['available'], 2))
+        self.assertAlmostEqual(blankly.trunc(before['available'], 2) + order.get_size(),
+                                blankly.trunc(after['available'], 2), delta=1)
 
     def check_account_delta_limit(self, before: dict, after: dict, order: LimitOrder) -> None:
         # On a buy the quote asset should get moved to hold
@@ -530,16 +529,13 @@ class InterfaceHomogeneity(unittest.TestCase):
         limits = []
         sorted_orders = {}
 
-        limits += self.evaluate_tp_sl_order(sorted_orders, self.Alpaca_Interface.take_profit_order, 'AAPL', 100000, 1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Alpaca_Interface, 'stop_loss', 'AAPL', 1, 1)
 
-        binance_limits = self.Binance_Interface.get_order_filter('BTC-USDT')["limit_order"]
-        limits += self.evaluate_tp_sl_order(sorted_orders, self.Binance_Interface.stop_loss_order, 'BTC-USDT',
-                                            int(binance_limits['min_price'] + 100), .01)
-        limits += self.evaluate_tp_sl_order(sorted_orders, self.Coinbase_Pro_Interface.stop_loss_order, 'BTC-USD', 0.01,
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Coinbase_Pro_Interface, 'stop_loss', 'BTC-USD', 0.01,
                                             1)
-        limits += self.evaluate_tp_sl_order(sorted_orders, self.Kucoin_Interface.stop_loss_order, 'ETH-USDT', 0.01, 1)
-        limits += self.evaluate_tp_sl_order(sorted_orders, self.Oanda_Interface.stop_loss_order, 'EUR-USD', 0.01, 1)
-        limits += self.evaluate_tp_sl_order(sorted_orders, self.Okx_Interface.stop_loss_order, 'BTC-USDT', 0.5, .01)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Kucoin_Interface, 'stop_loss', 'ETH-USDT', 0.01, 1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Oanda_Interface, 'stop_loss', 'EUR-USD', 0.01, 1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Okx_Interface, 'stop_loss', 'BTC-USDT', 0.5, .01)
 
         responses = []
         status = []
@@ -547,7 +543,6 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         open_orders = {
             'coinbase_pro': self.Coinbase_Pro_Interface.get_open_orders('BTC-USD'),
-            'binance': self.Binance_Interface.get_open_orders('BTC-USDT'),
             'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
             'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
             'oanda': self.Oanda_Interface.get_open_orders('EUR-USD'),
@@ -560,7 +555,6 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         # Just scan through both simultaneously to reduce code copying
         all_orders = open_orders['coinbase_pro']
-        all_orders = all_orders + open_orders['binance']
         all_orders = all_orders + open_orders['okx']
         all_orders = all_orders + open_orders['kucoin']
         all_orders = all_orders + open_orders['alpaca']
@@ -590,8 +584,6 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         self.assertTrue(compare_responses(responses))
         self.assertTrue(compare_responses(status))
-
-        cancels.append(self.Binance_Interface.cancel_order('BTC-USDT', sorted_orders['binance']['sell'].get_id()))
 
         cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', sorted_orders['kucoin']['sell'].get_id()))
         cancels.append(self.Okx_Interface.cancel_order('BTC-USDT', sorted_orders['okx']['sell'].get_id()))

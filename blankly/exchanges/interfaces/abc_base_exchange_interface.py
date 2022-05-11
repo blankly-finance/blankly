@@ -127,9 +127,7 @@ class ABCBaseExchangeInterface(abc.ABC):
                 parsed_date = end_date
             valid_time_in_past = utils.ceil_date(parsed_date,
                                                  seconds=resolution_seconds).timestamp() - resolution_seconds
-            epoch_stop = valid_time_in_past
-            if is_backtesting is None:
-                epoch_stop -= resolution_seconds
+            epoch_stop = valid_time_in_past - resolution_seconds
             count_from = valid_time_in_past
         if start_date is None and end_date is None:
             if isinstance(to, int):
