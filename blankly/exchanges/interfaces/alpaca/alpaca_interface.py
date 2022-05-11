@@ -277,7 +277,8 @@ class AlpacaInterface(ExchangeInterface):
             ['qty', 'size']
         ], response)
         response = utils.isolate_specific(needed, response)
-        response['time_in_force'] = response['time_in_force'].upper()
+        if 'time_in_force' in response:
+            response['time_in_force'] = response['time_in_force'].upper()
         return response
 
     def cancel_order(self, symbol, order_id) -> dict:
@@ -322,7 +323,18 @@ class AlpacaInterface(ExchangeInterface):
                 ["limit_price", "price"]
             ]
             order = utils.rename_to(renames, order)
-
+        elif order['type'] == "stop_loss":
+            renames = [
+                ["qty", "size"],
+                ["limit_price", "price"]
+            ]
+            order = utils.rename_to(renames, order)
+        elif order['type'] == "take_profit":
+            renames = [
+                ["qty", "size"],
+                ["limit_price", "price"]
+            ]
+            order = utils.rename_to(renames, order)
         elif order['type'] == "market":
             if order['notional']:
                 renames = [
@@ -341,6 +353,8 @@ class AlpacaInterface(ExchangeInterface):
             order = utils.rename_to(renames, order)
 
         order = self.__parse_iso(order)
+        if 'time_in_force' in order:
+            order['time_in_force'] = order['time_in_force'].upper()
 
         needed = self.choose_order_specificity(order['type'])
 

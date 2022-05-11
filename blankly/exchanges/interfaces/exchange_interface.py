@@ -230,12 +230,11 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
     def choose_order_specificity(self, order_type):
         # This lower should not be necessary if everything is truly homogeneous
         order_type = order_type.lower()
-        if order_type == 'market':
-            return self.needed['market_order']
-        elif order_type == 'limit':
-            return self.needed['limit_order']
-        else:
-            return self.needed['market_order']
+        if order_type == 'stop':
+            return self.needed['stop_loss']
+        elif order_type == 'take_profit':
+            return self.needed['take_profit']
+        return self.needed[f'{order_type}_order']
 
     """
     Order lifecycle should be:

@@ -382,10 +382,13 @@ class OkxInterface(ExchangeInterface):
         base_min_size = float(products.pop('minSz'))
         base_increment = float(products.pop('tickSz'))
 
+        base = products.pop('baseCcy')
+        quote = products.pop('quoteCcy')
+
         return {
-            "symbol": products.pop('uly'),
-            "base_asset": products.pop('baseCcy'),
-            "quote_asset": products.pop('quoteCcy'),
+            "symbol": base + '-' + quote,
+            "base_asset": base,
+            "quote_asset": quote,
             "max_orders": 1000000000000,
             "limit_order": {
                 "base_min_size": base_min_size,  # Minimum size to buy

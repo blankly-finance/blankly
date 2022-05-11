@@ -337,7 +337,6 @@ class BinanceInterface(ExchangeInterface):
         # The interface here will be the query of order status from this object, because orders are dynamic
         # creatures
         response = self.calls.order_market(symbol=modified_symbol, side=side, quantity=size)
-        response = utils.isolate_specific(needed, response)
         response = self._fix_response(needed, response)
         return MarketOrder(order, response, self)
 
