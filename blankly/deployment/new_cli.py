@@ -315,7 +315,7 @@ def generate_blankly_json(api: Optional[API], model: Optional[dict], model_type:
 
     if api:
         project_id = model['projectId'] if model else api.user_id
-        keys = api.generate_keys(project_id)
+        keys = api.generate_keys(project_id, f'Local keys for {data["model_id"]}')
         data['api_key'] = keys['apiKey']
         data['api_pass'] = keys['apiPass']
     return json.dumps(data, indent=4)
@@ -381,7 +381,7 @@ def ensure_model(api: API):
         data['project_id'] = model['projectId']
 
     if 'api_key' not in data or 'api_pass' not in data:
-        keys = api.generate_keys(data['project_id'])
+        keys = api.generate_keys(data['project_id'], f'Local keys for {data["model_id"]}')
         data['api_key'] = keys['apiKey']
         data['api_pass'] = keys['apiPass']
 
