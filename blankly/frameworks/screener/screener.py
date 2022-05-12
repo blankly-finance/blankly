@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import time
 import typing
 from typing import List
 from blankly.frameworks.screener.screener_runner import ScreenerRunner
@@ -110,6 +110,7 @@ class Screener:
             raise TypeError("Must pass a callable for the evaluator.")
 
         for i in self.symbols:
+            start_time = time.time()
             # Parse the types for the symbol
             # If it's a dictionary it's A ok but if it's a non-dict give it the value column
             result = evaluator(i, self.screener_state)
@@ -117,6 +118,7 @@ class Screener:
                 result = {
                     'value': result
                 }
+            result['symbol_time'] = time.time() - start_time
             self.raw_results[i] = result
 
         self.symbols = self.screener_state.symbols

@@ -742,7 +742,7 @@ class Email:
                                receiver_email=receiver_email, password=self.__password, port=self.__port)
 
 
-def count_decimals(number) -> int:
+def count_decimals(number: float) -> int:
     """
     Count the number of decimals in a given float: 1.4335 -> 4 or 3 -> 0
     """
@@ -851,12 +851,12 @@ def extract_price_by_resolution(prices, symbol, epoch_start, epoch_stop, resolut
     return trim_df_time_column(price_set, epoch_start - resolution, epoch_stop)
 
 
-def build_order_info(price, side, size, symbol, type) -> dict:
+def build_order_info(price, side, size, symbol, type_) -> dict:
     order = {
         'size': size,
         'side': side,
         'symbol': symbol,
-        'type': type
+        'type': type_
     }
     if price:
         order['price'] = price
