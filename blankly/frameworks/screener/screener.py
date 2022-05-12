@@ -63,6 +63,8 @@ class Screener:
             cron_settings = load_deployment_settings()['screener']['schedule']
             blankly._screener_runner = ScreenerRunner(cron_settings)
 
+        self.status = {}
+
         # TODO export the symbols here as a list
         self.exchange = exchange
         self.symbols = symbols
@@ -89,6 +91,7 @@ class Screener:
         self.__run()
 
     def __run(self):
+        self.status['startTime'] = time.time()
         init = self.__callables['init']
         if callable(init):
             init(self.screener_state)
@@ -138,6 +141,9 @@ class Screener:
             teardown(self.screener_state)
 
         self.symbols = self.screener_state.symbols
+
+        self.status['stopTime'] = time.time()
+        self.status['timeElapsed'] = self.status['stopTime'] - self.status['startTime']
 
         blankly.reporter.export_screener_result(self)
 
