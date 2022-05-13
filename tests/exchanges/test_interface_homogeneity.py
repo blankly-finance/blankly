@@ -85,7 +85,6 @@ class InterfaceHomogeneity(unittest.TestCase):
                                                settings_path="./tests/config/settings.json")
         cls.Coinbase_Pro_Interface = cls.Coinbase_Pro.get_interface()
         cls.interfaces.append(cls.Coinbase_Pro_Interface)
-        cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
 
         # Okex definition and appending
         cls.Okx = blankly.Okx(portfolio_name="okx sandbox portfolio",
