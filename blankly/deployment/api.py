@@ -21,10 +21,10 @@ import json
 import requests
 from blankly.utils.utils import info_print
 
-# blankly_deployment_url = 'https://deploy.blankly.finance'
+blankly_deployment_url = 'https://deploy.blankly.finance'
 
 
-blankly_deployment_url = 'http://localhost:80'
+# blankly_deployment_url = 'http://localhost:80'
 
 
 class API:
