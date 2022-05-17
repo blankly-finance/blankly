@@ -439,28 +439,18 @@ class OandaInterface(ExchangeInterface):
         return float(resp['orderBook']['price'])
 
     def homogenize_order(self, order):
-        def add_details(order_: dict):
-            if float(order_['units']) < 0:
-                order_['side'] = 'sell'
-            else:
-                order_['side'] = 'buy'
-            order_['time_in_force'] = 'GTC'
-            renames_ = [['instrument', 'symbol'],
-                        ['createTime', 'created_at'],
-                        ['state', 'status'],  # TODO: handle status
-                        ['units', 'size']]
-            return utils.rename_to(renames_, order_)
+        order['type'] = order['type'].lower()
 
-        if order['type'] == "MARKET":
-            order['type'] = 'market'
-            order = add_details(order)
-
-        elif order['type'] == "LIMIT":
-            order['type'] = 'limit'
-            order = add_details(order)
+        if float(order['units']) < 0:
+            order['side'] = 'sell'
         else:
-            # TODO: handle other order types
-            pass
+            order['side'] = 'buy'
+        order['time_in_force'] = 'GTC'
+        renames = [['instrument', 'symbol'],
+                    ['createTime', 'created_at'],
+                    ['state', 'status'],  # TODO: handle status
+                    ['units', 'size']]
+        order = utils.rename_to(renames, order)
 
         needed = self.choose_order_specificity(order['type'])
         order = utils.isolate_specific(needed, order)
