@@ -185,7 +185,7 @@ def blankly_init(args):
     api = None
     if args.model:
         api = ensure_login()
-        starters = api.get_starter_models()
+        starters = api.get_starter_models() or []
         model = next((m for m in starters if m['shortName'] == args.model), None)
         if not model:
             print_failure('That starter model doesn\'t exist. Make sure you are typing the name properly.')
