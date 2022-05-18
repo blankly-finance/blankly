@@ -16,7 +16,7 @@ setup(
     name='blankly',  # How you named your package folder (MyLib)
     packages=find_packages(),
     # packages=['blankly'],  # Potentially should be the same thing as name
-    version='v1.17.9-beta',
+    version='v1.17.10-beta',
     license='lgpl-3.0',  # Licenses: https://help.github.com/articles/licensing-a-repository
     description='Rapidly build, backtest & deploy trading bots',  # Give a short description about your library
     long_description=long_description,
