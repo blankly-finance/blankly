@@ -53,7 +53,7 @@ class StrategyStructure(Model):
         self.orderbook_manager = orderbook_manager
         self.ticker_manager = ticker_manager
 
-    def rest_event(self, event):
+    def rest_event(self, **event):
         callback = event['callback']  # type: callable
         symbol = event['symbol']  # type: str
         resolution = event['resolution']  # type: int
@@ -86,16 +86,6 @@ class StrategyStructure(Model):
                 except IndexError:
                     warnings.warn("No bar found for this time range")
                     return
-
-                # don't send duplicate events
-                if data['time'] == event.get('prev_ev_time', None):
-                    return
-                event['prev_ev_time'] = data['time']
-
-                # delay event once to sync up with historical data
-                was_delayed = event.get('was_delayed', False)
-                if not was_delayed and data['time'] < self.time:
-                    return data['time'] + resolution
 
             args = [data, symbol, state]
         elif type_ == EventType.price_event:
@@ -148,7 +138,7 @@ class StrategyStructure(Model):
             self.sleep(event['next_run'] - self.time)
 
             # Run the event
-            next_run = self.rest_event(event)
+            next_run = self.rest_event(**event)
             if next_run:
                 # if rest_event returns something, run this event again at that time
                 # this implies the event did *not* run
