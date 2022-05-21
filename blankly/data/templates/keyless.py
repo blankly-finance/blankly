@@ -10,7 +10,7 @@ def price_event(price, symbol, state: blankly.StrategyState):
     curr_value = state.interface.account[state.base_asset].available
     if rsi[-1] < 30 and not curr_value:
         # Dollar cost average buy
-        buy = state.interface.cash / price
+        buy = blankly.trunc(state.interface.cash / price, 5)
         state.interface.market_order(symbol, side='buy', size=buy)
     elif rsi[-1] > 70 and curr_value:
         # Dollar cost average sell
