@@ -7,4 +7,4 @@ if __name__ == "__main__":
     if blankly.is_deployed:
         strategy.start()
     else:
-        strategy.backtest(to='1y', initial_values={'USD': 10000})
+        strategy.backtest(to='1y', initial_values={'QUOTE_ASSET': 10000})

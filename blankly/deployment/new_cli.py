@@ -29,7 +29,6 @@ from pathlib import Path
 from typing import Optional
 import pkgutil
 
-import questionary
 from questionary import Choice
 
 from blankly.deployment.api import API
@@ -40,7 +39,6 @@ from blankly.deployment.ui import text, confirm, print_work, print_failure, prin
 from blankly.deployment.exchange_data import EXCHANGES, Exchange, EXCHANGE_CHOICES, exc_display_name, \
     EXCHANGE_CHOICES_NO_KEYLESS
 from blankly.utils.utils import load_deployment_settings, load_user_preferences, load_backtest_preferences
-
 TEMPLATES = {'strategy': {'none': 'none.py',
                           'rsi_bot': 'rsi_bot.py'},
              'screener': {'none': 'none_screener.py',
@@ -338,7 +336,8 @@ def generate_bot_py(exchange: Optional[Exchange], template: str) -> str:
         ('EXCHANGE_NAME', exchange.display_name,),
         ('EXCHANGE_CLASS', exchange.python_class,),
         ('SYMBOL_LIST', "['" + "', '".join(exchange.symbols) + "']",),
-        ('SYMBOL', exchange.symbols[0],)
+        ('SYMBOL', exchange.symbols[0],),
+        ('QUOTE_ASSET', exchange.currency)
     ]:
         bot_py = bot_py.replace(pattern, replacement)
     return bot_py

@@ -40,5 +40,5 @@ if __name__ == "__main__":
     strategy.add_price_event(price_event, symbol='BTC-USD', resolution='1d', init=init)
 
     # Backtest the strategy
-    results = strategy.backtest(start_date=1588377600, end_date=1650067200, initial_values={'USD': 10000})
+    results = strategy.backtest(start_date=1598377600, end_date=1650067200, initial_values={'USD': 10000})
     print(results)
