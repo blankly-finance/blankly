@@ -74,6 +74,9 @@ class Model(abc.ABC):
     def run(self, args: typing.Any = None) -> threading.Thread:
         thread = threading.Thread(target=self.main, args=(args,))
         thread.start()
+        # Don't force them to always enable limit order watch
+        if isinstance(self.__exchange, Exchange) and isinstance(self.__exchange, PaperTrade):
+            self.__exchange.start_limit_order_watch()
         return thread
 
     @abc.abstractmethod
