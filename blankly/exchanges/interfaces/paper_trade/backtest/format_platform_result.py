@@ -64,10 +64,8 @@ def __compress_dict_series(values_column: dict, time_dictionary: dict):
         time_dictionary[time_keys[0]]: last_value
     }
     for i in range(len(values_column)):
-        if last_value != values_column[values_keys[i]]:
-            output_dict[time_dictionary[time_keys[i]]] = values_column[values_keys[i]]
-
-            last_value = values_column[values_keys[i]]
+        # This used to compress by saving the last value, but now it does not
+        output_dict[time_dictionary[time_keys[i]]] = values_column[values_keys[i]]
 
     return output_dict
 
@@ -93,12 +91,12 @@ def __parse_backtest_trades(trades: list, limit_executed: list, limit_canceled: 
             # TODO this wastes a few CPU cycles at the moment so it could be cleaned up
             for j in limit_executed:
                 if trades[i]['id'] == j['id']:
-                    trades[i]['time'] = j['executed_time']
+                    trades[i]['executed_time'] = j['executed_time']
                     break
 
             for j in limit_canceled:
                 if trades[i]['id'] == j['id']:
-                    trades[i]['canceledTime'] = j['canceled_time']
+                    trades[i]['canceled_time'] = j['canceled_time']
                     break
         elif trades[i]['type'] == 'market':
             # This adds in the execution price for the market orders
@@ -137,8 +135,6 @@ def format_platform_result(backtest_result):
             traded_symbols.append(i['symbol'])
 
     # Set the account values to None
-    raw_or_resampled_account_values = None
-
     # Now grab the account value dictionary itself
     # Now just replicate the format of the resampled version
     # This was the annoying backtest glitch that almost cost us an investor meeting so its important
