@@ -6,6 +6,7 @@
    <img style="margin: 0 auto; padding-bottom: 15px; padding-top: 30px" width=70%" src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/blankly-github-logo.png?alt=media&token=8f436cd2-3d28-432c-867a-afef780f4260">
 </div>
 <br />
+
 <div align="center">
   <b>💨  Rapidly build and deploy quantitative models for stocks, crypto, and forex  🚀</b>
 </div>
@@ -39,9 +40,6 @@
 ​	Blankly is a live trading engine, backtest runner and development framework wrapped into one powerful open source package. Models can be instantly backtested, paper traded, sandbox tested and run live by simply changing a single line. We built blankly for every type of quant including training & running ML models in the same environment, cross-exchange/cross-symbol arbitrage, and even long/short positions on stocks (all with built-in websockets).
 
 ​	Convert your existing model or build a new one - unlock the ability to run & optimize across all of our supported exchanges. Getting started is easy - just `pip install blankly` and `blankly init`.
-
-## Sponsored Promotion
-<a target="_blank" href="https://tokenbot.com/?utm_source=github&utm_medium=blankly&utm_campaign=algodevs"><img src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/github%2FTokenBot-Blankly-banner.png?alt=media&token=843c16b0-da39-41a5-b34d-f7d5fdfdf088">
 
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
 
