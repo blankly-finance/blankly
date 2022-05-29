@@ -37,7 +37,7 @@
 
 ## Why Blankly? 
 
-Blankly is an ecosystem for algotraders enabling anyone to build, monetize and scale their trading algorithms. The same code can be backtested, paper traded, sandbox tested and run live by simply changing a single line.
+Blankly is an ecosystem for algotraders enabling anyone to build, monetize and scale their trading algorithms for stocks, crypto, futures or forex. The same code can be backtested, paper traded, sandbox tested and run live by simply changing a single line. Develop locally then deploy, iterate and share using the blankly platform.
 
 Add simulated latency, social media & websocket backtests to existing models or build a new one using live data natively. Getting started is easy - just `pip install blankly` and `blankly init`.
 
@@ -46,17 +46,20 @@ Check out our [website](https://blankly.finance) and our [docs](https://docs.bla
 [YouTube - Under 25 Lines Build an Alpaca RSI Trading Bot](https://youtu.be/pcm0h63rhUU)
 <a target="_blank" href="https://youtu.be/pcm0h63rhUU"><img src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/github%2Fbuild_a_bot_readme_thumbnail.jpg?alt=media&token=a9dd030a-805c-447f-a970-2bc8e1815662" style="border-radius:10px"></a>
 
-### Trade Stocks, Crypto, and Forex Seamlessly
+### Trade Stocks, Crypto, Futures, and Forex
 
 ```python
 from blankly import Alpaca, CoinbasePro
 
 stocks = Alpaca()
 crypto = CoinbasePro()
+futures = BinanceFutures()
 
 # Easily perform the same actions across exchanges & asset types
 stocks.interface.market_order('AAPL', 'buy', 1)
 crypto.interface.market_order('BTC-USD', 'buy', 1)
+# Full futures featureset
+futures.interface.get_hedge_mode()
 ```
 
 ### Backtest your trades, events, websockets, and custom data
@@ -198,9 +201,11 @@ For more info, and ways to do more advanced things, check out our [getting start
 | Coinbase Pro        | 🟢           | 🟢          | 🟢           | 🟢           |
 | Binance             | 🟢           | 🟢          | 🟢           | 🟢           |
 | Alpaca              | 🟢           | 🟢          | 🟢           | 🟢           |
-| OANDA               | 🟢           |         | 🟢           | 🟢           |
+| OANDA               | 🟢           |  | 🟢           | 🟢           |
 | FTX                 | 🟢           | 🟢          | 🟢           | 🟢           |
 | KuCoin              | 🟢           | 🟢        | 🟢           | 🟢           |
+| Binance Futures | 🟢 | 🟢 | 🟢 | 🟢 |
+| FTX Futures | 🟡 | 🟡 | 🟢 | 🟢 |
 | Okx | 🟢 | 🟢 | 🟢 | 🟢 |
 | Kraken              | 🟡           | 🟡          | 🟡           | 🟡           |
 | Keyless Backtesting |              |            |              | 🟢           |
