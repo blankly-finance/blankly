@@ -17,6 +17,9 @@
       "cash": "USDT",
       "binance_tld": "us"
     },
+    "binance_futures": {
+      "cash": "USDT"
+    },
     "ftx": {
       "ftx_tld": "us"
     },

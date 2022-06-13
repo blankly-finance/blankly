@@ -20,9 +20,9 @@ import time
 import unittest
 from datetime import datetime as dt
 
-import dateparser
 import numpy
 import pandas as pd
+import pytest
 
 import blankly
 from blankly.exchanges.orders.limit_order import LimitOrder
@@ -85,7 +85,6 @@ class InterfaceHomogeneity(unittest.TestCase):
                                                settings_path="./tests/config/settings.json")
         cls.Coinbase_Pro_Interface = cls.Coinbase_Pro.get_interface()
         cls.interfaces.append(cls.Coinbase_Pro_Interface)
-        cls.data_interfaces.append(cls.Coinbase_Pro_Interface)
 
         # Okex definition and appending
         cls.Okx = blankly.Okx(portfolio_name="okx sandbox portfolio",
@@ -218,17 +217,6 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertEqual(order.get_type(), 'market')
 
     def test_market_order(self):
-        def check_account_delta(before: dict, after: dict, order: MarketOrder) -> None:
-            # A market order should not have changed the funds on hold
-            self.assertAlmostEqual(before['hold'], after['hold'], places=1)
-
-            # The symbol should have gained less than the size on the buy if there were fees
-            # Before + requested size >= the filled size
-            before['available'] = int(float(before['available']))  # added this and line below
-            after['available'] = int(float(after['available']))
-
-            self.assertGreaterEqual(blankly.trunc(before['available'], 2) + order.get_size(),
-                                    blankly.trunc(after['available'], 2))
 
         # Make sure to buy back the funds we're loosing from fees - minimum balance of .1 bitcoin
         btc_account = self.Binance_Interface.get_account(symbol="BTC")['available']
@@ -271,7 +259,7 @@ class InterfaceHomogeneity(unittest.TestCase):
 
             # Grab them after
             after_value = i.get_account(get_base_asset(get_valid_symbol(type_)))
-            check_account_delta(initial_value, after_value, order_responses[-1]['order'])
+            self.check_account_delta_market(initial_value, after_value, order_responses[-1]['order'])
 
             order_responses.append({
                 'order': i.market_order(get_valid_symbol(type_), 'sell', size),
@@ -299,9 +287,9 @@ class InterfaceHomogeneity(unittest.TestCase):
                 except Exception as e:
                     print(f"Failed canceling order for reason {e} - may have already executed")
 
-    def check_limit_order(self, limit_order: LimitOrder, expected_side: str, size, product_id):
+    def check_limit_order(self, limit_order: LimitOrder, expected_side: str, size, product_id, type_='limit'):
         self.assertEqual(limit_order.get_side(), expected_side)
-        self.assertEqual(limit_order.get_type(), 'limit')
+        self.assertEqual(limit_order.get_type(), type_)
         self.assertEqual(limit_order.get_time_in_force(), 'GTC')
         # TODO fix status homogeneity
         # self.assertEqual(limit_order.get_status(), {'status': 'new'})
@@ -309,42 +297,18 @@ class InterfaceHomogeneity(unittest.TestCase):
         self.assertEqual(limit_order.get_symbol(), product_id)
 
     def test_limit_order(self):
-        """
-        This function tests a few components of market orders:
-        - Opening market orders
-        - Monitoring market orders using the order status function
-        - Comparing with open orders
-        - Canceling orders
-        """
         limits = []
         sorted_orders = {}
 
         def evaluate_limit_order(interface: ABCExchangeInterface, symbol: str, buy_price: [float, int],
                                  sell_price: [float, int], size: [float, int]):
-            def check_account_delta(before: dict, after: dict, order: LimitOrder) -> None:
-                # On a buy the quote asset should get moved to hold
-
-                before['available'] = float(before['available'])  # added this and line below
-                after['available'] = float(after['available'])
-
-                before['hold'] = float(before['hold'])  # added this and line below
-                after['hold'] = float(after['hold'])
-
-                self.assertAlmostEqual(before['available'], after['available'] + (order.get_price() * order.get_size()),
-                                       places=1)
-
-                # The symbol should have gained less than the size on the buy if there were fees
-                # Before + requested size >= the filled size
-                self.assertAlmostEqual(before['hold'], after['hold'] - (order.get_price() * order.get_size()),
-                                       places=1)
-
             initial_account = interface.get_account(get_quote_asset(symbol))
             buy = interface.limit_order(symbol, 'buy', buy_price, size)
             after_buy_account = interface.get_account(get_quote_asset(symbol))
             # Buying power is always moving on alpaca, so it can't really be compared in this way
             # need a larger range
             if buy.exchange != 'alpaca':
-                check_account_delta(initial_account, after_buy_account, buy)
+                self.check_account_delta_limit(initial_account, after_buy_account, buy)
 
             sell = interface.limit_order(symbol, 'sell', sell_price, size)
             self.check_limit_order(sell, 'sell', size, symbol)
@@ -445,6 +409,172 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         self.assertTrue(compare_responses(cancels, force_exchange_specific=False))
 
+    def evaluate_tp_sl_order(self, sorted_orders: dict, interface, type_, symbol: str, sell_price: [float, int],
+                             size: [float, int]) -> list:
+        if type_ == 'stop_loss':
+            order_func = interface.stop_loss_order
+        elif type_ == 'take_profit':
+            order_func = interface.take_profit_order
+        else:
+            raise ValueError('order type must be take_profit or stop_loss')
+
+        sell = order_func(symbol, sell_price, size)
+        self.check_limit_order(sell, 'sell', size, symbol, type_)
+        sorted_orders[sell.exchange] = {'sell': sell}
+        return [sell]
+
+    def test_take_profit_order(self):
+        limits = []
+        sorted_orders = {}
+
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Alpaca_Interface, 'take_profit', 'AAPL', 100000, 1)
+
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Coinbase_Pro_Interface, 'take_profit', 'BTC-USD',
+                                            100000, 1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Kucoin_Interface, 'take_profit', 'ETH-USDT', 100000,
+                                            1)
+
+        responses = []
+        status = []
+        cancels = []
+
+        open_orders = {
+            'coinbase_pro': self.Coinbase_Pro_Interface.get_open_orders('BTC-USD'),
+            'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
+            'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
+        }
+
+        # Simple test to ensure that some degree of orders have been placed
+        for i in open_orders:
+            self.assertTrue(len(open_orders[i]) >= 2)
+
+        # Just scan through both simultaneously to reduce code copying
+        all_orders = open_orders['coinbase_pro']
+        all_orders = all_orders + open_orders['kucoin']
+        all_orders = all_orders + open_orders['alpaca']
+
+        # Filter for limit orders
+        open_orders = []
+
+        for i in all_orders:
+            if i['type'] == 'limit':
+                open_orders.append(i)
+
+        self.assertTrue(compare_responses(open_orders))
+
+        for i in limits:
+            found = False
+            for j in all_orders:
+                if i.get_id() == j['id']:
+                    found = True
+                    self.assertTrue(compare_dictionaries(i.get_response(), j))
+                    break
+            self.assertTrue(found)
+
+        for i in limits:
+            responses.append(i.get_response())
+            status.append(i.get_status(full=True))
+
+        self.assertTrue(compare_responses(responses))
+        self.assertTrue(compare_responses(status))
+
+        cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', sorted_orders['kucoin']['sell'].get_id()))
+        cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD',
+                                                                sorted_orders['coinbase_pro']['sell'].get_id()))
+        cancels.append(self.Alpaca_Interface.cancel_order('AAPL', sorted_orders['alpaca']['sell'].get_id()))
+
+        self.assertTrue(compare_responses(cancels, force_exchange_specific=False))
+
+    def check_account_delta_market(self, before: dict, after: dict, order: MarketOrder) -> None:
+        # A market order should not have changed the funds on hold
+        self.assertAlmostEqual(before['hold'], after['hold'], places=1)
+
+        # The symbol should have gained less than the size on the buy if there were fees
+        # Before + requested size >= the filled size
+        before['available'] = float(before['available'])
+        after['available'] = float(after['available'])
+
+        self.assertAlmostEqual(blankly.trunc(before['available'], 2) + order.get_size(),
+                               blankly.trunc(after['available'], 2), delta=1)
+
+    def check_account_delta_limit(self, before: dict, after: dict, order: LimitOrder) -> None:
+        # On a buy the quote asset should get moved to hold
+
+        before['available'] = float(before['available'])  # added this and line below
+        after['available'] = float(after['available'])
+
+        before['hold'] = float(before['hold'])  # added this and line below
+        after['hold'] = float(after['hold'])
+
+        self.assertAlmostEqual(before['available'], after['available'] + (order.get_price() * order.get_size()),
+                               places=1)
+
+        # The symbol should have gained less than the size on the buy if there were fees
+        # Before + requested size >= the filled size
+        self.assertAlmostEqual(before['hold'], after['hold'] - (order.get_price() * order.get_size()),
+                               places=1)
+
+    def test_stop_loss_order(self):
+        limits = []
+        sorted_orders = {}
+
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Alpaca_Interface, 'stop_loss', 'AAPL', 1, 1)
+
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Coinbase_Pro_Interface, 'stop_loss', 'BTC-USD', 0.01,
+                                            1)
+        limits += self.evaluate_tp_sl_order(sorted_orders, self.Kucoin_Interface, 'stop_loss', 'ETH-USDT', 0.01, 1)
+
+        responses = []
+        status = []
+        cancels = []
+
+        open_orders = {
+            'coinbase_pro': self.Coinbase_Pro_Interface.get_open_orders('BTC-USD'),
+            'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
+            'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
+        }
+
+        # Simple test to ensure that some degree of orders have been placed
+        for i in open_orders:
+            self.assertTrue(len(open_orders[i]) >= 2)
+
+        # Just scan through both simultaneously to reduce code copying
+        all_orders = open_orders['coinbase_pro']
+        all_orders = all_orders + open_orders['kucoin']
+        all_orders = all_orders + open_orders['alpaca']
+
+        # Filter for limit orders
+        open_orders = []
+
+        for i in all_orders:
+            if i['type'] == 'limit':
+                open_orders.append(i)
+
+        self.assertTrue(compare_responses(open_orders))
+
+        for i in limits:
+            found = False
+            for j in all_orders:
+                if i.get_id() == j['id']:
+                    found = True
+                    self.assertTrue(compare_dictionaries(i.get_response(), j))
+                    break
+            self.assertTrue(found)
+
+        for i in limits:
+            responses.append(i.get_response())
+            status.append(i.get_status(full=True))
+
+        self.assertTrue(compare_responses(responses))
+        self.assertTrue(compare_responses(status))
+
+        cancels.append(self.Kucoin_Interface.cancel_order('ETH-USDT', sorted_orders['kucoin']['sell'].get_id()))
+        cancels.append(self.Coinbase_Pro_Interface.cancel_order('BTC-USD',
+                                                                sorted_orders['coinbase_pro']['sell'].get_id()))
+        cancels.append(self.Alpaca_Interface.cancel_order('AAPL', sorted_orders['alpaca']['sell'].get_id()))
+
+        self.assertTrue(compare_responses(cancels, force_exchange_specific=False))
+
     def test_get_keys(self):
         responses = []
         for i in self.interfaces:
@@ -500,6 +630,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.check_product_history_types(response)
 
     def test_point_with_end_history(self):
+        import dateparser
         responses = []
 
         arbitrary_date: dt = dateparser.parse("8/23/21")
@@ -530,6 +661,7 @@ class InterfaceHomogeneity(unittest.TestCase):
             self.check_product_history_types(i[0])
 
     def test_start_with_end_history(self):
+        import dateparser
         responses = []
 
         # This initial selection could fail because of the slightly random day that they delete their data

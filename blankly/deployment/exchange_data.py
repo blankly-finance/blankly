@@ -67,10 +67,12 @@ EXCHANGES = [
                                                      base_url=(alpaca_api.live_url,
                                                                alpaca_api.paper_url)[auth['sandbox']]
                                                      ).get_account()),
+
     Exchange('binance', ['BTC-USDT', 'ETH-USDT', 'SOL-USDT'],
              lambda auth, tld: BinanceClient(api_key=auth['API_KEY'], api_secret=auth['API_SECRET'],
                                              tld=tld, testnet=auth['sandbox']).get_account(),
              tlds=['com', 'us'], currency='USDT'),
+
     Exchange('coinbase_pro', ['BTC-USD', 'ETH-USD', 'SOL-USD'],
              lambda auth, tld: CoinbaseProAPI(api_key=auth['API_KEY'], api_secret=auth['API_SECRET'],
                                               api_pass=auth['API_PASS'],
@@ -81,10 +83,12 @@ EXCHANGES = [
     Exchange('ftx', ['BTC-USD', 'ETH-USD', 'SOL-USD'],
              lambda auth, tld: FTXAPI(auth['API_KEY'], auth['API_SECRET'], tld).get_account_info(),
              tlds=['com', 'us'], python_class='FTX', display_name='FTX'),
+
     Exchange('oanda', ['BTC-USD', 'ETH-USD', 'SOL-USD'],
              lambda auth, tld: OandaAPI(personal_access_token=auth['PERSONAL_ACCESS_TOKEN'],
                                         account_id=auth['ACCOUNT_ID'], sandbox=auth['sandbox']).get_account(),
              key_info=['ACCOUNT_ID', 'PERSONAL_ACCESS_TOKEN']),
+
     Exchange('kucoin', ['BTC-USDT', 'ETH-USDT', 'SOL-USDT'], kucoin_test_func,
              key_info=['API_KEY', 'API_SECRET', 'API_PASS'], currency='USDT'),
 ]

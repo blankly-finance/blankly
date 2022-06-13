@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import time
 import typing
 from typing import List
 from blankly.frameworks.screener.screener_runner import ScreenerRunner
@@ -63,6 +63,8 @@ class Screener:
             cron_settings = load_deployment_settings()['screener']['schedule']
             blankly._screener_runner = ScreenerRunner(cron_settings)
 
+        self.status = {}
+
         # TODO export the symbols here as a list
         self.exchange = exchange
         self.symbols = symbols
@@ -89,6 +91,7 @@ class Screener:
         self.__run()
 
     def __run(self):
+        self.status['startTime'] = time.time()
         init = self.__callables['init']
         if callable(init):
             init(self.screener_state)
@@ -110,6 +113,7 @@ class Screener:
             raise TypeError("Must pass a callable for the evaluator.")
 
         for i in self.symbols:
+            start_time = time.time()
             # Parse the types for the symbol
             # If it's a dictionary it's A ok but if it's a non-dict give it the value column
             result = evaluator(i, self.screener_state)
@@ -117,6 +121,7 @@ class Screener:
                 result = {
                     'value': result
                 }
+            result['symbol_time'] = time.time() - start_time
             self.raw_results[i] = result
 
         self.symbols = self.screener_state.symbols
@@ -136,6 +141,9 @@ class Screener:
             teardown(self.screener_state)
 
         self.symbols = self.screener_state.symbols
+
+        self.status['stopTime'] = time.time()
+        self.status['timeElapsed'] = self.status['stopTime'] - self.status['startTime']
 
         blankly.reporter.export_screener_result(self)
 

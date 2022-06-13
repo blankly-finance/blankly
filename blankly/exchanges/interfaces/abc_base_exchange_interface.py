@@ -26,7 +26,6 @@ from typing import Union
 import numpy
 import pandas
 import pandas as pd
-from dateutil import parser
 
 from blankly import utils
 from blankly.utils import time_interval_to_seconds
@@ -93,12 +92,12 @@ class ABCBaseExchangeInterface(abc.ABC):
         if isinstance(to, int):
             point_count = to
         else:
-            point_count = (stop-start)/res_seconds + 1
+            point_count = int((stop-start)/res_seconds + 1)
         # response.index = pd.to_datetime(response['time'], unit='s')
         return self.cast_type(response, return_as, point_count)
 
     def calculate_epochs(self, start_date, end_date, resolution, to):
-        is_backtesting = self.is_backtesting()
+        is_backtesting = self.backtesting_time()
         if is_backtesting is not None and end_date is None:
             # is_backtesting can only return a non None value if a function overrides the is_backtesting function
             #  and says its backtesting by returning a valid time
@@ -119,6 +118,7 @@ class ABCBaseExchangeInterface(abc.ABC):
             count_from = most_recent_valid_resolution
         else:
             if isinstance(end_date, str):
+                from dateutil import parser
                 parsed_date = parser.parse(end_date)
             elif isinstance(end_date, float) or isinstance(end_date, numpy.int64) or isinstance(end_date, int) or \
                     isinstance(end_date, numpy.int32):
@@ -147,7 +147,7 @@ class ABCBaseExchangeInterface(abc.ABC):
     def overridden_history(self, symbol, epoch_start, epoch_stop, resolution, **kwargs) -> pd.DataFrame:
         return self.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
-    def is_backtesting(self):
+    def backtesting_time(self):
         return None
 
     @staticmethod

@@ -28,6 +28,8 @@ from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.interfaces.paper_trade.backtesting_wrapper import BacktestingWrapper
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
+from blankly.exchanges.orders.stop_loss import StopLossOrder
+from blankly.exchanges.orders.take_profit import TakeProfitOrder
 from blankly.utils.exceptions import APIException, InvalidOrder
 
 
@@ -102,11 +104,15 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             if (accounts[i]['available'] + accounts[i]['hold']) != 0 and i not in self.traded_assets:
                 self.traded_assets.append(i)
 
-    def is_backtesting(self):
+    def backtesting_time(self):
         """
         Return the backtest time if we're backtesting, if not just return None. If it's None the caller
          assumes no backtesting. The function being overridden always returns None
         """
+        # This is for the inits because it happens with both live calls and in the past
+        if self.initial_time is not None and not self.backtesting:
+            return self.initial_time
+        # This is for the actual price loops
         if self.backtesting:
             return self.time()
         else:
@@ -142,7 +148,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         # TODO, this process could use variable update time/websocket usage, poll `time` and a variety of settings
         #  to create a robust trading system
         # Create the watchdog for watching limit orders
-        self.__thread = threading.Thread(target=self.__paper_trade_watchdog(), daemon=True)
+        self.__thread = threading.Thread(target=self.__paper_trade_watchdog, daemon=True)
         self.__thread.start()
         self.__run_watchdog = True
 
@@ -155,6 +161,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         """
         Internal order watching system
         """
+        utils.info_print('Evaluating paper limit orders every 10 seconds...')
         while True:
             time.sleep(10)
             if not self.__run_watchdog:
@@ -232,8 +239,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 "settled": false
             }
             """
-            if index['type'] == 'limit' and index['status'] == 'pending':
+            if index['type'] in ('limit', 'stop_loss') and index['status'] == 'pending':
                 current_price = prices[index['symbol']]
+                limit_price = index['price']
 
                 if index['side'] == 'buy':
                     if index['price'] > current_price:
@@ -270,7 +278,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
                         self.paper_trade_orders[i] = order
                 elif index['side'] == 'sell':
-                    if index['price'] < prices[index['symbol']]:
+                    if limit_price < current_price and index['type'] == 'limit' \
+                            or current_price <= limit_price and index['type'] == 'stop_loss':
                         # Take everything off hold
 
                         asset_id = index['symbol']
@@ -337,16 +346,18 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 else:
                     raise KeyError("Symbol not found.")
 
+    def take_profit_order(self, symbol: str, price: float, size: float) -> TakeProfitOrder:
+        # we don't simulate partial fills, this is the same as take_profit
+        order = self.limit_order(symbol, 'sell', price, size)
+        return TakeProfitOrder(order._LimitOrder__order, order._LimitOrder__response, order.Interface)
+
+    def stop_loss_order(self, symbol: str, price: float, size: float):
+        return self.limit_order(symbol, 'sell', price, size, stop_loss=True)
+
     def market_order(self, symbol, side, size) -> MarketOrder:
         if not self.backtesting:
             print("Paper Trading...")
         needed = self.needed['market_order']
-        order = {
-            'size': size,
-            'side': side,
-            'symbol': symbol,
-            'type': 'market'
-        }
         creation_time = self.time()
         price = self.get_price(symbol)
         funds = price*size
@@ -367,7 +378,9 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         base_decimals = self.__get_decimals(base_increment)
 
         # Test if funds has more decimals than the increment. The increment is the maximum resolution of the quote.
-        if self.__get_decimals(size) > base_decimals:
+        if self.should_auto_trunc:
+            size = utils.trunc(size, base_decimals)
+        elif self.__get_decimals(size) > base_decimals:
             raise InvalidOrder("Size resolution is too high, the highest resolution allowed for this symbol is: " +
                                str(base_increment) + ". You specified " + str(size) +
                                ". Try using blankly.trunc(size, decimal_number) to match the exchange resolution.")
@@ -380,6 +393,12 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             shortable = False
             quantity_decimals = self.__get_decimals(market_limits['limit_order']['base_increment'])
 
+        order = {
+            'size': size,
+            'side': side,
+            'symbol': symbol,
+            'type': 'market'
+        }
         qty = size
 
         # Test the purchase
@@ -450,7 +469,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         })
         return MarketOrder(order, response, self)
 
-    def limit_order(self, symbol, side, price, size) -> LimitOrder:
+    def limit_order(self, symbol, side, price, size, stop_loss=False) -> LimitOrder:
         """
         Used for buying or selling limit orders
         Args:
@@ -484,7 +503,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             'side': side,
             'price': price,
             'symbol': symbol,
-            'type': 'limit'
+            'type': 'stop_loss' if stop_loss else 'limit'
         }
         creation_time = self.time()
 
@@ -513,16 +532,28 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         price_increment = order_filter['limit_order']['price_increment']
         price_increment_decimals = self.__get_decimals(price_increment)
 
-        if self.__get_decimals(price) > price_increment_decimals:
+        if self.should_auto_trunc:
+            price = utils.trunc(price, price_increment_decimals)
+        elif self.__get_decimals(price) > price_increment_decimals:
             raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(price_increment) +
                                ". Try using blankly.trunc(size, decimal_number) to match the exchange resolution.")
 
         base_increment = order_filter['limit_order']['base_increment']
         base_decimals = self.__get_decimals(base_increment)
 
-        if self.__get_decimals(size) > base_decimals:
+        if self.should_auto_trunc:
+            size = utils.trunc(size, base_decimals)
+        elif self.__get_decimals(size) > base_decimals:
             raise InvalidOrder("Fund resolution is too high, minimum resolution is: " + str(base_increment) +
                                '. Try using blankly.trunc(size, decimal_number) to match the exchange resolution.')
+
+        order = {
+            'size': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': 'limit'
+        }
 
         # Test the trade
         self.local_account.test_trade(symbol, side, size, price, quote_resolution=price_increment_decimals,
@@ -541,7 +572,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             'size': str(size),
             'status': 'pending',
             "time_in_force": "GTC",
-            'type': 'limit',
+            'type': 'stop_loss' if stop_loss else 'limit',
             'side': str(side),
             # 'stp': 'dc',
             # 'post_only': 'false',
@@ -577,7 +608,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
             self.local_account.update_hold(base, hold + size)
         else:
             raise APIException(f"Invalid side {side}")
-        return LimitOrder(order, response, self)
+        # TODO this is super stinky but refactoring this code is even stinkier
+        return StopLossOrder(order, response, self) if stop_loss else LimitOrder(order, response, self)
 
     def cancel_order(self, symbol, order_id) -> dict:
         """

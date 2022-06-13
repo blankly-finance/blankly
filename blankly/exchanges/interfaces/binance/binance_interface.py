@@ -17,7 +17,6 @@
 """
 import time
 
-import binance.exceptions
 import pandas as pd
 
 import blankly.utils.exceptions as exceptions
@@ -26,10 +25,15 @@ import blankly.utils.utils as utils
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
+from blankly.exchanges.orders.stop_loss import StopLossOrder
+from blankly.exchanges.orders.take_profit import TakeProfitOrder
 
 
 class BinanceInterface(ExchangeInterface):
+    _asset_precision: dict
+
     def __init__(self, exchange_name, authenticated_api):
+        self._asset_precision = {}
         # Initialize this as None so that it can be filled & cached when needed
         self.__available_currencies = None
         super().__init__(exchange_name, authenticated_api, valid_resolutions=[60, 180, 300, 900, 1800, 3600, 7200,
@@ -37,6 +41,7 @@ class BinanceInterface(ExchangeInterface):
                                                                               604800, 2592000])
 
     def init_exchange(self):
+        import binance.exceptions
         try:
             self.calls.get_account()
         except binance.exceptions.BinanceAPIException:
@@ -248,6 +253,23 @@ class BinanceInterface(ExchangeInterface):
                 })
         return utils.AttributeDict(parsed_dictionary)
 
+    def _fix_response(self, needed, response):
+        response['side'] = response['side'].lower()
+        response['type'] = response['type'].lower()
+        response['status'] = super().homogenize_order_status('binance', response['status'].lower())
+        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance')
+        if 'transactTime' in response:
+            response["transactTime"] /= 1000
+        response = utils.rename_to([
+            ["orderId", "id"],
+            ["transactTime", "created_at"],
+            ["origQty", "size"],
+            ["timeInForce", "time_in_force"],
+            ["cummulativeQuoteQty", "funds"]
+        ], response)
+        response = utils.isolate_specific(needed, response)
+        return response
+
     @utils.order_protection
     def market_order(self, symbol, side, size) -> MarketOrder:
         """
@@ -303,13 +325,8 @@ class BinanceInterface(ExchangeInterface):
             ]
         }
         """
-        renames = [
-            ["orderId", "id"],
-            ["transactTime", "created_at"],
-            ["origQty", "size"],
-            ["timeInForce", "time_in_force"],
-            ["cummulativeQuoteQty", "funds"]
-        ]
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         order = {
             'size': size,
             'side': side,
@@ -320,14 +337,7 @@ class BinanceInterface(ExchangeInterface):
         # The interface here will be the query of order status from this object, because orders are dynamic
         # creatures
         response = self.calls.order_market(symbol=modified_symbol, side=side, quantity=size)
-        response['side'] = response['side'].lower()
-        response['type'] = response['type'].lower()
-        response['status'] = super().homogenize_order_status('binance', response['status'].lower())
-        response["transactTime"] = response["transactTime"] / 1000
-        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance',
-                                                     quote_guess=utils.get_quote_asset(symbol))
-        response = utils.rename_to(renames, response)
-        response = utils.isolate_specific(needed, response)
+        response = self._fix_response(needed, response)
         return MarketOrder(order, response, self)
 
     @utils.order_protection
@@ -373,6 +383,8 @@ class BinanceInterface(ExchangeInterface):
         BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
 
         """
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
         order = {
             'size': size,
             'side': side,
@@ -382,19 +394,120 @@ class BinanceInterface(ExchangeInterface):
         }
         modified_symbol = utils.to_exchange_symbol(symbol, 'binance')
         response = self.calls.order_limit(symbol=modified_symbol, side=side, price=price, quantity=size)
-        renames = [
-            ["orderId", "id"],
-            ["transactTime", "created_at"],
-            ["origQty", "size"],
-            ["timeInForce", "time_in_force"],
-        ]
-        response['side'] = response['side'].lower()
-        response['type'] = response['type'].lower()
-        response['status'] = super().homogenize_order_status('binance', response['status'].lower())
-        response['symbol'] = utils.to_blankly_symbol(response['symbol'], 'binance')
-        response = utils.rename_to(renames, response)
-        response = utils.isolate_specific(needed, response)
+        response = self._fix_response(needed, response)
         return LimitOrder(order, response, self)
+
+    @utils.order_protection
+    def take_profit_order(self, symbol, price, size) -> TakeProfitOrder:
+        """
+        Used for sending take profit orders
+        Args:
+            symbol: currency to sell
+            price: price to sell at
+            size: amount of currency (like BTC)
+        """
+        needed = self.needed['take_profit']
+        """Send in a new take-profit order
+
+        Any order with an icebergQty MUST have timeInForce set to GTC.
+
+        :param symbol: required
+        :type symbol: str
+        :param side: required
+        :type side: str
+        :param quantity: required
+        :type quantity: decimal
+        :param price: required
+        :type price: str
+        :param timeInForce: default Good till cancelled
+        :type timeInForce: str
+        :param newClientOrderId: A unique id for the order. Automatically generated if not sent.
+        :type newClientOrderId: str
+        :param icebergQty: Used with LIMIT, STOP_LOSS_LIMIT, and TAKE_PROFIT_LIMIT to create an iceberg order.
+        :type icebergQty: decimal
+        :param newOrderRespType: Set the response JSON. ACK, RESULT, or FULL; default: RESULT.
+        :type newOrderRespType: str
+        :param recvWindow: the number of milliseconds the request is valid for
+        :type recvWindow: int
+
+        :returns: API response
+
+        See order endpoint for full response options
+
+        :raises: BinanceRequestException, BinanceAPIException, BinanceOrderException, BinanceOrderMinAmountException,
+        BinanceOrderMinPriceException, BinanceOrderMinTotalException,
+        BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
+
+        """
+        side = 'sell'
+        order = {
+            'size': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': 'take_profit'
+        }
+        modified_symbol = utils.to_exchange_symbol(symbol, 'binance')
+        response = self.calls.create_order(symbol=modified_symbol, side=side, stopPrice=price, quantity=size,
+                                           type='TAKE_PROFIT')
+        response = self._fix_response(needed, response)
+        return TakeProfitOrder(order, response, self)
+
+    @utils.order_protection
+    def stop_loss_order(self, symbol, price, size) -> StopLossOrder:
+        """
+        Used for sending stop loss orders
+        Args:
+            symbol: currency to sell
+            price: price to sell at
+            size: amount of currency (like BTC)
+        """
+        needed = self.needed['stop_loss']
+        """Send in a new stop-loss order
+
+        Any order with an icebergQty MUST have timeInForce set to GTC.
+
+        :param symbol: required
+        :type symbol: str
+        :param side: required
+        :type side: str
+        :param quantity: required
+        :type quantity: decimal
+        :param price: required
+        :type price: str
+        :param timeInForce: default Good till cancelled
+        :type timeInForce: str
+        :param newClientOrderId: A unique id for the order. Automatically generated if not sent.
+        :type newClientOrderId: str
+        :param icebergQty: Used with LIMIT, STOP_LOSS_LIMIT, and TAKE_PROFIT_LIMIT to create an iceberg order.
+        :type icebergQty: decimal
+        :param newOrderRespType: Set the response JSON. ACK, RESULT, or FULL; default: RESULT.
+        :type newOrderRespType: str
+        :param recvWindow: the number of milliseconds the request is valid for
+        :type recvWindow: int
+
+        :returns: API response
+
+        See order endpoint for full response options
+
+        :raises: BinanceRequestException, BinanceAPIException, BinanceOrderException, BinanceOrderMinAmountException,
+        BinanceOrderMinPriceException, BinanceOrderMinTotalException,
+        BinanceOrderUnknownSymbolException, BinanceOrderInactiveSymbolException
+
+        """
+        side = 'sell'
+        order = {
+            'size': size,
+            'side': side,
+            'price': price,
+            'symbol': symbol,
+            'type': 'stop_loss'
+        }
+        modified_symbol = utils.to_exchange_symbol(symbol, 'binance')
+        response = self.calls.create_order(symbol=modified_symbol, side=side, stopPrice=price, quantity=size,
+                                           type='STOP_LOSS')
+        response = self._fix_response(needed, response)
+        return StopLossOrder(order, response, self)
 
     def cancel_order(self, symbol, order_id) -> dict:
         """Cancel an active order. Either orderId or origClientOrderId must be sent.
@@ -586,7 +699,10 @@ class BinanceInterface(ExchangeInterface):
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
         """
+        return self._binance_get_product_history(self.calls, symbol, epoch_start, epoch_stop, resolution)
 
+    @staticmethod
+    def _binance_get_product_history(calls, symbol, epoch_start, epoch_stop, resolution):
         resolution = blankly.time_builder.time_interval_to_seconds(resolution)
 
         # epoch_start, epoch_stop = super().get_product_history(symbol, epoch_start, epoch_stop, resolution)
@@ -632,9 +748,9 @@ class BinanceInterface(ExchangeInterface):
         while need > 1000:
             # Close is always 300 points ahead
             window_close = int(window_open + 1000 * resolution)
-            history = history + self.calls.get_klines(symbol=symbol, startTime=window_open * 1000,
-                                                      endTime=window_close * 1000, interval=gran_string,
-                                                      limit=1000)
+            history = history + calls.get_klines(symbol=symbol, startTime=window_open * 1000,
+                                                 endTime=window_close * 1000, interval=gran_string,
+                                                 limit=1000)
 
             window_open = window_close
             need -= 1000
@@ -642,9 +758,9 @@ class BinanceInterface(ExchangeInterface):
             utils.update_progress((initial_need - need) / initial_need)
 
         # Fill the remainder
-        history_block = history + self.calls.get_klines(symbol=symbol, startTime=window_open * 1000,
-                                                        endTime=epoch_stop * 1000, interval=gran_string,
-                                                        limit=1000)
+        history_block = history + calls.get_klines(symbol=symbol, startTime=window_open * 1000,
+                                                   endTime=epoch_stop * 1000, interval=gran_string,
+                                                   limit=1000)
 
         data_frame = pd.DataFrame(history_block, columns=['time', 'open', 'high', 'low', 'close', 'volume',
                                                           'close time', 'quote asset volume', 'number of trades',

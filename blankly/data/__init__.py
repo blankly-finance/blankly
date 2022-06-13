@@ -16,19 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
-from enum import Enum as __Enum
-
-
-class DataTypes(__Enum):
-    ohlcv_csv = 0
-    tick_csv = 1
-    ohlcv_json = 2
-    event_json = 3
-
-
-from .data_reader import PriceReader, EventReader, TickReader
-
+from blankly.data.data_reader import PriceReader, JsonEventReader, TickReader, DataTypes
 
 """
 Some datatype examples

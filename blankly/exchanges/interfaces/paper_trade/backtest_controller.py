@@ -15,6 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+
 import json
 import os
 import time
@@ -35,6 +36,7 @@ from bokeh.plotting import ColumnDataSource, figure, show
 
 import blankly.exchanges.interfaces.paper_trade.metrics as metrics
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
+from blankly.exchanges.interfaces.paper_trade.futures.futures_paper_trade_interface import FuturesPaperTradeInterface
 from blankly.exchanges.interfaces.paper_trade.paper_trade_interface import PaperTradeInterface
 from blankly.utils.time_builder import time_interval_to_seconds
 from blankly.utils.utils import load_backtest_preferences, write_backtest_preferences, info_print, update_progress, \
@@ -44,7 +46,7 @@ from blankly.exchanges.interfaces.paper_trade.backtest.format_platform_result im
 
 from blankly.exchanges.interfaces.paper_trade.abc_backtest_controller import ABCBacktestController
 from blankly.exchanges.exchange import ABCExchange
-from blankly.data.data_reader import PriceReader, EventReader, TickReader
+from blankly.data.data_reader import PriceReader, TickReader, DataReader, FundingRateEventReader
 
 
 def to_string_key(separated_list):
@@ -436,8 +438,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                                                                    f'{symbol},'
                                                                    f'{int(j[0])},'
                                                                    f'{int(j[1]) + resolution},'  # This adds resolution 
-                                                                                                 # back to the exported
-                                                                                                 # time series
+                        # back to the exported
+                        # time series
                                                                    f'{resolution}.csv'),
                                         index=False)
 
@@ -532,7 +534,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
     def add_custom_prices(self, price_reader: PriceReader):
         self.__price_readers.append(price_reader)
 
-    def add_custom_events(self, event_reader: EventReader):
+    def add_custom_events(self, event_reader: DataReader):
         self.__event_readers.append(event_reader)
 
     def add_tick_events(self, tick_reader: TickReader):
@@ -607,8 +609,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                                  int, typing.Any]]]:
 
         # This is done so that only traded assets are evaluated.
-        true_available = {}
-        true_account = {}
+        true_available: dict = {}
+        true_account: dict = {}
         for i in interface.traded_assets:
             # Grab the account status
             true_account[i] = interface.get_account(i)
@@ -621,7 +623,11 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         no_trade_value = 0
 
         # Save this up front so that it can be removed from the price calculation (it's always a value of 1 anyway)
-        quote_value = true_account[self.quote_currency]['available'] + true_account[self.quote_currency]['hold']
+        try:
+            quote_value = true_account[self.quote_currency]['available'] + true_account[self.quote_currency]['hold']
+        except KeyError as e:
+            raise KeyError(f"Failed looking up {e}. Try changing your quote_account_value_in in backtest.json to be "
+                           f"{e}.")
         try:
             del true_account[self.quote_currency]
         except KeyError:
@@ -634,7 +640,9 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             currency_pair = i
 
             # Convert to quote (this could be optimized a bit)
-            if interface.get_exchange_type() != 'alpaca':
+            is_stonks = interface.get_exchange_type() == 'alpaca'
+            is_future = currency_pair.endswith('PERP')
+            if not (is_stonks or is_future):
                 currency_pair += '-'
                 currency_pair += self.quote_currency
 
@@ -644,8 +652,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             except KeyError:
                 # Must be a currency we have no data for
                 price = 0
-            value_total += price * true_available[i]
-            no_trade_value += price * no_trade_available[i]
+            value_total += price * abs(true_available[i])
+            no_trade_value += price * abs(no_trade_available[i])
 
         # Make sure to add the time key in
         true_available['time'] = local_time
@@ -685,6 +693,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         def handle_blankly_tick(type_: str, data):
             if type_ == 'tick':
                 self.model.websocket_update(data)
+            elif type_ == "funding_rate":
+                self.interface.do_funding(data['symbol'], data['rate'])
 
         def run_events():
             # Ensure that we don't index error here
@@ -787,7 +797,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         self.backtest_settings_path = backtest_settings_path
         self.show_progress = self.preferences['settings']['show_progress_during_backtest']
 
-        if not exchange.get_type() == "paper_trade":
+        if not exchange.get_type().endswith("paper_trade"):
             raise ValueError("Backtest controller was not constructed with a paper trade exchange object.")
         # Define the interface on run
         self.interface: PaperTradeInterface = exchange.get_interface()
@@ -796,11 +806,15 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
         # Figure out our traded assets here
         self.prices = self.sync_prices()
+        # add funding rate events for futures trading
+        if isinstance(self.interface, FuturesPaperTradeInterface):
+            for symbol in self.prices:
+                self.add_custom_events(FundingRateEventReader(symbol, self.user_start, self.user_stop, self.interface))
         # Now ensure all events are processed
         self.parse_events()
-        for i in self.prices:
-            base = get_base_asset(i)
-            quote = get_quote_asset(i)
+        for symbol in self.prices:
+            base = get_base_asset(symbol)
+            quote = get_quote_asset(symbol)
             if base not in self.interface.traded_assets:
                 self.interface.traded_assets.append(base)
             if quote not in self.interface.traded_assets:
@@ -865,6 +879,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
             # Find the first time in the list
             self.initial_time = copy.copy(self.user_start)
+            self.interface.initial_time = self.initial_time
 
         if self.prices == {} and self.events == []:
             raise ValueError("No data given. "
@@ -915,6 +930,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                 update_progress(1)
         except Exception:
             traceback.print_exc()
+        finally:
+            self.model.teardown()
 
         # Reset time to indicate we are no longer in a backtest
         self.time = None
@@ -981,11 +998,11 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         except ZeroDivisionError as e_:
             metrics_indicators['Cumulative Returns (%)'] = f'failed: {e_}'
 
-        def attempt(math_callable: typing.Callable, dict_of_dataframes: dict, kwargs: dict = None):
+        def attempt(math_callable: typing.Callable, dict_of_dataframes: dict, kwargs_: dict = None):
             try:
-                if kwargs is None:
-                    kwargs = {}
-                result = math_callable(dict_of_dataframes, **kwargs)
+                if kwargs_ is None:
+                    kwargs_ = {}
+                result = math_callable(dict_of_dataframes, **kwargs_)
                 if result == np.NAN:
                     result = None
                 return result
@@ -1042,9 +1059,9 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
         history_and_returns['returns'] = history_and_returns['returns'].where(history_and_returns['returns'].notnull(),
                                                                               None)
         # Lastly remove Nan values in the metrics
-        for i in metrics_indicators:
-            if not isinstance(metrics_indicators[i], str) and np.isnan(metrics_indicators[i]):
-                metrics_indicators[i] = None
+        for symbol in metrics_indicators:
+            if not isinstance(metrics_indicators[symbol], str) and np.isnan(metrics_indicators[symbol]):
+                metrics_indicators[symbol] = None
 
         # Assign all these new values back to the result object
         result_object.history_and_returns = history_and_returns
@@ -1165,7 +1182,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                     'successful': True,
                     'status_summary': 'Completed',
                     'status_details': '',
-                    'time_elapsed': stop_clock-start_clock,
+                    'time_elapsed': stop_clock - start_clock,
                     'backtest_id': platform_result['backtest_id']
                 }, headers={
                     'api_key': api_key,

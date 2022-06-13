@@ -20,13 +20,6 @@
 import abc
 from typing import Union, Optional, List
 
-import numpy
-import pandas
-
-from datetime import datetime as dt
-
-from dateutil.parser import parser
-
 import blankly.utils.utils as utils
 from blankly.enums import MarginType, HedgeMode, PositionMode, OrderType, Side, TimeInForce, ContractType
 from blankly.exchanges.interfaces.abc_base_exchange_interface import ABCBaseExchangeInterface
@@ -52,14 +45,12 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
             self.init_exchange()
 
     @staticmethod
-    @abc.abstractmethod
     def to_blankly_symbol(symbol: str):
-        pass
+        return symbol
 
     @staticmethod
-    @abc.abstractmethod
     def to_exchange_symbol(symbol: str):
-        pass
+        return symbol
 
     def get_exchange_type(self) -> str:
         """Returns the exchange type (ex. 'binance', 'coinbase', 'alpaca')"""
@@ -76,13 +67,13 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def get_account(self, symbol: str = None) -> utils.AttributeDict:
+    def get_account(self, symbol: str = None) -> dict:
         """Returns account information, or information for only one `symbol` if one is given."""
         pass
 
     # TODO this metohd name might need to change to get_position ?
     @abc.abstractmethod
-    def get_positions(self, symbol: str = None) -> Optional[dict]:
+    def get_position(self, symbol: str = None) -> Optional[dict]:
         """Returns position information, or information for only one `symbol` if one is given"""
         pass
 
@@ -109,22 +100,22 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def take_profit(self,
-                    symbol: str,
-                    side: Side,
-                    price: float,
-                    size: float,
-                    position: PositionMode = None) -> FuturesOrder:
+    def take_profit_order(self,
+                          symbol: str,
+                          side: Side,
+                          price: float,
+                          size: float,
+                          position: PositionMode = None) -> FuturesOrder:
         """Place a take-profit order for a position"""
         pass
 
     @abc.abstractmethod
-    def stop_loss(self,
-                  symbol: str,
-                  side: Side,
-                  price: float,
-                  size: float,
-                  position: PositionMode = None) -> FuturesOrder:
+    def stop_loss_order(self,
+                        symbol: str,
+                        side: Side,
+                        price: float,
+                        size: float,
+                        position: PositionMode = None) -> FuturesOrder:
         """Place a stop-loss order for a position"""
         pass
 
@@ -137,7 +128,7 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
-    def set_leverage(self, leverage: int, symbol: str = None):
+    def set_leverage(self, leverage: float, symbol: str = None):
         pass
 
     @abc.abstractmethod
@@ -173,14 +164,14 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @property
-    def account(self) -> utils.AttributeDict:
+    def account(self) -> dict:
         """Account information"""
         return self.get_account()
 
     @property
-    def positions(self) -> utils.AttributeDict:
+    def positions(self) -> dict:
         """Position information"""
-        return self.get_positions()
+        return self.get_position()
 
     @property
     def orders(self) -> list:
@@ -204,5 +195,21 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         pass
 
     @abc.abstractmethod
+    def get_funding_rate(self, symbol: str) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_maker_fee(self) -> float:
+        pass
+
+    @abc.abstractmethod
+    def get_taker_fee(self) -> float:
+        pass
+
+    @abc.abstractmethod
     def get_funding_rate_resolution(self) -> int:
         pass
+
+    @property
+    def should_auto_trunc(self):
+        return self.user_preferences['settings'].get('auto_truncate', False)

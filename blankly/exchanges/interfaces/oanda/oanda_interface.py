@@ -17,7 +17,6 @@
 """
 
 import time
-import dateparser as dp
 from datetime import datetime as dt
 from typing import Union
 
@@ -27,7 +26,9 @@ from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
 from blankly.exchanges.interfaces.oanda.oanda_api import OandaAPI
 from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.exchanges.orders.market_order import MarketOrder
-from blankly.utils import utils as utils
+from blankly.exchanges.orders.stop_loss import StopLossOrder
+from blankly.exchanges.orders.take_profit import TakeProfitOrder
+from blankly.utils import utils, time_builder
 from blankly.utils.exceptions import APIException, InvalidOrder
 
 
@@ -210,6 +211,9 @@ class OandaInterface(ExchangeInterface):
     def market_order(self, symbol: str, side: str, size: float) -> MarketOrder:
         symbol = self.__convert_blankly_to_oanda(symbol)
 
+        if self.should_auto_trunc:
+            size = utils.trunc(size, self.get_asset_precision(symbol))
+
         # Make sure that default trunc has been established - init may have been skipped
         if self.default_trunc is None:
             self.init_exchange()
@@ -229,24 +233,35 @@ class OandaInterface(ExchangeInterface):
         resp = self.calls.place_market_order(symbol, qty_to_buy)
 
         needed = self.needed['market_order']
-        order = {
-            'size': qty_to_buy,
-            'side': side,
-            'symbol': symbol,
-            'type': 'market'
-        }
-        if 'orderRejectTransaction' in resp:
-            raise APIException(resp['errorMessage'])
-        resp['symbol'] = self.__convert_symbol_to_blankly(resp['orderCreateTransaction']['instrument'])
-        resp['id'] = resp['orderCreateTransaction']['id']
-        resp['created_at'] = resp['orderCreateTransaction']['time']
-        resp['size'] = abs(qty_to_buy)
-        resp['status'] = "active"
-        resp['type'] = 'market'
-        resp['side'] = side
-
-        resp = utils.isolate_specific(needed, resp)
+        order = utils.build_order_info(0, side, qty_to_buy, symbol, 'market')
+        resp = self._fix_response(needed, 0, resp, side, qty_to_buy, 'market', False)
         return MarketOrder(order, resp, self)
+
+    @utils.order_protection
+    def stop_loss_order(self, symbol: str, price: float, size: float) -> StopLossOrder:
+        symbol = self.__convert_blankly_to_oanda(symbol)
+        side = 'sell'
+        size *= -1
+
+        resp = self.calls.place_stop_loss(symbol, size, price)
+        needed = self.needed['stop_loss']
+        order = utils.build_order_info(0, side, size, symbol, 'stop_loss')
+
+        resp = self._fix_response(needed, price, resp, side, size, 'stop_loss')
+        return StopLossOrder(order, resp, self)
+
+    @utils.order_protection
+    def take_profit_order(self, symbol: str, price: float, size: float) -> TakeProfitOrder:
+        symbol = self.__convert_blankly_to_oanda(symbol)
+        side = 'sell'
+        size *= -1
+
+        resp = self.calls.place_take_profit(symbol, size, price)
+        needed = self.needed['take_profit']
+        order = utils.build_order_info(0, side, size, symbol, 'take_profit')
+
+        resp = self._fix_response(needed, price, resp, side, size, 'take_profit')
+        return TakeProfitOrder(order, resp, self)
 
     @utils.order_protection
     def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
@@ -260,14 +275,12 @@ class OandaInterface(ExchangeInterface):
 
         resp = self.calls.place_limit_order(symbol, size, price)
         needed = self.needed['limit_order']
-        order = {
-            'size': size,
-            'side': side,
-            'price': price,
-            'symbol': symbol,
-            'type': 'limit'
-        }
+        order = utils.build_order_info(0, side, size, symbol, 'limit')
 
+        resp = self._fix_response(needed, price, resp, side, size, 'limit')
+        return LimitOrder(order, resp, self)
+
+    def _fix_response(self, needed, price, resp, side, size, type, set_tif=True):
         try:
             resp['symbol'] = self.__convert_symbol_to_blankly(resp['orderCreateTransaction']['instrument'])
         except KeyError as e:
@@ -277,15 +290,16 @@ class OandaInterface(ExchangeInterface):
                 raise e
         resp['id'] = resp['orderCreateTransaction']['id']
         resp['created_at'] = resp['orderCreateTransaction']['time']
-        resp['price'] = price
+        if price:
+            resp['price'] = price
         resp['size'] = abs(size)
         resp['status'] = "active"
-        resp['time_in_force'] = 'GTC'
-        resp['type'] = 'limit'
+        if set_tif:
+            resp['time_in_force'] = 'GTC'
+        resp['type'] = type
         resp['side'] = side
-
         resp = utils.isolate_specific(needed, resp)
-        return LimitOrder(order, resp, self)
+        return resp
 
     def cancel_order(self, symbol, order_id) -> dict:
         # Either the Order’s OANDA-assigned OrderID or the Order’s client-provided ClientID prefixed by the “@” symbol
@@ -347,7 +361,7 @@ class OandaInterface(ExchangeInterface):
     def get_product_history(self, symbol: str, epoch_start: float, epoch_stop: float, resolution: int):
         symbol = self.__convert_blankly_to_oanda(symbol)
 
-        resolution = int(utils.time_interval_to_seconds(resolution))
+        resolution = int(time_builder.time_interval_to_seconds(resolution))
 
         if resolution not in self.multiples_keys:
             utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
@@ -425,27 +439,18 @@ class OandaInterface(ExchangeInterface):
         return float(resp['orderBook']['price'])
 
     def homogenize_order(self, order):
-        def add_details(order_: dict):
-            if float(order_['units']) < 0:
-                order_['side'] = 'sell'
-            else:
-                order_['side'] = 'buy'
-            order_['time_in_force'] = 'GTC'
-            renames_ = [['instrument', 'symbol'],
-                        ['createTime', 'created_at'],
-                        ['state', 'status'],  # TODO: handle status
-                        ['units', 'size']]
-            return utils.rename_to(renames_, order_)
-        if order['type'] == "MARKET":
-            order['type'] = 'market'
-            order = add_details(order)
+        order['type'] = order['type'].lower()
 
-        elif order['type'] == "LIMIT":
-            order['type'] = 'limit'
-            order = add_details(order)
+        if float(order['units']) < 0:
+            order['side'] = 'sell'
         else:
-            # TODO: handle other order types
-            pass
+            order['side'] = 'buy'
+        order['time_in_force'] = 'GTC'
+        renames = [['instrument', 'symbol'],
+                    ['createTime', 'created_at'],
+                    ['state', 'status'],  # TODO: handle status
+                    ['units', 'size']]
+        order = utils.rename_to(renames, order)
 
         needed = self.choose_order_specificity(order['type'])
         order = utils.isolate_specific(needed, order)
@@ -476,6 +481,7 @@ class OandaInterface(ExchangeInterface):
         if isinstance(date, float):
             pass
         elif isinstance(date, str):
+            import dateparser as dp
             date = dp.parse(date).timestamp()
         elif isinstance(date, dt):
             date = date.timestamp()

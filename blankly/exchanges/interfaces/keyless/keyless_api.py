@@ -19,6 +19,7 @@ import pandas as pd
 
 
 from blankly.exchanges.interfaces.exchange_interface import ExchangeInterface
+from blankly.exchanges.orders.limit_order import LimitOrder
 from blankly.utils.utils import AttributeDict, get_base_asset, get_quote_asset, aggregate_prices_by_resolution, \
     extract_price_by_resolution
 
@@ -79,6 +80,12 @@ class KeylessAPI(ExchangeInterface):
     def market_order(self, symbol: str, side: str, size: float):
         self.__invalid_live()
 
+    def take_profit_order(self, symbol: str, price: float, size: float):
+        self.__invalid_live()
+
+    def stop_loss_order(self, symbol: str, price: float, size: float):
+        self.__invalid_live()
+
     def limit_order(self, symbol: str, side: str, price: float, size: float):
         self.__invalid_live()
 
@@ -133,3 +140,5 @@ class KeylessAPI(ExchangeInterface):
 
     def get_price(self, symbol: str, time=None):
         self.__invalid_live()
+
+

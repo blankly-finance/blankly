@@ -6,6 +6,7 @@
    <img style="margin: 0 auto; padding-bottom: 15px; padding-top: 30px" width=70%" src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/blankly-github-logo.png?alt=media&token=8f436cd2-3d28-432c-867a-afef780f4260">
 </div>
 <br />
+
 <div align="center">
   <b>💨  Rapidly build and deploy quantitative models for stocks, crypto, and forex  🚀</b>
 </div>
@@ -36,29 +37,29 @@
 
 ## Why Blankly? 
 
-​	Blankly is a live trading engine, backtest runner and development framework wrapped into one powerful open source package. Models can be instantly backtested, paper traded, sandbox tested and run live by simply changing a single line. We built blankly for every type of quant including training & running ML models in the same environment, cross-exchange/cross-symbol arbitrage, and even long/short positions on stocks (all with built-in websockets).
+Blankly is an ecosystem for algotraders enabling anyone to build, monetize and scale their trading algorithms for stocks, crypto, futures or forex. The same code can be backtested, paper traded, sandbox tested and run live by simply changing a single line. Develop locally then deploy, iterate and share using the blankly platform.
 
-​	Convert your existing model or build a new one - unlock the ability to run & optimize across all of our supported exchanges. Getting started is easy - just `pip install blankly` and `blankly init`.
-
-## Sponsored Promotion
-<a target="_blank" href="https://tokenbot.com/?utm_source=github&utm_medium=blankly&utm_campaign=algodevs"><img src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/github%2FTokenBot-Blankly-banner.png?alt=media&token=843c16b0-da39-41a5-b34d-f7d5fdfdf088">
+Add simulated latency, social media & websocket backtests to existing models or build a new one using live data natively. Getting started is easy - just `pip install blankly` and `blankly init`.
 
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
 
 [YouTube - Under 25 Lines Build an Alpaca RSI Trading Bot](https://youtu.be/pcm0h63rhUU)
 <a target="_blank" href="https://youtu.be/pcm0h63rhUU"><img src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/github%2Fbuild_a_bot_readme_thumbnail.jpg?alt=media&token=a9dd030a-805c-447f-a970-2bc8e1815662" style="border-radius:10px"></a>
 
-### Trade Stocks, Crypto, and Forex Seamlessly
+### Trade Stocks, Crypto, Futures, and Forex
 
 ```python
 from blankly import Alpaca, CoinbasePro
 
 stocks = Alpaca()
 crypto = CoinbasePro()
+futures = BinanceFutures()
 
 # Easily perform the same actions across exchanges & asset types
 stocks.interface.market_order('AAPL', 'buy', 1)
 crypto.interface.market_order('BTC-USD', 'buy', 1)
+# Full futures featureset
+futures.interface.get_hedge_mode()
 ```
 
 ### Backtest your trades, events, websockets, and custom data
@@ -87,7 +88,7 @@ if __name__ == "__main__":
     model = TwitterBot(exchange)
 
     # Add the tweets json here
-    model.backtester.add_custom_events(blankly.data.EventReader('./tweets.json'))
+    model.backtester.add_custom_events(blankly.data.JsonEventReader('./tweets.json'))
     # Now add some underlying prices at 1 month
     model.backtester.add_prices('TSLA', '1h', start_date='3/20/22', stop_date='4/15/22')
 
@@ -158,6 +159,20 @@ If you don't want to use our `init` command, you can find the same files in the 
 
 More information can be found on our [docs](https://docs.blankly.finance)
 
+### Docker
+
+1. Pull a python docker container
+
+```bash
+$ docker pull python
+```
+
+2. Move to a directory to initialize and run
+
+```bash
+$ blankly init
+```
+
 ### Directory format
 
 The working directory format should have *at least* these files:
@@ -186,9 +201,11 @@ For more info, and ways to do more advanced things, check out our [getting start
 | Coinbase Pro        | 🟢           | 🟢          | 🟢           | 🟢           |
 | Binance             | 🟢           | 🟢          | 🟢           | 🟢           |
 | Alpaca              | 🟢           | 🟢          | 🟢           | 🟢           |
-| OANDA               | 🟢           |         | 🟢           | 🟢           |
+| OANDA               | 🟢           |  | 🟢           | 🟢           |
 | FTX                 | 🟢           | 🟢          | 🟢           | 🟢           |
 | KuCoin              | 🟢           | 🟢        | 🟢           | 🟢           |
+| Binance Futures | 🟢 | 🟢 | 🟢 | 🟢 |
+| FTX Futures | 🟡 | 🟡 | 🟢 | 🟢 |
 | Okx | 🟢 | 🟢 | 🟢 | 🟢 |
 | Kraken              | 🟡           | 🟡          | 🟡           | 🟡           |
 | Keyless Backtesting |              |            |              | 🟢           |

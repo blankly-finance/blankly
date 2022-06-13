@@ -26,6 +26,9 @@ class BacktestingWrapper:
             'time': 0
         }
 
+        # Use this in the inits
+        self.initial_time = None
+
         self.full_prices = {}
 
     def set_backtesting(self, status: bool):

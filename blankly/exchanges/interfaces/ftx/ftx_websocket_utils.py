@@ -20,6 +20,8 @@ import time
 import blankly.utils.utils as utils
 from typing import List, Dict, Union, Any
 
+from blankly.exchanges.interfaces.coinbase_pro import coinbase_pro_websocket_utils
+
 
 def switch_type(stream):
     if stream == "trades":
@@ -46,19 +48,15 @@ Homogenizes response with uhh coinbase and binance
 
 def process_trades(response: dict) -> Dict[str, Union[float, Any]]:
     output = {
-              'trade_id': response.pop('id'),
-              'time': utils.epoch_from_iso8601(response['time']),
-              'size': response['size'],
-              'price': response['price']
-              }
+        'trade_id': response.pop('id'),
+        'time': utils.epoch_from_iso8601(response['time']),
+        'size': response['size'],
+        'price': response['price']
+    }
 
     return output
 
 
-
 def trade(received):
-    line = str(received["time"]) + "," + str(time.time()) + "," + received["price"] + "," + received[
-        "open_24h"] + "," + received["volume_24h"] + "," + received["low_24h"] + "," + received[
-               "high_24h"] + "," + received["volume_30d"] + "," + received["best_bid"] + "," + received[
-               "best_ask"] + "," + received["last_size"] + "\n"
-    return line
+    # reuse impl from coinbase
+    return coinbase_pro_websocket_utils.trade(received)

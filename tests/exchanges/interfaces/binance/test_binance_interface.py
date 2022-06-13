@@ -27,7 +27,7 @@ from blankly.exchanges.interfaces.binance.binance_interface import BinanceInterf
 from blankly.utils.utils import AttributeDict
 
 
-class BinanceInterface_test(unittest.TestCase):
+class TestBinanceInterface(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.Binance = blankly.Binance(portfolio_name="Spot Test Key",

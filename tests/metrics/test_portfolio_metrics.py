@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import unittest
 
 from blankly.metrics import *
@@ -34,11 +33,11 @@ class Metrics(unittest.TestCase):
         truth = 0.2247448714
         result = cagr(self.start_value, self.end_value, self.years)
         self.assertAlmostEqual(truth, result)
-    
+
     def test_cum_returns(self):
         value = cum_returns(self.start_value, self.end_value)
         self.assertEqual(0.5, value)
-    
+
     def test_sortino(self):
         truth = 38.93662218111633
         result = sortino(self.returns)

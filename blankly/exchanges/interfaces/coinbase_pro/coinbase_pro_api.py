@@ -59,9 +59,9 @@ def get_auth_headers(timestamp, message, api_key, secret_key, passphrase):
 
 
 class API:
-    def __init__(self, api_key: str, api_secret: str, api_pass: str, API_URL: str='https://api.pro.coinbase.com/'):
+    def __init__(self, api_key: str, api_secret: str, api_pass: str, api_url: str = 'https://api.pro.coinbase.com/'):
         self.__auth = CoinbaseExchangeAuth(api_key, api_secret, api_pass)
-        self.__api_url = API_URL
+        self.__api_url = api_url
         self.session = requests.Session()
 
     """
@@ -621,8 +621,10 @@ class API:
         """
         params = {'product_id': product_id,
                   'side': side,
+                  'stop_price': price,
                   'price': price,
-                  'order_type': 'stop',
+                  'order_type': 'limit',
+                  'stop': 'loss',
                   'size': size,
                   'funds': funds,
                   'client_oid': client_oid,

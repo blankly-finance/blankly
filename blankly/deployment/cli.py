@@ -170,11 +170,11 @@ def choose_option(choice: str, options: list, descriptions: list):
               TermColors.UNDERLINE + "(Input the index of your selection)" + TermColors.ENDC)
 
         index = int(input(TermColors.UNDERLINE + TermColors.OKCYAN +
-                    "You have chosen:" + TermColors.ENDC + " "))
+                          "You have chosen:" + TermColors.ENDC + " "))
 
         if index < 0 or index > len(options) - 1:
             raise LookupError(f"The index you chose is out of bounds, choose an index between {0} and "
-                              f"{len(options) -1}")
+                              f"{len(options) - 1}")
 
         print('\n' + TermColors.BOLD + TermColors.WARNING + f"Chose {choice}:" + TermColors.ENDC + " " +
               TermColors.BOLD + TermColors.OKBLUE + options[index] + TermColors.ENDC)
@@ -221,7 +221,7 @@ def get_project_model_and_name(args, api: API):
                                        "\t" + TermColors.BOLD + TermColors.WARNING +
                                        'A screener is a model uses blankly.Screener' + TermColors.ENDC])
 
-                model_id = api.create_model(type_, model_name, general_description)['modelId']
+                model_id = api.create_model(None, type_, model_name, general_description)['modelId']
             else:
                 models = api.list_models()
                 ids = []
@@ -375,7 +375,6 @@ backtest_parser = subparsers.add_parser('backtest', help='Start a backtest on an
 backtest_parser.set_defaults(which='backtest')
 add_path_arg(backtest_parser, required=False)
 
-
 run_parser = subparsers.add_parser('run', help='Mimic the run mechanism used in blankly deployment.')
 run_parser.add_argument('--monitor',
                         action='store_true',
@@ -429,7 +428,7 @@ def is_logged_in():
             # Kill the file we created
             os.close(fd)
             os.remove(os.path.join(temp_folder, file_name))
-            
+
             try:
                 json.loads(open(temp_folder + '/' + i_).read())['token']
             except (KeyError, json.decoder.JSONDecodeError):

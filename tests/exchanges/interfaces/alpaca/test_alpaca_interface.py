@@ -24,7 +24,7 @@ from pytest_mock import MockerFixture
 import blankly
 
 
-class mock_alpaca_direct_calls:
+class MockAlpacaDirectCalls:
     def __init__(self, *args, **kwargs):
         pass
 
@@ -189,7 +189,7 @@ class mock_alpaca_direct_calls:
         return mock_products_response
 
 
-class mock_alpaca_interface:
+class MockAlpacaInterface:
     def __init__(self, *args, **kwargs):
         pass
 
@@ -202,7 +202,7 @@ def alpaca_mock_interface(mocker: MockerFixture):
     keys_file_path = Path("tests/config/keys.json").resolve().__str__()
     settings_file_path = Path("tests/config/settings.json").resolve().__str__()
 
-    mocker.patch("alpaca_trade_api.REST", new=mock_alpaca_direct_calls)
+    mocker.patch("alpaca_trade_api.REST", new=MockAlpacaDirectCalls)
     alpaca = blankly.Alpaca(keys_path=keys_file_path,
                             settings_path=settings_file_path,
                             portfolio_name="alpaca test portfolio")

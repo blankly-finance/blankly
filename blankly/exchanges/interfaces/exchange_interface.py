@@ -17,6 +17,7 @@
 """
 
 import abc
+from functools import lru_cache
 
 import blankly.utils.utils as utils
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
@@ -66,6 +67,30 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 ["id", str],
                 ["created_at", float],
                 ["price", float],
+                ["size", float],
+                ["status", str],
+                ["time_in_force", str],
+                ["type", str],
+                ["side", str]
+            ],
+            'take_profit': [
+                ["symbol", str],
+                ["id", str],
+                ["created_at", float],
+                ["stop_price", float],
+                ["stop", str],
+                ["size", float],
+                ["status", str],
+                ["time_in_force", str],
+                ["type", str],
+                ["side", str]
+            ],
+            'stop_loss': [
+                ["symbol", str],
+                ["id", str],
+                ["created_at", float],
+                ["stop_price", float],
+                ["stop", str],
                 ["size", float],
                 ["status", str],
                 ["time_in_force", str],
@@ -161,7 +186,7 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
         using_setting = self.user_preferences['settings'][self.exchange_name]['cash']
         return self.get_account(using_setting)['available']
 
-    def is_backtesting(self):
+    def backtesting_time(self):
         """
         Overridden by interfaces which have a valid backtesting boolean value
         """
@@ -205,12 +230,11 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
     def choose_order_specificity(self, order_type):
         # This lower should not be necessary if everything is truly homogeneous
         order_type = order_type.lower()
-        if order_type == 'market':
-            return self.needed['market_order']
-        elif order_type == 'limit':
-            return self.needed['limit_order']
-        else:
-            return self.needed['market_order']
+        if order_type == 'stop':
+            return self.needed['stop_loss']
+        elif order_type == 'take_profit':
+            return self.needed['take_profit']
+        return self.needed[f'{order_type}_order']
 
     """
     Order lifecycle should be:
@@ -229,3 +253,15 @@ class ExchangeInterface(ABCExchangeInterface, abc.ABC):
                 return 'new'
 
         return status
+
+    @property
+    def should_auto_trunc(self):
+        return self.user_preferences['settings'].get('auto_truncate', False)
+
+    @lru_cache(None)
+    def get_asset_precision(self, asset):
+        try:
+            product = next(p for p in self.get_products() if p['symbol'] == asset)
+            return utils.increment_to_precision(product['base_increment'])
+        except (KeyError, StopIteration):
+            return 8  # reasonable default for symbols that don't exist

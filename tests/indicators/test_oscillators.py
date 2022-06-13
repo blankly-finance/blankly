@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import pickle
 import unittest
 from pathlib import Path
@@ -54,7 +53,6 @@ class Oscillators(unittest.TestCase):
             chande_res = chande_momentum_oscillator(self.data['close'], period)
             self.assertTrue(compare_equal(chande_res, self.data[period]['chande_momentum_oscillator']))
 
-
     def test_absolute_price_oscillator(self):
         short_period = self.data['short_period']
         long_period = self.data['long_period']
@@ -73,6 +71,7 @@ class Oscillators(unittest.TestCase):
         pct_k_period = self.data['pct_k_period']
         pct_k_slowing_period = self.data['pct_k_slowing_period']
         pct_d_period = self.data['pct_d_period']
-        res = stochastic_oscillator(self.data['high'], self.data['low'], self.data['close'], pct_k_period, pct_k_slowing_period, pct_d_period)
+        res = stochastic_oscillator(self.data['high'], self.data['low'], self.data['close'], pct_k_period,
+                                    pct_k_slowing_period, pct_d_period)
         # use the first one since general period doesn't matter
         self.assertTrue(compare_equal(res, self.data[self.data['periods'][0]]['stochastic_oscillator']))

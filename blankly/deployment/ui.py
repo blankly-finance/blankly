@@ -28,7 +28,7 @@ STYLE = questionary.Style(
 )
 questionary.constants.DEFAULT_STYLE = STYLE
 
-from questionary import confirm, text, select
+from questionary import confirm, text, select, path
 
 
 def fprint(text, **kwargs):
@@ -56,7 +56,7 @@ def text_spinner(
         right=']',
         interval=80
 ):
-    fullstr = text + ' ' * (len(text)//2) + text[:-1]
+    fullstr = text + ' ' * (len(text) // 2) + text[:-1]
     win_size = len(text)
     return YaspinSpinner([
         left + fullstr[i:i + win_size] + right

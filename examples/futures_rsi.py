@@ -18,50 +18,44 @@
 
 import blankly
 from blankly import Side
-from blankly.futures import FuturesStrategyState, FTXFutures, FuturesStrategy, MarginType
+from blankly.futures import FuturesStrategyState, FuturesStrategy, BinanceFutures
+
+from blankly.futures.utils import close_position
 
 
 def price_event(price, symbol, state: FuturesStrategyState):
     state.variables['history'].append(price)
+
     rsi = blankly.indicators.rsi(state.variables['history'])
+
+    position = state.interface.get_position('BTC-USDT')
+    position_size = position['size'] if position else 0
 
     if rsi[-1] < 30:
         # rsi < 30 indicates the asset is undervalued or will rise in price
         # we want to go long.
-        if state.interface.positions['BTC-USDT'].size <= 0:
-            close_position(symbol, state)
-            size = blankly.trunc(state.interface.cash / price, 2)
-            state.interface.market_order(symbol, side=Side.BUY, size=size)
+        side = Side.BUY
     elif rsi[-1] > 70:
         # rsi < 70 indicates the asset is overvalued or will drop in price
         # we want to short the asset.
-        if state.interface.positions['BTC-USDT'].size >= 0:
-            close_position(symbol, state)
-            size = blankly.trunc(state.interface.cash / price, 2)
-            state.interface.market_order(symbol, side=Side.SELL, size=size)
+        side = Side.SELL
+    else:
+        close_position(symbol, state)
+        return
 
+    if (position_size != 0) and (side == Side.BUY) == (position_size > 0):
+        return
 
-def close_position(symbol, state: FuturesStrategyState):
-    size = state.interface.positions[symbol].size
-    if size < 0:
-        state.interface.market_order(symbol,
-                                     Side.BUY,
-                                     abs(size),
-                                     reduce_only=True)
-    elif size > 0:
-        state.interface.market_order(symbol,
-                                     Side.SELL,
-                                     abs(size),
-                                     reduce_only=True)
+    order_size = (state.interface.cash / price) * 0.99
+
+    if order_size <= 0:
+        return
+
+    state.interface.market_order(symbol, side=side, size=order_size)
 
 
 def init(symbol, state: FuturesStrategyState):
     close_position(symbol, state)
-
-    # Set initial leverage and margin type
-    state.interface.set_leverage(symbol, 1)
-
-    state.interface.set_margin_type(symbol, MarginType.ISOLATED)
 
     state.variables['history'] = state.interface.history(
         symbol, to=150, return_as='deque',
@@ -69,13 +63,13 @@ def init(symbol, state: FuturesStrategyState):
 
 
 if __name__ == "__main__":
-    exchange = FTXFutures()
+    exchange = BinanceFutures()
 
     strategy = FuturesStrategy(exchange)
     strategy.add_price_event(price_event,
                              init=init,
                              teardown=close_position,
                              symbol='BTC-USDT',
-                             resolution='1m')
+                             resolution='5m')
 
-    strategy.start()
+    strategy.backtest(to='1mo', initial_values={'USDT': 10000})

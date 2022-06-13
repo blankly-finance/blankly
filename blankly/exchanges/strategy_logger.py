@@ -38,13 +38,13 @@ class StrategyLogger(ABCExchangeInterface):
         No logging implemented
         """
         return self.interface.get_calls()
-    
+
     def get_exchange_type(self):
         """
         No logging implemented
         """
         return self.interface.get_exchange_type()
-    
+
     def get_account(self, symbol: str = None) -> AttributeDict:
         """
         No logging implemented
@@ -54,6 +54,7 @@ class StrategyLogger(ABCExchangeInterface):
     """
     These next three queries have large responses. It is unclear if this quantity of data is useful or necessary
     """
+
     def get_products(self):
         """
         No logging implemented
@@ -66,7 +67,7 @@ class StrategyLogger(ABCExchangeInterface):
         No logging implemented
         """
         return self.interface.get_product_history(symbol, epoch_start, epoch_stop, resolution)
-    
+
     def history(self,
                 symbol: str,
                 to: Union[str, int] = 200,
@@ -80,7 +81,15 @@ class StrategyLogger(ABCExchangeInterface):
         return self.interface.history(symbol, to=to,
                                       resolution=resolution, start_date=start_date,
                                       end_date=end_date, return_as=return_as)
-    
+
+    # no logging for these on platform yet
+    def take_profit_order(self, symbol: str, price: float, size: float) -> LimitOrder:
+        pass
+
+    # no logging for these on platform yet
+    def stop_loss_order(self, symbol: str, price: float, size: float) -> LimitOrder:
+        pass
+
     def market_order(self, symbol: str, side: str, size: float) -> MarketOrder:
         out = self.interface.market_order(symbol, side, size)
 
@@ -96,7 +105,7 @@ class StrategyLogger(ABCExchangeInterface):
         except Exception:
             pass
         return out
-    
+
     def limit_order(self, symbol: str, side: str, price: float, size: float) -> LimitOrder:
         out = self.interface.limit_order(symbol, side, price, size)
 
@@ -113,7 +122,7 @@ class StrategyLogger(ABCExchangeInterface):
         except Exception:
             pass
         return out
-    
+
     def cancel_order(self, symbol: str, order_id: str) -> dict:
         """
         No logging implemented
@@ -153,7 +162,7 @@ class StrategyLogger(ABCExchangeInterface):
         No logging implemented
         """
         return self.interface.get_order_filter(symbol)
-    
+
     def get_price(self, symbol: str) -> float:
         """
         No logging implemented
@@ -163,13 +172,14 @@ class StrategyLogger(ABCExchangeInterface):
     """
     No logging implemented for these properties
     """
+
     @property
     def account(self) -> AttributeDict:
         """
         No logging implemented
         """
         return self.interface.account
-    
+
     @property
     def orders(self) -> list:
         """
@@ -183,4 +193,3 @@ class StrategyLogger(ABCExchangeInterface):
         No logging implemented
         """
         return self.interface.cash
-    

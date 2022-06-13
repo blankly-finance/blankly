@@ -31,7 +31,6 @@ from blankly.exchanges.interfaces.kucoin.kucoin_interface import KucoinInterface
 from blankly.exchanges.interfaces.okx.okx_interface import OkxInterface
 
 
-
 class Exchange(ABCExchange, abc.ABC):
     interface: ABCExchangeInterface
 

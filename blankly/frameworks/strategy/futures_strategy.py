@@ -23,29 +23,10 @@ from blankly.exchanges.futures.futures_strategy_logger import FuturesStrategyLog
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
 from blankly.frameworks.strategy.strategy_base import StrategyBase
+from blankly.frameworks.strategy.strategy import Strategy
 
 
-class FuturesStrategy(StrategyBase):
-    exchange: FuturesExchange
-    interface: FuturesExchangeInterface
+class FuturesStrategy(Strategy):
 
-    def __init__(self, exchange: FuturesExchange):
-        super().__init__(
-            exchange, FuturesStrategyLogger(exchange.interface, strategy=self))
-
-    def backtest(self,
-                 to: str = None,
-                 initial_values: dict = None,
-                 start_date: typing.Union[str, float, int] = None,
-                 end_date: typing.Union[str, float, int] = None,
-                 save: bool = False,
-                 settings_path: str = None,
-                 callbacks: list = None,
-                 **kwargs) -> BacktestResult:
-        raise NotImplementedError
-
-    def time(self) -> float:
-        """
-        Return the current time, or backtesting time if we are backtesting.
-        """
-        raise NotImplementedError
+    def teardown(self):
+        pass

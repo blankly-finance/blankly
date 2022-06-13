@@ -22,6 +22,7 @@ import typing
 import warnings
 
 import blankly
+from blankly.exchanges.abc_base_exchange import ABCBaseExchange
 from blankly.exchanges.exchange import Exchange
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 from blankly.exchanges.interfaces.paper_trade.backtest_result import BacktestResult
@@ -52,20 +53,20 @@ class StrategyStructure(Model):
         self.orderbook_manager = orderbook_manager
         self.ticker_manager = ticker_manager
 
-    def rest_event(self, **kwargs):
-        callback = kwargs['callback']  # type: callable
-        symbol = kwargs['symbol']  # type: str
-        resolution = kwargs['resolution']  # type: int
-        variables = kwargs['variables']  # type: dict
-        type_ = kwargs['type']  # type: EventType
-        state = kwargs['state']  # type: StrategyState
+    def rest_event(self, **event):
+        callback = event['callback']  # type: callable
+        symbol = event['symbol']  # type: str
+        resolution = event['resolution']  # type: int
+        variables = event['variables']  # type: dict
+        type_ = event['type']  # type: EventType
+        state = event['state']  # type: StrategyState
 
         state.variables = variables
         state.resolution = resolution
 
         if type_ == EventType.bar_event:
             if not self.is_backtesting:
-                bar_time = kwargs['bar_time']
+                bar_time = event['bar_time']
                 while True:
                     # Sometimes coinbase doesn't download recent data correctly
                     try:
@@ -85,6 +86,7 @@ class StrategyStructure(Model):
                 except IndexError:
                     warnings.warn("No bar found for this time range")
                     return
+
             args = [data, symbol, state]
         elif type_ == EventType.price_event:
             data = self.interface.get_price(symbol)
@@ -123,22 +125,29 @@ class StrategyStructure(Model):
         except Exception:
             traceback.print_exc()
 
-    def run_price_events(self, kwargs_list: list):
-        for events_definition in kwargs_list:
-            events_definition['next_run'] = self.backtester.initial_time
+    def run_price_events(self, events: list):
+        # run all events once at start
+        for event in events:
+            event['next_run'] = self.backtester.initial_time
+
         while self.has_data:
-            kwargs_list = sorted(kwargs_list, key=lambda d: d['next_run'])
-            next_event = kwargs_list[0]
+            events.sort(key=lambda d: d['next_run'])
+            event = events[0]
 
             # Sleep the difference
-            self.sleep(next_event['next_run'] - self.time)
+            self.sleep(event['next_run'] - self.time)
 
             # Run the event
-            self.rest_event(**next_event)
-
-            # Value the account after each run
-            self.backtester.value_account()
-            kwargs_list[0]['next_run'] += kwargs_list[0]['resolution']
+            next_run = self.rest_event(**event)
+            if next_run:
+                # if rest_event returns something, run this event again at that time
+                # this implies the event did *not* run
+                event['next_run'] = next_run
+                event['was_delayed'] = True
+            else:
+                # otherwise, the event ran. we can revalue account and re-run normally @ `resolution` intervals
+                self.backtester.value_account()
+                event['next_run'] += event['resolution']
 
     def main(self, args):
         if self.is_backtesting:
@@ -154,11 +163,11 @@ class StrategyStructure(Model):
             kwargs['state'].strategy.interface = self.interface
         self.__run_init()
 
-        kwargs_list = []
+        events = []
         for scheduler in self.schedulers:
-            kwargs_list.append(scheduler.get_kwargs())
+            events.append(scheduler.get_kwargs())
 
-        self.run_price_events(kwargs_list)
+        self.run_price_events(events)
 
     def __run_init(self):
         # Switch to live mode for the inits
@@ -219,11 +228,14 @@ class Strategy(StrategyBase):
     __exchange: Exchange
     interface: ABCExchangeInterface
 
-    def __init__(self, exchange: Exchange):
+    def __init__(self, exchange: ABCBaseExchange):
         self.model = StrategyStructure(exchange)
         super().__init__(exchange, StrategyLogger(exchange.get_interface(), strategy=self), model=self.model)
         self._paper_trade_exchange = blankly.PaperTrade(exchange)
         self.__prices_added = False
+
+    def teardown(self):
+        pass
 
     def backtest(self,
                  to: str = None,
@@ -360,7 +372,6 @@ class Strategy(StrategyBase):
             warnings.warn("Aborted attempt to start a live strategy a backtest configuration")
             return
         self.model.run()
-        self.model.teardown()
 
     def time(self) -> float:
         return self.model.time

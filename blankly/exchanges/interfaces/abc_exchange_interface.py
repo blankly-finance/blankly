@@ -30,12 +30,12 @@ from blankly.exchanges.orders.market_order import MarketOrder
 
 class ABCExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
     @abc.abstractmethod
-    def __init__(self, exchange_name, authenticated_API):
+    def __init__(self, exchange_name, authenticated_api):
         """
         Create an abstract exchange interface
         Args:
             exchange_name (str): Define exchange name ex: 'binance' or 'coinbase_pro'
-            authenticated_API (obj): Authenticated direct calls object
+            authenticated_api (obj): Authenticated direct calls object
         """
         pass
 
@@ -112,6 +112,34 @@ class ABCExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
             side: buy/sell
             price: price to set limit order
             size: amount of asset (like BTC) for the limit to be valued
+        """
+        pass
+
+    @abc.abstractmethod
+    def take_profit_order(self,
+                          symbol: str,
+                          price: float,
+                          size: float) -> LimitOrder:
+        """
+        Take profit order
+        Args:
+            symbol: asset to buy
+            price: price to sell at
+            size: amount of asset (like BTC)
+        """
+        pass
+
+    @abc.abstractmethod
+    def stop_loss_order(self,
+                        symbol: str,
+                        price: float,
+                        size: float) -> LimitOrder:
+        """
+        Stop loss order
+        Args:
+            symbol: asset to buy
+            price: price to sell at
+            size: amount of asset (like BTC)
         """
         pass
 

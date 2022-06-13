@@ -16,7 +16,6 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
 import pickle
 import unittest
 from pathlib import Path
@@ -37,7 +36,7 @@ class MovingAverages(unittest.TestCase):
         data_path = Path("tests/config/test_data.p").resolve()
         with open(data_path, 'rb') as f:
             cls.data = pickle.load(f)
-        
+
     def test_one_param_moving_averages(self):
         period = self.data['periods'][0]
 
