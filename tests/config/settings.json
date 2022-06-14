@@ -33,6 +33,9 @@
     "ftx_futures": {
       "cash": "USD",
       "ftx_tld": "com"
+    },
+    "kraken": {
+      "account_type": "Starter"
     }
   }
 }

@@ -31,6 +31,7 @@ from blankly.frameworks.model.model import Model as Model
 from blankly.frameworks.strategy import StrategyState as StrategyState
 from blankly.frameworks.screener.screener import Screener
 from blankly.frameworks.screener.screener_state import ScreenerState
+from blankly.exchanges.interfaces.kraken.kraken import Kraken
 
 from blankly.exchanges.managers.ticker_manager import TickerManager
 from blankly.exchanges.managers.orderbook_manager import OrderbookManager

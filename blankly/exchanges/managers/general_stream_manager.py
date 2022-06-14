@@ -26,6 +26,7 @@ from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tic
 from blankly.exchanges.interfaces.kucoin.kucoin_websocket import Tickers as Kucoin_Websocket
 from blankly.exchanges.interfaces.ftx.ftx_websocket import Tickers as Ftx_Websocket
 from blankly.exchanges.interfaces.okx.okx_websocket import Tickers as Okx_Websocket
+from blankly.exchanges.interfaces.kraken.kraken_websocket import Tickers as Kraken_Websocket
 from blankly.exchanges.managers.websocket_manager import WebsocketManager
 
 
@@ -128,6 +129,17 @@ class GeneralManager(WebsocketManager):
 
             # Upper this to cache
             asset_id_cache = asset_id_cache.upper()
+            self.__websockets[channel][exchange_cache][asset_id_cache] = websocket
+
+            return websocket
+
+        elif exchange_cache == "kraken":
+            if use_sandbox:
+                raise ValueError("Error: Kraken does not have a sandbox mode")
+            else:
+                websocket = Kraken_Websocket(asset_id_cache, channel, log)
+            websocket.append_callback(callback)
+
             self.__websockets[channel][exchange_cache][asset_id_cache] = websocket
 
             return websocket
