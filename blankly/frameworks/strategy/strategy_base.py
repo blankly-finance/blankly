@@ -208,8 +208,11 @@ class StrategyBase:
                 blankly.reporter.export_used_symbol(symbol)
 
     @staticmethod
-    def __websocket_callback(tick, symbol, user_callback, state_object):
-        user_callback(tick, symbol, state_object)
+    def __websocket_callback(tick, **kwargs):
+        user_callback = kwargs['user_callback']
+        user_symbol = kwargs['user_symbol']
+
+        user_callback(tick, user_symbol, user_callback)
 
     def add_tick_event(self, callback: callable, symbol: str, init: callable = None, teardown: callable = None,
                        variables: dict = None):
@@ -231,8 +234,10 @@ class StrategyBase:
         state = StrategyState(self, AttributeDict(variables), symbol=symbol)
 
         self.ticker_manager.create_ticker(self.__websocket_callback, initially_stopped=True,
+                                          # This actually sets the symbol
                                           override_symbol=symbol,
-                                          symbol=symbol,
+                                          # This is passed on to the user as info about the symbol (as just a kwarg)
+                                          user_symbol=symbol,
                                           user_callback=callback,
                                           variables=variables,
                                           state=state)
@@ -261,13 +266,15 @@ class StrategyBase:
 
         # since it's less than 10 sec, we will just use the websocket feed - exchanges don't like fast calls
         self.orderbook_manager.create_orderbook(self.__websocket_callback, initially_stopped=True,
+                                                # This is the one that actually sets the symbol
                                                 override_symbol=symbol,
-                                                symbol=symbol,
+                                                # This is passed as a kwarg
+                                                user_symbol=symbol,
                                                 user_callback=callback,
                                                 variables=variables,
                                                 state=state)
 
-        self.ticker_websockets.append([symbol, self.__exchange.get_type(), init, state, teardown])
+        self.orderbook_websockets.append([symbol, self.__exchange.get_type(), init, state, teardown])
 
     def start(self):
         """

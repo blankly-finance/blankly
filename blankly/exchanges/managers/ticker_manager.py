@@ -72,6 +72,12 @@ class TickerManager(WebsocketManager):
             Direct ticker object
         """
 
+        # Delete the symbol arg because it shouldn't be in kwargs
+        try:
+            del(kwargs['symbol'])
+        except KeyError:
+            pass
+
         sandbox_mode = self.preferences['settings']['use_sandbox_websockets']
 
         exchange_name = self.__default_exchange
