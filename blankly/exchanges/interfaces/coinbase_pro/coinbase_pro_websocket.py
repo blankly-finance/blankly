@@ -209,5 +209,5 @@ class Tickers(Websocket):
             self.on_message,
             self.on_error,
             self.on_close,
-            self.read_websocket
+            self.run_forever
         )

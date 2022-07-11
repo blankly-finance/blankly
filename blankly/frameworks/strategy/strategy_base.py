@@ -211,8 +211,9 @@ class StrategyBase:
     def __websocket_callback(tick, **kwargs):
         user_callback = kwargs['user_callback']
         user_symbol = kwargs['user_symbol']
+        user_state = kwargs['state']
 
-        user_callback(tick, user_symbol, user_callback)
+        user_callback(tick, user_symbol, user_state)
 
     def add_tick_event(self, callback: callable, symbol: str, init: callable = None, teardown: callable = None,
                        variables: dict = None):
