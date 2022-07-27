@@ -477,10 +477,6 @@ class FTXInterface(ExchangeInterface):
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
         """
-
-        if "-" in symbol:
-            symbol = symbol.replace("-", "/")
-
         # epoch_start, epoch_stop = super().get_product_history(symbol, epoch_start, epoch_stop, resolution)
         epoch_start = utils.convert_epochs(epoch_start)
         epoch_stop = utils.convert_epochs(epoch_stop)

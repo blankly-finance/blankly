@@ -21,6 +21,7 @@ from typing import Optional
 
 from blankly.enums import MarginType, HedgeMode, Side, PositionMode, TimeInForce, ContractType, OrderStatus, OrderType
 from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
+from blankly.exchanges.interfaces.ftx.ftx_interface import FTXInterface
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 from blankly.utils import utils, time_builder
@@ -326,7 +327,8 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         return time_builder.build_hour()
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
-        raise NotImplementedError('get_product_history has not been implemented yet for FTX Futures')
+        # reuse impl from SPOT interface, it's the same thing
+        return FTXInterface.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 
     def get_maker_fee(self) -> float:
         raise NotImplementedError('get_maker_fee has not been implemented yet for FTX Futures')
