@@ -142,7 +142,7 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
         # binance doesn't have an API for this
         # an attempt to create a workaround is preserved below
         # proceed at your own risk
-        raise NotImplementedError
+        raise NotImplementedError('get_margin_type has not been implemented yet for Binance Futures')
         # symbol = self.to_exchange_symbol(symbol)
         #
         # # first check for open position
