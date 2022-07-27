@@ -25,10 +25,11 @@ class FTXFutures(FuturesExchange):
         if tld != 'com':
             raise Exception(
                 f'FTX Futures exchange does not support .{tld} tld.')
-
+        
         self.__calls = FTXAPI(auth.keys['API_KEY'],
                               auth.keys['API_SECRET'],
-                              tld=tld)
+                              tld=tld,
+                              _subaccount_name=auth.keys.get('SUBACCOUNT', None))
 
         self.__interface = FTXFuturesInterface(self.exchange_type, self.calls)
 
