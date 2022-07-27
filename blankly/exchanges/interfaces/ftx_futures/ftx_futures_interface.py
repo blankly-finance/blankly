@@ -326,13 +326,13 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         return time_builder.build_hour()
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
-        raise NotImplementedError
+        raise NotImplementedError('get_product_history has not been implemented yet for FTX Futures')
 
     def get_maker_fee(self) -> float:
-        raise NotImplementedError
+        raise NotImplementedError('get_maker_fee has not been implemented yet for FTX Futures')
 
     def get_taker_fee(self) -> float:
-        raise NotImplementedError
+        raise NotImplementedError('get_taker_fee has not been implemented yet for FTX Futures')
 
     def get_funding_rate(self, symbol: str) -> float:
-        raise NotImplementedError
+        raise NotImplementedError('get_funding_rate has not been implemented yet for FTX Futures')
