@@ -61,6 +61,14 @@ class FuturesExchangeInterface(ABCBaseExchangeInterface, abc.ABC):
         """Initializes the exchange"""
         pass
 
+    def get_calls(self):
+        """
+        Returns:
+             The exchange's direct calls object. A blankly Bot class should have immediate access to this by
+             default
+        """
+        return self.calls
+
     @abc.abstractmethod
     def get_products(self, symbol: str = None) -> dict:
         """Returns a list of all products traded on this exchange"""
