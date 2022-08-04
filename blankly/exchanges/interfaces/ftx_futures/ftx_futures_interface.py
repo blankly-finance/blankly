@@ -19,6 +19,8 @@
 import operator
 from typing import Optional
 
+import pandas as pd
+import time
 from blankly.enums import MarginType, HedgeMode, Side, PositionMode, TimeInForce, ContractType, OrderStatus, OrderType
 from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
 from blankly.exchanges.interfaces.ftx.ftx_interface import FTXInterface
@@ -27,8 +29,6 @@ from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 from blankly.utils import utils, time_builder
 import datetime
 import math
-import time
-import pandas as pd
 
 
 class FTXFuturesInterface(FuturesExchangeInterface):
@@ -339,57 +339,56 @@ class FTXFuturesInterface(FuturesExchangeInterface):
 		Returns:
 			Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
 		"""
-		return FTXInterface.get_product_history(symbol, epoch_start, epoch_stop, resolution)
 		# epoch_start, epoch_stop = super().get_product_history(symbol, epoch_start, epoch_stop, resolution)
-		# epoch_start = utils.convert_epochs(epoch_start)
-		# epoch_stop = utils.convert_epochs(epoch_stop)
+		epoch_start = utils.convert_epochs(epoch_start)
+		epoch_stop = utils.convert_epochs(epoch_stop)
 
-		# accepted_grans = [15, 60, 300, 900, 3600, 14400, 86400]
+		accepted_grans = [15, 60, 300, 900, 3600, 14400, 86400]
 
-		# # ftx accepts the above resolutions plus any multiple of 86400 up to 30 * 86400
-		# for i in range(2, 31):
-		# 	accepted_grans.append(i * 86400)
+		# ftx accepts the above resolutions plus any multiple of 86400 up to 30 * 86400
+		for i in range(2, 31):
+			accepted_grans.append(i * 86400)
 
-		# if resolution not in accepted_grans:
-		# 	utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
-		# 	resolution = accepted_grans[min(range(len(accepted_grans)),
-		# 									key=lambda j: abs(accepted_grans[j] - resolution))]
+		if resolution not in accepted_grans:
+			utils.info_print("Granularity is not an accepted granularity...rounding to nearest valid value.")
+			resolution = accepted_grans[min(range(len(accepted_grans)),
+											key=lambda j: abs(accepted_grans[j] - resolution))]
 
-		# # Figure out how many points are needed
-		# need = int((epoch_stop - epoch_start) / resolution)
-		# initial_need = need
-		# window_open = epoch_start
-		# history = []
-		# # Iterate while it's more than max
-		# while need > 1500:
-		# 	# Close is always 1500 points ahead
-		# 	window_close = window_open + 1500 * resolution
+		# Figure out how many points are needed
+		need = int((epoch_stop - epoch_start) / resolution)
+		initial_need = need
+		window_open = epoch_start
+		history = []
+		# Iterate while it's more than max
+		while need > 1500:
+			# Close is always 1500 points ahead
+			window_close = window_open + 1500 * resolution
 
-		# 	response = self.get_calls().get_product_history(symbol, window_open, window_close, resolution)
+			response = self.calls.get_product_history(symbol, window_open, window_close, resolution)
 
-		# 	history = history + response
+			history = history + response
 
-		# 	window_open = window_close
-		# 	need -= 1500
-		# 	time.sleep(.2)
-		# 	utils.update_progress((initial_need - need) / initial_need)
+			window_open = window_close
+			need -= 1500
+			time.sleep(.2)
+			utils.update_progress((initial_need - need) / initial_need)
 
-		# # Fill the remainder
-		# window_close = epoch_stop
-		# response = self.get_calls().get_product_history(symbol, window_open, window_close, resolution)
-		# history_block = history + response
-		# # print(history_block)
-		# history_block.sort(key=lambda x: x["time"])
+		# Fill the remainder
+		window_close = epoch_stop
+		response = self.calls.get_product_history(symbol, window_open, window_close, resolution)
+		history_block = history + response
+		# print(history_block)
+		history_block.sort(key=lambda x: x["time"])
 
-		# df = pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
-		# # df[['time']] = df[['time']].astype(int)
-
-		# df["time"] = df["time"].apply(lambda x: x / 1000)
+		df = pd.DataFrame(history_block, columns=['time', 'low', 'high', 'open', 'close', 'volume'])
 		# df[['time']] = df[['time']].astype(int)
 
-		# df[['low', 'high', 'open', 'close', 'volume']] = df[['low', 'high', 'open', 'close', 'volume']].astype(float)
+		df["time"] = df["time"].apply(lambda x: x / 1000)
+		df[['time']] = df[['time']].astype(int)
 
-		# return df
+		df[['low', 'high', 'open', 'close', 'volume']] = df[['low', 'high', 'open', 'close', 'volume']].astype(float)
+
+		return df
 
 	def get_maker_fee(self) -> float:
 		raise NotImplementedError('get_maker_fee has not been implemented yet for FTX Futures')
