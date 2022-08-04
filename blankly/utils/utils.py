@@ -35,6 +35,7 @@ default_general_settings = {
         "websocket_buffer_size": 10000,
         "test_connectivity_on_auth": True,
         "auto_truncate": False,
+        "global_shorting": False,
 
         "coinbase_pro": {
             "cash": "USD"

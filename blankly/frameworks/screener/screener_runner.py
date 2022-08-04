@@ -32,7 +32,11 @@ class ScreenerRunner:
             self.croniter = croniter
         except ImportError:
             raise ImportError("To run screeners locally, please \"pip install croniter\".")
-        self.__main = __main__.__file__
+        try:
+            self.__main = __main__.__file__
+        except AttributeError as e:
+            raise AttributeError(f"Please make a github issue for this error at "
+                                 f"https://github.com/blankly-finance/blankly/issues: \n{e}")
 
         self.croniter = self.croniter(cronjob, datetime.datetime.fromtimestamp(time.time()).astimezone(timezone.utc))
 

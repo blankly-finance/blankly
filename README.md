@@ -39,12 +39,17 @@
 
 Blankly is an ecosystem for algotraders enabling anyone to build, monetize and scale their trading algorithms for stocks, crypto, futures or forex. The same code can be backtested, paper traded, sandbox tested and run live by simply changing a single line. Develop locally then deploy, iterate and share using the blankly platform.
 
-Add simulated latency, social media & websocket backtests to existing models or build a new one using live data natively. Getting started is easy - just `pip install blankly` and `blankly init`.
+The blankly package is designed to be **extremely precise** in both simulation and live trading. **The engineering considerations for highly accurate simulation are described [here](blankly/BACKTESTING_ENGINEERING.md)**
+
+Getting started is easy - just `pip install blankly` and `blankly init`.
 
 Check out our [website](https://blankly.finance) and our [docs](https://docs.blankly.finance).
 
-[YouTube - Under 25 Lines Build an Alpaca RSI Trading Bot](https://youtu.be/pcm0h63rhUU)
-<a target="_blank" href="https://youtu.be/pcm0h63rhUU"><img src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/github%2Fbuild_a_bot_readme_thumbnail.jpg?alt=media&token=a9dd030a-805c-447f-a970-2bc8e1815662" style="border-radius:10px"></a>
+<div align="center">
+<a target="_blank" href="https://youtu.be/pcm0h63rhUU"><img src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/github%2Fbuild_a_bot_readme_thumbnail.jpg?alt=media&token=a9dd030a-805c-447f-a970-2bc8e1815662" style="border-radius:10px; width: 50%"></a>
+</div>
+
+---------
 
 ### Trade Stocks, Crypto, Futures, and Forex
 
@@ -58,7 +63,7 @@ futures = BinanceFutures()
 # Easily perform the same actions across exchanges & asset types
 stocks.interface.market_order('AAPL', 'buy', 1)
 crypto.interface.market_order('BTC-USD', 'buy', 1)
-# Full futures featureset
+# Full futures feature set
 futures.interface.get_hedge_mode()
 ```
 
@@ -107,21 +112,6 @@ if __name__ == "__main__":
 
 Check out the demo link [here](https://app.blankly.finance/RETIe0J8EPSQz7wizoJX0OAFb8y1/62iIMVRKV7zkcpJysYlP/75a0c190-4d8a-44e2-9310-c47d4d72b070/backtest).
 
-#### Iterate & Train using your Metrics, Trades and Performance
-
-```bash
-Blankly Metrics: 
-Compound Annual Growth Rate (%):   54.0%
-Cumulative Returns (%):            136.0%
-Max Drawdown (%):                  60.0%
-Variance (%):                      26.15%
-Sortino Ratio:                     0.9
-Sharpe Ratio:                      0.73
-Calmar Ratio:                      0.99
-Volatility:                        0.05
-Value-at-Risk:                     358.25
-Conditional Value-at-Risk:         34.16
-```
 ### Go Live in One Line
 
 Seamlessly run your model live!
@@ -159,25 +149,11 @@ If you don't want to use our `init` command, you can find the same files in the 
 
 More information can be found on our [docs](https://docs.blankly.finance)
 
-### Docker
-
-1. Pull a python docker container
-
-```bash
-$ docker pull python
-```
-
-2. Move to a directory to initialize and run
-
-```bash
-$ blankly init
-```
-
 ### Directory format
 
 The working directory format should have *at least* these files:
 ```
-Project
+project/
    |-bot.py
    |-keys.json
    |-settings.json
@@ -224,53 +200,7 @@ For more info, and ways to do more advanced things, check out our [getting start
 
 We have a pre-built cookbook examples that implement strategies such as RSI, MACD, and the Golden Cross found in our [examples](https://docs.blankly.finance/examples/golden-cross).
 
-The model below will run an RSI check every 30 minutes - **buying** below **30** and **selling** above **70**. Try switching the exchange and assets and see how it instantly works on Binance, Coinbase Pro or anything else you trade on.
-
-```python
-import blankly
-from blankly import StrategyState
-
-
-def price_event(price, symbol, state: StrategyState):
-    """ This function will give an updated price every 15 seconds from our definition below """
-    state.variables['history'].append(price)
-    rsi = blankly.indicators.rsi(state.variables['history'])
-    
-    if rsi[-1] < 30 and not state.variables['has_bought']:
-        # Dollar cost average buy
-        state.variables['has_bought'] = True
-        state.interface.market_order(symbol, side='buy', size=1)
-    elif rsi[-1] > 70 and state.variables['has_bought']:
-        # Dollar cost average sell
-        state.variables['has_bought'] = False
-        state.interface.market_order(symbol, side='sell', size=1)
-
-
-def init(symbol, state: StrategyState):
-    # Download price data to give context to the algo
-    state.variables['history'] = state.interface.history(symbol, to='1y', return_as='list')['open']
-    state.variables['has_bought'] = False
-
-
-if __name__ == "__main__":
-    # Authenticate on alpaca to create a strategy
-    alpaca = blankly.Alpaca()
-
-    # Use our strategy helper on alpaca
-    strategy = blankly.Strategy(alpaca)
-
-    # Run the price event function every time we check for a new price - by default that is 15 seconds
-    strategy.add_price_event(price_event, symbol='NCLH', resolution='30m', init=init)
-    strategy.add_price_event(price_event, symbol='CRBP', resolution='1h', init=init)
-    strategy.add_price_event(price_event, symbol='D', resolution='15m', init=init)
-    strategy.add_price_event(price_event, symbol='GME', resolution='30m', init=init)
-
-    # Start the strategy. This will begin each of the price event ticks
-    # strategy.start()
-    # Or backtest using this
-    strategy.backtest(to='1y')
-```
-## Other Info
+Other Info
 
 ### Subscribe to our news!
 https://blankly.substack.com/p/coming-soon
