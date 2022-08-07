@@ -617,6 +617,8 @@ class KucoinInterface(ExchangeInterface):
         """
         response = self._market.get_ticker(symbol)
         response = self.__correct_api_call(response)
-        if 'msg' in response:
+        if response is None or 'msg' in response:
+            if response is None:
+                raise APIException("Unknown API error")
             raise APIException("Error: " + response['msg'])
         return float(response['price'])

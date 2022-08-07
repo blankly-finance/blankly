@@ -438,8 +438,8 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                                                                    f'{symbol},'
                                                                    f'{int(j[0])},'
                                                                    f'{int(j[1]) + resolution},'  # This adds resolution 
-                        # back to the exported
-                        # time series
+                                                                                                 # back to the exported
+                                                                                                 # time series
                                                                    f'{resolution}.csv'),
                                         index=False)
 
@@ -866,7 +866,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                 if not check_if_any_column_has_prices(self.prices):
                     raise IndexError('No cached or downloaded data available. Try adding arguments such as to="1y" '
                                      'in the backtest command. If there should be data downloaded, try deleting your'
-                                     ' ./price_caches folder.')
+                                     f' ./price_caches folder. Also ensure that "{frame_symbol}" is spelled correctly.')
                 else:
                     raise IndexError(f"Data for symbol {frame_symbol} is empty. Are you using a symbol that "
                                      f"is incompatible "
