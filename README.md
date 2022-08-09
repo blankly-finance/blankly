@@ -217,10 +217,14 @@ This is free software.
 ### Contributing
 
 If you would like to support the project, pull requests are welcome.
-You can also contribute just by telling us what you think of Blankly: https://forms.gle/4oAjG9MKRTYKX2hP9
 
 ### Licensing 
 
 **Blankly** is distributed under the [**LGPL License**](https://www.gnu.org/licenses/lgpl-3.0.en.html). See the [LICENSE](/LICENSE) for more details.
 
 New updates every day 💪.
+
+<div align="center">
+    <img src="https://firebasestorage.googleapis.com/v0/b/blankly-6ada5.appspot.com/o/github%2Fblanklybots.png?alt=media&token=005728b0-5f49-476d-968a-07fe0683ca09" style="border-radius:10px; width: 30%">
+</div>
+Art by DALL·E 2 - "Robots playfully trading stocks synthwave"

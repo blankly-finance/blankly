@@ -56,7 +56,11 @@ def validate_non_empty(text):
 def create_model(api, name, description, model_type, project_id=None):
     with show_spinner('Creating model') as spinner:
         try:
-            model = api.create_model(project_id or api.user_id, model_type, name, description)
+            # Expanded this logic because the other one was broken
+            if project_id is not None:
+                model = api.create_model(project_id, model_type, name, description)
+            else:
+                model = api.create_model(api.user_id, model_type, name, description)
         except Exception:
             spinner.fail('Failed to create model')
             raise
