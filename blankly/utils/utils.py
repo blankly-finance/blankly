@@ -73,6 +73,9 @@ default_general_settings = {
         "ftx_futures": {
             "cash": "USD",
             "ftx_tld": "com"
+        },
+        "paper": {
+              "price_source": "api"
         }
     }
 }
