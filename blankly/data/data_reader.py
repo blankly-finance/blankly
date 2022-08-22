@@ -208,8 +208,9 @@ class PriceReader(__FormatReader):
 class EventReader(DataReader):
     def __init__(self, event_type: str, events: dict):
         super().__init__(DataTypes.event_json)
-        time, data = zip(*events.items())
-        self._write_dataset({'time': time, 'data': data}, event_type, ('time', 'data'))
+        if events:
+            time, data = zip(*events.items())
+            self._write_dataset({'time': time, 'data': data}, event_type, ('time', 'data'))
 
 
 class JsonEventReader(DataReader):
