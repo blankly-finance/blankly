@@ -44,12 +44,13 @@ class BinanceInterface(ExchangeInterface):
         import binance.exceptions
         try:
             self.calls.get_account()
-        except binance.exceptions.BinanceAPIException:
-            raise exceptions.APIException("Invalid API Key, IP, or permissions for action - are you trying "
+        except binance.exceptions.BinanceAPIException as e:
+            raise exceptions.APIException(f"Debugging info: {e} - {e.response} - {e.message}\n"
+                                          "Invalid API Key, IP, or permissions for action - are you trying "
                                           "to use your normal exchange keys while in sandbox mode? "
                                           "\nTry toggling the \'sandbox\' setting in your keys.json, check "
                                           "if the keys were input correctly into your keys.json or ensure you have set "
-                                          "the correct binance_tld in settings.json.")
+                                          "the correct binance_tld in settings.json.\n")
 
         symbols = self.calls.get_exchange_info()["symbols"]
         assets = []
