@@ -596,9 +596,13 @@ class CoinbaseProInterface(ExchangeInterface):
         if products is None:
             raise LookupError("Specified market not found")
 
-        base_min_size = float(products.pop('base_min_size'))
-        base_max_size = float(products.pop('base_max_size'))
-        base_increment = float(products.pop('base_increment'))
+        base_min_size = float(products.pop('base_increment'))
+        # Coinbase removed base_max_size
+        base_max_size = float(100000000000000000)
+        base_increment = float(base_min_size)
+
+        min_market_funds = products['min_market_funds']
+        max_market_funds = 1000000000 # big number approach
 
         return {
             "symbol": products.pop('id'),
@@ -625,12 +629,12 @@ class CoinbaseProInterface(ExchangeInterface):
                 "quote_increment": float(products.pop('quote_increment')),  # Specifies the min order price as well
                 # as the price increment.
                 "buy": {
-                    "min_funds": float(products['min_market_funds']),
-                    "max_funds": float(products['max_market_funds']),
+                    "min_funds": float(min_market_funds),
+                    "max_funds": float(max_market_funds),
                 },
                 "sell": {
-                    "min_funds": float(products.pop('min_market_funds')),
-                    "max_funds": float(products.pop('max_market_funds')),
+                    "min_funds": float(min_market_funds),
+                    "max_funds": float(max_market_funds),
                 },
             },
             "exchange_specific": {**products}

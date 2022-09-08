@@ -70,10 +70,13 @@ class StrategyStructure(Model):
                 while True:
                     # Sometimes coinbase doesn't download recent data correctly
                     try:
-                        data = self.interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
+                        # A few seconds should pass before querying alpaca because any solution is acceptable
                         if self.interface.get_exchange_type() == "alpaca":
+                            time.sleep(2)
+                            data = self.interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
                             break
                         else:
+                            data = self.interface.history(symbol=symbol, to=1, resolution=resolution).iloc[-1].to_dict()
                             if data['time'] + resolution == bar_time:
                                 break
                     except IndexError:

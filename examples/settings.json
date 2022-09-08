@@ -4,6 +4,8 @@
     "websocket_buffer_size": 10000,
     "test_connectivity_on_auth": true,
     "auto_truncate": true,
+    "global_shorting": false,
+
     "coinbase_pro": {
       "cash": "USD"
     },
@@ -39,6 +41,9 @@
     "ftx_futures": {
       "cash": "USD",
       "ftx_tld": "com"
+    },
+    "paper": {
+      "price_source": "api"
     }
   }
 }
