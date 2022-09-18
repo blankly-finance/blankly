@@ -30,6 +30,7 @@ from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tic
 from blankly.exchanges.interfaces.kucoin.kucoin_websocket import Tickers as Kucoin_Orderbook
 from blankly.exchanges.interfaces.ftx.ftx_websocket import Tickers as Ftx_Orderbook
 from blankly.exchanges.interfaces.okx.okx_websocket import Tickers as Okx_Orderbook
+from blankly.exchanges.interfaces.kraken.kraken_websocket import Tickers as Kraken_Orderbook
 from blankly.exchanges.managers.websocket_manager import WebsocketManager
 
 
@@ -154,6 +155,29 @@ class OrderbookManager(WebsocketManager):
                 "asks": []
             }
             return websocket
+
+        elif exchange_name == "kraken":
+            if override_symbol is None:
+                override_symbol = self.__default_currency
+            if use_sandbox:
+                raise ValueError("Error: FTX does not have a sandbox mode")
+            else:
+                websocket = Kraken_Orderbook(override_symbol, "book",
+                                             initially_stopped=initially_stopped
+                                             )
+                # This is where the sorting magic happens
+                websocket.append_callback(self.kraken_update)
+
+                # Store this object
+                self.__websockets['kraken'][override_symbol] = websocket
+                self.__websockets_callbacks['kraken'][override_symbol] = [callback]
+                self.__websockets_kwargs['kraken'][override_symbol] = kwargs
+                self.__orderbooks['kraken'][override_symbol] = {
+                    "bids": [],
+                    "asks": []
+                }
+                return websocket
+
         elif exchange_name == "ftx":
             if override_symbol is None:
                 override_symbol = self.__default_currency
@@ -409,6 +433,44 @@ class OrderbookManager(WebsocketManager):
         for i in callbacks:
             i(self.__orderbooks['coinbase_pro'][update['product_id']],
               **self.__websockets_kwargs['coinbase_pro'][update['product_id']])
+
+    def kraken_update(self, update):
+        symbol = update[3].replace("/", "-")
+
+        book_buys = self.__orderbooks['kraken'][symbol]['bids']
+        book_sells = self.__orderbooks['kraken'][symbol]['asks']
+
+        new_buys = update[1]['bs'][::-1]  # type: list
+        for i in new_buys:
+            i[0] = float(i[0])  # price
+            i[1] = float(i[1])  # size
+            if i[1] == 0:
+                book_buys = remove_price(book_buys, i[1])
+            else:
+                book_buys.append((i[0], i[1]))
+
+        # Asks are sells, these are also counted from low to high
+        new_sells = update[1]['as']
+        for i in new_sells:
+            i[0] = float(i[0])
+            i[1] = float(i[1])
+            if i[1] == 0:
+                book_sells = remove_price(book_sells, i[1])
+            else:
+                book_sells.append((i[0], i[1]))
+
+        # Now sort them
+        book_buys = sort_list_tuples(book_buys)
+        book_sells = sort_list_tuples(book_sells)
+
+        self.__orderbooks['kraken'][symbol]['bids'] = book_buys
+        self.__orderbooks['kraken'][symbol]['asks'] = book_sells
+
+        # Pass in this new updated orderbook
+        callbacks = self.__websockets_callbacks['kucoin'][symbol]
+        for i in callbacks:
+            i(self.__orderbooks['kraken'][symbol],
+              **self.__websockets_kwargs['kraken'][symbol])
 
     def okx_update(self, update):
 

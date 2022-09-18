@@ -31,6 +31,8 @@ def get_valid_symbol(exchange: str):
         return 'EUR-USD'
     elif exchange == 'ftx':
         return 'BTC-USD'
+    elif exchange == 'kraken':
+        return 'BTC-USD'
     elif exchange == 'kucoin':
         return 'ETH-USDT'
     else:

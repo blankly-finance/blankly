@@ -25,6 +25,8 @@ from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_websocket import Tic
 from blankly.exchanges.interfaces.kucoin.kucoin_websocket import Tickers as Kucoin_Ticker
 from blankly.exchanges.interfaces.ftx.ftx_websocket import Tickers as FTX_Ticker
 from blankly.exchanges.interfaces.okx.okx_websocket import Tickers as Okx_Ticker
+from blankly.exchanges.interfaces.kraken.kraken_websocket import Tickers as Kraken_Ticker
+
 
 from blankly.exchanges.managers.websocket_manager import WebsocketManager
 
@@ -46,6 +48,8 @@ class TickerManager(WebsocketManager):
             default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "kucoin")
         elif default_exchange == "ftx":
             default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "ftx")
+        elif default_exchange == "kraken":
+            default_symbol = blankly.utils.to_exchange_symbol(default_symbol, "kraken")
 
         self.__default_symbol = default_symbol
 
@@ -195,6 +199,19 @@ class TickerManager(WebsocketManager):
             ticker.append_callback(callback)
             # Store this object
             self.__tickers['ftx'][override_symbol] = ticker
+            return ticker
+
+        elif exchange_name == "kraken":
+            if override_symbol is None:
+                override_symbol = self.__default_symbol
+
+            if sandbox_mode:
+                raise ValueError("Error: Kraken does not have a sandbox mode")
+            else:
+                ticker = Kraken_Ticker(override_symbol, "trade", log=log)
+
+            ticker.append_callback(callback)
+            self.__tickers['kraken'][override_symbol] = ticker
             return ticker
 
         else:

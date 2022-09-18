@@ -113,6 +113,14 @@ class InterfaceHomogeneity(unittest.TestCase):
         cls.Kucoin_Interface_data = cls.Kucoin_data.get_interface()
         cls.data_interfaces.append(cls.Kucoin_Interface_data)
 
+        # kraken definition and appending
+        cls.Kraken = blankly.Kraken(portfolio_name="kraken test portfolio",
+                                    keys_path='./tests/config/keys.json',
+                                    settings_path="./tests/config/settings.json")
+        cls.Kraken_Interface = cls.Kraken.get_interface()
+        cls.interfaces.append(cls.Kraken_Interface)
+        cls.data_interfaces.append(cls.Kraken_Interface)
+
         # Binance definition and appending
         cls.Binance = blankly.Binance(portfolio_name="Spot Test Key",
                                       keys_path='./tests/config/keys.json',
@@ -177,6 +185,7 @@ class InterfaceHomogeneity(unittest.TestCase):
         responses = []
 
         availability_results = []
+
         for i in range(len(self.interfaces)):
             if self.interfaces[i].get_exchange_type() == "alpaca":
                 responses.append(self.interfaces[i].get_account()['AAPL'])
@@ -344,6 +353,7 @@ class InterfaceHomogeneity(unittest.TestCase):
 
         open_orders = {
             'coinbase_pro': self.Coinbase_Pro_Interface.get_open_orders('BTC-USD'),
+            'kraken': self.Kraken_Interface.get_open_orders(),
             'binance': self.Binance_Interface.get_open_orders('BTC-USDT'),
             'kucoin': self.Kucoin_Interface.get_open_orders('ETH-USDT'),
             'alpaca': self.Alpaca_Interface.get_open_orders('AAPL'),
@@ -358,10 +368,10 @@ class InterfaceHomogeneity(unittest.TestCase):
         # Just scan through both simultaneously to reduce code copying
         all_orders = open_orders['coinbase_pro']
         all_orders = all_orders + open_orders['binance']
-        all_orders = all_orders + open_orders['okx']
         all_orders = all_orders + open_orders['kucoin']
         all_orders = all_orders + open_orders['alpaca']
         all_orders = all_orders + open_orders['oanda']
+        all_orders = all_orders + open_orders['kraken']
 
         # Filter for limit orders
         open_orders = []
