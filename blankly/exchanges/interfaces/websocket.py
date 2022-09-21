@@ -18,12 +18,21 @@
 import abc
 import collections
 import threading
+from typing import TypedDict
 
 import websocket
 
 import blankly.utils.utils
 from blankly.exchanges.abc_exchange_websocket import ABCExchangeWebsocket
 from blankly.utils.utils import info_print
+
+
+class WebsocketTick(TypedDict):
+    symbol: str
+    price: float
+    time: float
+    trade_id: int
+    size: float
 
 
 class Websocket(ABCExchangeWebsocket, abc.ABC):

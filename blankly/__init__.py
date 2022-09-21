@@ -33,6 +33,7 @@ from blankly.frameworks.screener.screener import Screener
 from blankly.frameworks.screener.screener_state import ScreenerState
 
 from blankly.exchanges.managers.ticker_manager import TickerManager
+from blankly.exchanges.interfaces.websocket import WebsocketTick
 from blankly.exchanges.managers.orderbook_manager import OrderbookManager
 from blankly.exchanges.managers.general_stream_manager import GeneralManager
 from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface as Interface
