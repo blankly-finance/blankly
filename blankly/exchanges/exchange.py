@@ -98,13 +98,13 @@ class Exchange(ABCExchange, abc.ABC):
 
     def get_interface(self) -> ABCExchangeInterface:
         """
-        Get the the authenticated interface for the object. This will provide authenticated API calls.
+        Get the authenticated interface for the object. This will provide authenticated API calls.
         """
         return self.interface
 
     def start_models(self, symbol=None):
         """
-        Start all models or a specific one after appending it to to the exchange.
+        Start all models or a specific one after appending it to the exchange.
 
         This is used only for multiprocessed bots which are appended directly to the exchange. NOT bots that use
         the strategy class.
