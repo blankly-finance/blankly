@@ -652,8 +652,15 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             except KeyError:
                 # Must be a currency we have no data for
                 price = 0
-            value_total += price * abs(true_available[i])
-            no_trade_value += price * abs(no_trade_available[i])
+
+            # This is needed for futures apparently
+            if is_future:
+                value_total += price * abs(true_available[i])
+                no_trade_value += price * abs(no_trade_available[i])
+            else:
+                # For stocks make sure not to use an absolute value
+                value_total += price * true_available[i]
+                no_trade_value += price * no_trade_available[i]
 
         # Make sure to add the time key in
         true_available['time'] = local_time
