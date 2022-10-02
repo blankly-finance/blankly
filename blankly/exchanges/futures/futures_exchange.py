@@ -16,7 +16,7 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import abc
-import time
+from blankly.utils.utils import info_print
 
 import blankly
 from blankly.exchanges.abc_base_exchange import ABCBaseExchange
@@ -29,6 +29,9 @@ class FuturesExchange(ABCBaseExchange, abc.ABC):
     portfolio_name: str
 
     def __init__(self, exchange_type, portfolio_name, preferences_path):
+        info_print("Live futures trading is untested due to US relations - this prevents blankly developers "
+                   "from integrating with these exchanges. We are looking for someone who is interested in helping us "
+                   "create & test our integrations.")
         self.exchange_type = exchange_type  # binance, ftx
         self.portfolio_name = portfolio_name  # my_cool_portfolio
         self.preferences = blankly.utils.load_user_preferences(
