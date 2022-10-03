@@ -32,7 +32,7 @@ The backtesting engine exposes the ability to create event-driven strategies. By
     def event(self, type_: str, data: str):
         # Now check if it's a tweet about microsoft
         if type_ == "tweet":
-            if 'microsoft' in data.lower():
+            if 'msft' in data.lower():
                 print("Buying microsoft...")
                 self.interface.market_order('MSFT', 'buy', 1)
             else:
@@ -55,13 +55,13 @@ During backtesting, all limit orders are evaluated every time the price changes.
 
 ## Speed (event based vs vectorization)
 
-Blankly uses an event-based approach rather than. Vectorized approach to evaluate backtests. This is a slower but much more realistic way to evaluate model performance. When compared to other event-based engines such as Jesse AI, our engine is significantly faster. The engine is able to run the backtest event loop extremely quickly. This means blankly can run year long backtest in less than 3 seconds when compared to 5+ minutes with Jesse AI.
+Blankly uses an event-based approach rather than a vectorized approach to evaluate backtests. This is a slower but much more realistic way to evaluate model performance. When compared to other event-based engines such as Jesse AI, our engine is significantly faster. The engine is able to run the backtest event loop extremely quickly. This means blankly can run year long backtest in less than 3 seconds when compared to 5+ minutes with Jesse AI.
 
 ## Market Hours
 
 Blankly accurately evaluates market open & market closes. Just like how Alpaca behaves when live, orders can be submitted in a pending status and execute extremely close to the open price. This behavior will be expanded as we add more traditional equity exchanges.
 
-## Futures
+## Futures Trading
 
 Blankly has begun the process of integrating one of the first open source futures backtesting engine available. The engine is still in beta but is currently correctly evaluating buy/sells against the price. Downloading & caching funding rates is currently in development.
 
