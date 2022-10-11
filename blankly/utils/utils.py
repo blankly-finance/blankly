@@ -36,6 +36,7 @@ default_general_settings = {
         "test_connectivity_on_auth": True,
         "auto_truncate": False,
         "global_shorting": False,
+        "simulate_margin": True,
 
         "coinbase_pro": {
             "cash": "USD"
@@ -52,7 +53,7 @@ default_general_settings = {
             "websocket_stream": "iex",
             "cash": "USD",
             "enable_shorting": True,
-            "use_yfinance": False,
+            "use_yfinance": False
         },
         "oanda": {
             "cash": "USD"

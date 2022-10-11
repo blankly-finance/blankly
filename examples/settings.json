@@ -5,6 +5,7 @@
     "test_connectivity_on_auth": true,
     "auto_truncate": true,
     "global_shorting": false,
+    "simulate_margin": true,
 
     "coinbase_pro": {
       "cash": "USD"

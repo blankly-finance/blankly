@@ -66,6 +66,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         # self.evaluate_traded_account_assets()
 
         self.__enable_shorting = self.user_preferences['settings']['alpaca']['enable_shorting']
+        self.__calculate_margin = self.user_preferences['settings']['simulate_margin']
 
         # This logically overrides any __enable_shorting
         self.__force_shorting = self.user_preferences['settings']['global_shorting']
@@ -414,7 +415,8 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         # Test the purchase
         self.local_account.test_trade(symbol, side, qty, price, market_limits['market_order']["quote_increment"],
                                       quantity_decimals,
-                                      (shortable and self.__enable_shorting) or self.__force_shorting)
+                                      (shortable and self.__enable_shorting) or self.__force_shorting,
+                                      calculate_margin=self.__calculate_margin)
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
         # TODO the force typing here isn't strictly necessary because its run int the isolate_specific anyway
