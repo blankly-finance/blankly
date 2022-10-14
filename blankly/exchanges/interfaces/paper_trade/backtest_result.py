@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-
+import pandas as pd
 from pandas import DataFrame, to_datetime, Timestamp
 from blankly.utils import time_interval_to_seconds as _time_interval_to_seconds, info_print
 
@@ -176,6 +176,15 @@ class BacktestResult:
         return return_string
 
     def to_dict(self) -> dict:
+        history_copy: pd.DataFrame = self.history_and_returns['history'].copy(deep=True)
+        value_column = None
+        for column in history_copy:
+            if column[0:13] == "Account Value":
+                value_column = column
+
+        # Renae the account value to just value
+        history_copy = history_copy.rename(columns={value_column: 'value'})
+
         result = {
             'metrics': self.metrics,
             'exchange': self.exchange,
@@ -184,7 +193,7 @@ class BacktestResult:
             'start_time': self.start_time,
             'stop_time': self.stop_time,
             # "returns": self.history_and_returns['returns'].to_dict(),
-            "history": self.history_and_returns['history'].to_dict()
+            "history": history_copy.to_dict('records')
         }
 
         return result
