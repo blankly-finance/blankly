@@ -174,3 +174,17 @@ class BacktestResult:
                 return_string += i + ": " + str(self.user_callbacks[i]) + "\n"
 
         return return_string
+
+    def to_dict(self) -> dict:
+        result = {
+            'metrics': self.metrics,
+            'exchange': self.exchange,
+            'trades': self.trades,
+            'quote_currency': self.quote_currency,
+            'start_time': self.start_time,
+            'stop_time': self.stop_time,
+            # "returns": self.history_and_returns['returns'].to_dict(),
+            "history": self.history_and_returns['history'].to_dict()
+        }
+
+        return result

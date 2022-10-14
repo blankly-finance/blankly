@@ -63,7 +63,7 @@ def init(symbols, state: StrategyState):
 
 if __name__ == "__main__":
     # Authenticate Alpaca strategy
-    exchange = Alpaca(portfolio_name="epic portfolio")
+    exchange = Alpaca()
 
     # Use our strategy helper on Alpaca
     strategy = Strategy(exchange)
