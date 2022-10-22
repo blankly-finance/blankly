@@ -651,7 +651,11 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                 price = interface.get_price(currency_pair)
             except KeyError:
                 # Must be a currency we have no data for
-                price = 0
+                # This used to return zero but I believe all the cases where no data was avaiable have been elimated.
+                raise KeyError(f"Failed to quote {currency_pair} because no downloaded data for that pair is available. "
+                               f"Make sure to set \"quote_account_value_in\" in \"backtest.json\" to match the prices "
+                               f"you are using. For example if you are trading \"USD-JPY\", set your quote value "
+                               f"to \"JPY\". Currently it is set to {self.quote_currency}")
 
             # This is needed for futures apparently
             if is_future:
