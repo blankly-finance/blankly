@@ -1122,7 +1122,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
                 for column in cycle_status:
                     if column != 'time' and self.__account_was_used(column):
-                        p = figure(plot_width=900, plot_height=200, x_axis_type='datetime')
+                        p = figure(frame_width=900, frame_height=200, x_axis_type='datetime')
                         add_trace(self, p, time_, cycle_status[column], column)
 
                         # Add the no-trade line to the backtest
