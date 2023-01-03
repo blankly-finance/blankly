@@ -800,6 +800,9 @@ class BinanceInterface(ExchangeInterface):
     def get_order_filter(self, symbol):
         """
         Optimally we'll just remove the filter section and make the returns accurate
+
+
+        FOR THE US EXCHANGE:
         {
             "symbol": "BTCUSD",
             "status": "TRADING",
@@ -858,8 +861,134 @@ class BinanceInterface(ExchangeInterface):
                 {"filterType": "MAX_NUM_ALGO_ORDERS", "maxNumAlgoOrders": 5},
             ],
             "permissions": ["SPOT"],
-        },
+        }
+
+
+        FOR THE INTERNATIONAL EXCHANGE:
+        {
+            "symbol": "ETHUSDT",
+            "status": "TRADING",
+            "baseAsset": "ETH",
+            "baseAssetPrecision": 8,
+            "quoteAsset": "USDT",
+            "quotePrecision": 8,
+            "quoteAssetPrecision": 8,
+            "baseCommissionPrecision": 8,
+            "quoteCommissionPrecision": 8,
+            "orderTypes":
+            [
+                "LIMIT",
+                "LIMIT_MAKER",
+                "MARKET",
+                "STOP_LOSS_LIMIT",
+                "TAKE_PROFIT_LIMIT"
+            ],
+            "icebergAllowed": true,
+            "ocoAllowed": true,
+            "quoteOrderQtyMarketAllowed": true,
+            "allowTrailingStop": true,
+            "cancelReplaceAllowed": true,
+            "isSpotTradingAllowed": true,
+            "isMarginTradingAllowed": true,
+            "filters":
+            [
+                {
+                    "filterType": "PRICE_FILTER",
+                    "minPrice": "0.01000000",
+                    "maxPrice": "1000000.00000000",
+                    "tickSize": "0.01000000"
+                },
+                {
+                    "filterType": "LOT_SIZE",
+                    "minQty": "0.00010000",
+                    "maxQty": "9000.00000000",
+                    "stepSize": "0.00010000"
+                },
+                {
+                    "filterType": "MIN_NOTIONAL",
+                    "minNotional": "10.00000000",
+                    "applyToMarket": true,
+                    "avgPriceMins": 5
+                },
+                {
+                    "filterType": "ICEBERG_PARTS",
+                    "limit": 10
+                },
+                {
+                    "filterType": "MARKET_LOT_SIZE",
+                    "minQty": "0.00000000",
+                    "maxQty": "4382.40354798",
+                    "stepSize": "0.00000000"
+                },
+                {
+                    "filterType": "TRAILING_DELTA",
+                    "minTrailingAboveDelta": 10,
+                    "maxTrailingAboveDelta": 2000,
+                    "minTrailingBelowDelta": 10,
+                    "maxTrailingBelowDelta": 2000
+                },
+                {
+                    "filterType": "PERCENT_PRICE_BY_SIDE",
+                    "bidMultiplierUp": "5",
+                    "bidMultiplierDown": "0.2",
+                    "askMultiplierUp": "5",
+                    "askMultiplierDown": "0.2",
+                    "avgPriceMins": 5
+                },
+                {
+                    "filterType": "MAX_NUM_ORDERS",
+                    "maxNumOrders": 200
+                },
+                {
+                    "filterType": "MAX_NUM_ALGO_ORDERS",
+                    "maxNumAlgoOrders": 5
+                }
+            ],
+            "permissions":
+            [
+                "SPOT",
+                "MARGIN",
+                "TRD_GRP_004",
+                "TRD_GRP_005"
+            ],
+            "defaultSelfTradePreventionMode": "NONE",
+            "allowedSelfTradePreventionModes":
+            [
+                "NONE"
+            ]
+        }
         """
+        us_filter_mapping = {
+            'PRICE_FILTER': 0,
+            'PERCENT_PRICE': 1,
+            'LOT_SIZE': 2,
+            'MIN_NOTIONAL': 3,
+            'ICEBERG_PARTS': 4,
+            'MARKET_LOT_SIZE': 5,
+            'TRAILING_DELTA': 6,
+            'MAX_NUM_ORDERS': 7,
+            'MAX_NUM_ALGO_ORDERS': 8
+        }
+
+        international_filter_mapping = {
+            'PRICE_FILTER': 0,
+            'LOT_SIZE': 1,
+            'MIN_NOTIONAL': 2,
+            'ICEBERG_PARTS': 3,
+            'MARKET_LOT_SIZE': 4,
+            'TRAILING_DELTA': 5,
+            'PERCENT_PRICE_BY_SIDE': 6,
+            'MAX_NUM_ORDERS': 7,
+            'MAX_NUM_ALGO_ORDERS': 8
+        }
+
+        def is_international_exchange(asset_dict: dict) -> bool:
+            """
+            Given the dictionary for the asset, tell if it is an international exchange
+            """
+            filters_ = asset_dict['filters']
+
+            return filters_[1]['filterType'] == 'LOT_SIZE'
 
         converted_symbol = utils.to_exchange_symbol(symbol, 'binance')
         current_price = None
@@ -869,30 +998,45 @@ class BinanceInterface(ExchangeInterface):
                 symbol_data = i
                 current_price = float(self.calls.get_avg_price(symbol=converted_symbol)['price'])
                 break
+
+
         if current_price is None:
             raise LookupError("Specified market not found")
 
+        using_international_exchange = is_international_exchange(symbol_data)
+        if using_international_exchange:
+            filter_mapping = international_filter_mapping
+        else:
+            filter_mapping = us_filter_mapping
+
         filters = symbol_data["filters"]
-        hard_min_price = float(filters[0]["minPrice"])
-        hard_max_price = float(filters[0]["maxPrice"])
-        quote_increment = float(filters[0]["tickSize"])
+        hard_min_price = float(filters[filter_mapping['PRICE_FILTER']]["minPrice"])
+        hard_max_price = float(filters[filter_mapping['PRICE_FILTER']]["maxPrice"])
+        quote_increment = float(filters[filter_mapping['PRICE_FILTER']]["tickSize"])
 
-        percent_min_price = float(filters[1]["multiplierDown"]) * current_price
-        percent_max_price = float(filters[1]["multiplierUp"]) * current_price
+        # This is the only one where the keys are different
+        if using_international_exchange:
+            # TODO technically this multiplier is different for buy and sell sides, this should be reflected in the
+            #  backtesting engine
+            multiplier_up = float(filters[filter_mapping['PERCENT_PRICE_BY_SIDE']]["bidMultiplierUp"])
+            multiplier_down = float(filters[filter_mapping['PERCENT_PRICE_BY_SIDE']]["bidMultiplierDown"])
+        else:
+            multiplier_up = float(filters[filter_mapping['PERCENT_PRICE']]["multiplierUp"])
+            multiplier_down = float(filters[filter_mapping['PERCENT_PRICE']]["multiplierDown"])
 
-        min_quantity = float(filters[2]["minQty"])
-        max_quantity = float(filters[2]["maxQty"])
-        base_increment = float(filters[2]["stepSize"])
+        percent_min_price = multiplier_down * current_price
+        percent_max_price = multiplier_up * current_price
 
-        min_market_notational = float(filters[3]['minNotional'])
+        min_quantity = float(filters[filter_mapping['LOT_SIZE']]["minQty"])
+        max_quantity = float(filters[filter_mapping['LOT_SIZE']]["maxQty"])
+        base_increment = float(filters[filter_mapping['LOT_SIZE']]["stepSize"])
+
+        min_market_notational = float(filters[filter_mapping['MIN_NOTIONAL']]['minNotional'])
         max_market_notational = 92233720368.547752  # For some reason equal to the first *11 digits* of 2^63 then
-        # it gets weird past the decimal
+                                                    # it gets weird past the decimal
 
         # Must test both nowadays
-        try:
-            max_orders = int(filters[7]["maxNumOrders"])
-        except KeyError:
-            max_orders = int(filters[6]["maxNumOrders"])
+        max_orders = int(filters[filter_mapping['MAX_NUM_ORDERS']]["maxNumOrders"])
 
         if percent_min_price < hard_min_price:
             min_price = hard_min_price
@@ -937,8 +1081,8 @@ class BinanceInterface(ExchangeInterface):
                 },
             },
             "exchange_specific": {
-                'limit_multiplier_up': float(filters[1]["multiplierUp"]),
-                'limit_multiplier_down': float(filters[1]["multiplierDown"])
+                'limit_multiplier_up': multiplier_up,
+                'limit_multiplier_down': multiplier_down
             }
         }
 
