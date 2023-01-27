@@ -36,12 +36,10 @@ class CoinbaseAdvanced(Exchange):
         if sandbox:
             calls = CoinbaseProAPI(api_key=keys['API_KEY'],
                                    api_secret=keys['API_SECRET'],
-                                   api_pass=keys['API_PASS'],
                                    api_url="https://api-public.sandbox.pro.coinbase.com/")
         else:
             calls = CoinbaseProAPI(api_key=keys['API_KEY'],
                                    api_secret=keys['API_SECRET'],
-                                   api_pass=keys['API_PASS'],
                                    api_url="https://api.exchange.coinbase.com")
 
 
