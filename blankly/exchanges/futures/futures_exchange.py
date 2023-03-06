@@ -29,7 +29,7 @@ class FuturesExchange(ABCBaseExchange, abc.ABC):
     portfolio_name: str
 
     def __init__(self, exchange_type, portfolio_name, preferences_path):
-        info_print("Live futures trading is untested due to US relations - this prevents blankly developers "
+        info_print("Live futures trading is untested due to US regulations - this prevents blankly developers "
                    "from integrating with these exchanges. We are looking for someone who is interested in helping us "
                    "create & test our integrations.")
         self.exchange_type = exchange_type  # binance, ftx

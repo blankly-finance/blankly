@@ -144,7 +144,7 @@ class TickerManager(WebsocketManager):
                                                      f"{random.randint(1, 100000000) * 100000000}]", **kwargs)
             ticker.append_callback(callback)
             self.__tickers['kucoin'][override_symbol] = ticker
-        elif exchange_name == "okx":
+        elif exchange_name == 'okx':
             if override_symbol is None:
                 override_symbol = self.__default_symbol
 

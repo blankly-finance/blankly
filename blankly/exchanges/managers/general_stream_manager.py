@@ -138,11 +138,11 @@ class GeneralManager(WebsocketManager):
             asset_id_cache = blankly.utils.to_exchange_symbol(asset_id_cache, "alpaca")
             if use_sandbox:
                 websocket = Alpaca_Websocket(asset_id_cache, channel, log,
-                                             WEBSOCKET_URL=
-                                             "wss://paper-api.alpaca.markets/stream/v2/{}/".format(stream))
+                                             websocket_url=
+                                             "wss://stream.data.sandbox.alpaca.markets/{}/".format(stream))
             else:
                 websocket = Alpaca_Websocket(asset_id_cache, channel, log,
-                                             WEBSOCKET_URL="wss://stream.data.alpaca.markets/v2/{}/".format(stream))
+                                             websocket_url="wss://stream.data.alpaca.markets/v2/{}/".format(stream))
             websocket.append_callback(callback)
 
             self.__websockets[channel][exchange_cache][asset_id_cache] = websocket
