@@ -844,7 +844,7 @@ def aggregate_prices_by_resolution(price_dict, symbol_, resolution_, data_) -> d
     return price_dict
 
 
-def extract_price_by_resolution(prices, symbol, epoch_start, epoch_stop, resolution, ):
+def extract_price_by_resolution(prices, symbol, epoch_start, epoch_stop, resolution):
     if symbol in prices:
         if resolution in prices[symbol]:
             price_set = prices[symbol][resolution]
