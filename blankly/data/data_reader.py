@@ -130,7 +130,7 @@ class __FormatReader(DataReader):
             self._check_length(contents, file_paths[index])
 
             # Check if its contained
-            assert (columns.issubset(contents.columns))
+            assert (columns.issubset(contents.columns)), f"{columns} not subset of {contents.columns}"
 
             # Now push it directly into the dataset and sort by time
             self._internal_dataset[symbols[index]] = contents.sort_values('time')
