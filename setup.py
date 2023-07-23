@@ -14,7 +14,7 @@ setup(
     name='blankly',  # How you named your package folder (MyLib)
     packages=find_packages(),
     # packages=['blankly'],  # Potentially should be the same thing as name
-    version='v1.18.24-beta',
+    version='v1.18.25-beta',
     license='lgpl-3.0',  # Licenses: https://help.github.com/articles/licensing-a-repository
     description='Rapidly build, backtest & deploy trading bots',  # Give a short description about your library
     long_description=long_description,
@@ -52,5 +52,6 @@ setup(
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10'
+        'Programming Language :: Python :: 3.11'
     ],
 )
