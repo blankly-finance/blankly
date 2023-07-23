@@ -866,97 +866,104 @@ class BinanceInterface(ExchangeInterface):
 
         FOR THE INTERNATIONAL EXCHANGE:
         {
-            "symbol": "ETHUSDT",
-            "status": "TRADING",
-            "baseAsset": "ETH",
-            "baseAssetPrecision": 8,
-            "quoteAsset": "USDT",
-            "quotePrecision": 8,
-            "quoteAssetPrecision": 8,
-            "baseCommissionPrecision": 8,
-            "quoteCommissionPrecision": 8,
-            "orderTypes":
-            [
-                "LIMIT",
-                "LIMIT_MAKER",
-                "MARKET",
-                "STOP_LOSS_LIMIT",
-                "TAKE_PROFIT_LIMIT"
-            ],
-            "icebergAllowed": true,
-            "ocoAllowed": true,
-            "quoteOrderQtyMarketAllowed": true,
-            "allowTrailingStop": true,
-            "cancelReplaceAllowed": true,
-            "isSpotTradingAllowed": true,
-            "isMarginTradingAllowed": true,
-            "filters":
-            [
-                {
-                    "filterType": "PRICE_FILTER",
-                    "minPrice": "0.01000000",
-                    "maxPrice": "1000000.00000000",
-                    "tickSize": "0.01000000"
-                },
-                {
-                    "filterType": "LOT_SIZE",
-                    "minQty": "0.00010000",
-                    "maxQty": "9000.00000000",
-                    "stepSize": "0.00010000"
-                },
-                {
-                    "filterType": "MIN_NOTIONAL",
-                    "minNotional": "10.00000000",
-                    "applyToMarket": true,
-                    "avgPriceMins": 5
-                },
-                {
-                    "filterType": "ICEBERG_PARTS",
-                    "limit": 10
-                },
-                {
-                    "filterType": "MARKET_LOT_SIZE",
-                    "minQty": "0.00000000",
-                    "maxQty": "4382.40354798",
-                    "stepSize": "0.00000000"
-                },
-                {
-                    "filterType": "TRAILING_DELTA",
-                    "minTrailingAboveDelta": 10,
-                    "maxTrailingAboveDelta": 2000,
-                    "minTrailingBelowDelta": 10,
-                    "maxTrailingBelowDelta": 2000
-                },
-                {
-                    "filterType": "PERCENT_PRICE_BY_SIDE",
-                    "bidMultiplierUp": "5",
-                    "bidMultiplierDown": "0.2",
-                    "askMultiplierUp": "5",
-                    "askMultiplierDown": "0.2",
-                    "avgPriceMins": 5
-                },
-                {
-                    "filterType": "MAX_NUM_ORDERS",
-                    "maxNumOrders": 200
-                },
-                {
-                    "filterType": "MAX_NUM_ALGO_ORDERS",
-                    "maxNumAlgoOrders": 5
-                }
-            ],
-            "permissions":
-            [
-                "SPOT",
-                "MARGIN",
-                "TRD_GRP_004",
-                "TRD_GRP_005"
-            ],
-            "defaultSelfTradePreventionMode": "NONE",
-            "allowedSelfTradePreventionModes":
-            [
-                "NONE"
-            ]
-        }
+          "symbol": "ETHUSDT",
+          "status": "TRADING",
+          "baseAsset": "ETH",
+          "baseAssetPrecision": 8,
+          "quoteAsset": "USDT",
+          "quotePrecision": 8,
+          "quoteAssetPrecision": 8,
+          "baseCommissionPrecision": 8,
+          "quoteCommissionPrecision": 8,
+          "orderTypes": [
+            "LIMIT",
+            "LIMIT_MAKER",
+            "MARKET",
+            "STOP_LOSS_LIMIT",
+            "TAKE_PROFIT_LIMIT"
+          ],
+          "icebergAllowed": true,
+          "ocoAllowed": true,
+          "quoteOrderQtyMarketAllowed": false,
+          "allowTrailingStop": true,
+          "cancelReplaceAllowed": true,
+          "isSpotTradingAllowed": true,
+          "isMarginTradingAllowed": true,
+          "filters": [
+            {
+              "filterType": "PRICE_FILTER",
+              "minPrice": "0.01000000",
+              "maxPrice": "1000000.00000000",
+              "tickSize": "0.01000000"
+            },
+            {
+              "filterType": "LOT_SIZE",
+              "minQty": "0.00010000",
+              "maxQty": "9000.00000000",
+              "stepSize": "0.00010000"
+            },
+            {
+              "filterType": "ICEBERG_PARTS",
+              "limit": 10
+            },
+            {
+              "filterType": "MARKET_LOT_SIZE",
+              "minQty": "0.00000000",
+              "maxQty": "2575.21545313",
+              "stepSize": "0.00000000"
+            },
+            {
+              "filterType": "TRAILING_DELTA",
+              "minTrailingAboveDelta": 10,
+              "maxTrailingAboveDelta": 2000,
+              "minTrailingBelowDelta": 10,
+              "maxTrailingBelowDelta": 2000
+            },
+            {
+              "filterType": "PERCENT_PRICE_BY_SIDE",
+              "bidMultiplierUp": "5",
+              "bidMultiplierDown": "0.2",
+              "askMultiplierUp": "5",
+              "askMultiplierDown": "0.2",
+              "avgPriceMins": 5
+            },
+            {
+              "filterType": "NOTIONAL",
+              "minNotional": "10.00000000",
+              "applyMinToMarket": true,
+              "maxNotional": "9000000.00000000",
+              "applyMaxToMarket": false,
+              "avgPriceMins": 5
+            },
+            {
+              "filterType": "MAX_NUM_ORDERS",
+              "maxNumOrders": 200
+            },
+            {
+              "filterType": "MAX_NUM_ALGO_ORDERS",
+              "maxNumAlgoOrders": 5
+            }
+          ],
+          "permissions": [
+            "SPOT",
+            "MARGIN",
+            "TRD_GRP_004",
+            "TRD_GRP_005",
+            "TRD_GRP_006",
+            "TRD_GRP_009",
+            "TRD_GRP_010",
+            "TRD_GRP_011",
+            "TRD_GRP_012",
+            "TRD_GRP_013"
+          ],
+          "defaultSelfTradePreventionMode": "NONE",
+          "allowedSelfTradePreventionModes": [
+            "NONE",
+            "EXPIRE_TAKER",
+            "EXPIRE_MAKER",
+            "EXPIRE_BOTH"
+          ]
+        },
         """
         us_filter_mapping = {
             'PRICE_FILTER': 0,
@@ -973,11 +980,11 @@ class BinanceInterface(ExchangeInterface):
         international_filter_mapping = {
             'PRICE_FILTER': 0,
             'LOT_SIZE': 1,
-            'MIN_NOTIONAL': 2,
-            'ICEBERG_PARTS': 3,
-            'MARKET_LOT_SIZE': 4,
-            'TRAILING_DELTA': 5,
-            'PERCENT_PRICE_BY_SIDE': 6,
+            'ICEBERG_PARTS': 2,
+            'MARKET_LOT_SIZE': 3,
+            'TRAILING_DELTA': 4,
+            'PERCENT_PRICE_BY_SIDE': 5,
+            'NOTIONAL': 6,
             'MAX_NUM_ORDERS': 7,
             'MAX_NUM_ALGO_ORDERS': 8
         }
@@ -1031,9 +1038,13 @@ class BinanceInterface(ExchangeInterface):
         max_quantity = float(filters[filter_mapping['LOT_SIZE']]["maxQty"])
         base_increment = float(filters[filter_mapping['LOT_SIZE']]["stepSize"])
 
-        min_market_notational = float(filters[filter_mapping['MIN_NOTIONAL']]['minNotional'])
-        max_market_notational = 92233720368.547752  # For some reason equal to the first *11 digits* of 2^63 then
-                                                    # it gets weird past the decimal
+        if using_international_exchange:
+            min_market_notational = float(filters[filter_mapping['NOTIONAL']]['minNotional'])
+            max_market_notational = float(filters[filter_mapping['NOTIONAL']]['maxNotional'])
+        else:
+            min_market_notational = float(filters[filter_mapping['MIN_NOTIONAL']]['minNotional'])
+            max_market_notational = 92233720368.547752  # For some reason equal to the first *11 digits* of 2^63 then
+                                                        # it gets weird past the decimal
 
         # Must test both nowadays
         max_orders = int(filters[filter_mapping['MAX_NUM_ORDERS']]["maxNumOrders"])
