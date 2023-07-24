@@ -368,7 +368,10 @@ def to_exchange_symbol(blankly_symbol, exchange):
 
 def get_base_asset(symbol):
     # Gets the BTC of the BTC-USD
-    return symbol.split('-')[0]
+    if symbol.endswith("USDT") and len(symbol) > 4 and '-' not in symbol:
+        return symbol[:-4]
+    else:
+        return symbol.split('-')[0]
 
 
 def get_quote_asset(symbol):
@@ -377,8 +380,11 @@ def get_quote_asset(symbol):
     if len(split) > 1:
         return split[1]
     else:
-        # This could go wrong
-        return 'USD'
+        if symbol.endswith("USDT"):
+            return "USDT"
+        else:
+            # This could go wrong
+            return 'USD'
 
 
 def rename_to(keys_array, renaming_dictionary):
