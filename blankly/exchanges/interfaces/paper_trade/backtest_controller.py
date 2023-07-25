@@ -640,9 +640,14 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
             currency_pair = i
 
             # Convert to quote (this could be optimized a bit)
-            is_stonks = interface.get_exchange_type() == 'alpaca'
+            exchange_type = interface.get_exchange_type()
+            is_stonks = exchange_type == 'alpaca'
+            is_binance = exchange_type == 'binance'
             is_future = currency_pair.endswith('PERP')
-            if not (is_stonks or is_future):
+
+            if is_binance:
+                currency_pair += self.quote_currency
+            elif not (is_stonks or is_future):
                 currency_pair += '-'
                 currency_pair += self.quote_currency
 
