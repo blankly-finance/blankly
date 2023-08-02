@@ -527,7 +527,7 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
 
         # If start/ends are specified unevenly
         if (start_date is None and stop_date is not None) or (start_date is not None and stop_date is None) or \
-                (start_date is None and stop_date is None):
+                (start is None and end is None):
             raise ValueError("Both start and end dates must be set or use the 'to' argument.")
 
         self.__add_prices(symbol, start, end, resolution)
