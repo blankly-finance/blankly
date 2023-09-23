@@ -1120,14 +1120,25 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                                  color=self_.__next_color(),
                                  legend_label=label,
                                  mode="after")
+                    
+                def get_buffered_range(min_value, max_value, buffer_percent=0.05):
+                    buffer = (max_value - min_value) * buffer_percent
+                    return min_value - buffer, max_value + buffer
 
                 global_x_range = None
 
                 time_ = [dt.fromtimestamp(ts) for ts in cycle_status['time']]
+                closing_prices_dict = {get_base_asset(key): value for key, value in self.prices.items()}
+                
 
                 for column in cycle_status:
                     if column != 'time' and self.__account_was_used(column):
                         p = figure(frame_width=900, frame_height=200, x_axis_type='datetime')
+
+                        # Explicitly set the primary y-axis range
+                        min_value, max_value = get_buffered_range(cycle_status[column].min(), cycle_status[column].max())
+                        p.y_range = Range1d(start=min_value, end=max_value)
+
                         add_trace(self, p, time_, cycle_status[column], column)
 
                         # Add the no-trade line to the backtest
@@ -1157,6 +1168,26 @@ class BackTestController(ABCBacktestController):  # circular import to type mode
                                 add_trace(self, p, normalized_compare_time_series,
                                           normalized_compare_series,
                                           f'Normalized Benchmark ({benchmark_symbol})')
+                        elif column != self.quote_currency:
+                            # Create a new y_range for the closing prices, taking into account their scale
+                            closing_prices = pd.Series(closing_prices_dict[column]['close'])
+                            min_value, max_value = get_buffered_range(closing_prices.min(), closing_prices.max())
+                            extra_y_range = Range1d(start=min_value, end=max_value)
+                            p.extra_y_ranges = {"second_y": extra_y_range}
+                            
+                            # Create a new axis using the new y_range
+                            p.add_layout(LinearAxis(y_range_name="second_y"), 'right')
+
+                            # Generate the time series for the closing prices
+                            close_time_series = [dt.fromtimestamp(ts) for ts in closing_prices_dict[column]['time']]
+
+                            # Add the closing prices line using the new y_range
+                            source = ColumnDataSource(data=dict(
+                                time=close_time_series,
+                                value=closing_prices.values.tolist()
+                            ))
+                            p.step('time', 'value', source=source, y_range_name="second_y", line_width=2, color='purple', legend_label='Closing Price', mode="after")
+
 
                         p.add_tools(hover)
 
