@@ -9,5 +9,8 @@
   "text": {
     "phone_number": "1234567683",
     "provider": "verizon"
+  },
+  "chat": {
+    "webhook_url": "follow-instructions-here --> https://developers.google.com/chat/how-tos/webhooks#register_the_incoming_webhook"
   }
 }
