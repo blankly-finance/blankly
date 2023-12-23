@@ -352,10 +352,10 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 return self.local_account.get_account(symbol)
             except KeyError:
                 if self.backtesting:
-                    raise KeyError("Symbol not found. This can be caused by an invalid quote currency "
+                    raise KeyError(f"Symbol {symbol} not found. This can be caused by an invalid quote currency "
                                    "in backtest.json.")
                 else:
-                    raise KeyError("Symbol not found.")
+                    raise KeyError(f"Symbol {symbol} not found.")
 
     def take_profit_order(self, symbol: str, price: float, size: float) -> TakeProfitOrder:
         # we don't simulate partial fills, this is the same as take_profit
