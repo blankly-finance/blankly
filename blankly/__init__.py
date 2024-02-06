@@ -44,10 +44,6 @@ import blankly.indicators as indicators
 from blankly.utils import time_builder
 
 from blankly.enums import Side, OrderType, OrderStatus, TimeInForce
-from blankly.exchanges.interfaces.binance_futures.binance_futures import BinanceFutures
-from blankly.exchanges.interfaces.ftx_futures.ftx_futures import FTXFutures
-from blankly.frameworks.strategy import FuturesStrategy
-from blankly.frameworks.strategy import FuturesStrategyState
 
 from blankly.deployment.reporter_headers import Reporter as __Reporter_Headers
 

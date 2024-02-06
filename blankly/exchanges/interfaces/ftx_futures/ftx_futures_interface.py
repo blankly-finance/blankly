@@ -21,7 +21,6 @@ from typing import Optional
 
 from blankly.enums import MarginType, HedgeMode, Side, PositionMode, TimeInForce, ContractType, OrderStatus, OrderType
 from blankly.exchanges.interfaces.ftx.ftx_api import FTXAPI
-from blankly.exchanges.interfaces.ftx.ftx_interface import FTXInterface
 from blankly.exchanges.interfaces.futures_exchange_interface import FuturesExchangeInterface
 from blankly.exchanges.orders.futures.futures_order import FuturesOrder
 from blankly.utils import utils, time_builder
@@ -34,7 +33,7 @@ class FTXFuturesInterface(FuturesExchangeInterface):
 
     @staticmethod
     def to_exchange_symbol(symbol: str):
-        base_asset, quote_asset = symbol.split('-', 1)
+        base_asset, quote_asset = symbol.split('-')
         if quote_asset != 'USD':
             raise ValueError('invalid symbol')
         return base_asset + '-PERP'  # only perpetual contracts right now
@@ -327,7 +326,8 @@ class FTXFuturesInterface(FuturesExchangeInterface):
         return time_builder.build_hour()
 
     def get_product_history(self, symbol, epoch_start, epoch_stop, resolution):
-        return FTXInterface.ftx_product_history(self.calls,self.to_exchange_symbol(symbol), epoch_start, epoch_stop, resolution)
+        raise NotImplementedError
+
     def get_maker_fee(self) -> float:
         raise NotImplementedError
 

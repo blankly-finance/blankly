@@ -73,3 +73,26 @@ def average_true_range(high_data, low_data, close_data, period=50, use_series=Fa
     close_data = convert_to_numpy(close_data)
     atr = ti.atr(high_data, low_data, close_data, period=period)
     return pd.Series(atr) if use_series else atr
+
+
+def adx(high_data, low_data, close_data, period=50, use_series=False):
+    if check_series(high_data) or check_series(low_data) or check_series(close_data):
+        use_series = True
+    high_data = convert_to_numpy(high_data)
+    low_data = convert_to_numpy(low_data)
+    close_data = convert_to_numpy(close_data)
+    adx = ti.adx(high_data, low_data, close_data, period=period)
+    return pd.Series(atr) if use_series else adx
+
+
+def fibonacci_retracement(high_data, low_data):
+    high = max(high_data)
+    low = min(low_data)
+
+    retracement_levels = [0.236, 0.382, 0.5, 0.618, 0.764]
+    calculated_retracement_levels = []
+
+    for retracement_level in retracement_levels:
+        calculated_retracement_levels.append(low + (high - low) * retracement_level)
+
+    return calculated_retracement_levels

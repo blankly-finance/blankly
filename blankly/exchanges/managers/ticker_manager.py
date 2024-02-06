@@ -72,12 +72,6 @@ class TickerManager(WebsocketManager):
             Direct ticker object
         """
 
-        # Delete the symbol arg because it shouldn't be in kwargs
-        try:
-            del(kwargs['symbol'])
-        except KeyError:
-            pass
-
         sandbox_mode = self.preferences['settings']['use_sandbox_websockets']
 
         exchange_name = self.__default_exchange
@@ -144,7 +138,7 @@ class TickerManager(WebsocketManager):
                                                      f"{random.randint(1, 100000000) * 100000000}]", **kwargs)
             ticker.append_callback(callback)
             self.__tickers['kucoin'][override_symbol] = ticker
-        elif exchange_name == 'okx':
+        elif exchange_name == "okx":
             if override_symbol is None:
                 override_symbol = self.__default_symbol
 

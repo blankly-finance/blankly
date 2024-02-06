@@ -72,14 +72,7 @@ class LocalAccount:
         except KeyError:
             raise KeyError("Quote currency specified not found in local account")
 
-    def test_trade(self, currency_pair,
-                   side,
-                   qty,
-                   quote_price,
-                   quote_resolution,
-                   base_resolution,
-                   shortable,
-                   calculate_margin=True) -> bool:
+    def test_trade(self, currency_pair, side, qty, quote_price, quote_resolution, base_resolution, shortable) -> bool:
         """
         Test a paper trade to see if you have the funds
 
@@ -92,9 +85,6 @@ class LocalAccount:
         """
         # Nobody knows what's happening if it's shorting
         if shortable:
-            # If there are no issues with margin every trade is viable
-            if not calculate_margin:
-                return True
             base_asset = utils.get_base_asset(currency_pair)
             quote_asset = utils.get_quote_asset(currency_pair)
             base_account = self.local_account[base_asset]

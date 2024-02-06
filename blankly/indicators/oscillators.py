@@ -21,6 +21,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import tulipy as ti
+import pandas_ta
 
 from blankly.indicators.utils import check_series, convert_to_numpy
 
@@ -101,3 +102,24 @@ def stochastic_rsi(data, period=14, smooth_pct_k=3, smooth_pct_d=3):
     stochrsi_D = stochrsi_K.rolling(smooth_pct_d).mean()
 
     return round(rsi_values, 2), round(stochrsi_K * 100, 2), round(stochrsi_D * 100, 2)
+
+
+def volume_oscillator(volume, short_len=5, long_len=10):
+    """
+    Returns a percent as a result for a volume oscillator.
+    :param volume:
+    :param short_len:
+    :param long_len:
+    :return:
+    """
+    short_len_ema = pandas_ta.ema(
+        volume,
+        short_len
+    )
+
+    long_len_ema = pandas_ta.ema(
+        volume,
+        long_len
+    )
+
+    return 100 * (short_len_ema - long_len_ema) / long_len_ema

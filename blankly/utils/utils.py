@@ -35,8 +35,6 @@ default_general_settings = {
         "websocket_buffer_size": 10000,
         "test_connectivity_on_auth": True,
         "auto_truncate": False,
-        "global_shorting": False,
-        "simulate_margin": True,
 
         "coinbase_pro": {
             "cash": "USD"
@@ -53,7 +51,7 @@ default_general_settings = {
             "websocket_stream": "iex",
             "cash": "USD",
             "enable_shorting": True,
-            "use_yfinance": False
+            "use_yfinance": False,
         },
         "oanda": {
             "cash": "USD"
@@ -74,9 +72,6 @@ default_general_settings = {
         "ftx_futures": {
             "cash": "USD",
             "ftx_tld": "com"
-        },
-        "paper": {
-              "price_source": "api"
         }
     }
 }
@@ -844,7 +839,7 @@ def aggregate_prices_by_resolution(price_dict, symbol_, resolution_, data_) -> d
     return price_dict
 
 
-def extract_price_by_resolution(prices, symbol, epoch_start, epoch_stop, resolution):
+def extract_price_by_resolution(prices, symbol, epoch_start, epoch_stop, resolution, ):
     if symbol in prices:
         if resolution in prices[symbol]:
             price_set = prices[symbol][resolution]
