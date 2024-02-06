@@ -159,7 +159,6 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         return HedgeMode.ONEWAY
 
     def set_leverage(self, leverage: float, symbol: str = None):
-        # if len(self.paper_positions):  # Rewritten by UG on 221104
         if (not symbol and len(self.paper_positions)) or symbol in list(self.paper_positions.keys()):
             raise BacktestingException('can\'t set leverage with open positions')
         if symbol:
@@ -270,8 +269,8 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         if not position:
             return 0
         entry_price = position['exchange_specific']['entry_price']
-        current_price = self.get_price(symbol) * size  # TODO: By UG 220621: Get the size as a parameter
-        if position['size'] > 0:  # TODO: This if statement was added by UG on 221029. Need to make sure that this diff between BUY & SELL orders are required
+        current_price = self.get_price(symbol) * size
+        if position['size'] > 0:
             return entry_price + (current_price - entry_price) * self.get_leverage(symbol)
         else:
             return entry_price + (entry_price - current_price) * self.get_leverage(symbol)
@@ -419,7 +418,7 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         acc = self.paper_account[quote]
 
         fee = self.get_taker_fee()
-        maker_fee = self.get_maker_fee()  # Added by UG on 221231
+        maker_fee = self.get_maker_fee()
         if is_closing:
             funds = (price * size) * (1 - fee - maker_fee) - (fee + maker_fee) * size * self.get_leverage()
         else:
