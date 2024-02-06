@@ -159,7 +159,8 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         return HedgeMode.ONEWAY
 
     def set_leverage(self, leverage: float, symbol: str = None):
-        if len(self.paper_positions):
+        # if len(self.paper_positions):  # Rewritten by UG on 221104
+        if (not symbol and len(self.paper_positions)) or symbol in list(self.paper_positions.keys()):
             raise BacktestingException('can\'t set leverage with open positions')
         if symbol:
             self.leverage[symbol] = leverage
@@ -264,13 +265,16 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
             m = 1
         self.paper_positions[symbol]['size'] *= 1 + (abs(rate) * m)
 
-    def calculate_position_value(self, symbol):
+    def calculate_position_value(self, symbol, size):
         position = self.paper_positions.get(symbol, None)
         if not position:
             return 0
         entry_price = position['exchange_specific']['entry_price']
-        current_price = self.get_price(symbol) * abs(position['size'])
-        return entry_price + (current_price - entry_price) * self.get_leverage(symbol)
+        current_price = self.get_price(symbol) * size  # TODO: By UG 220621: Get the size as a parameter
+        if position['size'] > 0:  # TODO: This if statement was added by UG on 221029. Need to make sure that this diff between BUY & SELL orders are required
+            return entry_price + (current_price - entry_price) * self.get_leverage(symbol)
+        else:
+            return entry_price + (entry_price - current_price) * self.get_leverage(symbol)
 
     def evaluate_limits(self):
         self.check_margin_call()
@@ -306,7 +310,7 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
             entry_price += notional
             # we sold off our position
             if is_closing:
-                value = self.calculate_position_value(order.symbol)
+                value = self.calculate_position_value(order.symbol, order.size)
                 self.paper_account[quote]['available'] += value
             else:
                 self.paper_account[quote]['hold'] -= notional
@@ -314,9 +318,11 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
             # this overwrites but it's fine, we don't need to update
             new_position = position_size + size_diff
 
-            # minimum possible position size you can buy, times two
-            # TODO improve this to just take minimum position size from exchange
-            if abs(new_position) >= 2 * utils.precision_to_increment(product['size_precision']):
+            # minimum possible position size you can buy, times 1.2
+            """
+            Multiplier changed by UG on 220713 in order to allow smaller sized orders
+            """
+            if abs(new_position) >= 1.2 * utils.precision_to_increment(product['size_precision']):
                 self.paper_positions[order.symbol] = {
                     'symbol': order.symbol,
                     'base_asset': base,
@@ -331,13 +337,26 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
                     }
                 }
             else:
-                del self.paper_positions[order.symbol]
+                try:
+                    del self.paper_positions[order.symbol]
+                except Exception as e:
+                    # Passing on all caught exceptions
+                    # TODO: Should add logging for caught exceptions
+                    pass
             self.paper_account[base + '-PERP']['available'] = new_position
+
+            # Fees calculations
+            if is_closing:
+                calculated_fee = self.get_maker_fee() * order.size * asset_price * self.get_leverage(order.symbol)
+            else:
+                calculated_fee = self.get_taker_fee() * order.size * asset_price * self.get_leverage(order.symbol)
+            self.paper_account[quote]['available'] -= abs(calculated_fee)
+
 
     def check_margin_call(self):
         called = []
         for symbol, position in self.paper_positions.items():
-            value = self.calculate_position_value(symbol)
+            value = self.calculate_position_value(symbol, abs(position['size']))
             if self.cash + value < 0:
                 # placing orders in here fucks with the dictionary
                 called.append((symbol, position))
@@ -348,7 +367,7 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
 
     def _place_order(self, type: OrderType, symbol: str, side: Side, size: float, limit_price: float = 0,
                      position_mode: PositionMode = PositionMode.BOTH, reduce_only: bool = False,
-                     time_in_force: TimeInForce = TimeInForce.GTC) -> FuturesOrder:
+                     time_in_force: TimeInForce = TimeInForce.GTC, is_closing: bool = False) -> FuturesOrder:
         self.add_symbol(symbol)
         product = self.get_products(symbol)
 
@@ -400,10 +419,11 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         acc = self.paper_account[quote]
 
         fee = self.get_taker_fee()
+        maker_fee = self.get_maker_fee()  # Added by UG on 221231
         if is_closing:
-            funds = (price * size) * (1 - fee)
+            funds = (price * size) * (1 - fee - maker_fee) - (fee + maker_fee) * size * self.get_leverage()
         else:
-            funds = (price * size) * (1 + fee)
+            funds = (price * size) * (1 + fee + maker_fee) + (fee + maker_fee) * size * self.get_leverage()
 
         order_id = self.gen_order_id()
         if not is_closing:
@@ -423,21 +443,6 @@ class FuturesPaperTradeInterface(FuturesExchangeInterface, BacktestingWrapper):
         self.execute_orders()
 
         return order
-
-    def backtesting_time(self):
-        """
-        TODO this is duplicated from paper_trade_interface as a quick fix
-        Return the backtest time if we're backtesting, if not just return None. If it's None the caller
-         assumes no backtesting. The function being overridden always returns None
-        """
-        # This is for the inits because it happens with both live calls and in the past
-        if self.initial_time is not None and not self.backtesting:
-            return self.initial_time
-        # This is for the actual price loops
-        if self.backtesting:
-            return self.time()
-        else:
-            return None
 
     @staticmethod
     def is_closing_position(position, side):

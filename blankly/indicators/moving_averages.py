@@ -19,9 +19,30 @@
 from typing import Any
 
 import pandas as pd
+import tulipy
 import tulipy as ti
+import pandas_ta
 
 from blankly.indicators.utils import check_series, convert_to_numpy
+
+
+def supertrend(data: Any, period: int = 12, multiplier: int = 3, use_series=False) -> Any:
+    if check_series(data):
+        use_series = True
+    supertrend = pandas_ta.supertrend(
+        high=data['high'],
+        low=data['low'],
+        close=data['close'],
+        length=period,
+        multiplier=multiplier)
+    return pd.Series(supertrend) if use_series else supertrend
+
+
+def dema(data: Any, period: int = 50, use_series=False) -> Any:
+    if check_series(data):
+        use_series = True
+    dema = pandas_ta.dema(data, period)
+    return pd.Series(dema) if use_series else dema
 
 
 def ema(data: Any, period: int = 50, use_series=False) -> Any:

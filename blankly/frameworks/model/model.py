@@ -22,7 +22,6 @@ import typing
 from blankly.exchanges.abc_base_exchange import ABCBaseExchange
 from blankly.exchanges.futures.futures_exchange import FuturesExchange
 from blankly.exchanges.interfaces.paper_trade.backtest_controller import BackTestController, BacktestResult
-from blankly.exchanges.interfaces.abc_exchange_interface import ABCExchangeInterface
 from blankly.exchanges.interfaces.paper_trade.abc_backtest_controller import ABCBacktestController
 from blankly.exchanges.interfaces.paper_trade.futures.futures_paper_trade import FuturesPaperTrade
 from blankly.exchanges.interfaces.paper_trade.paper_trade import PaperTrade
@@ -37,9 +36,7 @@ class Model(abc.ABC):
         self.__exchange_cache = self.__exchange
         self.is_backtesting = False
 
-        # TODO every instance usage of this uses spot, this should be refactored to give linting for futures or spot
-        #  depending on what people are running
-        self.interface: ABCExchangeInterface = exchange.get_interface()
+        self.interface = exchange.get_interface()
 
         self.has_data = True
 
@@ -77,9 +74,6 @@ class Model(abc.ABC):
     def run(self, args: typing.Any = None) -> threading.Thread:
         thread = threading.Thread(target=self.main, args=(args,))
         thread.start()
-        # Don't force them to always enable limit order watch
-        if isinstance(self.__exchange, Exchange) and isinstance(self.__exchange, PaperTrade):
-            self.__exchange.start_limit_order_watch()
         return thread
 
     @abc.abstractmethod

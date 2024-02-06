@@ -19,13 +19,10 @@
 from blankly.exchanges.auth.auth_constructor import AuthConstructor
 from blankly.exchanges.exchange import Exchange
 from blankly.exchanges.interfaces.coinbase_pro.coinbase_pro_api import API as CoinbaseProAPI
-from blankly.utils import info_print
 
 
 class CoinbasePro(Exchange):
     def __init__(self, portfolio_name=None, keys_path="keys.json", settings_path=None):
-        info_print("Coinbase Pro is being deprecated by Coinbase. We are working on a Coinbase Advanced Trade "
-                   "integration")
         Exchange.__init__(self, "coinbase_pro", portfolio_name, settings_path)
 
         # Load the auth from the keys file

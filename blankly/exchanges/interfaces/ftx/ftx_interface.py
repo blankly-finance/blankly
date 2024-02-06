@@ -477,13 +477,9 @@ class FTXInterface(ExchangeInterface):
         Returns:
             Dataframe with *at least* 'time (epoch)', 'low', 'high', 'open', 'close', 'volume' as columns.
         """
-        return self.ftx_product_history(self.get_calls(), symbol, epoch_start, epoch_stop, resolution)
 
-    @staticmethod
-    def ftx_product_history(api, symbol, epoch_start, epoch_stop, resolution):
-        # TODO this is probably the wrong place to put this code
-        # shared binance history code needs to be refactored as well
-        symbol = symbol.replace("-", "/")
+        if "-" in symbol:
+            symbol = symbol.replace("-", "/")
 
         # epoch_start, epoch_stop = super().get_product_history(symbol, epoch_start, epoch_stop, resolution)
         epoch_start = utils.convert_epochs(epoch_start)
@@ -510,7 +506,7 @@ class FTXInterface(ExchangeInterface):
             # Close is always 1500 points ahead
             window_close = window_open + 1500 * resolution
 
-            response = api.get_product_history(symbol, window_open, window_close, resolution)
+            response = self.get_calls().get_product_history(symbol, window_open, window_close, resolution)
 
             history = history + response
 
@@ -521,7 +517,7 @@ class FTXInterface(ExchangeInterface):
 
         # Fill the remainder
         window_close = epoch_stop
-        response = api.get_product_history(symbol, window_open, window_close, resolution)
+        response = self.get_calls().get_product_history(symbol, window_open, window_close, resolution)
         history_block = history + response
         # print(history_block)
         history_block.sort(key=lambda x: x["time"])
