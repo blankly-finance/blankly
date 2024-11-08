@@ -19,7 +19,6 @@
 import threading
 import time
 import traceback
-import warnings
 
 import blankly.exchanges.interfaces.paper_trade.utils as paper_trade
 import blankly.utils.utils as utils
@@ -66,16 +65,6 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         # self.evaluate_traded_account_assets()
 
         self.__enable_shorting = self.user_preferences['settings']['alpaca']['enable_shorting']
-        self.__calculate_margin = self.user_preferences['settings']['simulate_margin']
-
-        # This logically overrides any __enable_shorting
-        self.__force_shorting = self.user_preferences['settings']['global_shorting']
-
-        if self.user_preferences['settings']['paper']['price_source'] == 'websocket':
-            from blankly.exchanges.managers.ticker_manager import TickerManager
-            warnings.warn("Experimental websocket prices enabled.")
-            self.__ticker_manager = TickerManager(self.get_exchange_type(), default_symbol='')
-            self._websocket_update = lambda *args: None
 
     @property
     def local_account(self):
@@ -159,7 +148,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         # TODO, this process could use variable update time/websocket usage, poll `time` and a variety of settings
         #  to create a robust trading system
         # Create the watchdog for watching limit orders
-        self.__thread = threading.Thread(target=self.__paper_trade_watchdog, daemon=True)
+        self.__thread = threading.Thread(target=self.__paper_trade_watchdog(), daemon=True)
         self.__thread.start()
         self.__run_watchdog = True
 
@@ -172,7 +161,6 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         """
         Internal order watching system
         """
-        utils.info_print('Evaluating paper limit orders every 10 seconds...')
         while True:
             time.sleep(10)
             if not self.__run_watchdog:
@@ -352,10 +340,10 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
                 return self.local_account.get_account(symbol)
             except KeyError:
                 if self.backtesting:
-                    raise KeyError(f"Symbol {symbol} not found. This can be caused by an invalid quote currency "
+                    raise KeyError("Symbol not found. This can be caused by an invalid quote currency "
                                    "in backtest.json.")
                 else:
-                    raise KeyError(f"Symbol {symbol} not found.")
+                    raise KeyError("Symbol not found.")
 
     def take_profit_order(self, symbol: str, price: float, size: float) -> TakeProfitOrder:
         # we don't simulate partial fills, this is the same as take_profit
@@ -414,9 +402,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
 
         # Test the purchase
         self.local_account.test_trade(symbol, side, qty, price, market_limits['market_order']["quote_increment"],
-                                      quantity_decimals,
-                                      (shortable and self.__enable_shorting) or self.__force_shorting,
-                                      calculate_margin=self.__calculate_margin)
+                                      quantity_decimals, (shortable and self.__enable_shorting))
         # Create coinbase pro-like id
         coinbase_pro_id = paper_trade.generate_coinbase_pro_id()
         # TODO the force typing here isn't strictly necessary because its run int the isolate_specific anyway
@@ -751,26 +737,7 @@ class PaperTradeInterface(ExchangeInterface, BacktestingWrapper):
         if self.backtesting:
             return self.get_backtesting_price(symbol)
         else:
-            def idle(tick):
-                pass
-            # Only get crazy websocket prices if asked
-            if self.user_preferences['settings']['paper']['price_source'] == 'websocket':
-                tickers = self.__ticker_manager.get_all_tickers()
-                if self.get_exchange_type() in tickers and symbol in tickers[self.get_exchange_type()]:
-                    most_recent_tick = tickers[self.get_exchange_type()][symbol].get_most_recent_tick()
-
-                    if most_recent_tick is None:
-                        utils.info_print("No data found on ticker yet - using API...")
-                        return self.calls.get_price(symbol)
-                    else:
-                        return most_recent_tick['price']
-                else:
-                    utils.info_print(f"Creating ticker on symbol {symbol} for exchange {self.get_exchange_type()}...")
-                    self.__ticker_manager.create_ticker(callback=self._websocket_update, override_symbol=symbol,
-                                                        override_exchange=self.get_exchange_type())
-                    return self.calls.get_price(symbol)
-            else:
-                return self.calls.get_price(symbol)
+            return self.calls.get_price(symbol)
 
     @staticmethod
     def __evaluate_binance_limits(price: (int, float), order_filter):

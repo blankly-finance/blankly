@@ -49,6 +49,6 @@ class CoinbaseProUtils:
         return order
 
     @staticmethod
-    def generate_uuid() -> str:
+    def generate_uuid():
         # This should be a reasonable approximation for order UUIDs
-        return str(uuid.uuid4())
+        return uuid.uuid4()

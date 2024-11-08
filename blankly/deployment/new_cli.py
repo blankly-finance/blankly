@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Optional
 import pkgutil
 
+import questionary
 from questionary import Choice
 
 from blankly.deployment.api import API
@@ -39,12 +40,13 @@ from blankly.deployment.ui import text, confirm, print_work, print_failure, prin
 from blankly.deployment.exchange_data import EXCHANGES, Exchange, EXCHANGE_CHOICES, exc_display_name, \
     EXCHANGE_CHOICES_NO_KEYLESS
 from blankly.utils.utils import load_deployment_settings, load_user_preferences, load_backtest_preferences
+
 TEMPLATES = {'strategy': {'none': 'none.py',
                           'rsi_bot': 'rsi_bot.py'},
              'screener': {'none': 'none_screener.py',
                           'rsi_screener': 'rsi_screener.py'}}
 
-# AUTH_URL = 'https://app.blankly.finance/auth/signin?redirectUrl=/deploy'
+AUTH_URL = 'https://app.blankly.finance/auth/signin?redirectUrl=/deploy'
 
 
 def validate_non_empty(text):
@@ -56,11 +58,7 @@ def validate_non_empty(text):
 def create_model(api, name, description, model_type, project_id=None):
     with show_spinner('Creating model') as spinner:
         try:
-            # Expanded this logic because the other one was broken
-            if project_id is not None:
-                model = api.create_model(project_id, model_type, name, description)
-            else:
-                model = api.create_model(api.user_id, model_type, name, description)
+            model = api.create_model(project_id or api.user_id, model_type, name, description)
         except Exception:
             spinner.fail('Failed to create model')
             raise
@@ -69,46 +67,46 @@ def create_model(api, name, description, model_type, project_id=None):
     return model
 
 
-# def ensure_login() -> API:
-#     # TODO print selected team ?
-#     api = is_logged_in()
-#     if api:
-#         return api
-#     return launch_login_flow()
+def ensure_login() -> API:
+    # TODO print selected team ?
+    api = is_logged_in()
+    if api:
+        return api
+    return launch_login_flow()
 
 
-# def is_logged_in() -> Optional[API]:
-#     token = get_token()
-#     if not token:
-#         return
-#
-#     # log into deployment api
-#     try:
-#         return API(token)
-#     except Exception:  # TODO
-#         return
+def is_logged_in() -> Optional[API]:
+    token = get_token()
+    if not token:
+        return
+
+    # log into deployment api
+    try:
+        return API(token)
+    except Exception:  # TODO
+        return
 
 
-# def launch_login_flow() -> API:
-#     try:
-#         webbrowser.open_new(AUTH_URL)
-#         print_work(f'Your browser was opened to {AUTH_URL}. Open the window and login.')
-#     except Exception:
-#         print_work(f'Could not find a browser to open. Navigate to {AUTH_URL} and login')
-#
-#     api = None
-#     with show_spinner(f'Waiting for login') as spinner:
-#         try:
-#             api = poll_login()
-#         except Exception:
-#             pass  # we just check for api being valid, poll_login can return None
-#
-#         if not api:
-#             spinner.fail('Failed to login')
-#             sys.exit(1)
-#
-#         spinner.ok('Logged in')
-#     return api
+def launch_login_flow() -> API:
+    try:
+        webbrowser.open_new(AUTH_URL)
+        print_work(f'Your browser was opened to {AUTH_URL}. Open the window and login.')
+    except Exception:
+        print_work(f'Could not find a browser to open. Navigate to {AUTH_URL} and login')
+
+    api = None
+    with show_spinner(f'Waiting for login') as spinner:
+        try:
+            api = poll_login()
+        except Exception:
+            pass  # we just check for api being valid, poll_login can return None
+
+        if not api:
+            spinner.fail('Failed to login')
+            sys.exit(1)
+
+        spinner.ok('Logged in')
+    return api
 
 
 def add_key_interactive(exchange: Exchange):
@@ -159,9 +157,9 @@ def init_starter_model(model):
     if exchange and confirm(f'Would you like to add {exchange.display_name} keys to your model?').unsafe_ask():
         add_key_interactive(exchange)
 
-    # if confirm('Would you like to connect this model to the Blankly Platform?').unsafe_ask():
-    #     api = ensure_login()
-    #     ensure_model(api)
+    if confirm('Would you like to connect this model to the Blankly Platform?').unsafe_ask():
+        api = ensure_login()
+        ensure_model(api)
 
     print_success('Done!')
 
@@ -186,14 +184,13 @@ def blankly_init(args):
 
     api = None
     if args.model:
-        # api = ensure_login()
-        # starters = api.get_starter_models() or []
-        # model = next((m for m in starters if m['shortName'] == args.model), None)
-        # if not model:
-        #     print_failure('That starter model doesn\'t exist. Make sure you are typing the name properly.')
-        #     return
-        print_failure("Starter models are currently disabled.")
-        ## init_starter_model(model)
+        api = ensure_login()
+        starters = api.get_starter_models() or []
+        model = next((m for m in starters if m['shortName'] == args.model), None)
+        if not model:
+            print_failure('That starter model doesn\'t exist. Make sure you are typing the name properly.')
+            return
+        init_starter_model(model)
         return
 
     exchange = select('What exchange would you like to connect to?', EXCHANGE_CHOICES).unsafe_ask()
@@ -215,10 +212,10 @@ def blankly_init(args):
 
     api = None
     model = None
-    # if args.prompt_login and confirm('Would you like to connect this model to the Blankly Platform?').unsafe_ask():
-    #     if not api:
-    #         api = ensure_login()
-    #     model = get_model_interactive(api, model_type)
+    if args.prompt_login and confirm('Would you like to connect this model to the Blankly Platform?').unsafe_ask():
+        if not api:
+            api = ensure_login()
+        model = get_model_interactive(api, model_type)
 
     with show_spinner('Generating files') as spinner:
         files = [
@@ -341,19 +338,18 @@ def generate_bot_py(exchange: Optional[Exchange], template: str) -> str:
         ('EXCHANGE_NAME', exchange.display_name,),
         ('EXCHANGE_CLASS', exchange.python_class,),
         ('SYMBOL_LIST', "['" + "', '".join(exchange.symbols) + "']",),
-        ('SYMBOL', exchange.symbols[0],),
-        ('QUOTE_ASSET', exchange.currency)
+        ('SYMBOL', exchange.symbols[0],)
     ]:
         bot_py = bot_py.replace(pattern, replacement)
     return bot_py
 
 
-# def blankly_login(args):
-#     if is_logged_in():
-#         print_success('You are already logged in')
-#         return
-#
-#     launch_login_flow()
+def blankly_login(args):
+    if is_logged_in():
+        print_success('You are already logged in')
+        return
+
+    launch_login_flow()
 
 
 def blankly_logout(args):
@@ -366,47 +362,47 @@ def blankly_logout(args):
         spinner.ok('Logged out')
 
 
-# def ensure_model(api: API):
-#     # create model if it doesn't exist
-#     try:
-#         with open('blankly.json', 'r') as file:
-#             data = json.load(file)
-#     except FileNotFoundError:
-#         print_failure('There was no model detected in this directory. Try running `blankly init` to create one')
-#         sys.exit(1)
-#
-#     if 'plan' not in data:
-#         data['plan'] = select('Select a plan:', [Choice(f'{name} - CPU: {info["cpu"]} RAM: {info["ram"]}', name)
-#                                                  for name, info in api.get_plans('live').items()]).unsafe_ask()
-#
-#     if 'model_id' not in data or 'project_id' not in data:
-#         model = get_model_interactive(api, data.get('type', 'strategy'))
-#         data['model_id'] = model['modelId']
-#         data['project_id'] = model['projectId']
-#
-#     if 'api_key' not in data or 'api_pass' not in data:
-#         keys = api.generate_keys(data['project_id'], f'Local keys for {data["model_id"]}')
-#         data['api_key'] = keys['apiKey']
-#         data['api_pass'] = keys['apiPass']
-#
-#     files = [f for f in os.listdir() if not f.startswith('.')]
-#     if 'main_script' not in data or data['main_script'].lstrip('./') not in files:
-#         if 'bot.py' in files:
-#             data['main_script'] = 'bot.py'
-#         else:
-#             data['main_script'] = path(
-#                 'What is the path to your main script/entry point? (Usually bot.py)').unsafe_ask()
-#
-#     if data['main_script'].lstrip('./') not in files:
-#         print_failure(
-#             f'The file {data["main_script"]} could not be found. Please create it or set a different entry point.')
-#         sys.exit()
-#
-#     # save model_id and plan back into blankly.json
-#     with open('blankly.json', 'w') as file:
-#         json.dump(data, file, indent=4)
-#
-#     return data
+def ensure_model(api: API):
+    # create model if it doesn't exist
+    try:
+        with open('blankly.json', 'r') as file:
+            data = json.load(file)
+    except FileNotFoundError:
+        print_failure('There was no model detected in this directory. Try running `blankly init` to create one')
+        sys.exit(1)
+
+    if 'plan' not in data:
+        data['plan'] = select('Select a plan:', [Choice(f'{name} - CPU: {info["cpu"]} RAM: {info["ram"]}', name)
+                                                 for name, info in api.get_plans('live').items()]).unsafe_ask()
+
+    if 'model_id' not in data or 'project_id' not in data:
+        model = get_model_interactive(api, data.get('type', 'strategy'))
+        data['model_id'] = model['modelId']
+        data['project_id'] = model['projectId']
+
+    if 'api_key' not in data or 'api_pass' not in data:
+        keys = api.generate_keys(data['project_id'], f'Local keys for {data["model_id"]}')
+        data['api_key'] = keys['apiKey']
+        data['api_pass'] = keys['apiPass']
+
+    files = [f for f in os.listdir() if not f.startswith('.')]
+    if 'main_script' not in data or data['main_script'].lstrip('./') not in files:
+        if 'bot.py' in files:
+            data['main_script'] = 'bot.py'
+        else:
+            data['main_script'] = path(
+                'What is the path to your main script/entry point? (Usually bot.py)').unsafe_ask()
+
+    if data['main_script'].lstrip('./') not in files:
+        print_failure(
+            f'The file {data["main_script"]} could not be found. Please create it or set a different entry point.')
+        sys.exit()
+
+    # save model_id and plan back into blankly.json
+    with open('blankly.json', 'w') as file:
+        json.dump(data, file, indent=4)
+
+    return data
 
 
 def missing_deployment_files() -> list:
@@ -414,39 +410,39 @@ def missing_deployment_files() -> list:
     return [path for path in paths if not Path(path).is_file()]
 
 
-# def blankly_deploy(args):
-#     api = ensure_login()
-#
-#     data = ensure_model(api)
-#     for path in missing_deployment_files():
-#         if not confirm(f'{path} is missing. Are you sure you want to continue?',
-#                        default=False).unsafe_ask():
-#             print_failure('Deployment cancelled')
-#             print_failure(f'You can try `blankly init` to regenerate the {path} file.')
-#             return
-#
-#     description = text('Enter a description for this version of the model:').unsafe_ask()
-#
-#     with show_spinner('Uploading model') as spinner:
-#         model_path = zip_dir('.', data['ignore_files'])
-#
-#         params = {
-#             'file_path': model_path,
-#             'project_id': data['project_id'],  # set by ensure_model
-#             'model_id': data['model_id'],  # set by ensure_model
-#             'version_description': description,
-#             'python_version': get_python_version(),
-#             'type_': data.get('type', 'strategy'),
-#             'plan': data['plan']  # set by ensure_model
-#         }
-#         if data['type'] == 'screener':
-#             params['schedule'] = data['screener']['schedule']
-#
-#         response = api.deploy(**params)
-#         if response.get('status', None) == 'success':
-#             spinner.ok('Model uploaded')
-#         else:
-#             spinner.fail('Error: ' + response['error'])
+def blankly_deploy(args):
+    api = ensure_login()
+
+    data = ensure_model(api)
+    for path in missing_deployment_files():
+        if not confirm(f'{path} is missing. Are you sure you want to continue?',
+                       default=False).unsafe_ask():
+            print_failure('Deployment cancelled')
+            print_failure(f'You can try `blankly init` to regenerate the {path} file.')
+            return
+
+    description = text('Enter a description for this version of the model:').unsafe_ask()
+
+    with show_spinner('Uploading model') as spinner:
+        model_path = zip_dir('.', data['ignore_files'])
+
+        params = {
+            'file_path': model_path,
+            'project_id': data['project_id'],  # set by ensure_model
+            'model_id': data['model_id'],  # set by ensure_model
+            'version_description': description,
+            'python_version': get_python_version(),
+            'type_': data.get('type', 'strategy'),
+            'plan': data['plan']  # set by ensure_model
+        }
+        if data['type'] == 'screener':
+            params['schedule'] = data['screener']['schedule']
+
+        response = api.deploy(**params)
+        if response.get('status', None) == 'success':
+            spinner.ok('Model uploaded')
+        else:
+            spinner.fail('Error: ' + response['error'])
 
 
 def blankly_add_key(args):
@@ -499,14 +495,14 @@ def main():
                              help='don\'t prompt to connect to Blankly Platform')
     init_parser.set_defaults(func=blankly_init)
 
-    # login_parser = subparsers.add_parser('login', help='Login to the Blankly Platform')
-    # login_parser.set_defaults(func=blankly_login)
+    login_parser = subparsers.add_parser('login', help='Login to the Blankly Platform')
+    login_parser.set_defaults(func=blankly_login)
 
-    # logout_parser = subparsers.add_parser('logout', help='Logout of the Blankly Platform')
-    # logout_parser.set_defaults(func=blankly_logout)
+    logout_parser = subparsers.add_parser('logout', help='Logout of the Blankly Platform')
+    logout_parser.set_defaults(func=blankly_logout)
 
-    # deploy_parser = subparsers.add_parser('deploy', help='Upload this model to the Blankly Platform')
-    # deploy_parser.set_defaults(func=blankly_deploy)
+    deploy_parser = subparsers.add_parser('deploy', help='Upload this model to the Blankly Platform')
+    deploy_parser.set_defaults(func=blankly_deploy)
 
     key_parser = subparsers.add_parser('key', help='Manage model Exchange API keys')
     key_parser.set_defaults(func=blankly_key)

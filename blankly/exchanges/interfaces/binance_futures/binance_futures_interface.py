@@ -420,9 +420,10 @@ class BinanceFuturesInterface(FuturesExchangeInterface):
 
         response = True
         while response:
+            # TODO: Changed by UG on 220614 - That way it works to backtest up to ~1y back. Change to original if needed.
             response = self.calls.futures_funding_rate(
-                symbol=symbol,
-                startTime=window,
+                symbol=symbol.replace('-', ''),
+                # startTime=window,
                 limit=1000)
             # very stinky ^^
 
