@@ -17,11 +17,10 @@
    <a target="_blank" href="https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly"><img src="https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=sqale_rating"></a>
    <a target="_blank" href="https://sonarcloud.io/dashboard?id=Blankly-Finance_Blankly"><img src="https://sonarcloud.io/api/project_badges/measure?project=Blankly-Finance_Blankly&metric=alert_status"></a>
    <a target="_blank" href="https://github.com/Blankly-Finance/Blankly/actions/workflows/test.yml"><img src="https://github.com/Blankly-Finance/Blankly/actions/workflows/test.yml/badge.svg?branch=main"></a> <br>
-   <a target="_blank" href="https://pepy.tech/project/blankly"><img src="https://pepy.tech/badge/blankly/month"></a>
+   <a target="_blank" href="https://static.pepy.tech/badge/blankly"><img src="https://static.pepy.tech/badge/blankly"></a>
    <a target="_blank" href="https://github.com/Blankly-Finance/Blankly/blob/main/LICENSE"><img src="https://img.shields.io/pypi/l/blankly?color=gree"></a>
    <a target="_blank" href="https://github.com/Blankly-Finance/Blankly/stargazers"><img src="https://img.shields.io/github/stars/blankly-finance/blankly?style=social"></a>
    <a target="_blank" href="https://discord.gg/XWcmy7Y9bb"><img src="https://img.shields.io/discord/821563936297451530.svg?color=7289da&label=Blankly%20Discord&logo=discord&style=flat"></a>
-   <a target="_blank" href="https://reddit.com/r/blankly"><img src="https://badgen.net/reddit/subscribers/r/blankly"></a>
 </p>
 <p align="center">
     <a target="_blank" href="https://docs.blankly.finance">View Docs</a>
