@@ -76,3 +76,10 @@ class StrategyState:
         output = format_with_new_line(output, pretty_print_json(self.variables, actually_print=False))
 
         return output
+
+    @property
+    def vars(self):
+        """
+        An alias to the variables attribute
+        """
+        return self.variables
